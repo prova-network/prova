@@ -1,0 +1,259 @@
+syntax = "proto3";
+
+package prova.qbp.v1;
+
+// ============================================================
+// Core Types
+// ============================================================
+
+message Hash {
+  bytes value = 1;  // 32 bytes, SHA-256
+}
+
+message Address {
+  bytes value = 1;  // 20 bytes
+}
+
+message Signature {
+  bytes value = 1;  // Ed25519 or secp256k1 signature
+}
+
+message TokenAmount {
+  bytes value = 1;  // uint128 big-endian
+}
+
+// GPU architecture identifier
+message ComputeCapability {
+  uint32 major = 1;
+  uint32 minor = 2;
+}
+
+// ============================================================
+// Tensor Specification
+// ============================================================
+
+enum DType {
+  DTYPE_UNSPECIFIED = 0;
+  DTYPE_INT8 = 1;
+  DTYPE_INT32 = 2;
+  DTYPE_FP16 = 3;
+  DTYPE_FP32 = 4;
+}
+
+enum Layout {
+  LAYOUT_UNSPECIFIED = 0;
+  LAYOUT_ROW_MAJOR = 1;
+  LAYOUT_COL_MAJOR = 2;
+}
+
+message TensorSpec {
+  DType dtype = 1;
+  repeated uint64 shape = 2;
+  Layout layout = 3;
+}
+
+// ============================================================
+// Quantization Specification
+// ============================================================
+
+message QuantSpec {
+  string scheme = 1;            // "Q8_0", "Q4_0", "INT8_TRT", ...
+  uint32 weight_bits = 2;
+  uint32 activation_bits = 3;
+  uint32 accumulator_bits = 4;
+  uint32 group_size = 5;
+  bool symmetric = 6;
+}
+
+// ============================================================
+// Model Registry
+// ============================================================
+
+message ModelManifest {
+  Hash model_id = 1;
+  string name = 2;
+  string version = 3;
+  string description = 4;
+  string architecture = 5;       // "transformer", "mamba", etc.
+  uint32 layer_count = 6;
+  uint64 parameter_count = 7;
+  uint32 context_length = 8;
+  QuantSpec quant_spec = 9;
+  string weight_format = 10;     // "GGUF", "SafeTensors", "ONNX", "TensorRT"
+  Hash total_weight_hash = 11;
+  uint64 total_weight_size = 12;
+  repeated Hash layer_weight_hashes = 13;
+  TensorSpec input_spec = 14;
+  TensorSpec output_spec = 15;
+  repeated ComputeCapability arch_groups = 16;
+  Address registrant = 17;
+  uint64 registration_epoch = 18;
+  TokenAmount stake = 19;
+}
+
+// ============================================================
+// Inference Commitment
+// ============================================================
+
+message InferenceCommitment {
+  Hash commitment_id = 1;
+  Hash model_id = 2;
+  Hash input_hash = 3;
+  Hash output_hash = 4;
+  Hash activation_root = 5;      // Merkle root of activation tree
+  Address node = 6;
+  uint64 epoch = 7;
+  ComputeCapability arch_group = 8;
+}
+
+// ============================================================
+// QBP Protocol Messages
+// ============================================================
+
+// Prover commits inference result
+message CommitMsg {
+  InferenceCommitment commitment = 1;
+  Signature signature = 2;
+}
+
+// Challenger disputes a commitment
+message ChallengeMsg {
+  Hash commitment_id = 1;
+  Address challenger = 2;
+  Hash challenger_output_hash = 3;
+  Hash challenger_activation_root = 4;
+  TokenAmount stake = 5;
+  Signature signature = 6;
+}
+
+// Bisection reveal — one party reveals activation hash at a layer
+message BisectionRevealMsg {
+  Hash commitment_id = 1;
+  uint32 round = 2;
+  uint32 layer_index = 3;
+  Hash activation_hash = 4;
+  MerkleProof proof = 5;
+  Address sender = 6;
+  Signature signature = 7;
+}
+
+// Merkle proof for a leaf in the activation tree
+message MerkleProof {
+  uint32 leaf_index = 1;
+  Hash leaf_hash = 2;
+  repeated MerkleProofSibling siblings = 3;
+}
+
+message MerkleProofSibling {
+  Hash hash = 1;
+  Side side = 2;
+}
+
+enum Side {
+  SIDE_UNSPECIFIED = 0;
+  SIDE_LEFT = 1;
+  SIDE_RIGHT = 2;
+}
+
+// Verification request — chain asks verifier to re-execute one layer
+message VerificationRequestMsg {
+  Hash commitment_id = 1;
+  uint32 disputed_layer = 2;
+  bytes input_activation = 3;     // Serialized tensor (h[layer-1])
+  MerkleProof input_proof = 4;
+  Hash prover_output_hash = 5;
+  Hash challenger_output_hash = 6;
+}
+
+// Verification result — verifier reports computed output
+message VerificationResultMsg {
+  Hash commitment_id = 1;
+  uint32 disputed_layer = 2;
+  Hash computed_output_hash = 3;
+  Address honest_party = 4;
+  Address dishonest_party = 5;
+  Signature verifier_signature = 6;
+}
+
+// ============================================================
+// Dispute State (on-chain)
+// ============================================================
+
+enum DisputeStatus {
+  DISPUTE_STATUS_UNSPECIFIED = 0;
+  DISPUTE_STATUS_OPEN = 1;          // Challenge window active
+  DISPUTE_STATUS_BISECTING = 2;     // Bisection in progress
+  DISPUTE_STATUS_VERIFYING = 3;     // Single layer verification
+  DISPUTE_STATUS_RESOLVED = 4;      // Finalized
+}
+
+enum DisputeOutcome {
+  DISPUTE_OUTCOME_UNSPECIFIED = 0;
+  DISPUTE_OUTCOME_NO_CHALLENGE = 1;
+  DISPUTE_OUTCOME_PROVER_HONEST = 2;
+  DISPUTE_OUTCOME_CHALLENGER_HONEST = 3;
+  DISPUTE_OUTCOME_PROVER_DEFAULTED = 4;
+  DISPUTE_OUTCOME_CHALLENGER_DEFAULTED = 5;
+  DISPUTE_OUTCOME_BOTH_DISHONEST = 6;
+}
+
+message DisputeState {
+  Hash commitment_id = 1;
+  DisputeStatus status = 2;
+  InferenceCommitment commitment = 3;
+
+  // Bisection state (populated when status = BISECTING)
+  Address challenger = 10;
+  Hash challenger_root = 11;
+  uint32 bisection_round = 12;
+  uint32 lo = 13;
+  uint32 hi = 14;
+  Address current_turn = 15;
+  uint64 round_deadline = 16;
+
+  // Verification state (populated when status = VERIFYING)
+  uint32 disputed_layer = 20;
+  Hash prover_output_hash = 21;
+  Hash challenger_output_hash = 22;
+  Hash agreed_input_hash = 23;
+  uint64 verification_deadline = 24;
+
+  // Resolution (populated when status = RESOLVED)
+  DisputeOutcome outcome = 30;
+  Address slashed_party = 31;
+  TokenAmount slashed_amount = 32;
+}
+
+// ============================================================
+// Audit Protocol
+// ============================================================
+
+message AuditSelection {
+  Hash commitment_id = 1;
+  Address auditor = 2;            // Selected auditor node
+  uint64 selection_epoch = 3;
+  bytes randomness = 4;           // VRF proof of random selection
+}
+
+message AuditResult {
+  Hash commitment_id = 1;
+  Address auditor = 2;
+  Hash auditor_output_hash = 3;
+  Hash auditor_activation_root = 4;
+  bool matches_commitment = 5;
+  Signature signature = 6;
+}
+
+// ============================================================
+// Protocol Parameters (governance-configurable)
+// ============================================================
+
+message ProtocolParams {
+  uint32 challenge_window_epochs = 1;       // Default: 120
+  uint32 bisection_round_timeout_epochs = 2; // Default: 10
+  uint32 verification_timeout_epochs = 3;    // Default: 20
+  TokenAmount min_commit_stake = 4;
+  TokenAmount min_challenge_stake = 5;
+  uint32 audit_rate_bps = 6;                // Basis points (500 = 5%)
+  uint32 slash_rate_bps = 7;                // How much of stake to slash (10000 = 100%)
+}
