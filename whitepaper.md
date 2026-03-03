@@ -474,13 +474,38 @@ The foundational claim of Prova's compute verification — that quantized infere
 - **Framework**: llama.cpp (identical version on both machines)
 - **Test**: Identical prompts, identical parameters, bit-level output comparison across 1,000+ inference runs
 
-### 8.2 Expected Outcomes
+### 8.2 Results
 
-- **If deterministic**: QBP is viable as specified. Proceed to formal protocol specification.
-- **If partially deterministic**: Identify which operations introduce variance. Constrain the protocol to deterministic operations only, potentially requiring a custom inference runtime.
-- **If non-deterministic**: Re-evaluate approach. Consider whether determinism can be enforced via a constrained execution environment without TEE, or whether the protocol must fall back to redundant execution with tolerance bounds.
+**Single-GPU determinism: CONFIRMED ✅**
+- RTX 5080 (Blackwell, compute 12.0): 20/20 runs bit-identical (MD5: `bfaae656...`)
+- RTX 6000 (Turing, compute 7.5): 20/20 runs bit-identical (MD5: `7be2ff34...`)
+- Both architectures produce perfectly reproducible output on the same hardware
 
-Results will be published as an addendum to this paper.
+**Cross-architecture determinism: FAILS ❌**
+- Outputs diverge at the very first generated token
+- Blackwell: "indistinguishability" vs Turing: "non-interactive verification"
+- Not a subtle bit-flip — entirely different generation paths
+
+### 8.3 Analysis
+
+The failure is expected upon reflection. GGUF Q8_0 stores weights as INT8 but computes in FP16/FP32. Different GPU architectures implement FMA (fused multiply-add) units with different intermediate precision and rounding behavior, producing different floating-point results. With temperature 0 (greedy sampling), even a tiny logit difference changes which token is selected, causing cascading divergence.
+
+**Critical distinction**: This experiment tested llama.cpp's GGUF Q8_0, which is NOT pure integer inference. True INT8→INT32 accumulation (available in TensorRT and custom CUDA kernels) avoids floating-point entirely and may be cross-architecture deterministic. This remains to be tested.
+
+### 8.4 Protocol Adaptation
+
+The QBP protocol remains viable with architectural awareness:
+
+**Approach 1: Architecture-Locked Verification Groups (Immediate)**
+Nodes are grouped by GPU compute capability. Verification (bisection challenges and audits) occurs only within the same architecture group. Single-GPU determinism guarantees correctness within each group. This reduces the verifier pool per architecture but is functional immediately.
+
+**Approach 2: True Integer Inference (Research)**
+TensorRT's strict INT8 mode performs the entire compute pipeline in integers: INT8 weights × INT8 activations → INT32 accumulation → requantize to INT8. No floating-point operations are involved. If empirically validated as cross-architecture deterministic, this eliminates the need for architecture grouping.
+
+**Approach 3: Canonical CPU Verification (Hybrid)**
+Use GPU for execution speed. Define a canonical CPU computation path (x86-64, IEEE 754 strict mode, deterministic thread scheduling) for the single-layer verification step in bisection. Since the verifier only re-executes one layer, CPU speed is sufficient (milliseconds). This provides cross-architecture verification at the cost of requiring a reference CPU implementation.
+
+The whitepaper's QBP specification is updated to require architecture-aware verification by default, with cross-architecture support as a future enhancement pending experimental validation of true integer inference.
 
 ---
 
