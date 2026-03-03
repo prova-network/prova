@@ -1,4 +1,4 @@
-# Project Codename: TBD
+# Prova
 
 ## Vision
 A new Layer 1 blockchain combining verifiable storage and AI compute, built on the best ideas from Filecoin's proof-of-storage protocol with clean economics from day one.
@@ -81,7 +81,7 @@ OFF-CHAIN (fast, practical)
 | Render | ❌ | ✅ GPU rendering | Reputation | Specialized, no storage |
 | io.net | ❌ | ✅ GPU cluster | Economic | No storage proofs |
 | Arweave/AO | ✅ Permanent | ✅ (AO) | Proof of Access | Different proof model |
-| **This** | ✅ PDP+PoRep | ✅ AI inference | Quantized bisection | — |
+| **Prova** | ✅ PDP+PoRep | ✅ AI inference | Quantized bisection | — |
 
 ## License
 Private / Proprietary — not yet open source.
