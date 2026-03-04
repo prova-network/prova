@@ -21,6 +21,7 @@ pub mod registry;
 pub mod rewards;
 pub mod scheduler;
 pub mod simulation;
+pub mod sla;
 pub mod stake;
 pub mod state;
 pub mod types;
