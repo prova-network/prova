@@ -44,6 +44,7 @@ pub mod liquid_staking;
 pub mod blob_tx;
 pub mod marketplace;
 pub mod upgrade;
+pub mod validator_set;
 
 #[cfg(test)]
 mod integration_test;

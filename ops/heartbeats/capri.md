@@ -119,3 +119,4 @@ Promoted from P1→P0, all Phase 11 P1 tasks except INT-004 now complete.
 2026-03-04 08:51 UTC — CHAIN-032: Liquid staking tokens (stPROVA mint/burn/transfer/rewards/slash, exchange rate appreciation) — 15 tests, committed e76f912
 2026-03-04 09:54 CET — NODE-030: Built delegation CLI (delegate/undelegate/redelegate/rewards/list/providers + stPROVA integration). 31 tests, committed dd3aaac.
 - 2026-03-04 09:59 CET — SDK-010: Delegation client SDK (delegate/undelegate/redelegate/rewards/portfolio/auto-compound). 16 tests, committed a0b4ddc.
+2026-03-04 10:04 CET — SPEC-020 + CHAIN-033: Delegation & staking spec (9.5KB, full lifecycle/security/gas docs) + delegation governance voting with delegator override (16 tests)
