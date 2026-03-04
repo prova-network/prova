@@ -11,4 +11,5 @@ pub mod registry;
 pub mod commit;
 pub mod dispute;
 pub mod stake;
+pub mod payment;
 pub mod simulation;
