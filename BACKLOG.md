@@ -147,7 +147,7 @@
 ### P1 — Next
 - [x] CHAIN-026: Formal invariant checker (balance conservation, stake consistency, nonce monotonicity, reward conservation, job uniqueness) — `chain/src/invariants.rs` (16 tests)
 - [x] NODE-025: Fuzz testing harness (property-based testing for chain state) — `node/src/fuzz.rs` (12 tests)
-- [ ] DOCS-005: Security model documentation
+- [x] DOCS-005: Security model documentation — `docs/security-model.md`
 
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
