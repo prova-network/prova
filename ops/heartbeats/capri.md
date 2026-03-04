@@ -126,3 +126,5 @@ Promoted from P1→P0, all Phase 11 P1 tasks except INT-004 now complete.
 Promoted from P1 → P0 (all original P0 tasks complete).
 2026-03-04 10:19 CET — SPEC-021: Validator set specification (lifecycle, hybrid scoring, epoch rotation, security analysis, wire format). Last unchecked non-assigned task in backlog.
 2026-03-04 10:24 CET — CHAIN-035: Confidential inference commit-reveal scheme (15 tests). Opens Phase 14.
+## 2026-03-04 10:29 CET
+NODE-031: Confidential commit CLI (45 tests) + SPEC-022: Confidential inference specification. Phase 14 P0 complete.
