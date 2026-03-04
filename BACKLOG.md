@@ -120,7 +120,7 @@
 
 ### P1 — Next
 - [x] CHAIN-021: Protocol upgrade mechanism (fork scheduling, version negotiation) — `chain/src/upgrade.rs` (17 tests)
-- [ ] NODE-021: Graceful shutdown + state persistence
+- [x] NODE-021: Graceful shutdown + state persistence — `node/src/shutdown.rs` (18 tests)
 - [ ] DOCS-004: Testnet operator guide
 
 ## Assignment History
