@@ -17,6 +17,7 @@ pub mod sync;
 pub mod pricing;
 pub mod submitter;
 pub mod wallet;
+pub mod watcher;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
 use prova_chain::types::ModelId;
