@@ -28,3 +28,5 @@ pub mod types;
 
 #[cfg(test)]
 mod integration_test;
+#[cfg(test)]
+mod adversarial_test;
