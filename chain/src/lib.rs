@@ -39,6 +39,7 @@ pub mod state;
 pub mod types;
 pub mod das;
 pub mod delegation;
+pub mod delegation_gov;
 pub mod liquid_staking;
 pub mod blob_tx;
 pub mod marketplace;

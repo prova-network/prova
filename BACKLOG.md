@@ -171,8 +171,8 @@
 
 ### P1 — Next
 - [x] SDK-010: Delegation client SDK (stake management, reward queries) — `sdk/src/delegation.rs` (16 tests)
-- [ ] SPEC-020: Delegation & staking specification
-- [ ] CHAIN-033: Delegation governance voting (vote weight from delegated stake)
+- [x] SPEC-020: Delegation & staking specification — `spec/delegation-staking.md`
+- [x] CHAIN-033: Delegation governance voting (vote weight from delegated stake) — `chain/src/delegation_gov.rs` (16 tests)
 
 ## Phase 11 — Data Availability & Blob Storage
 

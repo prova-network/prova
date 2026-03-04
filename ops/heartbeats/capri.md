@@ -118,3 +118,4 @@ Promoted from P1→P0, all Phase 11 P1 tasks except INT-004 now complete.
 2026-03-04 09:44 CET — CHAIN-031: Delegation system (18 tests). Delegate/undelegate/redelegate, commission, slash propagation, auto-compound. Fixed blob_client doctest. Total: 1165 tests, 0 failures.
 2026-03-04 08:51 UTC — CHAIN-032: Liquid staking tokens (stPROVA mint/burn/transfer/rewards/slash, exchange rate appreciation) — 15 tests, committed e76f912
 2026-03-04 09:54 CET — NODE-030: Built delegation CLI (delegate/undelegate/redelegate/rewards/list/providers + stPROVA integration). 31 tests, committed dd3aaac.
+- 2026-03-04 09:59 CET — SDK-010: Delegation client SDK (delegate/undelegate/redelegate/rewards/portfolio/auto-compound). 16 tests, committed a0b4ddc.
