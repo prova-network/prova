@@ -128,7 +128,7 @@
 ### P0 — Active
 - [x] CHAIN-022: Event log system (structured emission, Merkle receipts, indexed queries) — `chain/src/events.rs` (15 tests)
 - [x] NODE-022: Event subscription engine (WebSocket push, filter subscriptions) — `node/src/subscriptions.rs` (16 tests)
-- [ ] CHAIN-023: Receipt storage (persist receipts alongside blocks, proof-of-inclusion)
+- [x] CHAIN-023: Receipt storage (persist receipts alongside blocks, proof-of-inclusion) — `chain/src/receipts.rs` (16 tests)
 - [ ] SDK-006: Event subscription client (subscribe, filter, replay)
 
 ### P1 — Next

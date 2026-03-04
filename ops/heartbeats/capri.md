@@ -80,3 +80,4 @@ Testnet genesis config (genesis.toml, bootnodes.toml) + loader with 16 validatio
 - 2026-03-04 07:34 CET — DOCS-004: Testnet operator guide (build/configure/run/monitor/troubleshoot, 295 lines). All backlog tasks complete except Koda (EXP-001) and Kestrel (DOCS-001, SPEC-009).
 2026-03-04 07:41 CET — CHAIN-022: Event log system (emit, Merkle receipt roots, multi-index queries). 15 tests. Koda healthy — sentinel-rs + determinism harness work ongoing.
 2026-03-04 07:44 CET — NODE-022: Event subscription engine (client connect/disconnect, filter-based fanout, backpressure, replay, batch notify, keepalive, expiry). 16 tests passing.
+2026-03-04 07:49 CET — CHAIN-023: Receipt storage with Merkle proof-of-inclusion. TxReceipt, BlockReceiptRecord, ReceiptStore, MerkleProof generation/verification, pruning. 16 tests.
