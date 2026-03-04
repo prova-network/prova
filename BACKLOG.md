@@ -204,7 +204,7 @@
 - [x] SPEC-022: Confidential inference specification — `spec/confidential-inference.md`
 
 ### P1 — Next
-- [ ] CHAIN-036: Zero-knowledge proof verifier (ZK-SNARK verification for activation proofs)
+- [x] CHAIN-036: Zero-knowledge proof verifier (ZK-SNARK verification for activation proofs) — `chain/src/zk_verifier.rs` (14 tests)
 - [ ] NODE-032: Encryption key management (per-inference ephemeral keys)
 - [ ] SDK-011: Confidential inference client SDK
 

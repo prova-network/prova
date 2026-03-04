@@ -128,3 +128,4 @@ Promoted from P1 → P0 (all original P0 tasks complete).
 2026-03-04 10:24 CET — CHAIN-035: Confidential inference commit-reveal scheme (15 tests). Opens Phase 14.
 ## 2026-03-04 10:29 CET
 NODE-031: Confidential commit CLI (45 tests) + SPEC-022: Confidential inference specification. Phase 14 P0 complete.
+2026-03-04 10:34 CET | CHAIN-036: ZK-SNARK proof verifier — Groth16 simulation, VK registry, proof records, gas metering. 14 tests passing.
