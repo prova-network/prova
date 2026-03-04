@@ -18,11 +18,11 @@
 - [x] CHAIN-002: Stake ledger + slashing — `chain/src/stake.rs` (11 tests)
 - [x] CHAIN-003: Model registry on-chain — `chain/src/registry.rs` (4 tests)
 
-**Total: 46 passing tests, 0 external dependencies**
+**Total: 56 passing tests, 0 external dependencies**
 
 ### P0 — In Progress
 - [ ] EXP-001: Determinism harness on Blackwell [KODA] — Blackwell confirmed ready, harness not yet run
-- [ ] SPEC-005: Audit protocol spec (random sampling, slashing)
+- [x] SPEC-005: Audit protocol spec + implementation — `spec/audit-protocol.md`, `chain/src/audit.rs` (10 tests)
 - [ ] SPEC-006: Streaming payments spec
 - [ ] DOCS-001: Developer quickstart guide [KESTREL]
 - [ ] CHAIN-004: Payment channel implementation
@@ -58,5 +58,6 @@
 | CHAIN-003 | Capri | ✅ | 02:42 | 02:48 |
 | NODE-003 | Capri | ✅ | 02:48 | 02:50 |
 | NODE-004 | Capri | ✅ | 02:50 | 02:56 |
+| SPEC-005 | Capri | ✅ | 03:34 | 03:40 |
 | EXP-001 | Koda | 🔄 | 00:05 | — |
 | DOCS-001 | Kestrel | 🔄 | 03:28 | — |

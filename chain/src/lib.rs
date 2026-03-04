@@ -13,4 +13,5 @@ pub mod dispute;
 pub mod stake;
 pub mod payment;
 pub mod epoch;
+pub mod audit;
 pub mod simulation;
