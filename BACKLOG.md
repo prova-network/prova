@@ -191,7 +191,7 @@
 - [x] SIM-003: Load test harness (throughput measurement, bottleneck detection) — `chain/src/load_test.rs` (15 tests)
 
 ### P1 — Next
-- [ ] SIM-004: Visualization output (JSON trace for timeline rendering)
+- [x] SIM-004: Visualization output (JSON trace for timeline rendering) — `chain/src/viz.rs` (16 tests)
 - [ ] SIM-005: Adversarial network scenarios (eclipse attacks, message flooding)
 - [ ] DOCS-007: Network simulation guide
 
