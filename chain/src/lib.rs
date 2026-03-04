@@ -8,6 +8,7 @@
 
 pub mod audit;
 pub mod executor;
+pub mod governance;
 pub mod block;
 pub mod commit;
 pub mod dispute;

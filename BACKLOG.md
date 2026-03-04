@@ -18,7 +18,7 @@
 - [x] CHAIN-002: Stake ledger + slashing — `chain/src/stake.rs` (11 tests)
 - [x] CHAIN-003: Model registry on-chain — `chain/src/registry.rs` (4 tests)
 
-**Total: 232 passing tests, 2 external deps (sha2, serde). 26 source files.**
+**Total: 173 passing tests (cargo test), 2 external deps (sha2, serde). 26 source files.**
 
 ### P0 — In Progress
 - [ ] EXP-001: Determinism harness on Blackwell [KODA] — Blackwell confirmed ready, harness not yet run
@@ -60,8 +60,8 @@
 - [x] CHAIN-010: Reward distribution (block rewards, inference fees, storage subsidies, challenger bounties) — `chain/src/rewards.rs` (15 tests)
 - [x] CHAIN-011: Transaction execution engine — `chain/src/executor.rs` (17 tests)
 - [x] NODE-010: Wallet + key management (Ed25519 signing, keystore) — `node/src/wallet.rs` (16 tests)
-- [ ] SPEC-011: Governance specification (proposals, voting, parameter changes)
-- [ ] INT-002: Full-chain integration test (genesis → blocks → rewards → claims)
+- [x] SPEC-011: Governance specification — `spec/governance.md`, `chain/src/governance.rs` (17 tests)
+- [x] INT-002: Full-chain integration test (genesis → blocks → rewards → claims) — `chain/src/integration_test.rs` (5 tests)
 
 ### P1 — Next
 - [ ] CHAIN-012: Gas metering + fee market (EIP-1559 style)
@@ -100,3 +100,5 @@
 | SPEC-010 | Capri | ✅ | 04:35 | 04:38 |
 | CHAIN-010 | Capri | ✅ | 04:34 | 04:40 |
 | CHAIN-011 | Capri | ✅ | 04:39 | 04:45 |
+| SPEC-011 | Capri | ✅ | 04:59 | 05:05 |
+| INT-002 | Capri | ✅ | 04:59 | 05:05 |
