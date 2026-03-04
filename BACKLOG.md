@@ -174,6 +174,15 @@
 - [x] SPEC-020: Delegation & staking specification — `spec/delegation-staking.md`
 - [x] CHAIN-033: Delegation governance voting (vote weight from delegated stake) — `chain/src/delegation_gov.rs` (16 tests)
 
+## Phase 13 — Validator Set Management
+
+### P0 — Active
+- [x] CHAIN-034: Validator set manager (registration, exit, ejection, epoch rotation, hybrid scoring) — `chain/src/validator_set.rs` (16 tests)
+
+### P1 — Next
+- [ ] NODE-028b: Validator CLI commands (register, exit, status)
+- [ ] SPEC-021: Validator set specification
+
 ## Phase 11 — Data Availability & Blob Storage
 
 ### P0 — Active
