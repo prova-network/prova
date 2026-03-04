@@ -132,7 +132,7 @@
 - [x] SDK-006: Event subscription client (subscribe, filter, replay) — `sdk/src/event_client.rs` (14 tests)
 
 ### P1 — Next
-- [ ] NODE-023: Block explorer API (blocks, txs, events, accounts)
+- [x] NODE-023: Block explorer API (blocks, txs, events, accounts) — `node/src/explorer.rs` (19 tests)
 - [ ] SPEC-016: Event schema specification (canonical event signatures, ABI encoding)
 - [ ] SDK-007: Historical event replay & caching
 
