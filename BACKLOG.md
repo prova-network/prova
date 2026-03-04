@@ -58,7 +58,7 @@
 
 ### P0 — Active
 - [x] CHAIN-010: Reward distribution (block rewards, inference fees, storage subsidies, challenger bounties) — `chain/src/rewards.rs` (15 tests)
-- [ ] CHAIN-011: Transaction execution engine (apply txs to state trie)
+- [x] CHAIN-011: Transaction execution engine — `chain/src/executor.rs` (17 tests)
 - [ ] NODE-010: Wallet + key management (Ed25519 signing, keystore)
 - [ ] SPEC-011: Governance specification (proposals, voting, parameter changes)
 - [ ] INT-002: Full-chain integration test (genesis → blocks → rewards → claims)
@@ -99,3 +99,4 @@
 | CHAIN-009 | Capri | ✅ | 04:29 | 04:35 |
 | SPEC-010 | Capri | ✅ | 04:35 | 04:38 |
 | CHAIN-010 | Capri | ✅ | 04:34 | 04:40 |
+| CHAIN-011 | Capri | ✅ | 04:39 | 04:45 |

@@ -33,3 +33,5 @@ Built CLI scaffold with hand-rolled arg parser (run/status/account/tx subcommand
 2026-03-04T04:35+01:00 — CHAIN-009: State trie with balances, nonces, storage slots, Merkle root, pruning, snapshots. 16 tests passing.
 2026-03-04T04:38+01:00 — SPEC-010: Token economics spec (issuance halving, staking params, fee model, security analysis).
 - 2026-03-04 04:40 CET — CHAIN-010: Reward distribution engine (block rewards w/ halving, inference fee splits, storage subsidies, challenger bounties, claim system). 15 tests passing.
+## 2026-03-04 04:45 CET — CHAIN-011: Transaction execution engine
+Built tx executor with 7 tx types (transfer, stake, unstake, register-model, inference-commit, claim-reward, pay-inference-fee), gas metering, nonce enforcement, atomic rollback, batch execution. 17 tests.
