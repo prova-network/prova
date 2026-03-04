@@ -90,3 +90,4 @@ NODE-023: Block explorer API — indexed store, paginated block/tx/event/account
 Built event schema spec (27 canonical signatures, ABI encoding, versioning) + historical event replay engine with LRU cache, batched fetch, resumable replay (16 tests).
 - 2026-03-04 08:09 CET — CHAIN-024: Built access control layer (role-based capabilities, pause/unpause, expiry, overrides). 17 tests. Phase 9 opened.
 2026-03-04 08:14 CET — CHAIN-025: Rate limiter with token bucket + sliding window, stake-adaptive limits, cooldown penalties, exempt kinds. 15 tests passing.
+2026-03-04 07:21 UTC — NODE-024: TLS transport layer (self-signed certs, mTLS handshake, pinning, revocation, rotation) — 16 tests passing
