@@ -51,6 +51,7 @@ pub mod multisig;
 pub mod network_sim;
 pub mod chaos;
 pub mod load_test;
+pub mod viz;
 
 #[cfg(test)]
 mod integration_test;
