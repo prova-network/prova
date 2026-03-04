@@ -10,4 +10,5 @@ pub mod types;
 pub mod registry;
 pub mod commit;
 pub mod dispute;
+pub mod stake;
 pub mod simulation;
