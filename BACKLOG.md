@@ -67,7 +67,7 @@
 - [x] CHAIN-012: Gas metering + fee market (EIP-1559 style) — `chain/src/gas.rs` (19 tests)
 - [x] NODE-011: Persistent storage backend (sled) — `node/src/storage.rs` (15 tests)
 - [x] NODE-012: Chain sync protocol (block download + verification) — `node/src/sync.rs` (14 tests)
-- [ ] SPEC-012: Light client specification
+- [x] SPEC-012: Light client specification — `spec/light-client.md`
 
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
