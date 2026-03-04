@@ -6,7 +6,7 @@
 //!
 //! # Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! let client = BlobUploadClient::new(keypair, config);
 //! let receipt = client.upload(data)?;
 //! let status = client.status(receipt.blob_id)?;

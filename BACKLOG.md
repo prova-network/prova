@@ -162,6 +162,18 @@
 - [x] NODE-027: Marketplace event indexer (listing/bid/match events) — `node/src/marketplace_indexer.rs` (19 tests)
 - [x] DOCS-006: Marketplace integration guide — `docs/marketplace-integration-guide.md`
 
+## Phase 12 — Delegation & Staking Derivatives
+
+### P0 — Active
+- [x] CHAIN-031: Delegation system (delegate/undelegate, unbonding, commission, redelegation, auto-compound, slash propagation) — `chain/src/delegation.rs` (18 tests)
+- [ ] CHAIN-032: Liquid staking tokens (staking derivatives, mint/burn on delegate/undelegate) [NEXT]
+- [ ] NODE-030: Delegation CLI commands (delegate, undelegate, redelegate, rewards)
+
+### P1 — Next
+- [ ] SDK-010: Delegation client SDK (stake management, reward queries)
+- [ ] SPEC-020: Delegation & staking specification
+- [ ] CHAIN-033: Delegation governance voting (vote weight from delegated stake)
+
 ## Phase 11 — Data Availability & Blob Storage
 
 ### P0 — Active
