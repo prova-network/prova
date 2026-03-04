@@ -313,6 +313,11 @@ impl Scheduler {
     pub fn total_jobs(&self) -> usize {
         self.jobs.len()
     }
+
+    /// Iterate over all jobs (id, request, status).
+    pub fn all_jobs(&self) -> impl Iterator<Item = (&JobId, &JobRequest, &JobStatus)> {
+        self.jobs.iter().map(|(id, (req, status))| (id, req, status))
+    }
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────

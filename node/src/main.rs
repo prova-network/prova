@@ -2,6 +2,7 @@ pub mod canonical_cpu;
 pub mod cli;
 pub mod determinism;
 pub mod devnet;
+pub mod executor;
 pub mod llamacpp;
 pub mod merkle;
 pub mod multinode;
