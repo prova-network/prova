@@ -65,7 +65,7 @@
 
 ### P1 — Next (promoted to P0)
 - [x] CHAIN-012: Gas metering + fee market (EIP-1559 style) — `chain/src/gas.rs` (19 tests)
-- [ ] NODE-011: Persistent storage backend (RocksDB or sled)
+- [x] NODE-011: Persistent storage backend (sled) — `node/src/storage.rs` (15 tests)
 - [ ] NODE-012: Chain sync protocol (block download + verification)
 - [ ] SPEC-012: Light client specification
 
@@ -103,3 +103,4 @@
 | SPEC-011 | Capri | ✅ | 04:59 | 05:05 |
 | INT-002 | Capri | ✅ | 04:59 | 05:05 |
 | CHAIN-012 | Capri | ✅ | 05:05 | 05:10 |
+| NODE-011 | Capri | ✅ | 05:09 | 05:15 |
