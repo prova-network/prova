@@ -187,8 +187,8 @@
 
 ### P0 — Active
 - [x] SIM-001: Network simulator (N-node sim, latency, partitions, crash/restart, lossy links, block propagation) — `chain/src/network_sim.rs` (17 tests)
-- [ ] SIM-002: Chaos scenario runner (scripted failure sequences, convergence assertions)
-- [ ] SIM-003: Load test harness (throughput measurement, bottleneck detection)
+- [x] SIM-002: Chaos scenario runner (scripted failure sequences, convergence assertions) — `chain/src/chaos.rs` (17 tests)
+- [x] SIM-003: Load test harness (throughput measurement, bottleneck detection) — `chain/src/load_test.rs` (15 tests)
 
 ### P1 — Next
 - [ ] SIM-004: Visualization output (JSON trace for timeline rendering)
