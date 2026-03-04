@@ -1,0 +1,27 @@
+{
+  "name": "@prova/sdk",
+  "version": "0.1.0",
+  "description": "Prova network client SDK — TypeScript/WASM bindings for browser and Node.js",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --config jest.config.cjs",
+    "test:ci": "npm test -- --ci"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "typescript": "^5.5.0"
+  },
+  "files": ["dist/", "README.md"],
+  "license": "MIT"
+}
