@@ -51,8 +51,8 @@
 - [x] CHAIN-008: Transaction mempool (priority, nonce, eviction) — `chain/src/mempool.rs` (16 tests)
 - [x] NODE-009: CLI scaffold (subcommands: run, status, account, tx) — `node/src/cli.rs` (22 tests)
 - [x] INT-001: Multi-node integration test harness — `node/src/multinode.rs` (12 tests)
-- [ ] CHAIN-009: State trie (account balances + nonce tracking)
-- [ ] SPEC-010: Token economics specification
+- [x] CHAIN-009: State trie (account balances + nonce tracking) — `chain/src/state.rs` (16 tests)
+- [x] SPEC-010: Token economics specification — `spec/token-economics.md`
 
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
@@ -81,3 +81,5 @@
 | CHAIN-008 | Capri | ✅ | 04:14 | 04:20 |
 | NODE-009 | Capri | ✅ | 04:19 | 04:25 |
 | INT-001 | Capri | ✅ | 04:24 | 04:30 |
+| CHAIN-009 | Capri | ✅ | 04:29 | 04:35 |
+| SPEC-010 | Capri | ✅ | 04:35 | 04:38 |
