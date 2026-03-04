@@ -4,6 +4,7 @@ pub mod determinism;
 pub mod devnet;
 pub mod executor;
 pub mod llamacpp;
+pub mod metrics;
 pub mod merkle;
 pub mod multinode;
 pub mod network;
