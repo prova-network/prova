@@ -227,8 +227,8 @@
 
 ### P1 — Next
 - [x] NODE-036: Webhook delivery engine (retry, backoff, signature verification) — `node/src/webhooks.rs` (16 tests)
-- [ ] SPEC-024: API gateway specification
-- [ ] DOCS-008: API gateway integration guide
+- [x] SPEC-024: API gateway specification — `spec/api-gateway.md`
+- [x] DOCS-008: API gateway integration guide — `docs/api-gateway-integration-guide.md`
 
 ## Phase 14 — Privacy & Confidential Inference
 
