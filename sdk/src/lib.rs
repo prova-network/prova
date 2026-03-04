@@ -5,6 +5,7 @@
 //! polling for results, and verifying activation proofs.
 
 pub mod rpc_client;
+pub mod cli_wallet;
 
 use prova_chain::types::{Address, Epoch, Hash, ModelId};
 use prova_chain::scheduler::{JobId, JobRequest};
