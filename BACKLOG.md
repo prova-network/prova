@@ -205,7 +205,7 @@
 
 ### P1 — Next
 - [x] CHAIN-036: Zero-knowledge proof verifier (ZK-SNARK verification for activation proofs) — `chain/src/zk_verifier.rs` (14 tests)
-- [ ] NODE-032: Encryption key management (per-inference ephemeral keys)
+- [x] NODE-032: Encryption key management (per-inference ephemeral keys) — `node/src/encryption_keys.rs` (16 tests)
 - [ ] SDK-011: Confidential inference client SDK
 
 ## Assignment History
