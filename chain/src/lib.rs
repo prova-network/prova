@@ -47,6 +47,7 @@ pub mod upgrade;
 pub mod validator_set;
 pub mod confidential;
 pub mod zk_verifier;
+pub mod multisig;
 
 #[cfg(test)]
 mod integration_test;
