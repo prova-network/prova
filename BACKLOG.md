@@ -59,6 +59,19 @@
 - [x] NODE-015: Provider auto-pricing (market-adaptive fee adjustment) — `node/src/pricing.rs` (17 tests)
 - [x] SPEC-013: Security threat model specification — `spec/security-threat-model.md` (21 threats, 8 categories)
 
+## Phase 5 — Cross-Chain & Finality
+
+### P0 — Active
+- [x] CHAIN-016: Filecoin checkpoint anchoring (quorum voting, L1 anchor, light client verify) — `chain/src/checkpoint.rs` (16 tests)
+- [ ] CHAIN-017: Cross-chain bridge message format (Prova↔Filecoin state proofs)
+- [ ] NODE-016: Checkpoint submitter (automatic L1 tx submission)
+- [ ] SPEC-014: Checkpoint anchoring specification
+
+### P1 — Next
+- [ ] CHAIN-018: Finality gadget (fast finality via checkpoint + slow finality via L1)
+- [ ] NODE-017: L1 event watcher (monitor Filecoin for anchor confirmations)
+- [ ] SPEC-015: Bridge security specification
+
 ## Phase 2 — Integration & Hardening
 
 ### P0 — Active
