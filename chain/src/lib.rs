@@ -31,6 +31,7 @@ pub mod sla;
 pub mod stake;
 pub mod state;
 pub mod types;
+pub mod upgrade;
 
 #[cfg(test)]
 mod integration_test;
