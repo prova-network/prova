@@ -36,6 +36,7 @@ pub mod encryption_keys;
 pub mod validator_cli;
 pub mod multisig_cli;
 pub mod api_gateway;
+pub mod openapi;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
 use prova_chain::types::ModelId;
