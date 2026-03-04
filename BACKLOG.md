@@ -18,7 +18,7 @@
 - [x] CHAIN-002: Stake ledger + slashing — `chain/src/stake.rs` (11 tests)
 - [x] CHAIN-003: Model registry on-chain — `chain/src/registry.rs` (4 tests)
 
-**Total: 81 passing tests, 0 external dependencies**
+**Total: 93 passing tests, 0 external dependencies**
 
 ### P0 — In Progress
 - [ ] EXP-001: Determinism harness on Blackwell [KODA] — Blackwell confirmed ready, harness not yet run
@@ -29,7 +29,7 @@
 - [x] NODE-002: PDP proof engine scaffold — `node/src/pdp.rs` (11 tests)
 
 ### P1 — Next
-- [ ] EXP-002: TensorRT INT8 cross-architecture determinism test
+- [x] EXP-002: TensorRT INT8 cross-architecture determinism test — `node/src/determinism.rs` (12 tests)
 - [ ] EXP-003: CPU canonical verification path test
 - [x] CI-001: CI pipeline (build + test) — `.github/workflows/ci.yml`
 - [x] NODE-005: Real llama.cpp integration (activation capture via hook) — `node/src/llamacpp.rs` (8 tests)
@@ -64,3 +64,4 @@
 | CHAIN-004 | Capri | ✅ | 02:42 | 02:48 |
 | NODE-002 | Capri | ✅ | 03:39 | 03:45 |
 | DOCS-001 | Kestrel | 🔄 | 03:28 | — |
+| EXP-002 | Capri | ✅ | 03:49 | 03:55 |

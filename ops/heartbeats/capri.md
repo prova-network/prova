@@ -17,3 +17,4 @@
 - 2026-03-04 03:45 CET — NODE-002: PDP proof engine scaffold (11 tests). Merkle tree, inclusion proofs, challenge derivation, proof generation/verification, miss tracking. Also synced backlog for SPEC-006, CHAIN-004, CI-001, CHAIN-005, SPEC-007.
 ## 2026-03-04 03:44 CET — NODE-005
 Built LlamaCppRunner: real llama.cpp activation capture integration with dump file parsing, dtype handling, gap detection, Merkle tree integration. 8 new tests (39 total).
+2026-03-04 02:52 UTC — EXP-002: Built INT8 cross-arch determinism harness (GEMM sim, 5 archs, Merkle integration). 12 tests, committed 1147674.
