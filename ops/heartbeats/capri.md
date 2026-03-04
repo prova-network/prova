@@ -88,3 +88,4 @@ Built EventClient with realtime/replay/historical modes, EventCache with LRU evi
 NODE-023: Block explorer API — indexed store, paginated block/tx/event/account queries, event filtering, chain stats. 19 tests.
 ## 2026-03-04 08:04 — SPEC-016 + SDK-007
 Built event schema spec (27 canonical signatures, ABI encoding, versioning) + historical event replay engine with LRU cache, batched fetch, resumable replay (16 tests).
+- 2026-03-04 08:09 CET — CHAIN-024: Built access control layer (role-based capabilities, pause/unpause, expiry, overrides). 17 tests. Phase 9 opened.

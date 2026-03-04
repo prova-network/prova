@@ -136,6 +136,19 @@
 - [x] SPEC-016: Event schema specification — `spec/event-schema.md`
 - [x] SDK-007: Historical event replay & caching — `sdk/src/event_replay.rs` (16 tests)
 
+## Phase 9 — Security Hardening & Audit Prep
+
+### P0 — Active
+- [x] CHAIN-024: Access control layer (role-based capabilities, pause, expiry, overrides) — `chain/src/access.rs` (17 tests)
+- [ ] CHAIN-025: Rate limiter (per-address tx throttling, adaptive limits)
+- [ ] NODE-024: TLS transport layer (encrypted P2P, certificate pinning)
+- [ ] SPEC-017: Security audit checklist specification
+
+### P1 — Next
+- [ ] CHAIN-026: Formal invariant checker (balance conservation, stake consistency)
+- [ ] NODE-025: Fuzz testing harness (property-based testing for chain state)
+- [ ] DOCS-005: Security model documentation
+
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
 |------|----------|--------|---------|-----------|
