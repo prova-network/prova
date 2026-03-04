@@ -28,6 +28,7 @@ pub mod tls;
 pub mod fuzz;
 pub mod marketplace_cli;
 pub mod marketplace_indexer;
+pub mod das_validator;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
 use prova_chain::types::ModelId;

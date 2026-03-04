@@ -88,7 +88,7 @@ pub struct DasEngine {
 
 // ─── Merkle helpers ──────────────────────────────────────────────────────────
 
-fn hash_leaf(index: usize, data: &[u8]) -> Hash {
+pub fn hash_leaf(index: usize, data: &[u8]) -> Hash {
     let mut h = Sha256::new();
     h.update(b"das-leaf:");
     h.update(index.to_le_bytes());
@@ -145,7 +145,7 @@ fn generate_proof(layers: &[Vec<Hash>], index: usize) -> Vec<Hash> {
 }
 
 /// Verify a Merkle proof for a leaf.
-fn verify_proof(root: &Hash, leaf_hash: &Hash, index: usize, proof: &[Hash]) -> bool {
+pub fn verify_proof(root: &Hash, leaf_hash: &Hash, index: usize, proof: &[Hash]) -> bool {
     let mut current = *leaf_hash;
     let mut idx = index;
     for sibling in proof {

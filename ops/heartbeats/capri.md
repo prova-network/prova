@@ -106,3 +106,5 @@ SDK-008: Marketplace client SDK (17 tests) + SPEC-018: Marketplace specification
 ## 2026-03-04 09:04 — NODE-027: Marketplace event indexer
 Promoted from P1, built materialized views for listing/bid/match/auction events with 19 tests. Cursor pagination, price history, multi-model isolation.
 2026-03-04 09:09 — DOCS-006: Marketplace integration guide (client/provider quickstart, auction, events, indexer, security)
+## 2026-03-04 09:14 CET — CHAIN-029: DAS engine
+Built data availability sampling module with erasure coding, Merkle proofs, multi-round challenge/response, and penalty enforcement. 15 tests, Phase 11 opened.
