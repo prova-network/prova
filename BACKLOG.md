@@ -200,8 +200,8 @@
 
 ### P0 — Active
 - [x] CHAIN-035: Confidential inference (commit-reveal with encrypted activations, blinding hash, dispute→reveal flow, default slashing) — `chain/src/confidential.rs` (15 tests)
-- [ ] NODE-031: Confidential commit CLI (submit encrypted inference, reveal on dispute) [UNASSIGNED]
-- [ ] SPEC-022: Confidential inference specification [UNASSIGNED]
+- [x] NODE-031: Confidential commit CLI (submit encrypted inference, reveal on dispute) — `node/src/confidential_cli.rs` (45 tests)
+- [x] SPEC-022: Confidential inference specification — `spec/confidential-inference.md`
 
 ### P1 — Next
 - [ ] CHAIN-036: Zero-knowledge proof verifier (ZK-SNARK verification for activation proofs)
