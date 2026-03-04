@@ -149,3 +149,4 @@ SDK-012: Multi-sig client SDK (16 tests) + SPEC-023: Account abstraction spec. A
 2026-03-04 11:39 CET — SDK-013: API gateway client SDK (key ring, inference submit/poll/cancel, batch ops, model listing) — 23 tests
 ## 2026-03-04 11:44 CET — NODE-036: Webhook delivery engine
 Built HMAC-SHA256 signed webhook delivery with exponential backoff, dead-letter queue, replay, dedup. 16 tests passing.
+2026-03-04 10:51 UTC — SPEC-024 + DOCS-008: API gateway specification (auth, rate limiting, webhooks, all endpoints) and integration guide (quick start, SDK examples, best practices). 1638 tests passing.

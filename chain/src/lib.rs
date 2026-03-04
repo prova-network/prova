@@ -53,6 +53,7 @@ pub mod chaos;
 pub mod load_test;
 pub mod viz;
 pub mod adversarial_net;
+pub mod benchmark;
 
 #[cfg(test)]
 mod integration_test;
