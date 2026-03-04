@@ -140,7 +140,7 @@
 
 ### P0 — Active
 - [x] CHAIN-024: Access control layer (role-based capabilities, pause, expiry, overrides) — `chain/src/access.rs` (17 tests)
-- [ ] CHAIN-025: Rate limiter (per-address tx throttling, adaptive limits)
+- [x] CHAIN-025: Rate limiter (per-address tx throttling, adaptive limits) — `chain/src/rate_limiter.rs` (15 tests)
 - [ ] NODE-024: TLS transport layer (encrypted P2P, certificate pinning)
 - [ ] SPEC-017: Security audit checklist specification
 
