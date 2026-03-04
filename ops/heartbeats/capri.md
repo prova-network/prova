@@ -94,3 +94,9 @@
 - Changed: No new commits since last HB (197bfc0)
 - Next: Start CHAIN-001 (mocked commit+challenge flow in Rust)
 - Koda: ⚠️ unresponsive (3rd consecutive miss — confirmed offline)
+
+## HB 2026-03-04 01:46 UTC (02:46 CET)
+- Task: SPEC-001 (active), CHAIN-001 (pending)
+- Changed: No new commits since last HB (197bfc0)
+- Next: Start CHAIN-001 (mocked commit+challenge flow in Rust)
+- Koda: ⚠️ unresponsive (4th consecutive miss — confirmed offline)

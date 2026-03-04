@@ -1,6 +1,9 @@
-mod merkle;
+pub mod merkle;
+pub mod runner;
 
 use merkle::{ActivationMerkleTree, verify_proof, hash_tensor, DType};
+use runner::MockRunner;
+use prova_chain::types::ModelId;
 
 fn main() {
     println!("=== Prova Node — Activation Merkle Tree Demo ===\n");
@@ -37,6 +40,29 @@ fn main() {
             proof.siblings.len()
         );
     }
+
+    // ---- MockRunner demo ----
+    println!("\n=== Mock Inference Runner ===\n");
+    let model_id = ModelId([0x42; 32]);
+    let prompt = "The meaning of life is";
+
+    let result = MockRunner::run(&model_id, prompt, 32);
+    println!("  Prompt:     \"{}\"", prompt);
+    println!("  Layers:     {}", result.layer_count());
+    println!("  Root:       {}", hex::encode(&result.activation_root()));
+    println!("  Input hash: {}", hex::encode(&result.input_hash));
+
+    // Faulty run
+    let faulty = MockRunner::run_faulty(&model_id, prompt, 32, 21);
+    println!("\n  Faulty run (fault at layer 21):");
+    println!("  Root:       {}", hex::encode(&faulty.activation_root()));
+    println!("  Roots match: {}", result.activation_root() == faulty.activation_root());
+
+    let first_diff = result.activation_hashes.iter()
+        .zip(faulty.activation_hashes.iter())
+        .position(|(a, b)| a != b)
+        .unwrap();
+    println!("  First divergence at layer: {}", first_diff);
 
     println!("\n=== Bisection Simulation ===\n");
 
