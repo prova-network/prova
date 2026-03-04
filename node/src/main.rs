@@ -1,3 +1,4 @@
+pub mod config;
 pub mod canonical_cpu;
 pub mod cli;
 pub mod determinism;

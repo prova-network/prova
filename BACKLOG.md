@@ -37,6 +37,7 @@
 - [x] SPEC-007: Network protocol (P2P gossip, block propagation) — `spec/network-protocol.md`
 
 ### P2 — Later
+- [x] NODE-018: Configuration manager (TOML config, defaults, validation, env overrides, roundtrip serialization) — `node/src/config.rs` (24 tests)
 - [x] NODE-007: JSON-RPC 2.0 API scaffold — `node/src/rpc.rs` (16 tests)
 - [x] NODE-006: P2P networking scaffold — `node/src/network.rs` (15 tests)
 - [x] CHAIN-006: Block production + consensus — `chain/src/block.rs` (37 tests)
