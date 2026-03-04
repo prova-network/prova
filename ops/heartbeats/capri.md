@@ -114,3 +114,6 @@ Built data availability sampling module with erasure coding, Merkle proofs, mult
 2026-03-04 09:34 CET — SDK-009: Blob upload client with erasure encoding, batch uploads, progress tracking, fee estimation. 19 tests passing.
 Promoted from P1→P0, all Phase 11 P1 tasks except INT-004 now complete.
 2026-03-04 09:39 CET — INT-004: DAS adversarial test suite (19 tests). Withholding, corruption, replay, multi-provider penalty stacking.
+
+2026-03-04 09:44 CET — CHAIN-031: Delegation system (18 tests). Delegate/undelegate/redelegate, commission, slash propagation, auto-compound. Fixed blob_client doctest. Total: 1165 tests, 0 failures.
+2026-03-04 08:51 UTC — CHAIN-032: Liquid staking tokens (stPROVA mint/burn/transfer/rewards/slash, exchange rate appreciation) — 15 tests, committed e76f912
