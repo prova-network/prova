@@ -50,6 +50,7 @@ pub mod zk_verifier;
 pub mod multisig;
 pub mod network_sim;
 pub mod chaos;
+pub mod load_test;
 
 #[cfg(test)]
 mod integration_test;
