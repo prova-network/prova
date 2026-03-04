@@ -14,6 +14,7 @@ pub mod audit;
 pub mod executor;
 pub mod finality;
 pub mod gas;
+pub mod invariants;
 pub mod governance;
 pub mod block;
 pub mod commit;
