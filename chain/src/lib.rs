@@ -6,12 +6,12 @@
 // - Challenge window (anyone can dispute within window)
 // - Bisection game (on-chain referee for QBP protocol)
 
-pub mod types;
-pub mod registry;
+pub mod audit;
 pub mod commit;
 pub mod dispute;
-pub mod stake;
-pub mod payment;
 pub mod epoch;
-pub mod audit;
+pub mod payment;
+pub mod registry;
 pub mod simulation;
+pub mod stake;
+pub mod types;

@@ -4,8 +4,8 @@
 //! architecture group, and metadata. This enables verifiers to
 //! confirm they're running the exact same model.
 
-use std::collections::HashMap;
 use crate::types::*;
+use std::collections::HashMap;
 
 /// Per-layer weight hash entry.
 #[derive(Debug, Clone)]
@@ -97,7 +97,10 @@ impl fmt::Display for RegistryError {
         match self {
             Self::AlreadyRegistered(id) => write!(f, "model {:?} already registered", id),
             Self::LayerCountMismatch { declared, provided } => {
-                write!(f, "declared {declared} layers but provided {provided} hashes")
+                write!(
+                    f,
+                    "declared {declared} layers but provided {provided} hashes"
+                )
             }
             Self::NoArchGroups => write!(f, "must specify at least one architecture group"),
         }

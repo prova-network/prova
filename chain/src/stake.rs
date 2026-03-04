@@ -6,8 +6,8 @@
 //! - Provider misses PDP proofs (storage unavailable)
 //! - Challenger loses a dispute (false accusation)
 
-use std::collections::HashMap;
 use crate::types::*;
+use std::collections::HashMap;
 
 /// Stake entry for a participant.
 #[derive(Debug, Clone)]
@@ -27,12 +27,15 @@ pub struct StakeEntry {
 impl StakeEntry {
     /// Available stake (deposited - locked - slashed).
     pub fn available(&self) -> StakeAmount {
-        self.deposited.saturating_sub(self.locked).saturating_sub(self.slashed)
+        self.deposited
+            .saturating_sub(self.locked)
+            .saturating_sub(self.slashed)
     }
 
     /// Whether the participant is in cooldown.
     pub fn in_cooldown(&self, current_epoch: Epoch) -> bool {
-        self.cooldown_until.map_or(false, |until| current_epoch < until)
+        self.cooldown_until
+            .is_some_and(|until| current_epoch < until)
     }
 }
 
@@ -57,11 +60,11 @@ impl SlashReason {
     /// Slash percentage (basis points, 10000 = 100%).
     pub fn slash_bps(&self) -> u32 {
         match self {
-            Self::DisputeLost => 1000,           // 10%
-            Self::FalseChallenge => 500,         // 5%
-            Self::PdpMissFirst => 0,             // Warning
-            Self::PdpMissSecond => 500,          // 5%
-            Self::PdpMissThird => 10000,         // 100%
+            Self::DisputeLost => 1000,                // 10%
+            Self::FalseChallenge => 500,              // 5%
+            Self::PdpMissFirst => 0,                  // Warning
+            Self::PdpMissSecond => 500,               // 5%
+            Self::PdpMissThird => 10000,              // 100%
             Self::DisputeLostDataUnavailable => 5000, // 50%
         }
     }
@@ -69,11 +72,11 @@ impl SlashReason {
     /// Cooldown duration in epochs.
     pub fn cooldown_epochs(&self) -> Option<EpochDuration> {
         match self {
-            Self::DisputeLost => Some(2880),          // ~24 hours
-            Self::FalseChallenge => Some(2880),       // ~24 hours
-            Self::PdpMissFirst => None,               // No cooldown
-            Self::PdpMissSecond => Some(20160),       // ~7 days
-            Self::PdpMissThird => Some(u64::MAX),     // Permanent
+            Self::DisputeLost => Some(2880),                 // ~24 hours
+            Self::FalseChallenge => Some(2880),              // ~24 hours
+            Self::PdpMissFirst => None,                      // No cooldown
+            Self::PdpMissSecond => Some(20160),              // ~7 days
+            Self::PdpMissThird => Some(u64::MAX),            // Permanent
             Self::DisputeLostDataUnavailable => Some(86400), // ~30 days
         }
     }
@@ -115,9 +118,14 @@ impl StakeLedger {
     }
 
     /// Withdraw available stake.
-    pub fn withdraw(&mut self, addr: &Address, amount: StakeAmount, epoch: Epoch) -> Result<(), StakeError> {
+    pub fn withdraw(
+        &mut self,
+        addr: &Address,
+        amount: StakeAmount,
+        epoch: Epoch,
+    ) -> Result<(), StakeError> {
         let entry = self.stakes.get_mut(addr).ok_or(StakeError::NotFound)?;
-        
+
         if entry.in_cooldown(epoch) {
             return Err(StakeError::InCooldown(entry.cooldown_until.unwrap()));
         }
@@ -137,7 +145,7 @@ impl StakeLedger {
     /// Lock stake for an active dispute.
     pub fn lock(&mut self, addr: &Address, amount: StakeAmount) -> Result<(), StakeError> {
         let entry = self.stakes.get_mut(addr).ok_or(StakeError::NotFound)?;
-        
+
         if entry.available() < amount {
             return Err(StakeError::InsufficientStake {
                 available: entry.available(),
@@ -165,7 +173,7 @@ impl StakeLedger {
     ) -> Result<StakeAmount, StakeError> {
         let entry = self.stakes.get_mut(addr).ok_or(StakeError::NotFound)?;
 
-        let slash_amount = (entry.deposited as u128 * reason.slash_bps() as u128 / 10000) as StakeAmount;
+        let slash_amount = (entry.deposited * reason.slash_bps() as u128 / 10000) as StakeAmount;
 
         entry.slashed += slash_amount;
         entry.last_updated = epoch;
@@ -180,16 +188,16 @@ impl StakeLedger {
 
     /// Check if an address can operate as a provider.
     pub fn can_provide(&self, addr: &Address, epoch: Epoch) -> bool {
-        self.stakes.get(addr).map_or(false, |e| {
-            e.available() >= self.min_provider_stake && !e.in_cooldown(epoch)
-        })
+        self.stakes
+            .get(addr)
+            .is_some_and(|e| e.available() >= self.min_provider_stake && !e.in_cooldown(epoch))
     }
 
     /// Check if an address can challenge.
     pub fn can_challenge(&self, addr: &Address, epoch: Epoch) -> bool {
-        self.stakes.get(addr).map_or(false, |e| {
-            e.available() >= self.min_challenger_stake && !e.in_cooldown(epoch)
-        })
+        self.stakes
+            .get(addr)
+            .is_some_and(|e| e.available() >= self.min_challenger_stake && !e.in_cooldown(epoch))
     }
 
     /// Get stake entry for an address.
@@ -206,7 +214,10 @@ impl StakeLedger {
 #[derive(Debug)]
 pub enum StakeError {
     NotFound,
-    InsufficientStake { available: StakeAmount, requested: StakeAmount },
+    InsufficientStake {
+        available: StakeAmount,
+        requested: StakeAmount,
+    },
     InCooldown(Epoch),
 }
 
@@ -214,8 +225,14 @@ impl std::fmt::Display for StakeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NotFound => write!(f, "no stake entry found"),
-            Self::InsufficientStake { available, requested } => {
-                write!(f, "insufficient stake: {available} available, {requested} requested")
+            Self::InsufficientStake {
+                available,
+                requested,
+            } => {
+                write!(
+                    f,
+                    "insufficient stake: {available} available, {requested} requested"
+                )
             }
             Self::InCooldown(until) => write!(f, "in cooldown until epoch {until}"),
         }
@@ -237,7 +254,7 @@ mod tests {
         let mut ledger = setup();
         let addr = Address::test(1);
         ledger.deposit(addr, 5_000_000, 100);
-        
+
         let entry = ledger.get(&addr).unwrap();
         assert_eq!(entry.deposited, 5_000_000);
         assert_eq!(entry.available(), 5_000_000);
@@ -366,8 +383,12 @@ mod tests {
         ledger.deposit(addr, 10_000_000, 100);
 
         // Two false challenges: 5% each
-        ledger.slash(&addr, SlashReason::FalseChallenge, 200).unwrap();
-        ledger.slash(&addr, SlashReason::FalseChallenge, 300).unwrap();
+        ledger
+            .slash(&addr, SlashReason::FalseChallenge, 200)
+            .unwrap();
+        ledger
+            .slash(&addr, SlashReason::FalseChallenge, 300)
+            .unwrap();
 
         let entry = ledger.get(&addr).unwrap();
         assert_eq!(entry.slashed, 1_000_000); // 500K + 500K

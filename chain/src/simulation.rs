@@ -7,10 +7,10 @@
 //! 4. Bisection narrows to single layer
 //! 5. Judgment resolves dispute
 
-use crate::types::*;
-use crate::registry::*;
 use crate::commit::*;
 use crate::dispute::*;
+use crate::registry::*;
+use crate::types::*;
 
 /// Run a complete QBP protocol simulation.
 pub fn run_simulation() -> SimulationResult {
@@ -53,7 +53,9 @@ pub fn run_simulation() -> SimulationResult {
         registered_at: epoch,
     };
 
-    registry.register(manifest).expect("registration should succeed");
+    registry
+        .register(manifest)
+        .expect("registration should succeed");
 
     // Step 2: Provider commits inference
     epoch += 10;
@@ -74,7 +76,9 @@ pub fn run_simulation() -> SimulationResult {
     epoch += 5;
     let challenger_root = [0x22; 32];
 
-    commits.mark_disputed(&commit_id).expect("should mark disputed");
+    commits
+        .mark_disputed(&commit_id)
+        .expect("should mark disputed");
 
     let dispute_id = arena
         .open_dispute(
@@ -180,10 +184,30 @@ impl std::fmt::Display for SimulationResult {
         writeln!(f, "║ Model:      {:<28} ║", self.model_name)?;
         writeln!(f, "║ Layers:     {:<28} ║", self.layer_count)?;
         writeln!(f, "║ Disputed:   layer {:<22} ║", self.disputed_layer)?;
-        writeln!(f, "║ Rounds:     {}/{} (actual/expected)     ║", self.bisection_rounds, self.expected_rounds)?;
-        writeln!(f, "║ Winner:     {:<28} ║", if self.provider_won { "Provider ✓" } else { "Challenger ✓" })?;
-        writeln!(f, "║ Duration:   {} epochs                   ║", self.total_epochs)?;
-        writeln!(f, "║ Efficiency: 1/{} layer re-execution    ║", self.layer_count)?;
+        writeln!(
+            f,
+            "║ Rounds:     {}/{} (actual/expected)     ║",
+            self.bisection_rounds, self.expected_rounds
+        )?;
+        writeln!(
+            f,
+            "║ Winner:     {:<28} ║",
+            if self.provider_won {
+                "Provider ✓"
+            } else {
+                "Challenger ✓"
+            }
+        )?;
+        writeln!(
+            f,
+            "║ Duration:   {} epochs                   ║",
+            self.total_epochs
+        )?;
+        writeln!(
+            f,
+            "║ Efficiency: 1/{} layer re-execution    ║",
+            self.layer_count
+        )?;
         writeln!(f, "╚══════════════════════════════════════════╝")
     }
 }
@@ -200,6 +224,10 @@ mod tests {
         assert_eq!(result.disputed_layer, 21);
         assert!(result.provider_won);
         // 33 leaves padded to 64 → 6 rounds max. Bisection should find layer 21 in ≤6 rounds
-        assert!(result.bisection_rounds <= 6, "took {} rounds", result.bisection_rounds);
+        assert!(
+            result.bisection_rounds <= 6,
+            "took {} rounds",
+            result.bisection_rounds
+        );
     }
 }

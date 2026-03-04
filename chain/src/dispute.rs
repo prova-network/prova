@@ -27,8 +27,8 @@ pub struct DisputeConfig {
 impl Default for DisputeConfig {
     fn default() -> Self {
         Self {
-            round_timeout: 60,   // ~30 minutes
-            total_timeout: 480,  // ~4 hours
+            round_timeout: 60,  // ~30 minutes
+            total_timeout: 480, // ~4 hours
         }
     }
 }
@@ -51,17 +51,13 @@ pub enum DisputePhase {
         challenger_activation: Option<Hash>,
     },
     /// Waiting for verifier to execute and judge.
-    AwaitingJudgment {
-        disputed_layer: u32,
-    },
+    AwaitingJudgment { disputed_layer: u32 },
     /// Resolved — provider was correct.
     ResolvedProviderWins,
     /// Resolved — challenger was correct.
     ResolvedChallengerWins,
     /// Timed out — non-responding party loses.
-    TimedOut {
-        loser: Address,
-    },
+    TimedOut { loser: Address },
 }
 
 /// A bisection dispute instance.
@@ -351,12 +347,14 @@ impl DisputeArena {
     pub fn active_count(&self) -> usize {
         self.disputes
             .values()
-            .filter(|d| matches!(
-                d.phase,
-                DisputePhase::AwaitingMidpoint { .. }
-                    | DisputePhase::AwaitingActivations { .. }
-                    | DisputePhase::AwaitingJudgment { .. }
-            ))
+            .filter(|d| {
+                matches!(
+                    d.phase,
+                    DisputePhase::AwaitingMidpoint { .. }
+                        | DisputePhase::AwaitingActivations { .. }
+                        | DisputePhase::AwaitingJudgment { .. }
+                )
+            })
             .count()
     }
 }
@@ -374,14 +372,9 @@ pub enum BisectionStep {
         agreed: bool,
     },
     /// Bisection complete — isolated single layer.
-    NarrowedToLayer {
-        layer: u32,
-        rounds_taken: u32,
-    },
+    NarrowedToLayer { layer: u32, rounds_taken: u32 },
     /// Round timed out — party forfeits.
-    TimedOut {
-        loser: Address,
-    },
+    TimedOut { loser: Address },
 }
 
 #[derive(Debug)]
@@ -496,7 +489,12 @@ mod tests {
             .submit_midpoint(dispute_id, Address::test(2), agree_hash, epoch)
             .unwrap();
         match step {
-            BisectionStep::Narrowed { lo, hi, mid, agreed } => {
+            BisectionStep::Narrowed {
+                lo,
+                hi,
+                mid,
+                agreed,
+            } => {
                 assert_eq!(lo, 3);
                 assert_eq!(hi, 7);
                 assert_eq!(mid, 5);
@@ -515,7 +513,12 @@ mod tests {
             .submit_midpoint(dispute_id, Address::test(2), [0xCC; 32], epoch)
             .unwrap();
         match step {
-            BisectionStep::Narrowed { lo, hi, mid, agreed } => {
+            BisectionStep::Narrowed {
+                lo,
+                hi,
+                mid,
+                agreed,
+            } => {
                 assert_eq!(lo, 3);
                 assert_eq!(hi, 5);
                 assert_eq!(mid, 4);
@@ -532,7 +535,10 @@ mod tests {
             .submit_midpoint(dispute_id, Address::test(2), agree_hash, epoch)
             .unwrap();
         match step {
-            BisectionStep::NarrowedToLayer { layer, rounds_taken } => {
+            BisectionStep::NarrowedToLayer {
+                layer,
+                rounds_taken,
+            } => {
                 assert_eq!(layer, 5);
                 assert_eq!(rounds_taken, 3);
             }
@@ -584,7 +590,10 @@ mod tests {
             .submit_midpoint(dispute_id, Address::test(2), [0xBB; 32], 1001)
             .unwrap();
         match step {
-            BisectionStep::NarrowedToLayer { layer, rounds_taken } => {
+            BisectionStep::NarrowedToLayer {
+                layer,
+                rounds_taken,
+            } => {
                 assert_eq!(rounds_taken, 1);
             }
             _ => panic!("expected NarrowedToLayer"),

@@ -4,12 +4,10 @@
 //! enabling a node to participate as either provider or challenger
 //! in a bisection dispute.
 
-use crate::merkle::{ActivationMerkleTree, Hash, verify_proof};
-use crate::runner::{InferenceResult, MockRunner};
-use prova_chain::types::*;
+use crate::merkle::Hash;
+use crate::runner::InferenceResult;
 use prova_chain::dispute::*;
-use prova_chain::commit::*;
-use prova_chain::registry::*;
+use prova_chain::types::*;
 
 /// A participant in the QBP protocol.
 #[derive(Debug)]
@@ -179,7 +177,11 @@ impl std::fmt::Display for DisputeOutcome {
             self.rounds,
             self.epochs_elapsed,
             self.winner,
-            if self.provider_won { "provider" } else { "challenger" }
+            if self.provider_won {
+                "provider"
+            } else {
+                "challenger"
+            }
         )
     }
 }
@@ -187,6 +189,8 @@ impl std::fmt::Display for DisputeOutcome {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::merkle::verify_proof;
+    use crate::runner::MockRunner;
 
     fn setup_participants(fault_layer: u32) -> (QbpParticipant, QbpParticipant) {
         let model_id = ModelId([0x42; 32]);
@@ -194,14 +198,10 @@ mod tests {
         let layer_count = 32;
 
         let provider_result = MockRunner::run(&model_id, prompt, layer_count);
-        let challenger_result =
-            MockRunner::run_faulty(&model_id, prompt, layer_count, fault_layer);
+        let challenger_result = MockRunner::run_faulty(&model_id, prompt, layer_count, fault_layer);
 
-        let provider = QbpParticipant::new(
-            Address::test(1),
-            ParticipantRole::Provider,
-            provider_result,
-        );
+        let provider =
+            QbpParticipant::new(Address::test(1), ParticipantRole::Provider, provider_result);
         let challenger = QbpParticipant::new(
             Address::test(2),
             ParticipantRole::Challenger,

@@ -11,8 +11,8 @@
 //! 5. Builds the Activation Merkle Tree
 //! 6. Publishes the commit with the Merkle root
 
-use crate::merkle::{ActivationMerkleTree, Hash, hash_tensor, DType};
-use prova_chain::types::{ArchGroup, ModelId, Address, Epoch};
+use crate::merkle::{ActivationMerkleTree, Hash};
+use prova_chain::types::{ArchGroup, ModelId};
 use std::process::Command;
 
 /// Configuration for an inference run.
@@ -85,8 +85,8 @@ impl MockRunner {
         activation_hashes.push({
             let mut h = Sha256::new();
             h.update(b"activation:0:");
-            h.update(&model_id.0);
-            h.update(&input_hash);
+            h.update(model_id.0);
+            h.update(input_hash);
             h.finalize().into()
         });
 
@@ -98,7 +98,7 @@ impl MockRunner {
                 h.update(b"activation:");
                 h.update(i.to_le_bytes());
                 h.update(b":");
-                h.update(&model_id.0);
+                h.update(model_id.0);
                 h.update(prev);
                 h.finalize().into()
             };
@@ -253,7 +253,10 @@ mod tests {
         let challenger_result = MockRunner::run_faulty(&model_id, prompt, layer_count, 21);
 
         // Roots differ → dispute is valid
-        assert_ne!(provider_result.activation_root(), challenger_result.activation_root());
+        assert_ne!(
+            provider_result.activation_root(),
+            challenger_result.activation_root()
+        );
 
         // Find the first layer where they disagree
         let first_disagreement = provider_result

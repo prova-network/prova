@@ -7,8 +7,8 @@
 //! 4. If unchallenged, the commit is finalized
 //! 5. If challenged, a bisection dispute begins
 
-use std::collections::HashMap;
 use crate::types::*;
+use std::collections::HashMap;
 
 /// Status of an inference commit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -154,10 +154,7 @@ impl CommitStore {
 
     /// Mark a commit as disputed.
     pub fn mark_disputed(&mut self, id: &CommitId) -> Result<(), CommitError> {
-        let commit = self
-            .commits
-            .get_mut(id)
-            .ok_or(CommitError::NotFound(*id))?;
+        let commit = self.commits.get_mut(id).ok_or(CommitError::NotFound(*id))?;
 
         if commit.status != CommitStatus::Open {
             return Err(CommitError::NotChallengeable(*id, commit.status));
@@ -169,10 +166,7 @@ impl CommitStore {
 
     /// Mark a commit as slashed (provider was wrong).
     pub fn mark_slashed(&mut self, id: &CommitId) -> Result<(), CommitError> {
-        let commit = self
-            .commits
-            .get_mut(id)
-            .ok_or(CommitError::NotFound(*id))?;
+        let commit = self.commits.get_mut(id).ok_or(CommitError::NotFound(*id))?;
 
         if commit.status != CommitStatus::Disputed {
             return Err(CommitError::InvalidTransition(*id, commit.status));
@@ -184,10 +178,7 @@ impl CommitStore {
 
     /// Mark a commit as defended (challenger was wrong).
     pub fn mark_defended(&mut self, id: &CommitId) -> Result<(), CommitError> {
-        let commit = self
-            .commits
-            .get_mut(id)
-            .ok_or(CommitError::NotFound(*id))?;
+        let commit = self.commits.get_mut(id).ok_or(CommitError::NotFound(*id))?;
 
         if commit.status != CommitStatus::Disputed {
             return Err(CommitError::InvalidTransition(*id, commit.status));

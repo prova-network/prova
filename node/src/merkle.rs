@@ -258,11 +258,13 @@ mod tests {
 
     #[test]
     fn test_four_leaves() {
-        let leaves: Vec<Hash> = (0..4u8).map(|i| {
-            let mut h = [0u8; 32];
-            h[0] = i;
-            h
-        }).collect();
+        let leaves: Vec<Hash> = (0..4u8)
+            .map(|i| {
+                let mut h = [0u8; 32];
+                h[0] = i;
+                h
+            })
+            .collect();
 
         let tree = ActivationMerkleTree::build(&leaves);
         assert_eq!(tree.leaf_count, 4);
@@ -278,11 +280,13 @@ mod tests {
     #[test]
     fn test_non_power_of_two_leaves() {
         // 5 leaves → padded to 8
-        let leaves: Vec<Hash> = (0..5u8).map(|i| {
-            let mut h = [0u8; 32];
-            h[0] = i;
-            h
-        }).collect();
+        let leaves: Vec<Hash> = (0..5u8)
+            .map(|i| {
+                let mut h = [0u8; 32];
+                h[0] = i;
+                h
+            })
+            .collect();
 
         let tree = ActivationMerkleTree::build(&leaves);
         assert_eq!(tree.leaf_count, 5);
@@ -296,11 +300,13 @@ mod tests {
 
     #[test]
     fn test_proof_rejects_wrong_root() {
-        let leaves: Vec<Hash> = (0..4u8).map(|i| {
-            let mut h = [0u8; 32];
-            h[0] = i;
-            h
-        }).collect();
+        let leaves: Vec<Hash> = (0..4u8)
+            .map(|i| {
+                let mut h = [0u8; 32];
+                h[0] = i;
+                h
+            })
+            .collect();
 
         let tree = ActivationMerkleTree::build(&leaves);
         let proof = tree.prove(0);
@@ -310,17 +316,21 @@ mod tests {
 
     #[test]
     fn test_different_trees_different_roots() {
-        let leaves_a: Vec<Hash> = (0..4u8).map(|i| {
-            let mut h = [0u8; 32];
-            h[0] = i;
-            h
-        }).collect();
+        let leaves_a: Vec<Hash> = (0..4u8)
+            .map(|i| {
+                let mut h = [0u8; 32];
+                h[0] = i;
+                h
+            })
+            .collect();
 
-        let leaves_b: Vec<Hash> = (10..14u8).map(|i| {
-            let mut h = [0u8; 32];
-            h[0] = i;
-            h
-        }).collect();
+        let leaves_b: Vec<Hash> = (10..14u8)
+            .map(|i| {
+                let mut h = [0u8; 32];
+                h[0] = i;
+                h
+            })
+            .collect();
 
         let tree_a = ActivationMerkleTree::build(&leaves_a);
         let tree_b = ActivationMerkleTree::build(&leaves_b);
@@ -362,12 +372,14 @@ mod tests {
     #[test]
     fn test_80_layer_model() {
         // Simulate an 80-layer model (81 leaves: input + 80 layers)
-        let leaves: Vec<Hash> = (0..81u8).map(|i| {
-            let mut h = [0u8; 32];
-            h[0] = i;
-            h[31] = 255 - i;
-            h
-        }).collect();
+        let leaves: Vec<Hash> = (0..81u8)
+            .map(|i| {
+                let mut h = [0u8; 32];
+                h[0] = i;
+                h[31] = 255 - i;
+                h
+            })
+            .collect();
 
         let tree = ActivationMerkleTree::build(&leaves);
         assert_eq!(tree.leaf_count, 81);
@@ -379,7 +391,11 @@ mod tests {
             let proof = tree.prove(i);
             assert!(verify_proof(&proof, &root), "proof failed for leaf {i}");
             // 81 padded to 128 → log2(128) = 7 siblings
-            assert_eq!(proof.siblings.len(), 7, "expected 7 siblings for 128-leaf tree");
+            assert_eq!(
+                proof.siblings.len(),
+                7,
+                "expected 7 siblings for 128-leaf tree"
+            );
         }
     }
 }

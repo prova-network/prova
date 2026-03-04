@@ -3,8 +3,8 @@
 //! Implements the audit selection, verification flow, and slashing schedule
 //! described in spec/audit-protocol.md.
 
-use std::collections::HashMap;
 use crate::types::*;
+use std::collections::HashMap;
 
 /// Audit configuration parameters.
 #[derive(Debug, Clone)]
@@ -118,7 +118,6 @@ impl AuditLedger {
 
     /// Derive audit seed for an epoch from a drand beacon value.
     pub fn audit_seed(epoch: Epoch, drand_prev: &[u8; 32]) -> [u8; 32] {
-        use std::io::Write;
         let mut hasher = Sha256::new();
         hasher.update(b"prova-audit");
         hasher.update(&epoch.to_le_bytes());
@@ -127,7 +126,12 @@ impl AuditLedger {
     }
 
     /// Check if (commit, auditor) pair is selected for audit this epoch.
-    pub fn is_selected(seed: &[u8; 32], commit_id: CommitId, auditor: &Address, sample_rate: f64) -> bool {
+    pub fn is_selected(
+        seed: &[u8; 32],
+        commit_id: CommitId,
+        auditor: &Address,
+        sample_rate: f64,
+    ) -> bool {
         let mut hasher = Sha256::new();
         hasher.update(seed);
         hasher.update(&commit_id.0.to_le_bytes());
@@ -138,7 +142,12 @@ impl AuditLedger {
     }
 
     /// Create an audit task for a selected (commit, auditor) pair.
-    pub fn create_task(&mut self, commit_id: CommitId, auditor: Address, current_epoch: Epoch) -> AuditId {
+    pub fn create_task(
+        &mut self,
+        commit_id: CommitId,
+        auditor: Address,
+        current_epoch: Epoch,
+    ) -> AuditId {
         let id = AuditId(self.next_id);
         self.next_id += 1;
         let task = AuditTask {
@@ -166,7 +175,11 @@ impl AuditLedger {
     }
 
     /// Auditor submits challenge — roots differ.
-    pub fn submit_challenge(&mut self, audit_id: AuditId, auditor_root: Hash) -> Result<(), AuditError> {
+    pub fn submit_challenge(
+        &mut self,
+        audit_id: AuditId,
+        auditor_root: Hash,
+    ) -> Result<(), AuditError> {
         let task = self.tasks.get_mut(&audit_id).ok_or(AuditError::NotFound)?;
         if task.status != AuditStatus::Pending {
             return Err(AuditError::InvalidState);
@@ -190,8 +203,9 @@ impl AuditLedger {
         task.status = AuditStatus::SlashedProvider;
 
         // Calculate escalated slash
-        let provider = task.auditor; // We need the provider address from the commit, but for now use a helper
-        let prior = self.offenses
+        let _provider = task.auditor; // We need the provider address from the commit, but for now use a helper
+        let prior = self
+            .offenses
             .get(&task.auditor) // placeholder — in real impl, lookup by provider
             .map(|r| r.recent_count(current_epoch, 30 * 2_880)) // 30 days
             .unwrap_or(0);
@@ -211,7 +225,8 @@ impl AuditLedger {
             return Err(AuditError::InvalidState);
         }
         task.status = AuditStatus::SlashedAuditor;
-        let bond_slash = (self.config.challenge_bond as f64 * self.config.slash_challenger) as StakeAmount;
+        let bond_slash =
+            (self.config.challenge_bond as f64 * self.config.slash_challenger) as StakeAmount;
         Ok(bond_slash)
     }
 
@@ -237,7 +252,11 @@ impl AuditLedger {
 
     /// Record an offense for escalation tracking.
     pub fn record_offense(&mut self, provider: Address, epoch: Epoch, amount: StakeAmount) {
-        self.offenses.entry(provider).or_default().offenses.push((epoch, amount));
+        self.offenses
+            .entry(provider)
+            .or_default()
+            .offenses
+            .push((epoch, amount));
     }
 }
 
@@ -320,13 +339,13 @@ mod tests {
         // With rate=1.0, everything should be selected
         let seed = [7u8; 32];
         let auditor = Address::test(1);
-        let all_selected = (0..100)
-            .all(|i| AuditLedger::is_selected(&seed, CommitId(i), &auditor, 1.0));
+        let all_selected =
+            (0..100).all(|i| AuditLedger::is_selected(&seed, CommitId(i), &auditor, 1.0));
         assert!(all_selected);
 
         // With rate=0.0, nothing should be selected
-        let none_selected = (0..100)
-            .any(|i| AuditLedger::is_selected(&seed, CommitId(i), &auditor, 0.0));
+        let none_selected =
+            (0..100).any(|i| AuditLedger::is_selected(&seed, CommitId(i), &auditor, 0.0));
         assert!(!none_selected);
     }
 
@@ -389,7 +408,10 @@ mod tests {
         ledger.submit_pass(aid).unwrap();
         // Can't submit again
         assert_eq!(ledger.submit_pass(aid), Err(AuditError::InvalidState));
-        assert_eq!(ledger.submit_challenge(aid, [0; 32]), Err(AuditError::InvalidState));
+        assert_eq!(
+            ledger.submit_challenge(aid, [0; 32]),
+            Err(AuditError::InvalidState)
+        );
     }
 
     #[test]

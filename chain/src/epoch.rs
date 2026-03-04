@@ -7,11 +7,11 @@
 //! 4. Advance payment channels
 //! 5. Select audit targets
 
-use crate::types::*;
 use crate::commit::CommitStore;
-use crate::dispute::{DisputeArena, DisputePhase};
-use crate::stake::StakeLedger;
+use crate::dispute::DisputeArena;
 use crate::payment::PaymentManager;
+use crate::stake::StakeLedger;
+use crate::types::*;
 
 /// Summary of what happened in one epoch tick.
 #[derive(Debug, Default)]
@@ -106,11 +106,8 @@ impl ChainState {
 
     /// Advance one epoch.
     pub fn tick(&mut self) -> EpochSummary {
-        self.ticker.tick(
-            &mut self.commits,
-            &mut self.stakes,
-            &mut self.payments,
-        )
+        self.ticker
+            .tick(&mut self.commits, &mut self.stakes, &mut self.payments)
     }
 
     /// Current epoch.
@@ -127,8 +124,8 @@ impl ChainState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::*;
     use crate::registry::*;
+    use crate::types::*;
 
     #[test]
     fn test_genesis() {
@@ -215,13 +212,16 @@ mod tests {
         assert!(state.stakes.can_provide(&Address::test(1), 0));
 
         // Open payment channel
-        let ch_id = state.payments.open_channel(
-            Address::test(2), // payer
-            Address::test(1), // provider
-            100_000,
-            1000,
-            0,
-        ).unwrap();
+        let ch_id = state
+            .payments
+            .open_channel(
+                Address::test(2), // payer
+                Address::test(1), // provider
+                100_000,
+                1000,
+                0,
+            )
+            .unwrap();
 
         // Provider commits an inference
         let commit_id = state.commits.publish(

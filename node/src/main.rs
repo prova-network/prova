@@ -1,10 +1,10 @@
 pub mod merkle;
-pub mod runner;
 pub mod participant;
+pub mod runner;
 
-use merkle::{ActivationMerkleTree, verify_proof, hash_tensor, DType};
-use runner::MockRunner;
+use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
 use prova_chain::types::ModelId;
+use runner::MockRunner;
 
 fn main() {
     println!("=== Prova Node — Activation Merkle Tree Demo ===\n");
@@ -17,7 +17,7 @@ fn main() {
     let activation_hashes: Vec<[u8; 32]> = (0..=layer_count as u8)
         .map(|i| {
             // Simulate hash_tensor output for layer i
-            let shape = [1u64, 2048, 4096];
+            let _shape = [1u64, 2048, 4096];
             let fake_data = vec![i; 4]; // Placeholder
             hash_tensor(DType::Fp32, &[1], &fake_data)
         })
@@ -28,7 +28,10 @@ fn main() {
     let root = tree.root();
 
     println!("Tree built:");
-    println!("  Leaves: {} (input + {layer_count} layers)", layer_count + 1);
+    println!(
+        "  Leaves: {} (input + {layer_count} layers)",
+        layer_count + 1
+    );
     println!("  Root:   {}", hex::encode(&root));
     println!();
 
@@ -57,9 +60,14 @@ fn main() {
     let faulty = MockRunner::run_faulty(&model_id, prompt, 32, 21);
     println!("\n  Faulty run (fault at layer 21):");
     println!("  Root:       {}", hex::encode(&faulty.activation_root()));
-    println!("  Roots match: {}", result.activation_root() == faulty.activation_root());
+    println!(
+        "  Roots match: {}",
+        result.activation_root() == faulty.activation_root()
+    );
 
-    let first_diff = result.activation_hashes.iter()
+    let first_diff = result
+        .activation_hashes
+        .iter()
         .zip(faulty.activation_hashes.iter())
         .position(|(a, b)| a != b)
         .unwrap();
@@ -93,7 +101,11 @@ fn simulate_bisection(total_layers: u32) -> u32 {
         let agree = mid < actual_dispute;
         println!(
             "  Round {round}: lo={lo}, hi={hi}, mid={mid} → {}",
-            if agree { "agree (move lo)" } else { "disagree (move hi)" }
+            if agree {
+                "agree (move lo)"
+            } else {
+                "disagree (move hi)"
+            }
         );
 
         if agree {

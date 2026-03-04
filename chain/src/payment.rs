@@ -4,8 +4,8 @@
 //! Payers lock funds in a channel; providers earn per-inference or
 //! per-epoch for storage. Settlement happens on-chain periodically.
 
-use std::collections::HashMap;
 use crate::types::*;
+use std::collections::HashMap;
 
 /// Payment channel state.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -71,6 +71,12 @@ pub struct PaymentManager {
     next_id: u64,
     /// Accumulated network fees (for protocol treasury/burn).
     pub network_fees: StakeAmount,
+}
+
+impl Default for PaymentManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PaymentManager {
@@ -147,7 +153,7 @@ impl PaymentManager {
         }
 
         // Deduct network fee
-        let fee = (channel.rate as u128 * NETWORK_FEE_BPS as u128 / 10000) as StakeAmount;
+        let fee = (channel.rate * NETWORK_FEE_BPS as u128 / 10000) as StakeAmount;
         let provider_payment = channel.rate - fee;
 
         channel.paid += channel.rate;
@@ -213,11 +219,7 @@ impl PaymentManager {
     }
 
     /// Top up an active channel with additional funds.
-    pub fn top_up(
-        &mut self,
-        channel_id: u64,
-        amount: StakeAmount,
-    ) -> Result<(), PaymentError> {
+    pub fn top_up(&mut self, channel_id: u64, amount: StakeAmount) -> Result<(), PaymentError> {
         let channel = self
             .channels
             .get_mut(&channel_id)
@@ -248,7 +250,12 @@ impl PaymentManager {
     pub fn total_locked(&self) -> StakeAmount {
         self.channels
             .values()
-            .filter(|c| matches!(c.state, ChannelState::Active | ChannelState::Settling { .. }))
+            .filter(|c| {
+                matches!(
+                    c.state,
+                    ChannelState::Active | ChannelState::Settling { .. }
+                )
+            })
             .map(|c| c.balance())
             .sum()
     }
@@ -263,8 +270,13 @@ pub enum PaymentError {
     NotActive(u64),
     NotSettling(u64),
     NotParticipant,
-    InsufficientFunds { balance: StakeAmount, required: StakeAmount },
-    SettleWindowOpen { closes_at: Epoch },
+    InsufficientFunds {
+        balance: StakeAmount,
+        required: StakeAmount,
+    },
+    SettleWindowOpen {
+        closes_at: Epoch,
+    },
 }
 
 impl std::fmt::Display for PaymentError {
@@ -278,7 +290,10 @@ impl std::fmt::Display for PaymentError {
             Self::NotSettling(id) => write!(f, "channel {id} is not settling"),
             Self::NotParticipant => write!(f, "not a participant in this channel"),
             Self::InsufficientFunds { balance, required } => {
-                write!(f, "insufficient funds: {balance} available, {required} required")
+                write!(
+                    f,
+                    "insufficient funds: {balance} available, {required} required"
+                )
             }
             Self::SettleWindowOpen { closes_at } => {
                 write!(f, "settlement window open until epoch {closes_at}")

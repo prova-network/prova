@@ -124,3 +124,5 @@
 - Changed: No new commits since last HB (12fae24)
 - Next: Start CHAIN-001 (mocked commit+challenge flow in Rust)
 - Koda: ⚠️ unresponsive (2nd consecutive miss — likely sleeping/offline)
+## 2026-03-04 03:40 CET — SPEC-005
+Built audit protocol: spec + chain/src/audit.rs (10 tests) — random sampling, slashing schedule, escalation, full lifecycle.
