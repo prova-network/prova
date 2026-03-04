@@ -18,7 +18,7 @@
 - [x] CHAIN-002: Stake ledger + slashing — `chain/src/stake.rs` (11 tests)
 - [x] CHAIN-003: Model registry on-chain — `chain/src/registry.rs` (4 tests)
 
-**Total: 93 passing tests, 0 external dependencies**
+**Total: 162 passing tests, 1 external dep (sha2)**
 
 ### P0 — In Progress
 - [ ] EXP-001: Determinism harness on Blackwell [KODA] — Blackwell confirmed ready, harness not yet run
@@ -38,8 +38,9 @@
 
 ### P2 — Later
 - [ ] NODE-006: P2P networking scaffold
-- [ ] CHAIN-006: Block production + consensus
-- [ ] CHAIN-007: Genesis state
+- [x] CHAIN-006: Block production + consensus — `chain/src/block.rs` (37 tests)
+- [x] CHAIN-007: Genesis state — `chain/src/genesis.rs` (14 tests)
+- [ ] SPEC-009: Consensus specification [KESTREL]
 - [ ] OPS-001: Devnet launch script
 - [ ] DOCS-002: Architecture overview diagram
 

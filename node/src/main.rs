@@ -2,6 +2,7 @@ pub mod canonical_cpu;
 pub mod determinism;
 pub mod llamacpp;
 pub mod merkle;
+pub mod network;
 pub mod participant;
 pub mod pdp;
 pub mod runner;
