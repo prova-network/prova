@@ -97,3 +97,5 @@ SPEC-017: Security audit checklist — 73 checks across 8 categories, coverage t
 ## 2026-03-04 08:34 CET
 NODE-025: Fuzz testing harness — 12 property-based tests (no-panic, nonce monotonicity, replay protection, deterministic roots, stress). Commit dc8d3a8.
 2026-03-04 08:39 CET — DOCS-005: Security model documentation (docs/security-model.md). Unified 10KB reference: trust model, consensus, QBP, economics, bridge, RBAC, audit readiness. All P0/P1 tasks complete except Koda (EXP-001) and Kestrel (DOCS-001, SPEC-009).
+## 2026-03-04 08:50 — CHAIN-027: Model marketplace
+Built listing/bidding/discovery system with stake requirements, bid matching, fee collection, capacity tracking, and filtered provider discovery. 17 tests passing.

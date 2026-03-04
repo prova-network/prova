@@ -149,6 +149,19 @@
 - [x] NODE-025: Fuzz testing harness (property-based testing for chain state) — `node/src/fuzz.rs` (12 tests)
 - [x] DOCS-005: Security model documentation — `docs/security-model.md`
 
+## Phase 10 — Model Marketplace & Discovery
+
+### P0 — Active
+- [x] CHAIN-027: Model marketplace (listing, bidding, provider discovery) — `chain/src/marketplace.rs` (17 tests)
+- [ ] NODE-026: Marketplace CLI commands (list, bid, discover) — `node/src/marketplace_cli.rs`
+- [ ] SDK-008: Marketplace client SDK (provider search, bid placement) — `sdk/src/marketplace.rs`
+- [ ] SPEC-018: Marketplace specification — `spec/marketplace.md`
+
+### P1 — Next
+- [ ] CHAIN-028: Auction mechanism (Dutch auction for premium model slots)
+- [ ] NODE-027: Marketplace event indexer (listing/bid/match events)
+- [ ] DOCS-006: Marketplace integration guide
+
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
 |------|----------|--------|---------|-----------|
@@ -189,3 +202,4 @@
 | CHAIN-013 | Capri | ✅ | 05:19 | 05:25 |
 | SPEC-013 | Capri | ✅ | 05:49 | 05:55 |
 | CHAIN-019 | Capri | ✅ | 06:59 | 07:05 |
+| CHAIN-027 | Capri | ✅ | 08:44 | 08:50 |
