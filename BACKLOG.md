@@ -218,6 +218,18 @@
 - [x] SDK-012: Multi-sig client SDK (wallet management, proposal submission) — `sdk/src/multisig.rs` (16 tests)
 - [x] SPEC-023: Account abstraction specification — `spec/account-abstraction.md`
 
+## Phase 17 — API Gateway & External Integration
+
+### P0 — Active
+- [x] NODE-034: HTTP API gateway (auth, rate limiting, routing, webhooks, job lifecycle) — `node/src/api_gateway.rs` (20 tests)
+- [ ] NODE-035: OpenAPI spec generator (auto-generate spec from routes) [NEXT]
+- [ ] SDK-013: API gateway client SDK (key management, inference submission)
+
+### P1 — Next
+- [ ] NODE-036: Webhook delivery engine (retry, backoff, signature verification)
+- [ ] SPEC-024: API gateway specification
+- [ ] DOCS-008: API gateway integration guide
+
 ## Phase 14 — Privacy & Confidential Inference
 
 ### P0 — Active
