@@ -160,7 +160,7 @@
 ### P1 — Next
 - [x] CHAIN-028: Auction mechanism (Dutch auction for premium model slots) — `chain/src/auction.rs` (18 tests)
 - [x] NODE-027: Marketplace event indexer (listing/bid/match events) — `node/src/marketplace_indexer.rs` (19 tests)
-- [ ] DOCS-006: Marketplace integration guide
+- [x] DOCS-006: Marketplace integration guide — `docs/marketplace-integration-guide.md`
 
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
