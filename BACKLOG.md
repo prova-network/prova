@@ -57,7 +57,7 @@
 ### P1 — Next
 - [x] CHAIN-015: Reputation system (EMA scoring, decay, slashing integration) — `chain/src/reputation.rs` (21 tests)
 - [x] NODE-015: Provider auto-pricing (market-adaptive fee adjustment) — `node/src/pricing.rs` (17 tests)
-- [ ] SPEC-013: Security threat model specification
+- [x] SPEC-013: Security threat model specification — `spec/security-threat-model.md` (21 threats, 8 categories)
 
 ## Phase 2 — Integration & Hardening
 
@@ -121,3 +121,4 @@
 | NODE-012 | Capri | ✅ | 05:09 | 05:15 |
 | SPEC-012 | Capri | ✅ | 05:09 | 05:15 |
 | CHAIN-013 | Capri | ✅ | 05:19 | 05:25 |
+| SPEC-013 | Capri | ✅ | 05:49 | 05:55 |
