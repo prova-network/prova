@@ -57,3 +57,5 @@ SPEC-013: Security threat model — 21 threats (consensus, QBP, economics, P2P, 
 ## 2026-03-04 06:04 UTC+1
 NODE-016: Checkpoint submitter (15 tests), SPEC-014: Checkpoint anchoring spec, CHAIN-018: Finality gadget (18 tests)
 - 2026-03-04 06:14 CET | NODE-017: L1 event watcher — finality tracking, reorg detection, 5 event types, 14 tests
+## 2026-03-04 06:19 CET — SPEC-015: Bridge security specification
+10 threat vectors (forged proofs, checkpoint forgery, replay, censorship, bridge drain, L1 reorg, validator rotation), economic security bounds, audit checklist. Committed 54aa83d.

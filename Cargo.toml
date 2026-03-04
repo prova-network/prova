@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "node",
     "chain",
+    "sdk",
 ]
 
 [workspace.package]

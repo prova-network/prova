@@ -335,6 +335,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "prova-sdk"
+version = "0.1.0"
+dependencies = [
+ "prova-chain",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
