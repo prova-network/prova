@@ -113,3 +113,4 @@ Built data availability sampling module with erasure coding, Merkle proofs, mult
 2026-03-04 08:31 UTC — NODE-029: Blob storage backend (chunked storage, GC, disk quotas, LRU eviction, integrity checks, pin/unpin). 17 tests.
 2026-03-04 09:34 CET — SDK-009: Blob upload client with erasure encoding, batch uploads, progress tracking, fee estimation. 19 tests passing.
 Promoted from P1→P0, all Phase 11 P1 tasks except INT-004 now complete.
+2026-03-04 09:39 CET — INT-004: DAS adversarial test suite (19 tests). Withholding, corruption, replay, multi-provider penalty stacking.
