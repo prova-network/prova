@@ -1,3 +1,4 @@
+pub mod llamacpp;
 pub mod merkle;
 pub mod participant;
 pub mod pdp;

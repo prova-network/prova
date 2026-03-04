@@ -14,3 +14,4 @@
 - Koda unresponsive via HTTP (timeout), Kestrel session stale (last active Feb 21)
 - 70 tests passing, 11 commits pushed since sprint start
 - Next: Wait for EXP-001 results, then NODE-005 (real llama.cpp integration)
+- 2026-03-04 03:45 CET — NODE-002: PDP proof engine scaffold (11 tests). Merkle tree, inclusion proofs, challenge derivation, proof generation/verification, miss tracking. Also synced backlog for SPEC-006, CHAIN-004, CI-001, CHAIN-005, SPEC-007.
