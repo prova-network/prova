@@ -15,3 +15,6 @@ pub mod registry;
 pub mod simulation;
 pub mod stake;
 pub mod types;
+
+#[cfg(test)]
+mod integration_test;

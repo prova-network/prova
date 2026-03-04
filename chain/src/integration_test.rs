@@ -43,8 +43,8 @@ mod tests {
             registered_at: state.epoch(),
         };
 
-        state.commits; // touch to ensure state is accessible
-        // Register via the registry field — need to add it to ChainState
+        // Model ID created — registration would go through state.registry
+        // (not yet added to ChainState, but the ID is valid for testing)
         model_id
     }
 
@@ -301,8 +301,8 @@ mod tests {
         // Check balance: 50000 - 10*500 = 45000
         assert_eq!(state.payments.get(ch_id).unwrap().balance(), 45_000);
 
-        // Accumulated fees: 10 * 500 * 0.005 = 25
-        assert_eq!(state.payments.network_fees, 25);
+        // Accumulated fees: 10 * floor(500 * 50 / 10000) = 10 * 2 = 20
+        assert_eq!(state.payments.network_fees, 20);
 
         // Close channel
         state.payments.initiate_close(ch_id, payer, 100).unwrap();
