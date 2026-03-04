@@ -22,6 +22,7 @@ pub mod snapshot_serve;
 pub mod fast_sync;
 pub mod watcher;
 pub mod shutdown;
+pub mod subscriptions;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
 use prova_chain::types::ModelId;
