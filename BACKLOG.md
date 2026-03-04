@@ -203,8 +203,8 @@
 
 ### P1 — Next
 - [x] NODE-033: Multi-sig CLI commands (create wallet, propose, approve, execute) — `node/src/multisig_cli.rs` (36 tests)
-- [ ] SDK-012: Multi-sig client SDK (wallet management, proposal submission)
-- [ ] SPEC-023: Account abstraction specification
+- [x] SDK-012: Multi-sig client SDK (wallet management, proposal submission) — `sdk/src/multisig.rs` (16 tests)
+- [x] SPEC-023: Account abstraction specification — `spec/account-abstraction.md`
 
 ## Phase 14 — Privacy & Confidential Inference
 
