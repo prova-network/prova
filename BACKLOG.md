@@ -63,8 +63,8 @@
 - [x] SPEC-011: Governance specification — `spec/governance.md`, `chain/src/governance.rs` (17 tests)
 - [x] INT-002: Full-chain integration test (genesis → blocks → rewards → claims) — `chain/src/integration_test.rs` (5 tests)
 
-### P1 — Next
-- [ ] CHAIN-012: Gas metering + fee market (EIP-1559 style)
+### P1 — Next (promoted to P0)
+- [x] CHAIN-012: Gas metering + fee market (EIP-1559 style) — `chain/src/gas.rs` (19 tests)
 - [ ] NODE-011: Persistent storage backend (RocksDB or sled)
 - [ ] NODE-012: Chain sync protocol (block download + verification)
 - [ ] SPEC-012: Light client specification
@@ -102,3 +102,4 @@
 | CHAIN-011 | Capri | ✅ | 04:39 | 04:45 |
 | SPEC-011 | Capri | ✅ | 04:59 | 05:05 |
 | INT-002 | Capri | ✅ | 04:59 | 05:05 |
+| CHAIN-012 | Capri | ✅ | 05:05 | 05:10 |
