@@ -31,6 +31,7 @@ pub mod marketplace_indexer;
 pub mod das_validator;
 pub mod blob_store;
 pub mod delegation_cli;
+pub mod confidential_cli;
 pub mod validator_cli;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};

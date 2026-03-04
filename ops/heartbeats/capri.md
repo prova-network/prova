@@ -125,3 +125,4 @@ Promoted from P1→P0, all Phase 11 P1 tasks except INT-004 now complete.
 2026-03-04 10:14 CET — NODE-028b: Validator CLI (register/exit/withdraw/status/list/stake-add/epoch) + MockValidatorRpc backend. 42 tests.
 Promoted from P1 → P0 (all original P0 tasks complete).
 2026-03-04 10:19 CET — SPEC-021: Validator set specification (lifecycle, hybrid scoring, epoch rotation, security analysis, wire format). Last unchecked non-assigned task in backlog.
+2026-03-04 10:24 CET — CHAIN-035: Confidential inference commit-reveal scheme (15 tests). Opens Phase 14.
