@@ -1,0 +1,71 @@
+//! Core types for the Prova chain layer.
+
+use std::fmt;
+
+/// A 32-byte hash (SHA-256).
+pub type Hash = [u8; 32];
+
+/// Epoch number (block height).
+pub type Epoch = u64;
+
+/// Address — simplified as a 20-byte identifier.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Address(pub [u8; 20]);
+
+impl Address {
+    pub fn new(bytes: [u8; 20]) -> Self {
+        Self(bytes)
+    }
+
+    /// Create a test address from a single byte (for testing).
+    pub fn test(id: u8) -> Self {
+        let mut bytes = [0u8; 20];
+        bytes[0] = id;
+        Self(bytes)
+    }
+}
+
+impl fmt::Display for Address {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x")?;
+        for b in &self.0[..4] {
+            write!(f, "{b:02x}")?;
+        }
+        write!(f, "…")
+    }
+}
+
+/// Model identifier — hash of the model manifest.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ModelId(pub Hash);
+
+/// Unique inference commit identifier.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct CommitId(pub u64);
+
+impl fmt::Display for CommitId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "commit-{}", self.0)
+    }
+}
+
+/// Architecture group for determinism guarantees.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ArchGroup {
+    /// e.g., "nvidia-sm89-int8" or "nvidia-sm90-int8"
+    pub identifier: String,
+}
+
+impl ArchGroup {
+    pub fn new(id: &str) -> Self {
+        Self {
+            identifier: id.to_string(),
+        }
+    }
+}
+
+/// Stake amount in smallest denomination.
+pub type StakeAmount = u128;
+
+/// Duration in epochs.
+pub type EpochDuration = u64;
