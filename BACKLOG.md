@@ -167,8 +167,8 @@
 ### P0 — Active
 - [x] CHAIN-029: Data availability sampling (DAS) engine (erasure coding, Merkle proofs, challenge/response, penalties) — `chain/src/das.rs` (15 tests)
 - [x] NODE-028: DAS validator (automatic sampling, proof requests over P2P) — `node/src/das_validator.rs` (15 tests)
-- [ ] SPEC-019: Data availability specification — `spec/data-availability.md`
-- [ ] CHAIN-030: Blob transaction type (submit blob data, reference from inference commits) — `chain/src/blob_tx.rs`
+- [x] SPEC-019: Data availability specification — `spec/data-availability.md`
+- [x] CHAIN-030: Blob transaction type (submit blob data, reference from inference commits) — `chain/src/blob_tx.rs` (17 tests)
 
 ### P1 — Next
 - [ ] NODE-029: Blob storage backend (chunked storage, GC, disk quotas) — `node/src/blob_store.rs`
