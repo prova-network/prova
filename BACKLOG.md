@@ -180,7 +180,7 @@
 - [x] CHAIN-034: Validator set manager (registration, exit, ejection, epoch rotation, hybrid scoring) — `chain/src/validator_set.rs` (16 tests)
 
 ### P1 — Next
-- [ ] NODE-028b: Validator CLI commands (register, exit, status)
+- [x] NODE-028b: Validator CLI commands (register, exit, status, list, stake, epoch) — `node/src/validator_cli.rs` (42 tests)
 - [ ] SPEC-021: Validator set specification
 
 ## Phase 11 — Data Availability & Blob Storage
