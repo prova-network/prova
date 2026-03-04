@@ -1,3 +1,4 @@
+pub mod determinism;
 pub mod llamacpp;
 pub mod merkle;
 pub mod participant;
