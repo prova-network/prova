@@ -145,7 +145,7 @@
 - [x] SPEC-017: Security audit checklist specification — `spec/security-audit-checklist.md` (73 checks)
 
 ### P1 — Next
-- [ ] CHAIN-026: Formal invariant checker (balance conservation, stake consistency)
+- [x] CHAIN-026: Formal invariant checker (balance conservation, stake consistency, nonce monotonicity, reward conservation, job uniqueness) — `chain/src/invariants.rs` (16 tests)
 - [ ] NODE-025: Fuzz testing harness (property-based testing for chain state)
 - [ ] DOCS-005: Security model documentation
 

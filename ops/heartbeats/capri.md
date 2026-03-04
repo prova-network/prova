@@ -93,3 +93,4 @@ Built event schema spec (27 canonical signatures, ABI encoding, versioning) + hi
 2026-03-04 07:21 UTC — NODE-024: TLS transport layer (self-signed certs, mTLS handshake, pinning, revocation, rotation) — 16 tests passing
 ## 2026-03-04 08:24 CET
 SPEC-017: Security audit checklist — 73 checks across 8 categories, coverage targets, fuzz roadmap, engagement plan.
+2026-03-04 08:29 — CHAIN-026: Formal invariant checker (5 invariants, 16 tests). Balance conservation, stake consistency, nonce monotonicity, reward conservation, job uniqueness.
