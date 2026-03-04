@@ -6,6 +6,7 @@ pub mod merkle;
 pub mod network;
 pub mod participant;
 pub mod pdp;
+pub mod rpc;
 pub mod runner;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
