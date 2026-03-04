@@ -37,3 +37,6 @@ Built CLI scaffold with hand-rolled arg parser (run/status/account/tx subcommand
 Built tx executor with 7 tx types (transfer, stake, unstake, register-model, inference-commit, claim-reward, pay-inference-fee), gas metering, nonce enforcement, atomic rollback, batch execution. 17 tests.
 ## 2026-03-04 04:44 CET — NODE-010: Wallet + key management
 Built Ed25519 signing, encrypted keystore, keyring, signed transactions. 16 tests passing.
+
+## 2026-03-04 05:10 CET
+SPEC-011 + INT-002: Fixed full-chain integration tests (5 tests, matched real module APIs) + governance spec verified. CHAIN-012: EIP-1559 fee market with dynamic base fee, surge pricing, calldata metering (19 tests). Total: 192 passing.
