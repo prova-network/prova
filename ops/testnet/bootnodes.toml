@@ -1,0 +1,66 @@
+# Prova Testnet Boot Nodes
+# These nodes are always-on and serve as initial peer discovery points.
+# Format: multiaddr-style addresses (will use libp2p when transport is real)
+
+[[bootnodes]]
+id = "boot-1"
+label = "EU-West (Amsterdam)"
+peer_id = "12D3KooWBoot1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+addrs = [
+    "/dns4/boot1.testnet.prova.network/tcp/9000",
+    "/dns4/boot1.testnet.prova.network/udp/9000/quic-v1",
+]
+validator_addr = "prova1val1000000000000000000000000000"
+region = "eu-west"
+
+[[bootnodes]]
+id = "boot-2"
+label = "US-East (Virginia)"
+peer_id = "12D3KooWBoot2BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+addrs = [
+    "/dns4/boot2.testnet.prova.network/tcp/9000",
+    "/dns4/boot2.testnet.prova.network/udp/9000/quic-v1",
+]
+validator_addr = "prova1val2000000000000000000000000000"
+region = "us-east"
+
+[[bootnodes]]
+id = "boot-3"
+label = "AP-Southeast (Singapore)"
+peer_id = "12D3KooWBoot3CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+addrs = [
+    "/dns4/boot3.testnet.prova.network/tcp/9000",
+    "/dns4/boot3.testnet.prova.network/udp/9000/quic-v1",
+]
+validator_addr = "prova1val3000000000000000000000000000"
+region = "ap-southeast"
+
+[[bootnodes]]
+id = "boot-4"
+label = "US-West (Oregon)"
+peer_id = "12D3KooWBoot4DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+addrs = [
+    "/dns4/boot4.testnet.prova.network/tcp/9000",
+    "/dns4/boot4.testnet.prova.network/udp/9000/quic-v1",
+]
+validator_addr = "prova1val4000000000000000000000000000"
+region = "us-west"
+
+[[bootnodes]]
+id = "boot-5"
+label = "EU-Central (Frankfurt)"
+peer_id = "12D3KooWBoot5EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+addrs = [
+    "/dns4/boot5.testnet.prova.network/tcp/9000",
+    "/dns4/boot5.testnet.prova.network/udp/9000/quic-v1",
+]
+validator_addr = "prova1val5000000000000000000000000000"
+region = "eu-central"
+
+# ── Network Parameters ───────────────────────────────────────────────────────
+[network]
+min_peers = 3
+max_peers = 50
+gossip_interval_ms = 500
+connection_timeout_secs = 10
+ping_interval_secs = 30

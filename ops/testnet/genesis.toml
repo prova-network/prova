@@ -1,0 +1,91 @@
+# Prova Testnet Genesis Configuration
+# Generated: 2026-03-04
+# Network: prova-testnet-1
+
+[chain]
+chain_id = "prova-testnet-1"
+genesis_time = 1741046400  # 2025-03-04T00:00:00Z (epoch anchor)
+total_supply = 1_000_000_000_000  # 1T PROVA (micro-units)
+epoch_duration_secs = 30
+challenge_window = 240  # 240 epochs = 2 hours
+network_fee_bps = 50  # 0.5%
+storage_reward_bps = 5000  # 50/50 storage-compute split
+block_reward = 380  # ~380 PROVA per epoch
+
+[staking]
+min_provider_stake = 10_000_000
+min_challenger_stake = 5_000_000
+
+# ── Initial Allocations ─────────────────────────────────────────────────────
+# Faucet: 50% of supply for testnet distribution
+# Foundation: 20% for grants, development, audits
+# Boot validators (5): 5% each = 25% total
+# Community reserve: 5%
+
+[[allocations]]
+label = "faucet"
+address = "prova1faucet000000000000000000000000"
+amount = 500_000_000_000
+
+[[allocations]]
+label = "foundation"
+address = "prova1foundation0000000000000000000"
+amount = 200_000_000_000
+
+[[allocations]]
+label = "boot-validator-1"
+address = "prova1val1000000000000000000000000000"
+amount = 50_000_000_000
+
+[[allocations]]
+label = "boot-validator-2"
+address = "prova1val2000000000000000000000000000"
+amount = 50_000_000_000
+
+[[allocations]]
+label = "boot-validator-3"
+address = "prova1val3000000000000000000000000000"
+amount = 50_000_000_000
+
+[[allocations]]
+label = "boot-validator-4"
+address = "prova1val4000000000000000000000000000"
+amount = 50_000_000_000
+
+[[allocations]]
+label = "boot-validator-5"
+address = "prova1val5000000000000000000000000000"
+amount = 50_000_000_000
+
+[[allocations]]
+label = "community-reserve"
+address = "prova1community00000000000000000000"
+amount = 50_000_000_000
+
+# ── Pre-registered Models ────────────────────────────────────────────────────
+# These models are available from genesis for immediate inference testing.
+
+[[models]]
+name = "llama-7b-q8"
+layer_count = 32
+arch_group = "nvidia-sm89-int8"
+owner = "foundation"
+
+[[models]]
+name = "mistral-7b-q8"
+layer_count = 32
+arch_group = "nvidia-sm89-int8"
+owner = "foundation"
+
+# ── Protocol Parameters ──────────────────────────────────────────────────────
+
+[gas]
+base_fee = 100
+max_block_gas = 30_000_000
+elasticity_multiplier = 2
+target_utilization_bps = 5000  # 50% target
+
+[governance]
+proposal_threshold = 100_000_000  # 100M PROVA to propose
+voting_period_epochs = 14400  # ~5 days
+quorum_bps = 1000  # 10% quorum
