@@ -83,3 +83,6 @@ Testnet genesis config (genesis.toml, bootnodes.toml) + loader with 16 validatio
 2026-03-04 07:49 CET — CHAIN-023: Receipt storage with Merkle proof-of-inclusion. TxReceipt, BlockReceiptRecord, ReceiptStore, MerkleProof generation/verification, pruning. 16 tests.
 ## 2026-03-04 07:54 CET — SDK-006: Event subscription client
 Built EventClient with realtime/replay/historical modes, EventCache with LRU eviction, positional topic filtering, backpressure, disconnect handling. 14 tests passing.
+
+## 2026-03-04 07:59 CET
+NODE-023: Block explorer API — indexed store, paginated block/tx/event/account queries, event filtering, chain stats. 19 tests.
