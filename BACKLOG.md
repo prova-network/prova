@@ -158,7 +158,7 @@
 - [x] SPEC-018: Marketplace specification — `spec/marketplace.md`
 
 ### P1 — Next
-- [ ] CHAIN-028: Auction mechanism (Dutch auction for premium model slots)
+- [x] CHAIN-028: Auction mechanism (Dutch auction for premium model slots) — `chain/src/auction.rs` (18 tests)
 - [ ] NODE-027: Marketplace event indexer (listing/bid/match events)
 - [ ] DOCS-006: Marketplace integration guide
 

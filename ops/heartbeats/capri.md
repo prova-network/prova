@@ -100,3 +100,6 @@ NODE-025: Fuzz testing harness — 12 property-based tests (no-panic, nonce mono
 ## 2026-03-04 08:50 — CHAIN-027: Model marketplace
 Built listing/bidding/discovery system with stake requirements, bid matching, fee collection, capacity tracking, and filtered provider discovery. 17 tests passing.
 2026-03-04T08:49 CET | NODE-026: Marketplace CLI — 7 subcommands (list/bid/discover/show/create/deactivate/my-listings), parser + formatters, 37 tests
+## 2026-03-04 08:54 CET
+SDK-008: Marketplace client SDK (17 tests) + SPEC-018: Marketplace specification. Phase 10 P0 complete.
+- 2026-03-04 08:59 CET — CHAIN-028: Dutch auction for premium model slots (18 tests). Linear price decay, anti-snipe guard, revenue tracking.
