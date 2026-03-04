@@ -47,3 +47,4 @@ SPEC-011 + INT-002: Fixed full-chain integration tests (5 tests, matched real mo
 2026-03-04 05:24 — NODE-013: Job executor with worker loop, retry queue, graceful shutdown, InferenceBackend trait. 11 tests, committed 7b22b16.
 - 2026-03-04 05:29 — CHAIN-014: SLA enforcement with quadratic penalty curves, 3 tiers, 4 violation types, slashing integration (14 tests)
 2026-03-04T05:34 | NODE-014: Metrics & telemetry — Counter/Gauge/Histogram/Timer/Registry + NodeMetrics presets, Prometheus text exposition, 15 tests passing
+2026-03-04 04:41 UTC — INT-003: Adversarial scheduler tests (19 tests: byzantine drops, deadline gaming, sybil, griefing, capacity hoarding, SLA cascade, price manipulation)

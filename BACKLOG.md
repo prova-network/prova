@@ -55,7 +55,7 @@
 - [x] INT-003: Adversarial scheduler test (byzantine providers, deadline gaming) — `chain/src/adversarial_test.rs` (19 tests)
 
 ### P1 — Next
-- [ ] CHAIN-015: Reputation system (EMA scoring, decay, slashing integration)
+- [x] CHAIN-015: Reputation system (EMA scoring, decay, slashing integration) — `chain/src/reputation.rs` (21 tests)
 - [ ] NODE-015: Provider auto-pricing (market-adaptive fee adjustment)
 - [ ] SPEC-013: Security threat model specification
 
