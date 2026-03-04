@@ -51,7 +51,7 @@
 - [x] CHAIN-013: Job scheduler (inference request routing, assignment, cancellation, timeout) — `chain/src/scheduler.rs` (16 tests)
 - [x] NODE-013: Job executor (worker loop: poll scheduler, run inference, deliver result) — `node/src/executor.rs` (11 tests)
 - [x] CHAIN-014: Service-level agreements (SLA enforcement, penalty curves) — `chain/src/sla.rs` (14 tests)
-- [ ] NODE-014: Metrics & telemetry (Prometheus-style counters, histograms)
+- [x] NODE-014: Metrics & telemetry (Prometheus-style counters, histograms) — `node/src/metrics.rs` (15 tests)
 - [ ] INT-003: Adversarial scheduler test (byzantine providers, deadline gaming)
 
 ### P1 — Next
