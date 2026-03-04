@@ -195,6 +195,15 @@
 - [x] SIM-005: Adversarial network scenarios (eclipse attacks, message flooding) — `chain/src/adversarial_net.rs` (21 tests)
 - [x] DOCS-007: Network simulation guide — `docs/network-simulation-guide.md`
 
+## Phase 18 — Performance Benchmarking
+
+### P0 — Active
+- [x] BENCH-001: Performance benchmarking harness (runner, suite, regression detection, 6 subsystem benchmarks) — `chain/src/benchmark.rs` (16 tests)
+
+### P1 — Next
+- [ ] BENCH-002: CI benchmark regression gate (run benchmarks in CI, fail on regression)
+- [ ] BENCH-003: Historical benchmark tracking (store results per commit, trend analysis)
+
 ## Phase 11 — Data Availability & Blob Storage
 
 ### P0 — Active
