@@ -153,7 +153,7 @@
 
 ### P0 — Active
 - [x] CHAIN-027: Model marketplace (listing, bidding, provider discovery) — `chain/src/marketplace.rs` (17 tests)
-- [ ] NODE-026: Marketplace CLI commands (list, bid, discover) — `node/src/marketplace_cli.rs`
+- [x] NODE-026: Marketplace CLI commands (list, bid, discover) — `node/src/marketplace_cli.rs` (37 tests)
 - [ ] SDK-008: Marketplace client SDK (provider search, bid placement) — `sdk/src/marketplace.rs`
 - [ ] SPEC-018: Marketplace specification — `spec/marketplace.md`
 
