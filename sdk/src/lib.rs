@@ -14,6 +14,7 @@ pub mod blob_client;
 pub mod delegation;
 pub mod confidential;
 pub mod multisig;
+pub mod api_gateway_client;
 
 use prova_chain::types::{Address, Epoch, Hash, ModelId};
 use prova_chain::scheduler::{JobId, JobRequest};
