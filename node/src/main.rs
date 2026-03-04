@@ -4,6 +4,7 @@ pub mod determinism;
 pub mod devnet;
 pub mod llamacpp;
 pub mod merkle;
+pub mod multinode;
 pub mod network;
 pub mod participant;
 pub mod pdp;
