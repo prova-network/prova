@@ -67,3 +67,5 @@ Built RpcClient<T: Transport> with pluggable transport, typed methods for all pr
 2026-03-04T06:44 CET — SDK-005: Rate limiting & retry logic (RetryPolicy, RateLimiter, ResilientTransport) — 17 tests passing
 2026-03-04 06:49 CET — DOCS-003: SDK usage guide & examples (docs/sdk-guide.md). Covers all 5 SDK modules: client, RPC, wallet, retry, WASM. All non-assigned tasks complete.
 - 2026-03-04 06:54 CET — NODE-018: Configuration manager (TOML parsing, 7 config sections, defaults, validation, env overrides, roundtrip serialization) — 24 tests
+## 2026-03-04 06:59 UTC+1 — Capri
+CHAIN-019: State snapshot system — chunked export/import with SHA-256 integrity verification, streaming importer, full restore. 20 tests. Phase 7 (Testnet Readiness) created.

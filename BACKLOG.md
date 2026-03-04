@@ -109,6 +109,20 @@
 - [x] SDK-005: Rate limiting & retry logic — `sdk/src/retry.rs` (17 tests)
 - [x] DOCS-003: SDK usage guide & examples — `docs/sdk-guide.md`
 
+## Phase 7 — Testnet Readiness
+
+### P0 — Active
+- [x] CHAIN-019: State snapshot system (chunked export/import, integrity verification, streaming importer) — `chain/src/snapshot.rs` (20 tests)
+- [ ] NODE-019: Snapshot serving over P2P (advertise snapshots, serve chunks on request)
+- [ ] CHAIN-020: State pruning (retain last N snapshots, garbage collect old blocks)
+- [ ] NODE-020: Fast sync mode (download snapshot instead of replaying blocks)
+- [ ] OPS-002: Testnet genesis config + boot nodes
+
+### P1 — Next
+- [ ] CHAIN-021: Protocol upgrade mechanism (fork scheduling, version negotiation)
+- [ ] NODE-021: Graceful shutdown + state persistence
+- [ ] DOCS-004: Testnet operator guide
+
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
 |------|----------|--------|---------|-----------|
@@ -148,3 +162,4 @@
 | SPEC-012 | Capri | ✅ | 05:09 | 05:15 |
 | CHAIN-013 | Capri | ✅ | 05:19 | 05:25 |
 | SPEC-013 | Capri | ✅ | 05:49 | 05:55 |
+| CHAIN-019 | Capri | ✅ | 06:59 | 07:05 |
