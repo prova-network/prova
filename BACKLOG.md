@@ -167,7 +167,7 @@
 ### P0 — Active
 - [x] CHAIN-031: Delegation system (delegate/undelegate, unbonding, commission, redelegation, auto-compound, slash propagation) — `chain/src/delegation.rs` (18 tests)
 - [x] CHAIN-032: Liquid staking tokens (staking derivatives, mint/burn on delegate/undelegate) — `chain/src/liquid_staking.rs` (15 tests)
-- [ ] NODE-030: Delegation CLI commands (delegate, undelegate, redelegate, rewards)
+- [x] NODE-030: Delegation CLI commands (delegate, undelegate, redelegate, rewards) — `node/src/delegation_cli.rs` (31 tests)
 
 ### P1 — Next
 - [ ] SDK-010: Delegation client SDK (stake management, reward queries)
