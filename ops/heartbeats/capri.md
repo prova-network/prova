@@ -21,3 +21,5 @@ Built LlamaCppRunner: real llama.cpp activation capture integration with dump fi
 ## 2026-03-04 03:54 — EXP-003: CPU canonical verification path
 Fixed-point Q16.16 GEMM, CanonicalVerifier for dispute adjudication, 18 tests passing. Promoted from P1→P0.
 2026-03-04 03:59 CET — NODE-006: P2P networking scaffold (Kademlia DHT + gossipsub router + NetworkNode). 13 tests passing.
+## 2026-03-04 04:10 CET — Capri
+DOCS-002: Completed architecture overview — added streaming payments flow, audit protocol lifecycle, and module dependency graph. Committed 118290b.

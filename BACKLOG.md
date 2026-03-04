@@ -42,7 +42,7 @@
 - [x] CHAIN-007: Genesis state — `chain/src/genesis.rs` (14 tests)
 - [ ] SPEC-009: Consensus specification [KESTREL]
 - [x] OPS-001: Devnet simulation — `node/src/devnet.rs` (5 tests)
-- [ ] DOCS-002: Architecture overview diagram
+- [x] DOCS-002: Architecture overview diagram — `docs/architecture.md` (payments, audit, dependency graph added)
 
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
@@ -66,3 +66,4 @@
 | NODE-002 | Capri | ✅ | 03:39 | 03:45 |
 | DOCS-001 | Kestrel | 🔄 | 03:28 | — |
 | EXP-002 | Capri | ✅ | 03:49 | 03:55 |
+| DOCS-002 | Capri | ✅ | 04:04 | 04:10 |
