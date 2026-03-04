@@ -4,6 +4,8 @@
 //! interaction: constructing job requests, signing transactions,
 //! polling for results, and verifying activation proofs.
 
+pub mod rpc_client;
+
 use prova_chain::types::{Address, Epoch, Hash, ModelId};
 use prova_chain::scheduler::{JobId, JobRequest};
 use prova_chain::commit::InferenceCommit;
