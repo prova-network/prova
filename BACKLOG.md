@@ -30,7 +30,7 @@
 
 ### P1 — Next
 - [x] EXP-002: TensorRT INT8 cross-architecture determinism test — `node/src/determinism.rs` (12 tests)
-- [ ] EXP-003: CPU canonical verification path test
+- [x] EXP-003: CPU canonical verification path test — `node/src/canonical_cpu.rs` (18 tests)
 - [x] CI-001: CI pipeline (build + test) — `.github/workflows/ci.yml`
 - [x] NODE-005: Real llama.cpp integration (activation capture via hook) — `node/src/llamacpp.rs` (8 tests)
 - [x] CHAIN-005: Epoch ticker + state transitions — `chain/src/epoch.rs`
