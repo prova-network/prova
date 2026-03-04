@@ -133,8 +133,8 @@
 
 ### P1 — Next
 - [x] NODE-023: Block explorer API (blocks, txs, events, accounts) — `node/src/explorer.rs` (19 tests)
-- [ ] SPEC-016: Event schema specification (canonical event signatures, ABI encoding)
-- [ ] SDK-007: Historical event replay & caching
+- [x] SPEC-016: Event schema specification — `spec/event-schema.md`
+- [x] SDK-007: Historical event replay & caching — `sdk/src/event_replay.rs` (16 tests)
 
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
