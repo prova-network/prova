@@ -78,3 +78,4 @@ Testnet genesis config (genesis.toml, bootnodes.toml) + loader with 16 validatio
 2026-03-04 06:26 UTC — CHAIN-021: Protocol upgrade mechanism (fork scheduling, version negotiation, stake-weighted signaling, emergency activation). 17 tests.
 2026-03-04T07:29Z — NODE-021: Graceful shutdown + state persistence. ShutdownCoordinator with priority draining, checkpoint serialize/deserialize, signal handling. 18 tests passing.
 - 2026-03-04 07:34 CET — DOCS-004: Testnet operator guide (build/configure/run/monitor/troubleshoot, 295 lines). All backlog tasks complete except Koda (EXP-001) and Kestrel (DOCS-001, SPEC-009).
+2026-03-04 07:41 CET — CHAIN-022: Event log system (emit, Merkle receipt roots, multi-index queries). 15 tests. Koda healthy — sentinel-rs + determinism harness work ongoing.

@@ -123,6 +123,19 @@
 - [x] NODE-021: Graceful shutdown + state persistence — `node/src/shutdown.rs` (18 tests)
 - [x] DOCS-004: Testnet operator guide — `docs/testnet-operator-guide.md`
 
+## Phase 8 — Observability & Indexing
+
+### P0 — Active
+- [x] CHAIN-022: Event log system (structured emission, Merkle receipts, indexed queries) — `chain/src/events.rs` (15 tests)
+- [ ] NODE-022: Event subscription engine (WebSocket push, filter subscriptions)
+- [ ] CHAIN-023: Receipt storage (persist receipts alongside blocks, proof-of-inclusion)
+- [ ] SDK-006: Event subscription client (subscribe, filter, replay)
+
+### P1 — Next
+- [ ] NODE-023: Block explorer API (blocks, txs, events, accounts)
+- [ ] SPEC-016: Event schema specification (canonical event signatures, ABI encoding)
+- [ ] SDK-007: Historical event replay & caching
+
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
 |------|----------|--------|---------|-----------|
