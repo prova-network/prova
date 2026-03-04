@@ -48,6 +48,7 @@ pub mod validator_set;
 pub mod confidential;
 pub mod zk_verifier;
 pub mod multisig;
+pub mod network_sim;
 
 #[cfg(test)]
 mod integration_test;

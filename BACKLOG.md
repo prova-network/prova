@@ -183,6 +183,18 @@
 - [x] NODE-028b: Validator CLI commands (register, exit, status, list, stake, epoch) — `node/src/validator_cli.rs` (42 tests)
 - [x] SPEC-021: Validator set specification — `spec/validator-set.md`
 
+## Phase 16 — Network Simulation & Chaos Testing
+
+### P0 — Active
+- [x] SIM-001: Network simulator (N-node sim, latency, partitions, crash/restart, lossy links, block propagation) — `chain/src/network_sim.rs` (17 tests)
+- [ ] SIM-002: Chaos scenario runner (scripted failure sequences, convergence assertions)
+- [ ] SIM-003: Load test harness (throughput measurement, bottleneck detection)
+
+### P1 — Next
+- [ ] SIM-004: Visualization output (JSON trace for timeline rendering)
+- [ ] SIM-005: Adversarial network scenarios (eclipse attacks, message flooding)
+- [ ] DOCS-007: Network simulation guide
+
 ## Phase 11 — Data Availability & Blob Storage
 
 ### P0 — Active
