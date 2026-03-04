@@ -56,7 +56,7 @@
 
 ### P1 — Next
 - [x] CHAIN-015: Reputation system (EMA scoring, decay, slashing integration) — `chain/src/reputation.rs` (21 tests)
-- [ ] NODE-015: Provider auto-pricing (market-adaptive fee adjustment)
+- [x] NODE-015: Provider auto-pricing (market-adaptive fee adjustment) — `node/src/pricing.rs` (17 tests)
 - [ ] SPEC-013: Security threat model specification
 
 ## Phase 2 — Integration & Hardening
