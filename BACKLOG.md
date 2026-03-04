@@ -171,7 +171,7 @@
 - [x] CHAIN-030: Blob transaction type (submit blob data, reference from inference commits) — `chain/src/blob_tx.rs` (17 tests)
 
 ### P1 — Next
-- [ ] NODE-029: Blob storage backend (chunked storage, GC, disk quotas) — `node/src/blob_store.rs`
+- [x] NODE-029: Blob storage backend (chunked storage, GC, disk quotas) — `node/src/blob_store.rs` (17 tests)
 - [ ] SDK-009: Blob upload client (erasure encode + submit) — `sdk/src/blob_client.rs`
 - [ ] INT-004: DAS adversarial test (withholding attacks, partial responses) — `chain/src/das_adversarial_test.rs`
 
