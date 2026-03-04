@@ -56,3 +56,4 @@ SPEC-013: Security threat model — 21 threats (consensus, QBP, economics, P2P, 
 - **2026-03-04 05:59** — CHAIN-017: Cross-chain bridge message format. Outbox/Inbox with Merkle state proofs, 6 payload types, nonce ordering, TTL expiry, replay protection. 20 tests.
 ## 2026-03-04 06:04 UTC+1
 NODE-016: Checkpoint submitter (15 tests), SPEC-014: Checkpoint anchoring spec, CHAIN-018: Finality gadget (18 tests)
+- 2026-03-04 06:14 CET | NODE-017: L1 event watcher — finality tracking, reorg detection, 5 event types, 14 tests
