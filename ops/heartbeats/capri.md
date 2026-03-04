@@ -105,3 +105,4 @@ SDK-008: Marketplace client SDK (17 tests) + SPEC-018: Marketplace specification
 - 2026-03-04 08:59 CET — CHAIN-028: Dutch auction for premium model slots (18 tests). Linear price decay, anti-snipe guard, revenue tracking.
 ## 2026-03-04 09:04 — NODE-027: Marketplace event indexer
 Promoted from P1, built materialized views for listing/bid/match/auction events with 19 tests. Cursor pagination, price history, multi-model isolation.
+2026-03-04 09:09 — DOCS-006: Marketplace integration guide (client/provider quickstart, auction, events, indexer, security)
