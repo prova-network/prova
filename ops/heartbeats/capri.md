@@ -111,3 +111,5 @@ Built data availability sampling module with erasure coding, Merkle proofs, mult
 2026-03-04 09:19 — NODE-028: DAS validator — automatic sampling, P2P proof requests, provider reliability stats, retry/failure handling. 15 tests.
 2026-03-04 09:24 — SPEC-019 + CHAIN-030: DA spec (erasure coding, DAS protocol, blob fee market, security) + blob transaction engine with EIP-1559 fees, pruning, DAS integration (17 tests)
 2026-03-04 08:31 UTC — NODE-029: Blob storage backend (chunked storage, GC, disk quotas, LRU eviction, integrity checks, pin/unpin). 17 tests.
+2026-03-04 09:34 CET — SDK-009: Blob upload client with erasure encoding, batch uploads, progress tracking, fee estimation. 19 tests passing.
+Promoted from P1→P0, all Phase 11 P1 tasks except INT-004 now complete.
