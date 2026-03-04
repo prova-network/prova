@@ -69,3 +69,4 @@ Built RpcClient<T: Transport> with pluggable transport, typed methods for all pr
 - 2026-03-04 06:54 CET — NODE-018: Configuration manager (TOML parsing, 7 config sections, defaults, validation, env overrides, roundtrip serialization) — 24 tests
 ## 2026-03-04 06:59 UTC+1 — Capri
 CHAIN-019: State snapshot system — chunked export/import with SHA-256 integrity verification, streaming importer, full restore. 20 tests. Phase 7 (Testnet Readiness) created.
+2026-03-04 07:04 CET — NODE-019: Snapshot serving over P2P (SnapshotServer, SnapshotDownload, RateLimiter, manifest verification, 19 tests)
