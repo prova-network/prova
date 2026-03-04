@@ -162,6 +162,19 @@
 - [x] NODE-027: Marketplace event indexer (listing/bid/match events) — `node/src/marketplace_indexer.rs` (19 tests)
 - [x] DOCS-006: Marketplace integration guide — `docs/marketplace-integration-guide.md`
 
+## Phase 11 — Data Availability & Blob Storage
+
+### P0 — Active
+- [x] CHAIN-029: Data availability sampling (DAS) engine (erasure coding, Merkle proofs, challenge/response, penalties) — `chain/src/das.rs` (15 tests)
+- [ ] NODE-028: DAS validator (automatic sampling, proof requests over P2P) — `node/src/das_validator.rs`
+- [ ] SPEC-019: Data availability specification — `spec/data-availability.md`
+- [ ] CHAIN-030: Blob transaction type (submit blob data, reference from inference commits) — `chain/src/blob_tx.rs`
+
+### P1 — Next
+- [ ] NODE-029: Blob storage backend (chunked storage, GC, disk quotas) — `node/src/blob_store.rs`
+- [ ] SDK-009: Blob upload client (erasure encode + submit) — `sdk/src/blob_client.rs`
+- [ ] INT-004: DAS adversarial test (withholding attacks, partial responses) — `chain/src/das_adversarial_test.rs`
+
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
 |------|----------|--------|---------|-----------|

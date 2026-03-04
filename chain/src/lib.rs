@@ -37,6 +37,7 @@ pub mod sla;
 pub mod stake;
 pub mod state;
 pub mod types;
+pub mod das;
 pub mod marketplace;
 pub mod upgrade;
 
