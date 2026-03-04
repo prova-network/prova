@@ -1,4 +1,5 @@
 pub mod canonical_cpu;
+pub mod cli;
 pub mod determinism;
 pub mod devnet;
 pub mod llamacpp;

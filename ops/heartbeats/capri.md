@@ -25,3 +25,5 @@ Fixed-point Q16.16 GEMM, CanonicalVerifier for dispute adjudication, 18 tests pa
 DOCS-002: Completed architecture overview — added streaming payments flow, audit protocol lifecycle, and module dependency graph. Committed 118290b.
 
 **2026-03-04T04:15Z** — NODE-007: JSON-RPC 2.0 API scaffold (8 methods, 16 tests). All P0/P1/P2 unassigned tasks complete; created new task from gap analysis.
+## 2026-03-04 04:20 CET — CHAIN-008: Transaction mempool
+Built `chain/src/mempool.rs` — priority ordering, nonce tracking, fee-based eviction, replacement, expiry. 16 tests passing. Phase 2 backlog created.
