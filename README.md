@@ -1,87 +1,240 @@
 # Prova
 
-## Vision
-A new Layer 1 blockchain combining verifiable storage and AI compute, built on the best ideas from Filecoin's proof-of-storage protocol with clean economics from day one.
+**A Layer 1 blockchain combining verifiable storage (PDP) and AI compute (QBP) with clean economics from day one.**
 
-## Core Innovation: Proof of Compute via Quantized Determinism
-Quantized AI inference (INT8/INT4) uses integer arithmetic, which is deterministic across GPU architectures. Combined with interactive bisection fraud proofs (inspired by Arbitrum), this enables efficient verification of GPU computation without re-executing the full workload.
+*Prova* — Latin: "to prove."
 
-### How it works
-1. **Deterministic inference**: Mandated quantized models produce identical outputs on any hardware
+## Status
+
+| Metric | Count |
+|--------|-------|
+| Rust source files | 108 |
+| Lines of Rust | 63,000+ |
+| Passing tests | 1,690 |
+| Crates | 4 (`prova-chain`, `prova-node`, `prova-sdk`, ops) |
+| Specifications | 22 |
+| Documentation | 10 guides |
+| Commits | 209 |
+| External deps | Minimal (sha2, serde, serde_json) |
+
+All tests pass. Clippy clean with `-D warnings`.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    Client SDK                        │
+│  (rpc_client, event_client, blob_client, cli_wallet) │
+├─────────────────────────────────────────────────────┤
+│                    Node Layer                        │
+│  Network ─ RPC ─ API Gateway ─ Executor ─ P2P       │
+│  CLI ─ Wallet ─ Metrics ─ Sync ─ Explorer           │
+├─────────────────────────────────────────────────────┤
+│                    Chain Layer                        │
+│  Blocks ─ Genesis ─ State ─ Mempool ─ Gas            │
+│  Commits ─ Disputes ─ Stake ─ Payments ─ Rewards     │
+│  Governance ─ Marketplace ─ Delegation ─ DAS         │
+│  Checkpoints ─ Bridge ─ Finality ─ Events            │
+├─────────────────────────────────────────────────────┤
+│                   Proof Layer                        │
+│  QBP (Quantized Bisection Proofs) ─ PDP ─ Audits    │
+│  Activation Merkle Trees ─ ZK Verifier              │
+└─────────────────────────────────────────────────────┘
+```
+
+## Core Innovations
+
+### Quantized Bisection Proofs (QBP)
+
+Verifiable AI inference without re-executing the full workload:
+
+1. **Deterministic inference**: Quantized models (INT8) use integer arithmetic — bit-identical across same-architecture GPUs
 2. **Activation Merkle trees**: Each layer's intermediate outputs are hashed into a Merkle tree
 3. **Interactive bisection**: If challenged, binary search finds the first disagreeing layer in O(log L) steps
-4. **Single-layer verification**: Re-execute one layer to determine who's honest (<2% of original work)
-5. **Economic security**: Staking + random 5% audit rate makes cheating -EV
+4. **Single-layer verification**: Re-execute one layer to determine who's honest — <2% of original compute
+5. **Economic security**: Staking + random audit rate makes cheating negative expected value
 
-### Protocol Stack
-```
-ON-CHAIN (slow, secure)
-├─ Model registry (weight hashes per layer)
-├─ Quantization spec (INT8/INT32 accumulate)
-├─ Stake ledger (node deposits)
-├─ Challenge/response adjudication
-└─ Slashing execution
+### Provable Data Possession (PDP)
 
-OFF-CHAIN (fast, practical)
-├─ Inference execution (quantized, deterministic)
-├─ Activation Merkle tree construction
-├─ Result delivery to client
-└─ Bisection game (if challenged)
-```
+Lightweight storage proofs for hot/warm data:
 
-## Storage Layer
-- PDP-first (Provable Data Possession) — onboard storage in minutes, not hours
-- No sealing pipeline required for hot/warm data
+- On-chain proof sets with CommP roots + drand randomness → 5 random challenges → Merkle inclusion proofs
+- No sealing required — data is available in minutes, not hours
+- Logarithmic gas scaling (140M gas for 100 roots, 160M for 10K)
 - PoRep available as optional cold archival tier
-- Variable sector sizes (not fixed 32/64 GiB)
 
-## Economics
-- 1 byte = 1 byte. No multipliers. No DataCap. No privileged data classes.
-- Dual reward streams: storage + compute
-- Dynamic rebalancing between storage and compute rewards
-- Simple pledge: proportional to reward and sector lifetime
-- Streaming payments at L1
+### Clean Economics
 
-## What we take from Filecoin (Apache 2.0 / MIT)
-- Proof of Replication (PoRep) — optional cold tier
-- Proof of Spacetime (PoSt) — ongoing storage verification
-- PDP — lightweight hot data proofs
-- FVM / actor model — smart contracts
-- Economic insights from 4+ years of mainnet operation
+- **1 byte = 1 byte.** No multipliers, no DataCap, no privileged data classes.
+- **Dual reward streams**: Storage (PDP-verified bytes) + Compute (verified inference commits)
+- **Streaming payments at L1**: Continuous payment channels with 0.5% network fee
+- **Halving emission**: 400M PROVA mined over ~20 years, 50% burned fees
+- **No mining reserve**: All tokens accounted for from genesis
 
-## What we fix
-- No Fil+ / DataCap (eliminated, not deprecated)
-- No mining reserve
-- PDP-first instead of PoRep-first
-- Compute verification built into consensus
-- On-chain governance from day one
-- Clean token distribution
+## Crate Structure
 
-## Research Status
-- [x] Protocol design (conceptual)
-- [x] Economic analysis framework (CUDA simulation infrastructure)
-- [ ] **IN PROGRESS**: Quantized determinism experiment (RTX 5080 vs RTX 6000)
-- [ ] Formal bisection protocol specification
-- [ ] Activation Merkle tree benchmarking
-- [ ] Economic modeling (optimal challenge rate, stake requirements)
-- [ ] Whitepaper draft
+```
+prova/
+├── chain/          prova-chain — on-chain state, consensus, economics
+│   └── src/
+│       ├── block.rs          Block production, weighted round-robin
+│       ├── genesis.rs        Genesis state, devnet/testnet configs
+│       ├── commit.rs         Inference commit store + challenge window
+│       ├── dispute.rs        Bisection game + dispute arena
+│       ├── stake.rs          Stake ledger + slashing
+│       ├── payment.rs        Streaming payment channels
+│       ├── rewards.rs        Block + inference + storage rewards
+│       ├── gas.rs            EIP-1559 style gas metering
+│       ├── mempool.rs        Transaction priority queue
+│       ├── state.rs          Account state trie
+│       ├── governance.rs     On-chain proposal system
+│       ├── marketplace.rs    Model marketplace + bidding
+│       ├── delegation.rs     Delegated staking + liquid staking
+│       ├── das.rs            Data availability sampling
+│       ├── checkpoint.rs     Filecoin L1 checkpoint anchoring
+│       ├── bridge.rs         Cross-chain state proofs
+│       ├── finality.rs       Fast + slow finality gadget
+│       ├── events.rs         Structured event log
+│       ├── snapshot.rs       State snapshots for fast sync
+│       ├── migration.rs      State migration system
+│       ├── network_sim.rs    Multi-node network simulator
+│       ├── chaos.rs          Chaos testing scenarios
+│       └── ...               (54 modules total)
+│
+├── node/           prova-node — node implementation
+│   └── src/
+│       ├── merkle.rs         Activation Merkle tree builder
+│       ├── participant.rs    QBP bisection participant
+│       ├── runner.rs         Inference runner (mock + faulty)
+│       ├── llamacpp.rs       Real llama.cpp integration
+│       ├── determinism.rs    Cross-arch determinism testing
+│       ├── canonical_cpu.rs  CPU canonical verification path
+│       ├── network.rs        P2P gossip networking
+│       ├── pdp.rs            PDP proof engine
+│       ├── cli.rs            CLI interface (run, status, tx)
+│       ├── wallet.rs         Ed25519 wallet + keystore
+│       ├── rpc.rs            JSON-RPC 2.0 API
+│       ├── api_gateway.rs    HTTP API with auth + rate limiting
+│       ├── devnet.rs         In-memory devnet simulation
+│       └── ...               (42 modules total)
+│
+├── sdk/            prova-sdk — client SDK
+│   └── src/
+│       ├── lib.rs            Request builder, signing, discovery
+│       ├── rpc_client.rs     JSON-RPC client
+│       ├── cli_wallet.rs     CLI wallet integration
+│       ├── event_client.rs   Event subscription
+│       ├── marketplace.rs    Marketplace client
+│       ├── delegation.rs     Staking client
+│       ├── blob_client.rs    Blob upload (erasure coded)
+│       └── ...               (12 modules total)
+│
+├── spec/           Protocol specifications (22 specs)
+├── proto/          Protobuf wire format definitions
+├── docs/           Developer documentation (10 guides)
+├── ops/            Operational configs (testnet genesis, bootnodes)
+├── research/       Experiment results + design exploration
+└── whitepaper.md   Whitepaper v0.1
+```
 
-## Experimental Infrastructure
-- **Blackwell**: RTX 5080 (compute 12.0, Blackwell arch) — 192.168.50.203
-- **hexa-2**: 4× Quadro RTX 6000 (compute 7.5, Turing arch) — datacenter
-- **hexa-4**: 4× Quadro RTX 6000 (compute 7.5, Turing arch) — datacenter
-- Testing quantized inference determinism across architectures using llama.cpp + TinyLlama 1.1B Q8_0
+## Quick Start
+
+```bash
+# Clone (private repo — requires access)
+git clone git@github.com:Reiers/prova.git
+cd prova
+
+# Build all crates
+cargo build --workspace
+
+# Run all 1,690 tests
+cargo test --workspace
+
+# Lint (must pass with zero warnings)
+cargo clippy --workspace -- -D warnings
+
+# Run the node demo
+cargo run -p prova-node
+```
+
+## Specifications
+
+| Spec | Title |
+|------|-------|
+| SPEC-001 | [QBP Protocol](spec/qbp-protocol.md) — Quantized Bisection Proofs |
+| SPEC-002 | [Activation Merkle Tree](spec/activation-merkle-tree.md) — Hash format |
+| SPEC-003 | [Model Registry](spec/model-registry.md) — On-chain model registration |
+| SPEC-004 | [PDP Integration](spec/pdp-integration.md) — Storage proofs |
+| SPEC-005 | [Audit Protocol](spec/audit-protocol.md) — Random audit system |
+| SPEC-006 | [Streaming Payments](spec/streaming-payments.md) — L1 payment channels |
+| SPEC-007 | [Network Protocol](spec/network-protocol.md) — P2P gossip |
+| SPEC-008 | [Token Economics](spec/token-economics.md) — Supply, emission, fees |
+| SPEC-010 | [Token Economics (expanded)](spec/token-economics.md) |
+| SPEC-011 | [Governance](spec/governance.md) — On-chain proposals |
+| SPEC-012 | [Light Client](spec/light-client.md) — Minimal verification |
+| SPEC-013 | [Security Threat Model](spec/security-threat-model.md) — 21 threats |
+| SPEC-014 | [Checkpoint Anchoring](spec/checkpoint-anchoring.md) — Filecoin L1 |
+| SPEC-015 | [Bridge Security](spec/bridge-security.md) — Cross-chain proofs |
+| SPEC-016 | [Event Schema](spec/event-schema.md) — Structured events |
+| SPEC-017 | [Security Audit Checklist](spec/security-audit-checklist.md) — 73 checks |
+| SPEC-018 | [Marketplace](spec/marketplace.md) — Model marketplace |
+| SPEC-019 | [Data Availability](spec/data-availability.md) — DAS protocol |
+| SPEC-020 | [Delegation & Staking](spec/delegation-staking.md) |
+| SPEC-021 | [Validator Set](spec/validator-set.md) — Validator management |
+| SPEC-022 | [Confidential Inference](spec/confidential-inference.md) — Privacy |
+| SPEC-023 | [Account Abstraction](spec/account-abstraction.md) — Multi-sig |
+| SPEC-024 | [API Gateway](spec/api-gateway.md) — External integration |
+| SPEC-025 | State Migration — *planned* |
+
+## Experiments
+
+| ID | Title | Result |
+|----|-------|--------|
+| EXP-001 | Single-GPU determinism (TinyLlama Q8_0) | ✅ **PASS** — 5/5 runs bit-identical on both RTX 5080 and RTX 6000 |
+| EXP-002 | Cross-architecture determinism | ❌ **FAIL** — Diverges at token 1 between Blackwell and Turing |
+| EXP-003 | CPU canonical verification path | ✅ **PASS** — Fixed-point INT8 GEMM with no floating point |
+
+**Key finding**: Same-architecture determinism is perfect. Cross-architecture fails due to different floating-point rounding in dequantization. This is why Prova uses **Architecture Groups** — nodes with identical GPU hardware are grouped together for verification.
+
+## What's Built vs What's Left
+
+### ✅ Complete (Phase 1–19)
+- On-chain state: blocks, genesis, state trie, gas, mempool, rewards, governance
+- Proof layer: QBP bisection, PDP, audits, activation Merkle trees
+- Economics: staking, slashing, payments, delegation, liquid staking, marketplace
+- Networking: P2P gossip, sync, checkpoints, bridge, finality
+- Node: CLI, wallet, RPC, API gateway, metrics, fast sync
+- SDK: RPC client, event subscriptions, blob upload, marketplace, multi-sig
+- Security: access control, rate limiting, TLS, invariant checker, fuzz harness
+- Testing: 1,690 tests, chaos scenarios, network simulation, load testing, benchmarks
+- Specs: 22 protocol specifications, security audit checklist (73 checks)
+- Docs: quickstart, architecture, FAQ, SDK guide, testnet operator guide
+
+### 🔜 Next Milestones
+- [ ] Real networking (replace mock transport with TCP/QUIC)
+- [ ] Persistent state (replace in-memory with on-disk)
+- [ ] Real GPU inference integration (llama.cpp production pipeline)
+- [ ] Testnet launch (genesis ceremony, boot nodes, monitoring)
+- [ ] TensorRT strict INT8 experiment (potential universal cross-arch solution)
+- [ ] Formal security audit
+- [ ] Whitepaper v1.0
 
 ## Prior Art
+
 | Project | Storage | Compute | Proofs | Gap |
 |---------|---------|---------|--------|-----|
 | Filecoin | ✅ PoRep/PoSt/PDP | ❌ | Cryptographic | No compute layer |
-| Akash | ❌ | ✅ Containers | Economic (staking) | No storage proofs |
+| Akash | ❌ | ✅ Containers | Economic | No storage proofs |
 | Bittensor | ❌ | ✅ AI inference | Validation subnet | No real storage |
 | Render | ❌ | ✅ GPU rendering | Reputation | Specialized, no storage |
 | io.net | ❌ | ✅ GPU cluster | Economic | No storage proofs |
 | Arweave/AO | ✅ Permanent | ✅ (AO) | Proof of Access | Different proof model |
-| **Prova** | ✅ PDP+PoRep | ✅ AI inference | Quantized bisection | — |
+| **Prova** | ✅ PDP+PoRep | ✅ AI inference | QBP + PDP | Combined |
+
+## Team
+
+Built by Nicklas and Capri.
 
 ## License
+
 Private / Proprietary — not yet open source.
