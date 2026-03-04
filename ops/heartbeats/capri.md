@@ -60,3 +60,5 @@ NODE-016: Checkpoint submitter (15 tests), SPEC-014: Checkpoint anchoring spec, 
 ## 2026-03-04 06:19 CET — SPEC-015: Bridge security specification
 10 threat vectors (forged proofs, checkpoint forgery, replay, censorship, bridge drain, L1 reorg, validator rotation), economic security bounds, audit checklist. Committed 54aa83d.
 2026-03-04 06:24 — SDK-001: Client SDK with request builder, signing, provider discovery, batch ops (19 tests). New Phase 6 started.
+## 2026-03-04 06:29 — SDK-002: JSON-RPC client
+Built RpcClient<T: Transport> with pluggable transport, typed methods for all prova_* RPCs, polling, batch ops. 15 tests passing.
