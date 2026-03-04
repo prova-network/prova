@@ -1,3 +1,4 @@
+pub mod canonical_cpu;
 pub mod determinism;
 pub mod llamacpp;
 pub mod merkle;
