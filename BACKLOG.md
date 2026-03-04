@@ -192,7 +192,7 @@
 
 ### P1 — Next
 - [x] SIM-004: Visualization output (JSON trace for timeline rendering) — `chain/src/viz.rs` (16 tests)
-- [ ] SIM-005: Adversarial network scenarios (eclipse attacks, message flooding)
+- [x] SIM-005: Adversarial network scenarios (eclipse attacks, message flooding) — `chain/src/adversarial_net.rs` (21 tests)
 - [ ] DOCS-007: Network simulation guide
 
 ## Phase 11 — Data Availability & Blob Storage
