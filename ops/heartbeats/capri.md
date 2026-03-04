@@ -31,3 +31,4 @@ Built `chain/src/mempool.rs` — priority ordering, nonce tracking, fee-based ev
 Built CLI scaffold with hand-rolled arg parser (run/status/account/tx subcommands), 22 tests, zero new deps.
 - 2026-03-04T04:30+01:00 — INT-001: Multi-node integration test harness (12 tests). ProvaNode + MultiNodeHarness with gossip propagation, commit/dispute/payment E2E across N nodes.
 2026-03-04T04:35+01:00 — CHAIN-009: State trie with balances, nonces, storage slots, Merkle root, pruning, snapshots. 16 tests passing.
+2026-03-04T04:38+01:00 — SPEC-010: Token economics spec (issuance halving, staking params, fee model, security analysis).
