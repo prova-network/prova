@@ -138,3 +138,6 @@ Built per-inference ephemeral key derivation (HKDF-SHA256), master secret encryp
 
 ## 2026-03-04 10:59 CET
 SDK-012: Multi-sig client SDK (16 tests) + SPEC-023: Account abstraction spec. All Phase 15 P1 tasks now complete.
+2026-03-04 11:04 CET — SIM-001: Built network simulator (chain/src/network_sim.rs, 17 tests). N-node sim with latency modeling, network partitions, crash/restart, lossy links, block propagation, checkpoint/inference message types.
+2026-03-04 11:09 — SIM-002: Chaos scenario runner (5 pre-built scenarios, convergence assertions, 17 tests). SIM-003: Load test harness (4 load profiles, latency percentiles, bottleneck detection, 15 tests).
+2026-03-04 10:16 UTC — SIM-004: Built viz.rs trace recorder (Chrome Trace Format, flow events, node stats, JSON/NDJSON export). 16 tests passing.
