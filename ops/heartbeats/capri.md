@@ -59,3 +59,4 @@ NODE-016: Checkpoint submitter (15 tests), SPEC-014: Checkpoint anchoring spec, 
 - 2026-03-04 06:14 CET | NODE-017: L1 event watcher — finality tracking, reorg detection, 5 event types, 14 tests
 ## 2026-03-04 06:19 CET — SPEC-015: Bridge security specification
 10 threat vectors (forged proofs, checkpoint forgery, replay, censorship, bridge drain, L1 reorg, validator rotation), economic security bounds, audit checklist. Committed 54aa83d.
+2026-03-04 06:24 — SDK-001: Client SDK with request builder, signing, provider discovery, batch ops (19 tests). New Phase 6 started.

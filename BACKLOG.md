@@ -96,6 +96,18 @@
 - [x] NODE-012: Chain sync protocol (block download + verification) — `node/src/sync.rs` (14 tests)
 - [x] SPEC-012: Light client specification — `spec/light-client.md`
 
+## Phase 6 — Client SDK & Developer Tools
+
+### P0 — Active
+- [x] SDK-001: Client SDK (request builder, signing, provider discovery, batch ops) — `sdk/src/lib.rs` (19 tests)
+- [ ] SDK-002: JSON-RPC client (connect to node, submit jobs, poll results)
+- [ ] SDK-003: CLI wallet integration (import keys, sign offline)
+
+### P1 — Next
+- [ ] SDK-004: TypeScript/WASM bindings for browser clients
+- [ ] SDK-005: Rate limiting & retry logic
+- [ ] DOCS-003: SDK usage guide & examples
+
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
 |------|----------|--------|---------|-----------|
