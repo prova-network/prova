@@ -35,3 +35,5 @@ Built CLI scaffold with hand-rolled arg parser (run/status/account/tx subcommand
 - 2026-03-04 04:40 CET — CHAIN-010: Reward distribution engine (block rewards w/ halving, inference fee splits, storage subsidies, challenger bounties, claim system). 15 tests passing.
 ## 2026-03-04 04:45 CET — CHAIN-011: Transaction execution engine
 Built tx executor with 7 tx types (transfer, stake, unstake, register-model, inference-commit, claim-reward, pay-inference-fee), gas metering, nonce enforcement, atomic rollback, batch execution. 17 tests.
+## 2026-03-04 04:44 CET — NODE-010: Wallet + key management
+Built Ed25519 signing, encrypted keystore, keyring, signed transactions. 16 tests passing.

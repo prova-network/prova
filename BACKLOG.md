@@ -59,7 +59,7 @@
 ### P0 — Active
 - [x] CHAIN-010: Reward distribution (block rewards, inference fees, storage subsidies, challenger bounties) — `chain/src/rewards.rs` (15 tests)
 - [x] CHAIN-011: Transaction execution engine — `chain/src/executor.rs` (17 tests)
-- [ ] NODE-010: Wallet + key management (Ed25519 signing, keystore)
+- [x] NODE-010: Wallet + key management (Ed25519 signing, keystore) — `node/src/wallet.rs` (16 tests)
 - [ ] SPEC-011: Governance specification (proposals, voting, parameter changes)
 - [ ] INT-002: Full-chain integration test (genesis → blocks → rewards → claims)
 
