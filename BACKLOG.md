@@ -37,7 +37,7 @@
 - [x] SPEC-007: Network protocol (P2P gossip, block propagation) — `spec/network-protocol.md`
 
 ### P2 — Later
-- [ ] NODE-006: P2P networking scaffold
+- [x] NODE-006: P2P networking scaffold — `node/src/network.rs` (13 tests)
 - [x] CHAIN-006: Block production + consensus — `chain/src/block.rs` (37 tests)
 - [x] CHAIN-007: Genesis state — `chain/src/genesis.rs` (14 tests)
 - [ ] SPEC-009: Consensus specification [KESTREL]
