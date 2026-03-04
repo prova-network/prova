@@ -24,6 +24,7 @@ pub mod watcher;
 pub mod shutdown;
 pub mod subscriptions;
 pub mod explorer;
+pub mod tls;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
 use prova_chain::types::ModelId;
