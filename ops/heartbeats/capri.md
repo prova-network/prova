@@ -29,3 +29,4 @@ DOCS-002: Completed architecture overview — added streaming payments flow, aud
 Built `chain/src/mempool.rs` — priority ordering, nonce tracking, fee-based eviction, replacement, expiry. 16 tests passing. Phase 2 backlog created.
 ## 2026-03-04 04:25 CET — NODE-009
 Built CLI scaffold with hand-rolled arg parser (run/status/account/tx subcommands), 22 tests, zero new deps.
+- 2026-03-04T04:30+01:00 — INT-001: Multi-node integration test harness (12 tests). ProvaNode + MultiNodeHarness with gossip propagation, commit/dispute/payment E2E across N nodes.
