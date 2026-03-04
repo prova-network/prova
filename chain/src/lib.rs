@@ -46,3 +46,5 @@ pub mod upgrade;
 mod integration_test;
 #[cfg(test)]
 mod adversarial_test;
+#[cfg(test)]
+mod das_adversarial_test;

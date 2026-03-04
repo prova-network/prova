@@ -173,7 +173,7 @@
 ### P1 — Next
 - [x] NODE-029: Blob storage backend (chunked storage, GC, disk quotas) — `node/src/blob_store.rs` (17 tests)
 - [x] SDK-009: Blob upload client (erasure encode + submit) — `sdk/src/blob_client.rs` (19 tests)
-- [ ] INT-004: DAS adversarial test (withholding attacks, partial responses) — `chain/src/das_adversarial_test.rs`
+- [x] INT-004: DAS adversarial test (withholding attacks, partial responses) — `chain/src/das_adversarial_test.rs` (19 tests)
 
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
