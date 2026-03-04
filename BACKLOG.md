@@ -18,7 +18,7 @@
 - [x] CHAIN-002: Stake ledger + slashing — `chain/src/stake.rs` (11 tests)
 - [x] CHAIN-003: Model registry on-chain — `chain/src/registry.rs` (4 tests)
 
-**Total: 162 passing tests, 1 external dep (sha2)**
+**Total: 182 passing tests, 2 external deps (sha2, serde). 23 source files, 9,055 lines of Rust.**
 
 ### P0 — In Progress
 - [ ] EXP-001: Determinism harness on Blackwell [KODA] — Blackwell confirmed ready, harness not yet run
@@ -37,11 +37,11 @@
 - [x] SPEC-007: Network protocol (P2P gossip, block propagation) — `spec/network-protocol.md`
 
 ### P2 — Later
-- [x] NODE-006: P2P networking scaffold — `node/src/network.rs` (13 tests)
+- [x] NODE-006: P2P networking scaffold — `node/src/network.rs` (15 tests)
 - [x] CHAIN-006: Block production + consensus — `chain/src/block.rs` (37 tests)
 - [x] CHAIN-007: Genesis state — `chain/src/genesis.rs` (14 tests)
 - [ ] SPEC-009: Consensus specification [KESTREL]
-- [ ] OPS-001: Devnet launch script
+- [x] OPS-001: Devnet simulation — `node/src/devnet.rs` (5 tests)
 - [ ] DOCS-002: Architecture overview diagram
 
 ## Assignment History
