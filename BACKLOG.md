@@ -54,6 +54,21 @@
 - [x] CHAIN-009: State trie (account balances + nonce tracking) — `chain/src/state.rs` (16 tests)
 - [x] SPEC-010: Token economics specification — `spec/token-economics.md`
 
+## Phase 3 — Economics & Governance
+
+### P0 — Active
+- [x] CHAIN-010: Reward distribution (block rewards, inference fees, storage subsidies, challenger bounties) — `chain/src/rewards.rs` (15 tests)
+- [ ] CHAIN-011: Transaction execution engine (apply txs to state trie)
+- [ ] NODE-010: Wallet + key management (Ed25519 signing, keystore)
+- [ ] SPEC-011: Governance specification (proposals, voting, parameter changes)
+- [ ] INT-002: Full-chain integration test (genesis → blocks → rewards → claims)
+
+### P1 — Next
+- [ ] CHAIN-012: Gas metering + fee market (EIP-1559 style)
+- [ ] NODE-011: Persistent storage backend (RocksDB or sled)
+- [ ] NODE-012: Chain sync protocol (block download + verification)
+- [ ] SPEC-012: Light client specification
+
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
 |------|----------|--------|---------|-----------|
@@ -83,3 +98,4 @@
 | INT-001 | Capri | ✅ | 04:24 | 04:30 |
 | CHAIN-009 | Capri | ✅ | 04:29 | 04:35 |
 | SPEC-010 | Capri | ✅ | 04:35 | 04:38 |
+| CHAIN-010 | Capri | ✅ | 04:34 | 04:40 |
