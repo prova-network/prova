@@ -170,7 +170,7 @@
 - [x] NODE-030: Delegation CLI commands (delegate, undelegate, redelegate, rewards) — `node/src/delegation_cli.rs` (31 tests)
 
 ### P1 — Next
-- [ ] SDK-010: Delegation client SDK (stake management, reward queries)
+- [x] SDK-010: Delegation client SDK (stake management, reward queries) — `sdk/src/delegation.rs` (16 tests)
 - [ ] SPEC-020: Delegation & staking specification
 - [ ] CHAIN-033: Delegation governance voting (vote weight from delegated stake)
 
