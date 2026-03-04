@@ -41,3 +41,5 @@ Built Ed25519 signing, encrypted keystore, keyring, signed transactions. 16 test
 ## 2026-03-04 05:10 CET
 SPEC-011 + INT-002: Fixed full-chain integration tests (5 tests, matched real module APIs) + governance spec verified. CHAIN-012: EIP-1559 fee market with dynamic base fee, surge pricing, calldata metering (19 tests). Total: 192 passing.
 2026-03-04 05:15 CET — NODE-011: Persistent storage backend (sled). 6 column families, atomic commit_block(), persistence test. 15 tests passing.
+2026-03-04 04:16 UTC — NODE-012: Chain sync protocol (header-first sync, peer scoring, body verification, fork choice). 14 tests passing.
+2026-03-04 04:17 UTC — SPEC-012: Light client specification (header chain, state proofs, finality tracking, 3 sync modes).

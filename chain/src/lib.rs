@@ -19,6 +19,7 @@ pub mod mempool;
 pub mod payment;
 pub mod registry;
 pub mod rewards;
+pub mod scheduler;
 pub mod simulation;
 pub mod stake;
 pub mod state;

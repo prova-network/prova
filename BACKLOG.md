@@ -45,6 +45,20 @@
 - [x] OPS-001: Devnet simulation — `node/src/devnet.rs` (5 tests)
 - [x] DOCS-002: Architecture overview diagram — `docs/architecture.md` (payments, audit, dependency graph added)
 
+## Phase 4 — Scheduling & Orchestration
+
+### P0 — Active
+- [x] CHAIN-013: Job scheduler (inference request routing, assignment, cancellation, timeout) — `chain/src/scheduler.rs` (16 tests)
+- [ ] NODE-013: Job executor (worker loop: poll scheduler, run inference, deliver result)
+- [ ] CHAIN-014: Service-level agreements (SLA enforcement, penalty curves)
+- [ ] NODE-014: Metrics & telemetry (Prometheus-style counters, histograms)
+- [ ] INT-003: Adversarial scheduler test (byzantine providers, deadline gaming)
+
+### P1 — Next
+- [ ] CHAIN-015: Reputation system (EMA scoring, decay, slashing integration)
+- [ ] NODE-015: Provider auto-pricing (market-adaptive fee adjustment)
+- [ ] SPEC-013: Security threat model specification
+
 ## Phase 2 — Integration & Hardening
 
 ### P0 — Active
@@ -104,3 +118,6 @@
 | INT-002 | Capri | ✅ | 04:59 | 05:05 |
 | CHAIN-012 | Capri | ✅ | 05:05 | 05:10 |
 | NODE-011 | Capri | ✅ | 05:09 | 05:15 |
+| NODE-012 | Capri | ✅ | 05:09 | 05:15 |
+| SPEC-012 | Capri | ✅ | 05:09 | 05:15 |
+| CHAIN-013 | Capri | ✅ | 05:19 | 05:25 |
