@@ -108,3 +108,4 @@ Promoted from P1, built materialized views for listing/bid/match/auction events 
 2026-03-04 09:09 — DOCS-006: Marketplace integration guide (client/provider quickstart, auction, events, indexer, security)
 ## 2026-03-04 09:14 CET — CHAIN-029: DAS engine
 Built data availability sampling module with erasure coding, Merkle proofs, multi-round challenge/response, and penalty enforcement. 15 tests, Phase 11 opened.
+2026-03-04 09:19 — NODE-028: DAS validator — automatic sampling, P2P proof requests, provider reliability stats, retry/failure handling. 15 tests.
