@@ -146,3 +146,4 @@ SDK-012: Multi-sig client SDK (16 tests) + SPEC-023: Account abstraction spec. A
 - Promoted from P1; all P0 tasks complete. BACKLOG fully cleared except Koda (EXP-001) and Kestrel (DOCS-001, SPEC-009).
 2026-03-04 11:29 CET — NODE-034: Built HTTP API gateway (auth, rate limiting, routing, webhooks, job lifecycle) — 20 tests, committed 582d7eb
 2026-03-04 10:36 UTC — NODE-035: OpenAPI 3.1 spec generator (auto-gen from route defs, 6 endpoints, 3 schemas, security schemes, JSON serializer). 21 tests.
+2026-03-04 11:39 CET — SDK-013: API gateway client SDK (key ring, inference submit/poll/cancel, batch ops, model listing) — 23 tests

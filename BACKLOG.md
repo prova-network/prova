@@ -223,7 +223,7 @@
 ### P0 — Active
 - [x] NODE-034: HTTP API gateway (auth, rate limiting, routing, webhooks, job lifecycle) — `node/src/api_gateway.rs` (20 tests)
 - [x] NODE-035: OpenAPI spec generator (auto-generate spec from routes) — `node/src/openapi.rs` (21 tests)
-- [ ] SDK-013: API gateway client SDK (key management, inference submission)
+- [x] SDK-013: API gateway client SDK (key management, inference submission) — `sdk/src/api_gateway_client.rs` (23 tests)
 
 ### P1 — Next
 - [ ] NODE-036: Webhook delivery engine (retry, backoff, signature verification)
