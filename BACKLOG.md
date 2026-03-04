@@ -119,7 +119,7 @@
 - [x] OPS-002: Testnet genesis config + boot nodes — `ops/testnet/` (genesis.toml, bootnodes.toml, testnet.rs — 16 tests)
 
 ### P1 — Next
-- [ ] CHAIN-021: Protocol upgrade mechanism (fork scheduling, version negotiation)
+- [x] CHAIN-021: Protocol upgrade mechanism (fork scheduling, version negotiation) — `chain/src/upgrade.rs` (17 tests)
 - [ ] NODE-021: Graceful shutdown + state persistence
 - [ ] DOCS-004: Testnet operator guide
 
