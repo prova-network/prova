@@ -116,7 +116,7 @@
 - [x] NODE-019: Snapshot serving over P2P — `node/src/snapshot_serve.rs` (19 tests)
 - [x] CHAIN-020: State pruning (retain last N snapshots, garbage collect old blocks) — `chain/src/pruning.rs` (13 tests)
 - [x] NODE-020: Fast sync mode (download snapshot instead of replaying blocks) — `node/src/fast_sync.rs` (14 tests)
-- [ ] OPS-002: Testnet genesis config + boot nodes
+- [x] OPS-002: Testnet genesis config + boot nodes — `ops/testnet/` (genesis.toml, bootnodes.toml, testnet.rs — 16 tests)
 
 ### P1 — Next
 - [ ] CHAIN-021: Protocol upgrade mechanism (fork scheduling, version negotiation)
