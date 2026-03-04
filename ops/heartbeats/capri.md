@@ -122,3 +122,6 @@ Promoted from P1→P0, all Phase 11 P1 tasks except INT-004 now complete.
 2026-03-04 10:04 CET — SPEC-020 + CHAIN-033: Delegation & staking spec (9.5KB, full lifecycle/security/gas docs) + delegation governance voting with delegator override (16 tests)
 - 2026-03-04 10:09 CET — CHAIN-034: Validator set manager (register/exit/eject/epoch rotation, hybrid stake+reputation scoring, 16 tests)
 - Built: chain/src/validator_set.rs — dynamic validator set with 128-cap, unbonding, downtime ejection, slashing
+2026-03-04 10:14 CET — NODE-028b: Validator CLI (register/exit/withdraw/status/list/stake-add/epoch) + MockValidatorRpc backend. 42 tests.
+Promoted from P1 → P0 (all original P0 tasks complete).
+2026-03-04 10:19 CET — SPEC-021: Validator set specification (lifecycle, hybrid scoring, epoch rotation, security analysis, wire format). Last unchecked non-assigned task in backlog.
