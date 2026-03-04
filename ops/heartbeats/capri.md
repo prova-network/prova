@@ -63,3 +63,4 @@ NODE-016: Checkpoint submitter (15 tests), SPEC-014: Checkpoint anchoring spec, 
 ## 2026-03-04 06:29 — SDK-002: JSON-RPC client
 Built RpcClient<T: Transport> with pluggable transport, typed methods for all prova_* RPCs, polling, batch ops. 15 tests passing.
 2026-03-04 06:34 CET — SDK-003: CLI wallet integration (import keys, sign offline, keystore manager) — 22 tests, committed eaeed7e
+- **2026-03-04 06:39 CET** — SDK-004: Built @prova/sdk TypeScript package (pure-JS SHA-256, keypair, request builder, provider discovery, client). 27 tests passing, pushed a599588.

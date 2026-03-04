@@ -104,7 +104,7 @@
 - [x] SDK-003: CLI wallet integration (import keys, sign offline) — `sdk/src/cli_wallet.rs` (22 tests)
 
 ### P1 — Next
-- [ ] SDK-004: TypeScript/WASM bindings for browser clients
+- [x] SDK-004: TypeScript/WASM bindings for browser clients — `sdk/wasm/` (27 tests)
 - [ ] SDK-005: Rate limiting & retry logic
 - [ ] DOCS-003: SDK usage guide & examples
 
