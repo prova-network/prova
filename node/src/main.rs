@@ -1,5 +1,6 @@
 pub mod merkle;
 pub mod participant;
+pub mod pdp;
 pub mod runner;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};

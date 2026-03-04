@@ -18,23 +18,23 @@
 - [x] CHAIN-002: Stake ledger + slashing — `chain/src/stake.rs` (11 tests)
 - [x] CHAIN-003: Model registry on-chain — `chain/src/registry.rs` (4 tests)
 
-**Total: 56 passing tests, 0 external dependencies**
+**Total: 81 passing tests, 0 external dependencies**
 
 ### P0 — In Progress
 - [ ] EXP-001: Determinism harness on Blackwell [KODA] — Blackwell confirmed ready, harness not yet run
 - [x] SPEC-005: Audit protocol spec + implementation — `spec/audit-protocol.md`, `chain/src/audit.rs` (10 tests)
-- [ ] SPEC-006: Streaming payments spec
+- [x] SPEC-006: Streaming payments spec — `spec/streaming-payments.md`
 - [ ] DOCS-001: Developer quickstart guide [KESTREL]
-- [ ] CHAIN-004: Payment channel implementation
-- [ ] NODE-002: PDP proof engine scaffold
+- [x] CHAIN-004: Payment channel implementation — `chain/src/payment.rs` (9 tests)
+- [x] NODE-002: PDP proof engine scaffold — `node/src/pdp.rs` (11 tests)
 
 ### P1 — Next
 - [ ] EXP-002: TensorRT INT8 cross-architecture determinism test
 - [ ] EXP-003: CPU canonical verification path test
-- [ ] CI-001: CI pipeline (build + test)
+- [x] CI-001: CI pipeline (build + test) — `.github/workflows/ci.yml`
 - [ ] NODE-005: Real llama.cpp integration (activation capture via hook)
-- [ ] CHAIN-005: Epoch ticker + state transitions
-- [ ] SPEC-007: Network protocol (P2P gossip, block propagation)
+- [x] CHAIN-005: Epoch ticker + state transitions — `chain/src/epoch.rs`
+- [x] SPEC-007: Network protocol (P2P gossip, block propagation) — `spec/network-protocol.md`
 
 ### P2 — Later
 - [ ] NODE-006: P2P networking scaffold
@@ -60,4 +60,7 @@
 | NODE-004 | Capri | ✅ | 02:50 | 02:56 |
 | SPEC-005 | Capri | ✅ | 03:34 | 03:40 |
 | EXP-001 | Koda | 🔄 | 00:05 | — |
+| SPEC-006 | Capri | ✅ | 02:42 | 02:48 |
+| CHAIN-004 | Capri | ✅ | 02:42 | 02:48 |
+| NODE-002 | Capri | ✅ | 03:39 | 03:45 |
 | DOCS-001 | Kestrel | 🔄 | 03:28 | — |
