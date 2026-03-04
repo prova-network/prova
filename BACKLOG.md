@@ -18,7 +18,7 @@
 - [x] CHAIN-002: Stake ledger + slashing — `chain/src/stake.rs` (11 tests)
 - [x] CHAIN-003: Model registry on-chain — `chain/src/registry.rs` (4 tests)
 
-**Total: 182 passing tests, 2 external deps (sha2, serde). 23 source files, 9,055 lines of Rust.**
+**Total: 198 passing tests, 2 external deps (sha2, serde). 24 source files, ~9,575 lines of Rust.**
 
 ### P0 — In Progress
 - [ ] EXP-001: Determinism harness on Blackwell [KODA] — Blackwell confirmed ready, harness not yet run
@@ -37,6 +37,7 @@
 - [x] SPEC-007: Network protocol (P2P gossip, block propagation) — `spec/network-protocol.md`
 
 ### P2 — Later
+- [x] NODE-007: JSON-RPC 2.0 API scaffold — `node/src/rpc.rs` (16 tests)
 - [x] NODE-006: P2P networking scaffold — `node/src/network.rs` (15 tests)
 - [x] CHAIN-006: Block production + consensus — `chain/src/block.rs` (37 tests)
 - [x] CHAIN-007: Genesis state — `chain/src/genesis.rs` (14 tests)
@@ -67,3 +68,4 @@
 | DOCS-001 | Kestrel | 🔄 | 03:28 | — |
 | EXP-002 | Capri | ✅ | 03:49 | 03:55 |
 | DOCS-002 | Capri | ✅ | 04:04 | 04:10 |
+| NODE-007 | Capri | ✅ | 04:09 | 04:15 |
