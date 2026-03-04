@@ -101,7 +101,7 @@
 ### P0 — Active
 - [x] SDK-001: Client SDK (request builder, signing, provider discovery, batch ops) — `sdk/src/lib.rs` (19 tests)
 - [x] SDK-002: JSON-RPC client (connect to node, submit jobs, poll results) — `sdk/src/rpc_client.rs` (15 tests)
-- [ ] SDK-003: CLI wallet integration (import keys, sign offline)
+- [x] SDK-003: CLI wallet integration (import keys, sign offline) — `sdk/src/cli_wallet.rs` (22 tests)
 
 ### P1 — Next
 - [ ] SDK-004: TypeScript/WASM bindings for browser clients

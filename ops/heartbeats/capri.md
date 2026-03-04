@@ -62,3 +62,4 @@ NODE-016: Checkpoint submitter (15 tests), SPEC-014: Checkpoint anchoring spec, 
 2026-03-04 06:24 — SDK-001: Client SDK with request builder, signing, provider discovery, batch ops (19 tests). New Phase 6 started.
 ## 2026-03-04 06:29 — SDK-002: JSON-RPC client
 Built RpcClient<T: Transport> with pluggable transport, typed methods for all prova_* RPCs, polling, batch ops. 15 tests passing.
+2026-03-04 06:34 CET — SDK-003: CLI wallet integration (import keys, sign offline, keystore manager) — 22 tests, committed eaeed7e
