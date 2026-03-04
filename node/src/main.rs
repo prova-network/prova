@@ -10,6 +10,7 @@ pub mod participant;
 pub mod pdp;
 pub mod rpc;
 pub mod runner;
+pub mod wallet;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
 use prova_chain::types::ModelId;

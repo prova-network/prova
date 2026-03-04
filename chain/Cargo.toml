@@ -6,3 +6,4 @@ description = "Prova chain simulation — commit, challenge, and bisection dispu
 
 [dependencies]
 sha2 = "0.10"
+serde = { version = "1", features = ["derive"] }

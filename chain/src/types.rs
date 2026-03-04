@@ -12,6 +12,31 @@ pub type Epoch = u64;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Address(pub [u8; 20]);
 
+impl serde::Serialize for Address {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let hex: String = self.0.iter().map(|b| format!("{b:02x}")).collect();
+        serializer.serialize_str(&format!("0x{hex}"))
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Address {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        let s = s.strip_prefix("0x").unwrap_or(&s);
+        if s.len() != 40 {
+            return Err(serde::de::Error::custom("address must be 20 bytes hex"));
+        }
+        let mut bytes = [0u8; 20];
+        for i in 0..20 {
+            bytes[i] = u8::from_str_radix(&s[i*2..i*2+2], 16)
+                .map_err(serde::de::Error::custom)?;
+        }
+        Ok(Address(bytes))
+    }
+}
+
+use serde::Deserialize;
+
 impl Address {
     pub fn new(bytes: [u8; 20]) -> Self {
         Self(bytes)
