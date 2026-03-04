@@ -94,3 +94,5 @@ Built event schema spec (27 canonical signatures, ABI encoding, versioning) + hi
 ## 2026-03-04 08:24 CET
 SPEC-017: Security audit checklist — 73 checks across 8 categories, coverage targets, fuzz roadmap, engagement plan.
 2026-03-04 08:29 — CHAIN-026: Formal invariant checker (5 invariants, 16 tests). Balance conservation, stake consistency, nonce monotonicity, reward conservation, job uniqueness.
+## 2026-03-04 08:34 CET
+NODE-025: Fuzz testing harness — 12 property-based tests (no-panic, nonce monotonicity, replay protection, deterministic roots, stress). Commit dc8d3a8.
