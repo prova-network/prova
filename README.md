@@ -231,6 +231,21 @@ cargo run -p prova-node
 | Arweave/AO | ✅ Permanent | ✅ (AO) | Proof of Access | Different proof model |
 | **Prova** | ✅ PDP+PoRep | ✅ AI inference | QBP + PDP | Combined |
 
+## Language Strategy
+
+**Core protocol (Rust)** — Chain, node, and proof layer stay in Rust. No GC pauses for block production, memory safety for consensus code, zero-cost abstractions. Every major L1 (Solana, Polkadot, Near, Sui, Reth) made the same choice.
+
+**GPU proof layer (Rust + C++ FFI)** — Real inference runs through llama.cpp (C++) or CUDA kernels. Rust calls in via FFI. The `llamacpp.rs` module is already designed for this.
+
+**Client SDKs (polyglot)** — The Rust `sdk/` crate is the reference implementation. Production adoption needs:
+- **TypeScript SDK** — `npm install @prova/sdk` for web/Node.js developers
+- **Python SDK** — `pip install prova` for ML researchers registering models
+- WASM bindings for browser-native usage
+
+**Smart contracts / VM** — If we add a programmable layer, WASM or Move for developer ergonomics rather than raw Rust.
+
+*Rust for the engine, polyglot for the interfaces.*
+
 ## Team
 
 Built by Nicklas and Capri.
