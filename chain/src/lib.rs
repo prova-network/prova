@@ -6,6 +6,7 @@
 // - Challenge window (anyone can dispute within window)
 // - Bisection game (on-chain referee for QBP protocol)
 
+pub mod checkpoint;
 pub mod audit;
 pub mod executor;
 pub mod gas;
