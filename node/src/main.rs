@@ -1,5 +1,6 @@
 pub mod merkle;
 pub mod runner;
+pub mod participant;
 
 use merkle::{ActivationMerkleTree, verify_proof, hash_tensor, DType};
 use runner::MockRunner;
