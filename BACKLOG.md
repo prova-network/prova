@@ -67,8 +67,8 @@
 - [x] NODE-016: Checkpoint submitter (automatic L1 tx submission) — `node/src/submitter.rs` (15 tests)
 - [x] SPEC-014: Checkpoint anchoring specification — `spec/checkpoint-anchoring.md`
 
-### P1 — Next
-- [ ] CHAIN-018: Finality gadget (fast finality via checkpoint + slow finality via L1)
+### P1 — Next (promoted to P0)
+- [x] CHAIN-018: Finality gadget (fast finality via checkpoint + slow finality via L1) — `chain/src/finality.rs` (18 tests)
 - [ ] NODE-017: L1 event watcher (monitor Filecoin for anchor confirmations)
 - [ ] SPEC-015: Bridge security specification
 
