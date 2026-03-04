@@ -7,9 +7,11 @@
 // - Bisection game (on-chain referee for QBP protocol)
 
 pub mod audit;
+pub mod block;
 pub mod commit;
 pub mod dispute;
 pub mod epoch;
+pub mod genesis;
 pub mod payment;
 pub mod registry;
 pub mod simulation;

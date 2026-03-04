@@ -118,6 +118,7 @@ impl DisputeArena {
     }
 
     /// Open a new dispute against an inference commit.
+    #[allow(clippy::too_many_arguments)]
     pub fn open_dispute(
         &mut self,
         commit_id: CommitId,

@@ -19,7 +19,7 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 /// Errors from llama.cpp invocation.
@@ -63,6 +63,7 @@ impl std::error::Error for LlamaCppError {}
 struct ActivationMeta {
     dtype: String,
     shape: Vec<u64>,
+    #[allow(dead_code)]
     layout: String,
 }
 
@@ -91,7 +92,7 @@ impl LlamaCppRunner {
     /// into the specified dump directory.
     pub fn run(config: &InferenceConfig) -> Result<InferenceResult, LlamaCppError> {
         let dump_dir = tempfile::tempdir()
-            .map_err(|e| LlamaCppError::DumpReadError(e))?;
+            .map_err(LlamaCppError::DumpReadError)?;
         let dump_path = dump_dir.path();
 
         // Invoke llama-cli with deterministic flags

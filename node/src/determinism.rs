@@ -195,7 +195,7 @@ pub fn int8_gemm(
             // Requantize to INT8: apply combined scale and clamp
             let combined_scale = (a.quant.scale * b.quant.scale) / output_quant.scale;
             let float_val = acc as f32 * combined_scale + output_quant.zero_point as f32;
-            let clamped = float_val.round().max(-128.0).min(127.0) as i8;
+            let clamped = float_val.round().clamp(-128.0, 127.0) as i8;
             output.push(clamped);
         }
     }

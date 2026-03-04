@@ -9,7 +9,7 @@ pub type Hash = [u8; 32];
 pub type Epoch = u64;
 
 /// Address — simplified as a 20-byte identifier.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Address(pub [u8; 20]);
 
 impl Address {

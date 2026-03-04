@@ -87,6 +87,7 @@ impl CommitStore {
     }
 
     /// Publish a new inference commit. Returns the commit ID.
+    #[allow(clippy::too_many_arguments)]
     pub fn publish(
         &mut self,
         provider: Address,

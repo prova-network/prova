@@ -346,6 +346,7 @@ pub struct FinalityTracker {
     /// Votes per block hash: address → weight that voted.
     votes: HashMap<Hash, Vec<(Address, u64)>>,
     /// Total votable weight (all staked providers).
+    #[allow(dead_code)]
     total_weight: u64,
     /// Threshold for finality (2/3 of total weight).
     threshold: u64,
@@ -355,8 +356,8 @@ pub struct FinalityTracker {
 
 impl FinalityTracker {
     pub fn new(total_weight: u64) -> Self {
-        // Ceiling division for 2/3 threshold
-        let threshold = (total_weight * 2 + 2) / 3;
+        // 2/3 threshold (ceiling)
+        let threshold = (total_weight * 2).div_ceil(3);
         Self {
             votes: HashMap::new(),
             total_weight,

@@ -57,7 +57,7 @@ impl FixedScale {
 
     /// Multiply two fixed-point scales, returning Q16.16 result.
     /// Uses i64 intermediate to avoid overflow.
-    pub fn mul(self, other: Self) -> Self {
+    pub fn fixed_mul(self, other: Self) -> Self {
         let wide = self.raw as i64 * other.raw as i64;
         Self {
             raw: (wide >> 16) as i32,
@@ -65,7 +65,7 @@ impl FixedScale {
     }
 
     /// Divide self by other in fixed-point.
-    pub fn div(self, other: Self) -> Self {
+    pub fn fixed_div(self, other: Self) -> Self {
         let wide = (self.raw as i64) << 16;
         Self {
             raw: (wide / other.raw as i64) as i32,
@@ -151,8 +151,8 @@ pub fn canonical_int8_gemm(
     let n = b.cols();
 
     // Precompute combined scale in fixed-point: (a.scale * b.scale) / out.scale
-    let ab_scale = a.quant.scale.mul(b.quant.scale);
-    let combined_scale = ab_scale.div(output_quant.scale);
+    let ab_scale = a.quant.scale.fixed_mul(b.quant.scale);
+    let combined_scale = ab_scale.fixed_div(output_quant.scale);
 
     let mut output = Vec::with_capacity((m * n) as usize);
 
@@ -173,7 +173,7 @@ pub fn canonical_int8_gemm(
             let with_zp = scaled + output_quant.zero_point as i32;
 
             // Clamp to INT8 range
-            let clamped = with_zp.max(-128).min(127) as i8;
+            let clamped = with_zp.clamp(-128, 127) as i8;
             output.push(clamped);
         }
     }
@@ -340,7 +340,7 @@ mod tests {
     fn test_fixed_scale_mul() {
         let a = FixedScale::from_f32(0.05);
         let b = FixedScale::from_f32(0.05);
-        let c = a.mul(b);
+        let c = a.fixed_mul(b);
         assert!((c.to_f32() - 0.0025).abs() < 0.001);
     }
 
@@ -348,7 +348,7 @@ mod tests {
     fn test_fixed_scale_div() {
         let a = FixedScale::from_f32(0.0025);
         let b = FixedScale::from_f32(0.02);
-        let c = a.div(b);
+        let c = a.fixed_div(b);
         assert!((c.to_f32() - 0.125).abs() < 0.01);
     }
 

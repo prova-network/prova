@@ -126,7 +126,7 @@ pub fn generate_inclusion_proof(leaves: &[[u8; 32]], leaf_index: usize) -> Optio
 
     for level in &tree[..tree.len().saturating_sub(1)] {
         // Pad for sibling lookup
-        let sibling_idx = if idx % 2 == 0 {
+        let sibling_idx = if idx.is_multiple_of(2) {
             if idx + 1 < level.len() { idx + 1 } else { idx }
         } else {
             idx - 1
@@ -148,7 +148,7 @@ pub fn verify_inclusion_proof(proof: &InclusionProof, root: &[u8; 32]) -> bool {
     let mut idx = proof.leaf_index;
 
     for sibling in &proof.siblings {
-        current = if idx % 2 == 0 {
+        current = if idx.is_multiple_of(2) {
             hash_pair(&current, sibling)
         } else {
             hash_pair(sibling, &current)
@@ -221,7 +221,7 @@ impl PdpEngine {
 
     /// Check if a proof set needs proving at the given epoch.
     pub fn needs_proving(&self, proof_set_id: ProofSetId, epoch: Epoch) -> bool {
-        self.proof_sets.get(&proof_set_id).map_or(false, |ps| {
+        self.proof_sets.get(&proof_set_id).is_some_and(|ps| {
             epoch >= ps.last_proven_epoch + ps.config.challenge_period
         })
     }
