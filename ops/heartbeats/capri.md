@@ -103,3 +103,5 @@ Built listing/bidding/discovery system with stake requirements, bid matching, fe
 ## 2026-03-04 08:54 CET
 SDK-008: Marketplace client SDK (17 tests) + SPEC-018: Marketplace specification. Phase 10 P0 complete.
 - 2026-03-04 08:59 CET — CHAIN-028: Dutch auction for premium model slots (18 tests). Linear price decay, anti-snipe guard, revenue tracking.
+## 2026-03-04 09:04 — NODE-027: Marketplace event indexer
+Promoted from P1, built materialized views for listing/bid/match/auction events with 19 tests. Cursor pagination, price history, multi-model isolation.
