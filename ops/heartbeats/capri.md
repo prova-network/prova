@@ -20,3 +20,4 @@ Built LlamaCppRunner: real llama.cpp activation capture integration with dump fi
 2026-03-04 02:52 UTC — EXP-002: Built INT8 cross-arch determinism harness (GEMM sim, 5 archs, Merkle integration). 12 tests, committed 1147674.
 ## 2026-03-04 03:54 — EXP-003: CPU canonical verification path
 Fixed-point Q16.16 GEMM, CanonicalVerifier for dispute adjudication, 18 tests passing. Promoted from P1→P0.
+2026-03-04 03:59 CET — NODE-006: P2P networking scaffold (Kademlia DHT + gossipsub router + NetworkNode). 13 tests passing.
