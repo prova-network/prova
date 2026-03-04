@@ -134,3 +134,4 @@ Built per-inference ephemeral key derivation (HKDF-SHA256), master secret encryp
 
 2026-03-04 10:44 CET — SDK-011: Confidential inference client SDK (14 tests). Submit/dispute/reveal/auto-reveal/batch, encryption helpers, full lifecycle.
 2026-03-04 10:49 CET — CHAIN-037: Multi-sig wallet & account abstraction (15 tests). M-of-N proposals, daily limits, owner management, registry.
+2026-03-04 10:54 CET — NODE-033: Multi-sig CLI commands (create/propose/approve/reject/execute/cancel/list/info/owners/threshold). 36 tests passing.

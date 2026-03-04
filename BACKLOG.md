@@ -202,7 +202,7 @@
 - [x] CHAIN-037: Multi-sig wallet & account abstraction (M-of-N proposals, daily limits, owner mgmt) — `chain/src/multisig.rs` (15 tests)
 
 ### P1 — Next
-- [ ] NODE-033: Multi-sig CLI commands (create wallet, propose, approve, execute)
+- [x] NODE-033: Multi-sig CLI commands (create wallet, propose, approve, execute) — `node/src/multisig_cli.rs` (36 tests)
 - [ ] SDK-012: Multi-sig client SDK (wallet management, proposal submission)
 - [ ] SPEC-023: Account abstraction specification
 
