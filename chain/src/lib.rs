@@ -20,6 +20,7 @@ pub mod epoch;
 pub mod genesis;
 pub mod mempool;
 pub mod payment;
+pub mod pruning;
 pub mod registry;
 pub mod reputation;
 pub mod rewards;
