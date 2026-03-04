@@ -152,3 +152,4 @@ Built HMAC-SHA256 signed webhook delivery with exponential backoff, dead-letter 
 2026-03-04 10:51 UTC — SPEC-024 + DOCS-008: API gateway specification (auth, rate limiting, webhooks, all endpoints) and integration guide (quick start, SDK examples, best practices). 1638 tests passing.
 2026-03-04 11:54 — BENCH-001: Performance benchmarking harness — BenchRunner/BenchSuite with 6 subsystem benchmarks (state trie, mempool, scheduler, fee market, rewards, genesis), regression detection, markdown reports. 16 tests.
 2026-03-04 11:59 CET — BENCH-002 + BENCH-003: CI benchmark regression gate & historical tracking (BenchHistory JSONL store, CIBenchGate with absolute + moving-average checks, CI workflow bench job). 16 tests.
+2026-03-04 12:04 — CHAIN-038: State migration system (dependency-sorted runner, pre/post validation, rollback, dry-run, 3 built-in migrations). 20 tests.

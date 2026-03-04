@@ -251,6 +251,16 @@
 - [x] NODE-032: Encryption key management (per-inference ephemeral keys) — `node/src/encryption_keys.rs` (16 tests)
 - [x] SDK-011: Confidential inference client SDK — `sdk/src/confidential.rs` (14 tests)
 
+## Phase 19 — State Migration & Versioning
+
+### P0 — Active
+- [x] CHAIN-038: State migration system (versioned transforms, dependency graph, rollback, dry-run) — `chain/src/migration.rs` (20 tests)
+
+### P1 — Next
+- [ ] CHAIN-039: Migration CLI commands (list pending, dry-run, apply, rollback)
+- [ ] SPEC-025: State migration specification
+- [ ] NODE-037: Automatic migration on node startup (detect version, run pending)
+
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
 |------|----------|--------|---------|-----------|
