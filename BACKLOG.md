@@ -196,6 +196,18 @@
 - [x] SDK-009: Blob upload client (erasure encode + submit) — `sdk/src/blob_client.rs` (19 tests)
 - [x] INT-004: DAS adversarial test (withholding attacks, partial responses) — `chain/src/das_adversarial_test.rs` (19 tests)
 
+## Phase 14 — Privacy & Confidential Inference
+
+### P0 — Active
+- [x] CHAIN-035: Confidential inference (commit-reveal with encrypted activations, blinding hash, dispute→reveal flow, default slashing) — `chain/src/confidential.rs` (15 tests)
+- [ ] NODE-031: Confidential commit CLI (submit encrypted inference, reveal on dispute) [UNASSIGNED]
+- [ ] SPEC-022: Confidential inference specification [UNASSIGNED]
+
+### P1 — Next
+- [ ] CHAIN-036: Zero-knowledge proof verifier (ZK-SNARK verification for activation proofs)
+- [ ] NODE-032: Encryption key management (per-inference ephemeral keys)
+- [ ] SDK-011: Confidential inference client SDK
+
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
 |------|----------|--------|---------|-----------|

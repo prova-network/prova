@@ -45,6 +45,7 @@ pub mod blob_tx;
 pub mod marketplace;
 pub mod upgrade;
 pub mod validator_set;
+pub mod confidential;
 
 #[cfg(test)]
 mod integration_test;
