@@ -17,6 +17,7 @@ pub mod payment;
 pub mod registry;
 pub mod simulation;
 pub mod stake;
+pub mod state;
 pub mod types;
 
 #[cfg(test)]
