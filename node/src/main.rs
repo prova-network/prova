@@ -11,6 +11,7 @@ pub mod pdp;
 pub mod rpc;
 pub mod runner;
 pub mod storage;
+pub mod sync;
 pub mod wallet;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
