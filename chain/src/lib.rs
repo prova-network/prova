@@ -12,6 +12,7 @@ pub mod commit;
 pub mod dispute;
 pub mod epoch;
 pub mod genesis;
+pub mod mempool;
 pub mod payment;
 pub mod registry;
 pub mod simulation;

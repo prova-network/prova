@@ -45,6 +45,15 @@
 - [x] OPS-001: Devnet simulation — `node/src/devnet.rs` (5 tests)
 - [x] DOCS-002: Architecture overview diagram — `docs/architecture.md` (payments, audit, dependency graph added)
 
+## Phase 2 — Integration & Hardening
+
+### P0 — Active
+- [x] CHAIN-008: Transaction mempool (priority, nonce, eviction) — `chain/src/mempool.rs` (16 tests)
+- [ ] NODE-009: CLI scaffold (subcommands: run, status, account, tx)
+- [ ] INT-001: Multi-node integration test harness
+- [ ] CHAIN-009: State trie (account balances + nonce tracking)
+- [ ] SPEC-010: Token economics specification
+
 ## Assignment History
 | Task | Assignee | Status | Started | Completed |
 |------|----------|--------|---------|-----------|
@@ -69,3 +78,4 @@
 | EXP-002 | Capri | ✅ | 03:49 | 03:55 |
 | DOCS-002 | Capri | ✅ | 04:04 | 04:10 |
 | NODE-007 | Capri | ✅ | 04:09 | 04:15 |
+| CHAIN-008 | Capri | ✅ | 04:14 | 04:20 |
