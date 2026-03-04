@@ -32,7 +32,7 @@
 - [ ] EXP-002: TensorRT INT8 cross-architecture determinism test
 - [ ] EXP-003: CPU canonical verification path test
 - [x] CI-001: CI pipeline (build + test) — `.github/workflows/ci.yml`
-- [ ] NODE-005: Real llama.cpp integration (activation capture via hook)
+- [x] NODE-005: Real llama.cpp integration (activation capture via hook) — `node/src/llamacpp.rs` (8 tests)
 - [x] CHAIN-005: Epoch ticker + state transitions — `chain/src/epoch.rs`
 - [x] SPEC-007: Network protocol (P2P gossip, block propagation) — `spec/network-protocol.md`
 
