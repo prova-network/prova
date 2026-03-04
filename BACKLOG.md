@@ -142,7 +142,7 @@
 - [x] CHAIN-024: Access control layer (role-based capabilities, pause, expiry, overrides) — `chain/src/access.rs` (17 tests)
 - [x] CHAIN-025: Rate limiter (per-address tx throttling, adaptive limits) — `chain/src/rate_limiter.rs` (15 tests)
 - [x] NODE-024: TLS transport layer (encrypted P2P, certificate pinning) — `node/src/tls.rs` (16 tests)
-- [ ] SPEC-017: Security audit checklist specification
+- [x] SPEC-017: Security audit checklist specification — `spec/security-audit-checklist.md` (73 checks)
 
 ### P1 — Next
 - [ ] CHAIN-026: Formal invariant checker (balance conservation, stake consistency)
