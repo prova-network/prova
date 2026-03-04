@@ -151,3 +151,4 @@ SDK-012: Multi-sig client SDK (16 tests) + SPEC-023: Account abstraction spec. A
 Built HMAC-SHA256 signed webhook delivery with exponential backoff, dead-letter queue, replay, dedup. 16 tests passing.
 2026-03-04 10:51 UTC — SPEC-024 + DOCS-008: API gateway specification (auth, rate limiting, webhooks, all endpoints) and integration guide (quick start, SDK examples, best practices). 1638 tests passing.
 2026-03-04 11:54 — BENCH-001: Performance benchmarking harness — BenchRunner/BenchSuite with 6 subsystem benchmarks (state trie, mempool, scheduler, fee market, rewards, genesis), regression detection, markdown reports. 16 tests.
+2026-03-04 11:59 CET — BENCH-002 + BENCH-003: CI benchmark regression gate & historical tracking (BenchHistory JSONL store, CIBenchGate with absolute + moving-average checks, CI workflow bench job). 16 tests.

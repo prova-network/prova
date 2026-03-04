@@ -201,8 +201,8 @@
 - [x] BENCH-001: Performance benchmarking harness (runner, suite, regression detection, 6 subsystem benchmarks) — `chain/src/benchmark.rs` (16 tests)
 
 ### P1 — Next
-- [ ] BENCH-002: CI benchmark regression gate (run benchmarks in CI, fail on regression)
-- [ ] BENCH-003: Historical benchmark tracking (store results per commit, trend analysis)
+- [x] BENCH-002: CI benchmark regression gate — `chain/src/bench_history.rs` CIBenchGate (16 tests)
+- [x] BENCH-003: Historical benchmark tracking — `chain/src/bench_history.rs` BenchHistory (included in 16 tests)
 
 ## Phase 11 — Data Availability & Blob Storage
 
