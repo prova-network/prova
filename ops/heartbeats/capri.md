@@ -99,3 +99,4 @@ NODE-025: Fuzz testing harness — 12 property-based tests (no-panic, nonce mono
 2026-03-04 08:39 CET — DOCS-005: Security model documentation (docs/security-model.md). Unified 10KB reference: trust model, consensus, QBP, economics, bridge, RBAC, audit readiness. All P0/P1 tasks complete except Koda (EXP-001) and Kestrel (DOCS-001, SPEC-009).
 ## 2026-03-04 08:50 — CHAIN-027: Model marketplace
 Built listing/bidding/discovery system with stake requirements, bid matching, fee collection, capacity tracking, and filtered provider discovery. 17 tests passing.
+2026-03-04T08:49 CET | NODE-026: Marketplace CLI — 7 subcommands (list/bid/discover/show/create/deactivate/my-listings), parser + formatters, 37 tests
