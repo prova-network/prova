@@ -18,7 +18,7 @@
 - [x] CHAIN-002: Stake ledger + slashing — `chain/src/stake.rs` (11 tests)
 - [x] CHAIN-003: Model registry on-chain — `chain/src/registry.rs` (4 tests)
 
-**Total: 198 passing tests, 2 external deps (sha2, serde). 24 source files, ~9,575 lines of Rust.**
+**Total: 220 passing tests, 2 external deps (sha2, serde). 25 source files, ~10,069 lines of Rust.**
 
 ### P0 — In Progress
 - [ ] EXP-001: Determinism harness on Blackwell [KODA] — Blackwell confirmed ready, harness not yet run
@@ -49,7 +49,7 @@
 
 ### P0 — Active
 - [x] CHAIN-008: Transaction mempool (priority, nonce, eviction) — `chain/src/mempool.rs` (16 tests)
-- [ ] NODE-009: CLI scaffold (subcommands: run, status, account, tx)
+- [x] NODE-009: CLI scaffold (subcommands: run, status, account, tx) — `node/src/cli.rs` (22 tests)
 - [ ] INT-001: Multi-node integration test harness
 - [ ] CHAIN-009: State trie (account balances + nonce tracking)
 - [ ] SPEC-010: Token economics specification
@@ -79,3 +79,4 @@
 | DOCS-002 | Capri | ✅ | 04:04 | 04:10 |
 | NODE-007 | Capri | ✅ | 04:09 | 04:15 |
 | CHAIN-008 | Capri | ✅ | 04:14 | 04:20 |
+| NODE-009 | Capri | ✅ | 04:19 | 04:25 |
