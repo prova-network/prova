@@ -46,6 +46,7 @@ pub mod marketplace;
 pub mod upgrade;
 pub mod validator_set;
 pub mod confidential;
+pub mod zk_verifier;
 
 #[cfg(test)]
 mod integration_test;
