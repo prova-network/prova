@@ -36,6 +36,7 @@ pub mod sla;
 pub mod stake;
 pub mod state;
 pub mod types;
+pub mod marketplace;
 pub mod upgrade;
 
 #[cfg(test)]
