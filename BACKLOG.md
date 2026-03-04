@@ -226,7 +226,7 @@
 - [x] SDK-013: API gateway client SDK (key management, inference submission) — `sdk/src/api_gateway_client.rs` (23 tests)
 
 ### P1 — Next
-- [ ] NODE-036: Webhook delivery engine (retry, backoff, signature verification)
+- [x] NODE-036: Webhook delivery engine (retry, backoff, signature verification) — `node/src/webhooks.rs` (16 tests)
 - [ ] SPEC-024: API gateway specification
 - [ ] DOCS-008: API gateway integration guide
 
