@@ -30,6 +30,7 @@ pub mod marketplace_cli;
 pub mod marketplace_indexer;
 pub mod das_validator;
 pub mod blob_store;
+pub mod delegation_cli;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
 use prova_chain::types::ModelId;
