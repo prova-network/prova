@@ -70,7 +70,7 @@
 ### P1 — Next (promoted to P0)
 - [x] CHAIN-018: Finality gadget (fast finality via checkpoint + slow finality via L1) — `chain/src/finality.rs` (18 tests)
 - [x] NODE-017: L1 event watcher (monitor Filecoin for anchor confirmations) — `node/src/watcher.rs` (14 tests)
-- [ ] SPEC-015: Bridge security specification
+- [x] SPEC-015: Bridge security specification — `spec/bridge-security.md`
 
 ## Phase 2 — Integration & Hardening
 
