@@ -54,6 +54,7 @@ pub mod load_test;
 pub mod viz;
 pub mod adversarial_net;
 pub mod benchmark;
+pub mod bench_history;
 
 #[cfg(test)]
 mod integration_test;
