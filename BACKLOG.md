@@ -181,7 +181,7 @@
 
 ### P1 — Next
 - [x] NODE-028b: Validator CLI commands (register, exit, status, list, stake, epoch) — `node/src/validator_cli.rs` (42 tests)
-- [ ] SPEC-021: Validator set specification
+- [x] SPEC-021: Validator set specification — `spec/validator-set.md`
 
 ## Phase 11 — Data Availability & Blob Storage
 
