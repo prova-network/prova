@@ -11,6 +11,7 @@ pub mod event_client;
 pub mod event_replay;
 pub mod marketplace;
 pub mod blob_client;
+pub mod delegation;
 
 use prova_chain::types::{Address, Epoch, Hash, ModelId};
 use prova_chain::scheduler::{JobId, JobRequest};
