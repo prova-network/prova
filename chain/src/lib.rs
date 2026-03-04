@@ -23,6 +23,7 @@ pub mod genesis;
 pub mod mempool;
 pub mod payment;
 pub mod pruning;
+pub mod rate_limiter;
 pub mod receipts;
 pub mod registry;
 pub mod reputation;
