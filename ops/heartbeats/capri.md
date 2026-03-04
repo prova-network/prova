@@ -71,3 +71,5 @@ Built RpcClient<T: Transport> with pluggable transport, typed methods for all pr
 CHAIN-019: State snapshot system — chunked export/import with SHA-256 integrity verification, streaming importer, full restore. 20 tests. Phase 7 (Testnet Readiness) created.
 2026-03-04 07:04 CET — NODE-019: Snapshot serving over P2P (SnapshotServer, SnapshotDownload, RateLimiter, manifest verification, 19 tests)
 2026-03-04 07:09 — CHAIN-020: State pruning module (retain N snapshots, block GC, checkpoint protection, archive mode). 13 tests passing.
+
+2026-03-04 07:14 — NODE-020: Fast sync mode (multi-peer parallel chunk download, peer scoring, recovery). 14 tests, 831 lines.

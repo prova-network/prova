@@ -115,7 +115,7 @@
 - [x] CHAIN-019: State snapshot system (chunked export/import, integrity verification, streaming importer) — `chain/src/snapshot.rs` (20 tests)
 - [x] NODE-019: Snapshot serving over P2P — `node/src/snapshot_serve.rs` (19 tests)
 - [x] CHAIN-020: State pruning (retain last N snapshots, garbage collect old blocks) — `chain/src/pruning.rs` (13 tests)
-- [ ] NODE-020: Fast sync mode (download snapshot instead of replaying blocks)
+- [x] NODE-020: Fast sync mode (download snapshot instead of replaying blocks) — `node/src/fast_sync.rs` (14 tests)
 - [ ] OPS-002: Testnet genesis config + boot nodes
 
 ### P1 — Next
