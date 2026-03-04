@@ -1,5 +1,6 @@
 pub mod canonical_cpu;
 pub mod determinism;
+pub mod devnet;
 pub mod llamacpp;
 pub mod merkle;
 pub mod network;
