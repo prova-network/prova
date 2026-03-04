@@ -18,6 +18,7 @@ pub mod sync;
 pub mod pricing;
 pub mod submitter;
 pub mod wallet;
+pub mod snapshot_serve;
 pub mod watcher;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};
