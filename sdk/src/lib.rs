@@ -7,6 +7,7 @@
 pub mod rpc_client;
 pub mod cli_wallet;
 pub mod retry;
+pub mod event_client;
 
 use prova_chain::types::{Address, Epoch, Hash, ModelId};
 use prova_chain::scheduler::{JobId, JobRequest};
