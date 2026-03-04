@@ -63,7 +63,7 @@
 
 ### P0 — Active
 - [x] CHAIN-016: Filecoin checkpoint anchoring (quorum voting, L1 anchor, light client verify) — `chain/src/checkpoint.rs` (16 tests)
-- [ ] CHAIN-017: Cross-chain bridge message format (Prova↔Filecoin state proofs)
+- [x] CHAIN-017: Cross-chain bridge message format (Prova↔Filecoin state proofs) — `chain/src/bridge.rs` (20 tests)
 - [ ] NODE-016: Checkpoint submitter (automatic L1 tx submission)
 - [ ] SPEC-014: Checkpoint anchoring specification
 

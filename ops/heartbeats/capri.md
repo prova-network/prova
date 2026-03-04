@@ -53,3 +53,4 @@ SPEC-011 + INT-002: Fixed full-chain integration tests (5 tests, matched real mo
 ## 2026-03-04 05:49 CET
 SPEC-013: Security threat model — 21 threats (consensus, QBP, economics, P2P, storage, ops), full severity matrix, mitigation mapping to existing modules
 2026-03-04 05:54 — CHAIN-016: Filecoin checkpoint anchoring (16 tests). Quorum voting, L1 anchor simulation, light client state verification.
+- **2026-03-04 05:59** — CHAIN-017: Cross-chain bridge message format. Outbox/Inbox with Merkle state proofs, 6 payload types, nonce ordering, TTL expiry, replay protection. 20 tests.
