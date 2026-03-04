@@ -133,3 +133,4 @@ NODE-031: Confidential commit CLI (45 tests) + SPEC-022: Confidential inference 
 Built per-inference ephemeral key derivation (HKDF-SHA256), master secret encryption at rest (XChaCha20-Poly1305), activation encrypt/decrypt, blinding hash integration. 16 tests passing.
 
 2026-03-04 10:44 CET — SDK-011: Confidential inference client SDK (14 tests). Submit/dispute/reveal/auto-reveal/batch, encryption helpers, full lifecycle.
+2026-03-04 10:49 CET — CHAIN-037: Multi-sig wallet & account abstraction (15 tests). M-of-N proposals, daily limits, owner management, registry.

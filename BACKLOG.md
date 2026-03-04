@@ -196,6 +196,16 @@
 - [x] SDK-009: Blob upload client (erasure encode + submit) — `sdk/src/blob_client.rs` (19 tests)
 - [x] INT-004: DAS adversarial test (withholding attacks, partial responses) — `chain/src/das_adversarial_test.rs` (19 tests)
 
+## Phase 15 — Account Abstraction & Multi-sig
+
+### P0 — Active
+- [x] CHAIN-037: Multi-sig wallet & account abstraction (M-of-N proposals, daily limits, owner mgmt) — `chain/src/multisig.rs` (15 tests)
+
+### P1 — Next
+- [ ] NODE-033: Multi-sig CLI commands (create wallet, propose, approve, execute)
+- [ ] SDK-012: Multi-sig client SDK (wallet management, proposal submission)
+- [ ] SPEC-023: Account abstraction specification
+
 ## Phase 14 — Privacy & Confidential Inference
 
 ### P0 — Active
