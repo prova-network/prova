@@ -105,7 +105,7 @@
 
 ### P1 — Next
 - [x] SDK-004: TypeScript/WASM bindings for browser clients — `sdk/wasm/` (27 tests)
-- [ ] SDK-005: Rate limiting & retry logic
+- [x] SDK-005: Rate limiting & retry logic — `sdk/src/retry.rs` (17 tests)
 - [ ] DOCS-003: SDK usage guide & examples
 
 ## Assignment History
