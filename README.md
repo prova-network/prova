@@ -12,7 +12,7 @@
 | Lines of Rust | 63,000+ |
 | Passing tests | 1,690 |
 | Crates | 4 (`prova-chain`, `prova-node`, `prova-sdk`, ops) |
-| Specifications | 22 |
+| Specifications | 23 |
 | Documentation | 10 guides |
 | Commits | 209 |
 | External deps | Minimal (sha2, serde, serde_json) |
@@ -37,8 +37,8 @@ All tests pass. Clippy clean with `-D warnings`.
 │  Checkpoints ─ Bridge ─ Finality ─ Events            │
 ├─────────────────────────────────────────────────────┤
 │                   Proof Layer                        │
-│  QBP (Quantized Bisection Proofs) ─ PDP ─ Audits    │
-│  Activation Merkle Trees ─ ZK Verifier              │
+│  QBP (Quantized Bisection Proofs) ─ PDP ─ TEE       │
+│  Activation Merkle Trees ─ Audits ─ ZK Verifier     │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -54,14 +54,28 @@ Verifiable AI inference without re-executing the full workload:
 4. **Single-layer verification**: Re-execute one layer to determine who's honest — <2% of original compute
 5. **Economic security**: Staking + random audit rate makes cheating negative expected value
 
-### Provable Data Possession (PDP)
+### Three-Tier Storage Proofs
 
-Lightweight storage proofs for hot/warm data:
+Providers choose their proof mechanism based on hardware and economics:
 
+**PDP (Baseline)** — Lightweight Merkle proofs for hot/warm data:
 - On-chain proof sets with CommP roots + drand randomness → 5 random challenges → Merkle inclusion proofs
-- No sealing required — data is available in minutes, not hours
+- No special hardware required — data onboarded in minutes
 - Logarithmic gas scaling (140M gas for 100 roots, 160M for 10K)
-- PoRep available as optional cold archival tier
+
+**TEE-Attested (Fast Path)** — Hardware-managed encryption with spot-check verification:
+- TEE enclave manages all disk encryption — provider never sees plaintext keys
+- Per-machine encryption → unique replicas without SNARK sealing
+- Onboarding in **seconds** (AES at hardware speed)
+- Open source enclave image, chain-versioned, governance-approved updates
+- No network access for enclave — disk I/O + bytestream only (minimal TCB)
+- Graceful fallback to PDP if TEE vulnerability discovered
+
+**PoRep (Cold Tier)** — Optional SNARK-sealed archival storage:
+- Cryptographic unique replica guarantees
+- Hours to onboard, but strongest anti-outsourcing properties
+
+All tiers earn equal rewards per byte. TEE is an optimization, never a requirement — the network's security is grounded in math (PDP), with hardware as an accelerator.
 
 ### Clean Economics
 
@@ -185,6 +199,7 @@ cargo run -p prova-node
 | SPEC-023 | [Account Abstraction](spec/account-abstraction.md) — Multi-sig |
 | SPEC-024 | [API Gateway](spec/api-gateway.md) — External integration |
 | SPEC-025 | State Migration — *planned* |
+| SPEC-026 | [TEE-Attested Storage Proofs](spec/tee-storage-proofs.md) — Hardware fast path |
 
 ## Experiments
 
@@ -215,6 +230,7 @@ cargo run -p prova-node
 - [ ] Persistent state (replace in-memory with on-disk)
 - [ ] Real GPU inference integration (llama.cpp production pipeline)
 - [ ] Testnet launch (genesis ceremony, boot nodes, monitoring)
+- [ ] TEE enclave prototype (SGX sector encryption + spot-check verification)
 - [ ] TensorRT strict INT8 experiment (potential universal cross-arch solution)
 - [ ] Formal security audit
 - [ ] Whitepaper v1.0
@@ -229,7 +245,8 @@ cargo run -p prova-node
 | Render | ❌ | ✅ GPU rendering | Reputation | Specialized, no storage |
 | io.net | ❌ | ✅ GPU cluster | Economic | No storage proofs |
 | Arweave/AO | ✅ Permanent | ✅ (AO) | Proof of Access | Different proof model |
-| **Prova** | ✅ PDP+PoRep | ✅ AI inference | QBP + PDP | Combined |
+| TEE-only | TEE attestation | TEE attestation | Hardware only | Single point of failure |
+| **Prova** | ✅ PDP+TEE+PoRep | ✅ AI inference | QBP + PDP + TEE | Defense in depth |
 
 ## Language Strategy
 

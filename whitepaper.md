@@ -8,7 +8,7 @@
 
 ## Abstract
 
-We present Prova, a Layer 1 blockchain that unifies verifiable storage and AI compute into a single protocol. Nodes simultaneously store data with cryptographic proofs of possession and execute AI inference with deterministic verification. The storage layer uses Provable Data Possession (PDP) as its primary proof mechanism, enabling minute-scale onboarding without the hours-long sealing pipeline required by existing proof-of-storage networks. The compute layer introduces a novel verification protocol — **Quantized Bisection Proofs (QBP)** — which exploits the determinism of integer-quantized neural network inference to enable efficient fraud proofs with O(log L) verification cost for L-layer models. Combined with staking-based economic security and random audit sampling, Prova achieves practical proof of compute without trusted hardware (TEE) or prohibitively expensive zero-knowledge proofs. All data is treated equally — one byte earns one byte of reward, with no privileged data classes or quality multipliers.
+We present Prova, a Layer 1 blockchain that unifies verifiable storage and AI compute into a single protocol. Nodes simultaneously store data with cryptographic proofs of possession and execute AI inference with deterministic verification. The storage layer offers three proof tiers: **Provable Data Possession (PDP)** as the universal baseline (minute-scale onboarding), an optional **TEE-attested fast path** that reduces onboarding to seconds via hardware-managed encryption with unique-replica guarantees, and optional **Proof of Replication (PoRep)** for cold archival storage. The compute layer introduces a novel verification protocol — **Quantized Bisection Proofs (QBP)** — which exploits the determinism of integer-quantized neural network inference to enable efficient fraud proofs with O(log L) verification cost for L-layer models. Combined with staking-based economic security and random audit sampling, Prova achieves practical proof of compute with defense-in-depth storage verification — mathematics as the security foundation, hardware attestation as an optimization, never a requirement. All data is treated equally — one byte earns one byte of reward, with no privileged data classes or quality multipliers.
 
 ---
 
@@ -55,6 +55,8 @@ The key insight is that we do not need to solve proof of compute in the general 
 
 PDP trades the anti-outsourcing guarantees of PoRep for dramatically faster onboarding (minutes vs hours) and native support for hot/warm data that needs to be read frequently.
 
+**TEE-attested storage** is a third approach, where a Trusted Execution Environment (Intel SGX, AMD SEV-SNP) manages disk encryption with hardware-sealed keys. The TEE provides unique replica guarantees (same data, different ciphertext per machine) and near-instant onboarding (AES encryption at hardware speed). The trade-off is a shift in trust assumption from mathematics to hardware manufacturers — TEE side-channel attacks (Foreshadow, SGAxe, ÆPIC Leak) have been discovered repeatedly, making TEE unsuitable as a sole proof mechanism but valuable as an optimization alongside mathematical proofs.
+
 ### 2.2 Quantized Neural Network Inference
 
 Modern AI inference increasingly uses quantized models, where model weights and/or activations are represented with reduced precision — typically INT8 (8-bit integer) or INT4 (4-bit integer) rather than FP32 (32-bit floating point) or FP16 (16-bit floating point).
@@ -94,8 +96,9 @@ For a computation with N steps, bisection requires only O(log N) rounds of inter
 | Render | None | Reputation | No cryptographic verification of either storage or compute |
 | io.net | None | Economic (staking) | No storage proofs; no compute verification |
 | Arweave/AO | Proof of Access | Optimistic (AO) | Different proof model; not GPU-optimized |
+| TEE-only proposals | TEE attestation | TEE attestation | Single trust assumption; hardware compromise = total failure |
 
-No existing protocol provides cryptographic storage proofs AND efficient compute verification in a unified system.
+No existing protocol provides cryptographic storage proofs AND efficient compute verification in a unified system. Proposals that rely solely on TEE for both storage and compute verification inherit a single point of failure — when a TEE generation is compromised (a recurring event), the entire proof system breaks. Prova's defense-in-depth approach uses mathematical proofs as the foundation with TEE as an optional accelerator.
 
 ---
 
@@ -140,11 +143,42 @@ Unlike Filecoin's PoRep-first approach (which requires hours of GPU-intensive se
 2. **Proving**: The protocol periodically selects random challenges via drand randomness. Provider responds with Merkle inclusion proofs. Verified on-chain in O(log N) gas.
 3. **Retrieval**: Data is stored unsealed — providers can serve it directly without unsealing. Ideal for hot/warm storage patterns.
 
-#### 3.2.2 Optional PoRep Tier
+#### 3.2.2 TEE-Attested Storage (Fast Path)
+
+For providers with Trusted Execution Environment hardware (Intel SGX/TDX, AMD SEV-SNP), Prova offers a hardware-attested storage path that reduces onboarding from minutes to **seconds**.
+
+The design is simple: a TEE enclave manages all disk encryption. The enclave holds the only keys that can read or write sector data. The host node — and the storage provider operating it — never sees plaintext keys. Each machine's enclave derives a unique master key from hardware-sealed storage, so the same data produces different ciphertext on different machines. This provides **unique replica guarantees without SNARK-based sealing** — deduplication across machines is cryptographically impossible.
+
+**Verification** uses random spot checks rather than Merkle proofs:
+
+1. The chain selects random 4 KiB chunk indices within a sector
+2. The enclave decrypts those chunks and verifies they contain the expected content (provider ID, sector ID, chunk ID for empty space; inline hashes for stored data)
+3. The enclave signs an attestation that the chunks are valid
+4. The chain verifies the attestation against the registered enclave's public key and measurement hash
+
+**Security model:** The enclave image is open source, auditable, and chain-versioned. New versions require governance approval. The enclave has no network access — only disk I/O and a sealed bytestream to the host node, minimizing attack surface.
+
+**Critical design choice:** TEE is an optimization, never a requirement. If a TEE vulnerability is discovered (as has happened repeatedly with SGX side-channel attacks), the chain can deprecate affected TCB levels via governance, and nodes fall back to PDP proofs during a grace period. The network's security is grounded in mathematics (PDP), with TEE as an acceleration layer.
+
+The TEE storage path also synergizes with confidential inference (Section 3.3): model weights stored under TEE encryption can be loaded directly into TEE-attested inference without ever leaving the enclave boundary — protecting model intellectual property by hardware.
+
+See SPEC-026 for the full protocol specification including sector format, encryption hierarchy, migration, and deprecation protocol.
+
+#### 3.2.3 Optional PoRep Tier
 
 For cold archival storage where anti-outsourcing guarantees are desired, providers can optionally seal data using PoRep. Sealed sectors earn a modest bonus reward (e.g., 1.2×) to compensate for the sealing cost, but this is a cost-recovery mechanism, not a quality multiplier — all data is fundamentally equal.
 
-#### 3.2.3 Variable Sector Sizes
+#### 3.2.4 Three-Tier Storage Proof Summary
+
+| Tier | Trust Basis | Onboarding | Unique Replica | Hardware Required | Fallback |
+|------|------------|------------|----------------|-------------------|----------|
+| **PDP** (baseline) | Mathematics | Minutes | No | None | — |
+| **TEE** (fast path) | Hardware attestation | Seconds | Yes (per-machine encryption) | SGX/TDX/SEV | → PDP |
+| **PoRep** (cold tier) | Mathematics (SNARKs) | Hours | Yes (sealed) | GPU | → PDP |
+
+All three tiers earn equal rewards per byte stored. The choice is the provider's — Prova does not privilege one proof mechanism over another.
+
+#### 3.2.5 Variable Sector Sizes
 
 Prova does not mandate fixed sector sizes. Providers register proof sets with roots of any size from 1 MiB to 64 GiB+. This eliminates padding waste and allows providers to store data in its natural size.
 
@@ -257,29 +291,30 @@ The audit rate, combined with slashing penalties, establishes the economic secur
 A Prova node combines storage and compute capabilities:
 
 ```
-┌──────────────────────────────────────────┐
-│                PROVA NODE                 │
-│                                          │
-│  ┌────────────┐      ┌────────────────┐  │
-│  │   Storage   │      │    Compute     │  │
-│  │   ├─ HDD/SSD│      │   ├─ GPU(s)   │  │
-│  │   ├─ PDP    │      │   ├─ VRAM     │  │
-│  │   └─ (PoRep)│      │   └─ Quantized│  │
-│  │             │      │     runtime    │  │
-│  └──────┬──────┘      └───────┬────────┘  │
-│         │    DATA LOCALITY    │           │
-│         └─────────────────────┘           │
-│    Model weights stored locally =         │
-│    instant inference, no transfer         │
-│                                          │
-│  ┌────────────────────────────────────┐  │
-│  │         Proof Engine               │  │
-│  │  ├─ PDP proof generation           │  │
-│  │  ├─ Activation Merkle tree builder │  │
-│  │  ├─ Bisection game participant     │  │
-│  │  └─ (Optional) PoRep sealing       │  │
-│  └────────────────────────────────────┘  │
-└──────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│                    PROVA NODE                      │
+│                                                    │
+│  ┌────────────┐  ┌────────────────┐  ┌─────────┐ │
+│  │   Storage   │  │    Compute     │  │   TEE   │ │
+│  │   ├─ HDD/SSD│  │   ├─ GPU(s)   │  │ Enclave │ │
+│  │   ├─ PDP    │  │   ├─ VRAM     │  │ (opt.)  │ │
+│  │   └─ (PoRep)│  │   └─ Quantized│  │ ├─ Disk │ │
+│  │             │  │     runtime    │  │ │  keys  │ │
+│  └──────┬──────┘  └───────┬────────┘  │ ├─ Fast │ │
+│         │  DATA LOCALITY  │           │ │ onboard│ │
+│         └─────────────────┘           │ └─ Conf. │ │
+│    Model weights stored locally =     │   infer. │ │
+│    instant inference, no transfer     └─────────┘ │
+│                                                    │
+│  ┌──────────────────────────────────────────────┐ │
+│  │              Proof Engine                     │ │
+│  │  ├─ PDP proof generation (baseline)           │ │
+│  │  ├─ TEE attestation proofs (fast path)        │ │
+│  │  ├─ Activation Merkle tree builder            │ │
+│  │  ├─ Bisection game participant                │ │
+│  │  └─ (Optional) PoRep sealing                  │ │
+│  └──────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
 ```
 
 **Data locality advantage**: Because nodes store data AND run inference, model weights are always local. There is no need to transfer multi-gigabyte model files between storage and compute providers — the same node does both. This is a fundamental architectural advantage over systems where storage and compute are separate networks.
