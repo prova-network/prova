@@ -155,7 +155,7 @@ prova/
 
 ```bash
 # Clone (private repo — requires access)
-git clone git@github.com:Reiers/prova.git
+git clone git@github.com:prova-network/prova.git
 cd prova
 
 # Build all crates
@@ -265,7 +265,7 @@ cargo run -p prova-node
 
 ## Team
 
-Built by Nicklas and Capri.
+Built by Prova Team.
 
 ## License
 

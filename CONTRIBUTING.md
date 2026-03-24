@@ -6,7 +6,7 @@ Thanks for contributing to Prova. This document covers the basics to get you sta
 
 ```bash
 # Clone (private repo — requires access)
-git clone github.com/Reiers/prova
+git clone github.com/prova-network/prova
 cd prova
 
 # Build

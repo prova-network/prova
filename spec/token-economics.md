@@ -1,7 +1,7 @@
 # SPEC-010: Token Economics Specification
 
 **Status:** Draft v2
-**Authors:** Nicklas Reiers, Capri
+**Authors:** Prova Team
 **Created:** 2026-03-04
 **Updated:** 2026-03-24
 

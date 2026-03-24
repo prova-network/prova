@@ -1,7 +1,7 @@
 # Prova: A Verifiable Storage and Compute Network
 
 **Version 0.1 — Draft**
-**Author: Nicklas Reiers**
+**Author: Prova Team**
 **March 2026**
 
 ---

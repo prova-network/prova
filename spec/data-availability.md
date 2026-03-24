@@ -1,7 +1,7 @@
 # Data Availability Specification
 
 **Status:** Draft  
-**Authors:** Capri (AI), Nicklas Reiers  
+**Authors:** Prova Team  
 **Created:** 2026-03-04  
 **Implements:** SPEC-019
 

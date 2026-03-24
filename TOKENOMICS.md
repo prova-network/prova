@@ -21,7 +21,7 @@
 |---|---|---|---|
 | **Network mining** | 45% | 450,000,000 | Block rewards for storage + compute providers post-mainnet |
 | **Public sale (ICO)** | 15% | 150,000,000 | Primary fundraise. Community ownership from day one. |
-| **Team & founders** | 15% | 150,000,000 | Nicklas + Capri + future core contributors |
+| **Team & founders** | 15% | 150,000,000 | Core team + future contributors |
 | **Ecosystem & grants** | 10% | 100,000,000 | Developer grants, integrations, hackathons, bug bounties |
 | **Early backers (seed)** | 7% | 70,000,000 | Pre-ICO strategic investors and advisors |
 | **Liquidity** | 5% | 50,000,000 | DEX liquidity pools at launch |
