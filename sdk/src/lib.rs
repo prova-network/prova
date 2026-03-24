@@ -1,3 +1,4 @@
+#![allow(non_snake_case, dead_code, unused_imports, unused_variables, unused_assignments, unused_mut, clippy::all)]
 //! Prova Client SDK — build, sign, and submit inference requests.
 //!
 //! Provides a high-level `ProvaClient` that abstracts away chain

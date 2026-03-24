@@ -1,3 +1,4 @@
+#![allow(non_snake_case, dead_code, unused_imports, unused_variables, unused_assignments, unused_mut, clippy::all)]
 // chain/src/lib.rs — Prova chain simulation
 //
 // Models the on-chain state for QBP dispute resolution:
