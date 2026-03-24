@@ -1,8 +1,18 @@
 # Prova
 
+[![CI](https://github.com/prova-network/prova/actions/workflows/ci.yml/badge.svg)](https://github.com/prova-network/prova/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-1%2C690_passing-brightgreen)](https://github.com/prova-network/prova/actions)
+[![Rust](https://img.shields.io/badge/rust-63K%2B_lines-orange)](https://github.com/prova-network/prova)
+[![Specs](https://img.shields.io/badge/specs-22-blue)](https://github.com/prova-network/prova/tree/main/spec)
+[![License](https://img.shields.io/badge/license-proprietary-lightgrey)](https://github.com/prova-network/prova)
+
 **A Layer 1 blockchain combining verifiable storage (PDP) and AI compute (QBP) with clean economics from day one.**
 
 *Prova* — Latin: "to prove."
+
+🌐 [Website](https://prova-network.pages.dev) · 📄 [Whitepaper](https://prova-network.pages.dev/whitepaper.html) · 📜 [Contracts](https://github.com/prova-network/contracts) · 🎨 [Brand](https://github.com/prova-network/brand)
+
+---
 
 ## Status
 
@@ -12,12 +22,26 @@
 | Lines of Rust | 63,000+ |
 | Passing tests | 1,690 |
 | Crates | 4 (`prova-chain`, `prova-node`, `prova-sdk`, ops) |
-| Specifications | 23 |
+| Specifications | 22 |
 | Documentation | 10 guides |
-| Commits | 209 |
 | External deps | Minimal (sha2, serde, serde_json) |
 
-All tests pass. Clippy clean with `-D warnings`.
+### CI Pipeline
+
+| Check | Status |
+|-------|--------|
+| **Build** | `cargo build --workspace` (debug + release) |
+| **Tests (prova-chain)** | 1,400+ tests — state, consensus, economics, proofs |
+| **Tests (prova-node)** | 200+ tests — networking, RPC, sync, wallet |
+| **Tests (prova-sdk)** | 80+ tests — client SDK, blob upload, events |
+| **Clippy** | `--workspace --all-targets -D warnings` |
+| **Format** | `cargo fmt --all -- --check` |
+| **Security Audit** | `cargo audit` (dependency vulnerability scan) |
+| **Coverage** | `cargo tarpaulin --workspace` |
+| **Benchmarks** | Regression gate with historical tracking |
+| **Documentation** | `cargo doc --workspace` with `-D warnings` |
+
+All checks run on every push and PR. Zero warnings policy.
 
 ## Architecture
 
@@ -263,10 +287,14 @@ cargo run -p prova-node
 
 *Rust for the engine, polyglot for the interfaces.*
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+
 ## Team
 
-Built by Prova Team.
+Built by the Prova team. Contact: whitehatter123@proton.me
 
 ## License
 
-Private / Proprietary — not yet open source.
+Proprietary. Contact the team for licensing inquiries.

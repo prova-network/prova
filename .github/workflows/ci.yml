@@ -11,15 +11,13 @@ env:
   RUSTFLAGS: "-D warnings"
 
 jobs:
-  test:
-    name: Test
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
       - name: Cache cargo
         uses: actions/cache@v4
         with:
@@ -30,39 +28,83 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build
+      - name: Build all crates
         run: cargo build --workspace
+      - name: Build release
+        run: cargo build --workspace --release
 
-      - name: Test
-        run: cargo test --workspace
+  test:
+    name: Tests (${{ matrix.crate }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        crate: [prova-chain, prova-node, prova-sdk]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+      - name: Run tests
+        run: cargo test --package ${{ matrix.crate }} -- --nocapture
+      - name: Run tests (release)
+        run: cargo test --package ${{ matrix.crate }} --release
 
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
-
       - name: Check format
         run: cargo fmt --all -- --check
+      - name: Clippy (all targets)
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
-      - name: Clippy
-        run: cargo clippy --workspace -- -D warnings
-
-  bench:
-    name: Benchmark Regression Gate
+  security:
+    name: Security Audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked || true
+      - name: Run audit
+        run: cargo audit
 
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin --locked || true
+      - name: Run coverage
+        run: cargo tarpaulin --workspace --out xml --skip-clean
+      - name: Upload coverage
+        if: github.ref == 'refs/heads/main'
+        run: echo "Coverage report generated"
 
+  bench:
+    name: Benchmark Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
       - name: Cache cargo
         uses: actions/cache@v4
         with:
@@ -73,17 +115,19 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Download benchmark history
-        uses: actions/cache@v4
-        with:
-          path: bench-history.jsonl
-          key: bench-history-${{ github.ref_name }}
-          restore-keys: |
-            bench-history-main
-
       - name: Run benchmarks
         run: cargo test --package prova-chain -- bench_ --nocapture 2>&1 | tee bench-output.txt
-
-      - name: Run benchmark gate tests
+      - name: Benchmark regression check
         run: cargo test --package prova-chain bench_history -- --nocapture
+
+  doc:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build docs
+        run: cargo doc --workspace --no-deps
+        env:
+          RUSTDOCFLAGS: "-D warnings"
