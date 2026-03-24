@@ -4,532 +4,477 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prova — Verifiable Storage and Compute</title>
-<meta name="description" content="A Layer 1 blockchain combining verifiable storage (PDP) and AI compute (QBP) with clean economics. Every byte earns equally. Every inference is provable.">
+<meta name="description" content="A Layer 1 blockchain combining verifiable storage and AI compute with clean economics.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
 :root{
-  --bg:#08090b;--bg2:#0d0e12;--bg3:#12131a;
-  --brass:#c9a84c;--brass-dim:#9a7a30;--brass-glow:#e8c75a;
-  --iron:#8a8880;--obsidian:#1a1b22;
-  --text:#d8d4cc;--text2:#9a968e;--text3:#5a5750;
+  --bg:#06070a;--bg2:#0c0d12;--bg3:#111218;
+  --brass:#c9a84c;--brass-dim:#7a6430;--brass-glow:#e8c75a;--brass-soft:rgba(201,168,76,0.06);
+  --text:#e0ddd5;--text2:#8a8680;--text3:#4a4740;
   --blue:#5b8fb9;--green:#5ba87a;--red:#b85a5a;
   --mono:'JetBrains Mono',monospace;
-  --serif:'Source Serif 4',Georgia,serif;
+  --sans:'Space Grotesk',system-ui,sans-serif;
 }
-html{scroll-behavior:smooth;background:var(--bg);color:var(--text)}
-body{font-family:var(--serif);line-height:1.7;overflow-x:hidden}
 
-/* Utility */
-.container{max-width:960px;margin:0 auto;padding:0 24px}
-.mono{font-family:var(--mono)}
-.brass{color:var(--brass)}
-.dim{color:var(--text2)}
-.muted{color:var(--text3)}
+html{background:var(--bg);color:var(--text);scroll-behavior:smooth}
+body{font-family:var(--sans);line-height:1.7;overflow-x:hidden}
 
-/* Nav */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,9,11,0.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(201,168,76,0.08)}
-nav .inner{max-width:960px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
-nav .logo{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--brass);letter-spacing:4px;text-decoration:none}
-nav .links{display:flex;gap:24px}
-nav .links a{font-family:var(--mono);font-size:11px;color:var(--text2);text-decoration:none;letter-spacing:2px;text-transform:uppercase;transition:color 0.2s}
+/* ---- Prova Symbol SVG (inline, reusable) ---- */
+.prova-symbol{display:inline-block;vertical-align:middle}
+
+/* ---- Nav ---- */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 32px;transition:background 0.3s}
+nav.scrolled{background:rgba(6,7,10,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--brass-soft)}
+nav .wrap{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
+nav .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+nav .logo-text{font-family:var(--mono);font-weight:800;font-size:16px;color:var(--brass);letter-spacing:5px}
+nav .links{display:flex;align-items:center;gap:28px}
+nav .links a{font-family:var(--mono);font-size:10px;color:var(--text2);text-decoration:none;letter-spacing:2.5px;text-transform:uppercase;transition:color 0.3s}
 nav .links a:hover{color:var(--brass)}
+.btn-wallet{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:9px 18px;background:transparent;color:var(--brass);border:1px solid var(--brass-dim);cursor:pointer;transition:all 0.3s}
+.btn-wallet:hover{background:rgba(201,168,76,0.08);border-color:var(--brass)}
+.btn-wallet.connected{color:var(--green);border-color:rgba(91,168,122,0.4)}
 
-/* Hero */
-.hero{padding:140px 0 80px;text-align:center;position:relative}
-.hero::before{content:'';position:absolute;top:60px;left:50%;transform:translateX(-50%);width:1px;height:60px;background:linear-gradient(to bottom,transparent,var(--brass-dim))}
-.hero h1{font-family:var(--mono);font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:6px;color:var(--text);margin-bottom:16px}
-.hero h1 span{color:var(--brass)}
-.hero .sub{font-size:18px;color:var(--text2);max-width:600px;margin:0 auto 40px;line-height:1.8}
-.hero .metrics{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin-bottom:48px}
+/* ---- Hero ---- */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;opacity:0.4}
+.hero-bg canvas{width:100%;height:100%}
+.hero-content{position:relative;z-index:2;text-align:center;padding:0 24px;max-width:720px}
+.hero-badge{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--brass);border:1px solid var(--brass-dim);padding:6px 16px;margin-bottom:32px;opacity:0;transform:translateY(20px)}
+.hero h1{font-family:var(--sans);font-size:clamp(36px,6vw,64px);font-weight:700;line-height:1.1;margin-bottom:20px;opacity:0;transform:translateY(30px)}
+.hero h1 .accent{color:var(--brass)}
+.hero .sub{font-size:18px;color:var(--text2);line-height:1.8;margin-bottom:40px;opacity:0;transform:translateY(20px)}
+.hero .metrics{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;margin-bottom:48px;opacity:0;transform:translateY(20px)}
 .metric{text-align:center}
-.metric .val{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--brass)}
-.metric .label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;margin-top:4px}
-.hero .ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.btn{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:14px 28px;border:none;cursor:pointer;text-decoration:none;transition:all 0.2s}
-.btn-primary{background:var(--brass);color:var(--bg);border-radius:2px}
-.btn-primary:hover{background:var(--brass-glow)}
-.btn-secondary{background:transparent;color:var(--brass);border:1px solid var(--brass-dim);border-radius:2px}
-.btn-secondary:hover{border-color:var(--brass);background:rgba(201,168,76,0.05)}
+.metric .num{font-family:var(--mono);font-size:32px;font-weight:700;color:var(--brass);line-height:1}
+.metric .lab{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;margin-top:6px}
+.hero .ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;opacity:0;transform:translateY(20px)}
+.btn{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:14px 32px;text-decoration:none;transition:all 0.3s;cursor:pointer;border:none}
+.btn-p{background:var(--brass);color:var(--bg)}
+.btn-p:hover{background:var(--brass-glow);transform:translateY(-1px);box-shadow:0 8px 24px rgba(201,168,76,0.15)}
+.btn-s{background:transparent;color:var(--brass);border:1px solid var(--brass-dim)}
+.btn-s:hover{border-color:var(--brass);background:rgba(201,168,76,0.04)}
+.hero-scroll{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);opacity:0}
+.hero-scroll span{display:block;width:1px;height:40px;background:linear-gradient(to bottom,var(--brass-dim),transparent);margin:0 auto;animation:scrollPulse 2s ease infinite}
+@keyframes scrollPulse{0%,100%{opacity:0.3;height:40px}50%{opacity:0.8;height:50px}}
 
-/* Divider */
-.divider{width:100%;height:1px;background:linear-gradient(to right,transparent,var(--brass-dim),transparent);margin:0}
+/* ---- Sections ---- */
+.section{padding:120px 32px;max-width:1100px;margin:0 auto}
+.section-line{width:100%;height:1px;background:linear-gradient(to right,transparent,var(--brass-dim),transparent)}
+.label{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:var(--brass-dim);margin-bottom:16px}
+.section h2{font-family:var(--sans);font-size:clamp(26px,4vw,40px);font-weight:700;margin-bottom:16px;line-height:1.2}
+.section .desc{color:var(--text2);font-size:17px;max-width:560px;margin-bottom:40px}
 
-/* Section */
-section{padding:80px 0}
-section h2{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:var(--brass-dim);margin-bottom:12px}
-section h3{font-family:var(--serif);font-size:clamp(22px,3vw,32px);font-weight:700;color:var(--text);margin-bottom:24px}
-
-/* Innovation cards */
-.innovations{display:grid;grid-template-columns:1fr;gap:24px;margin-top:32px}
-@media(min-width:640px){.innovations{grid-template-columns:1fr 1fr}}
-.card{background:var(--bg2);border:1px solid rgba(201,168,76,0.06);padding:28px 24px;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--brass-dim)}
-.card .tag{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--brass);text-transform:uppercase;margin-bottom:8px}
-.card h4{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px}
+/* ---- Innovation cards ---- */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.grid-2{grid-template-columns:1fr}}
+.card{background:var(--bg2);border:1px solid rgba(201,168,76,0.04);padding:32px 28px;position:relative;overflow:hidden;transition:border-color 0.3s,transform 0.3s}
+.card:hover{border-color:rgba(201,168,76,0.12);transform:translateY(-2px)}
+.card .accent-line{position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(to right,var(--brass),transparent);opacity:0;transition:opacity 0.3s}
+.card:hover .accent-line{opacity:1}
+.card .tag{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--brass);text-transform:uppercase;margin-bottom:10px}
+.card h3{font-family:var(--sans);font-size:18px;font-weight:600;margin-bottom:10px}
 .card p{font-size:14px;color:var(--text2);line-height:1.7}
 
-/* Token section */
-.token-grid{display:grid;grid-template-columns:1fr;gap:32px;margin-top:32px}
-@media(min-width:640px){.token-grid{grid-template-columns:1fr 1fr}}
-.alloc-table{width:100%;border-collapse:collapse}
-.alloc-table th{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);text-align:left;padding:8px 0;border-bottom:1px solid rgba(201,168,76,0.1)}
-.alloc-table td{font-family:var(--mono);font-size:13px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--text2)}
-.alloc-table td:first-child{color:var(--text)}
-.alloc-table td:last-child{color:var(--brass);text-align:right}
+/* ---- Token section ---- */
+.token-layout{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}
+@media(max-width:700px){.token-layout{grid-template-columns:1fr}}
+.alloc-bar{height:6px;display:flex;overflow:hidden;margin-bottom:16px;border-radius:0}
+.alloc-bar div{height:100%;transition:width 1s ease}
+table.spec{width:100%;border-collapse:collapse}
+table.spec th{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);text-align:left;padding:8px 0;border-bottom:1px solid rgba(201,168,76,0.08)}
+table.spec td{font-family:var(--mono);font-size:13px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.02);color:var(--text2)}
+table.spec td:first-child{color:var(--text)}
+table.spec td:last-child{color:var(--brass);text-align:right;font-weight:600}
 
-/* Allocation bar */
-.alloc-bar{height:8px;display:flex;border-radius:1px;overflow:hidden;margin-top:20px;margin-bottom:12px}
-.alloc-bar div{height:100%}
-.alloc-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
-.alloc-legend span{font-family:var(--mono);font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px}
-.alloc-legend span::before{content:'';display:block;width:8px;height:8px;border-radius:1px}
-
-/* Roadmap */
-.timeline{position:relative;padding-left:28px;margin-top:32px}
-.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,var(--brass-dim),transparent)}
-.phase{margin-bottom:32px;position:relative}
-.phase::before{content:'';position:absolute;left:-24px;top:6px;width:9px;height:9px;border-radius:50%;border:2px solid var(--brass-dim);background:var(--bg)}
-.phase.active::before{background:var(--brass);border-color:var(--brass)}
-.phase .time{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--brass);text-transform:uppercase}
-.phase h4{font-family:var(--mono);font-size:14px;color:var(--text);margin:4px 0 6px}
-.phase p{font-size:14px;color:var(--text2)}
-
-/* CTA section */
-.cta-section{text-align:center;padding:80px 0 100px}
-.cta-section h3{font-family:var(--serif);font-size:28px;color:var(--text);margin-bottom:16px}
-.cta-section p{color:var(--text2);margin-bottom:32px}
-
-/* Footer */
-footer{border-top:1px solid rgba(201,168,76,0.06);padding:32px 0}
-footer .inner{max-width:960px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
-footer .copy{font-family:var(--mono);font-size:11px;color:var(--text3)}
-footer .links{display:flex;gap:20px}
-footer .links a{font-family:var(--mono);font-size:11px;color:var(--text3);text-decoration:none;letter-spacing:1px}
-footer .links a:hover{color:var(--brass)}
-
-/* Connect button */
-.btn-connect{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;background:transparent;color:var(--brass);border:1px solid var(--brass-dim);border-radius:2px;cursor:pointer;transition:all 0.2s}
-.btn-connect:hover{background:rgba(201,168,76,0.08);border-color:var(--brass)}
-.btn-connect.connected{color:var(--green);border-color:var(--green)}
-
-/* Buy section */
-.buy-panel{background:var(--bg2);border:1px solid rgba(201,168,76,0.1);padding:32px;margin-top:40px;position:relative}
-.buy-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--brass-dim),transparent)}
-.buy-panel h4{font-family:var(--mono);font-size:14px;color:var(--text);margin-bottom:16px;letter-spacing:2px}
-.pay-options{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.pay-opt{font-family:var(--mono);font-size:11px;padding:8px 14px;background:var(--bg3);border:1px solid rgba(255,255,255,0.06);color:var(--text2);cursor:pointer;transition:all 0.2s;border-radius:2px}
-.pay-opt:hover,.pay-opt.active{border-color:var(--brass);color:var(--brass);background:rgba(201,168,76,0.05)}
-.buy-input{display:flex;gap:8px;align-items:center;margin-bottom:12px}
-.buy-input input{flex:1;font-family:var(--mono);font-size:16px;padding:12px 16px;background:var(--bg);border:1px solid rgba(255,255,255,0.08);color:var(--text);outline:none;border-radius:2px}
-.buy-input input:focus{border-color:var(--brass-dim)}
-.buy-input .suffix{font-family:var(--mono);font-size:12px;color:var(--text3);min-width:60px}
-.buy-output{font-family:var(--mono);font-size:13px;color:var(--text2);margin-bottom:16px}
-.buy-output span{color:var(--brass);font-weight:700}
-.btn-buy{width:100%;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:14px;background:var(--brass);color:var(--bg);border:none;cursor:pointer;border-radius:2px;transition:all 0.2s}
-.btn-buy:hover{background:var(--brass-glow)}
+/* ---- Buy panel ---- */
+.buy-panel{background:var(--bg2);border:1px solid rgba(201,168,76,0.06);padding:36px;margin-top:48px;position:relative}
+.buy-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,var(--brass-dim),transparent)}
+.buy-panel h4{font-family:var(--mono);font-size:12px;letter-spacing:3px;color:var(--text);margin-bottom:20px;text-transform:uppercase}
+.pay-opts{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.pay-opt{font-family:var(--mono);font-size:11px;font-weight:600;padding:10px 16px;background:var(--bg);border:1px solid rgba(255,255,255,0.04);color:var(--text3);cursor:pointer;transition:all 0.2s}
+.pay-opt:hover,.pay-opt.on{border-color:var(--brass);color:var(--brass);background:rgba(201,168,76,0.04)}
+.input-row{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.input-row input{flex:1;font-family:var(--mono);font-size:18px;padding:14px 18px;background:var(--bg);border:1px solid rgba(255,255,255,0.06);color:var(--text);outline:none;transition:border-color 0.2s}
+.input-row input:focus{border-color:var(--brass-dim)}
+.input-row .tag{font-family:var(--mono);font-size:12px;color:var(--text3);min-width:50px;text-align:right}
+.output{font-family:var(--mono);font-size:14px;color:var(--text2);margin-bottom:20px}
+.output b{color:var(--brass)}
+.btn-buy{width:100%;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:16px;background:var(--brass);color:var(--bg);border:none;cursor:pointer;transition:all 0.2s}
+.btn-buy:hover:not(:disabled){background:var(--brass-glow)}
 .btn-buy:disabled{background:var(--text3);cursor:not-allowed}
-.wallet-status{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:8px}
+.status{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:10px}
 
-/* Mobile */
+/* ---- Roadmap ---- */
+.timeline{margin-top:40px;position:relative;padding-left:32px}
+.timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,var(--brass-dim),transparent 90%)}
+.phase{margin-bottom:40px;position:relative}
+.phase .dot{position:absolute;left:-28px;top:4px;width:11px;height:11px;border-radius:50%;border:2px solid var(--brass-dim);background:var(--bg);transition:all 0.3s}
+.phase.done .dot{background:var(--brass);border-color:var(--brass);box-shadow:0 0 8px rgba(201,168,76,0.3)}
+.phase .time{font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--brass);text-transform:uppercase}
+.phase h3{font-family:var(--sans);font-size:17px;font-weight:600;margin:4px 0 8px}
+.phase p{font-size:14px;color:var(--text2);max-width:520px}
+
+/* ---- CTA ---- */
+.final-cta{text-align:center;padding:100px 24px 120px}
+.final-cta h2{font-family:var(--sans);font-size:clamp(24px,4vw,36px);font-weight:700;margin-bottom:16px}
+.final-cta p{color:var(--text2);font-size:17px;margin-bottom:36px}
+
+/* ---- Footer ---- */
+footer{border-top:1px solid var(--brass-soft);padding:28px 32px}
+footer .wrap{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+footer span,footer a{font-family:var(--mono);font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:1px}
+footer a:hover{color:var(--brass)}
+
+/* Reveal animations */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity 0.7s ease,transform 0.7s ease}
+.reveal.visible{opacity:1;transform:none}
+
 @media(max-width:600px){
-  nav .links{gap:12px}
-  .hero .metrics{gap:20px}
-  .metric .val{font-size:22px}
+  nav .links a{display:none}
+  nav .links a:last-of-type{display:inline}
+  .hero .metrics{gap:24px}
+  .metric .num{font-size:24px}
 }
 </style>
 </head>
 <body>
 
-<nav>
-  <div class="inner">
-    <a href="#" class="logo">PROVA</a>
+<!-- Prova Symbol (SVG, reusable) -->
+<svg style="display:none">
+  <defs>
+    <symbol id="prova-mark" viewBox="0 0 40 40">
+      <!-- Geometric P-shaped proof mark: triangle inside circle -->
+      <circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <polygon points="14,10 30,20 14,30" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      <circle cx="20" cy="20" r="3" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<nav id="nav">
+  <div class="wrap">
+    <a href="#" class="logo">
+      <svg class="prova-symbol" width="28" height="28" style="color:var(--brass)"><use href="#prova-mark"/></svg>
+      <span class="logo-text">PROVA</span>
+    </a>
     <div class="links">
-      <a href="#technology">Tech</a>
+      <a href="#tech">Technology</a>
       <a href="#token">Token</a>
       <a href="#roadmap">Roadmap</a>
-      <a href="https://github.com/Reiers/prova" target="_blank">GitHub</a>
-      <button id="connectBtn" class="btn-connect" onclick="connectWallet()">Connect Wallet</button>
+      <a href="whitepaper.html">Paper</a>
+      <a href="https://github.com/Reiers/prova" target="_blank">Code</a>
+      <button class="btn-wallet" id="connectBtn" onclick="connectWallet()">Connect</button>
     </div>
   </div>
 </nav>
 
+<!-- HERO -->
 <section class="hero">
-  <div class="container">
-    <h1>PROVE <span>EVERYTHING</span></h1>
-    <p class="sub">A Layer 1 blockchain combining verifiable storage and AI compute. Every byte stored is proven. Every inference is verifiable. No privileged data. No trust assumptions.</p>
+  <div class="hero-bg"><canvas id="bgCanvas"></canvas></div>
+  <div class="hero-content">
+    <div class="hero-badge">Layer 1 Protocol</div>
+    <h1>Prove <span class="accent">everything.</span></h1>
+    <p class="sub">Verifiable storage and AI compute in one protocol. Every byte is proven. Every inference is verifiable. No trust required.</p>
     <div class="metrics">
-      <div class="metric"><div class="val">63K+</div><div class="label">Lines of Rust</div></div>
-      <div class="metric"><div class="val">1,690</div><div class="label">Passing Tests</div></div>
-      <div class="metric"><div class="val">22</div><div class="label">Specifications</div></div>
-      <div class="metric"><div class="val">0</div><div class="label">Trust Assumptions</div></div>
+      <div class="metric"><div class="num">63K</div><div class="lab">Lines of Rust</div></div>
+      <div class="metric"><div class="num">1,690</div><div class="lab">Tests Passing</div></div>
+      <div class="metric"><div class="num">22</div><div class="lab">Specifications</div></div>
+      <div class="metric"><div class="num">0</div><div class="lab">Trust Assumptions</div></div>
     </div>
     <div class="ctas">
-      <a href="#token" class="btn btn-primary">Token Sale</a>
-      <a href="https://github.com/Reiers/prova" class="btn btn-secondary" target="_blank">Read the Code</a>
+      <a href="#token" class="btn btn-p">Token Sale</a>
+      <a href="https://github.com/Reiers/prova" class="btn btn-s" target="_blank">Read the Code</a>
+    </div>
+  </div>
+  <div class="hero-scroll"><span></span></div>
+</section>
+
+<div class="section-line"></div>
+
+<!-- TECHNOLOGY -->
+<section class="section" id="tech">
+  <div class="reveal">
+    <div class="label">Core Technology</div>
+    <h2>Two problems. One protocol.</h2>
+    <p class="desc">Storage networks can't verify compute. Compute networks can't prove storage. Prova does both with math, not trust.</p>
+  </div>
+  <div class="grid-2">
+    <div class="card reveal">
+      <div class="accent-line"></div>
+      <div class="tag">Compute</div>
+      <h3>Quantized Bisection Proofs</h3>
+      <p>INT8 quantized inference is deterministic. When nodes disagree, binary search finds the diverging layer in O(log L) steps. Verify one layer, not the whole model. Under 2% compute cost.</p>
+    </div>
+    <div class="card reveal">
+      <div class="accent-line"></div>
+      <div class="tag">Storage — Baseline</div>
+      <h3>Provable Data Possession</h3>
+      <p>Merkle proofs over raw data. No sealing, no GPU-hours to onboard. Data in minutes, proven continuously. Logarithmic gas from 100 to 10K roots.</p>
+    </div>
+    <div class="card reveal">
+      <div class="accent-line"></div>
+      <div class="tag">Storage — Fast Path</div>
+      <h3>TEE-Attested Proofs</h3>
+      <p>Hardware-managed encryption, unique replicas per machine. Onboarding in seconds. Open-source enclave, chain-versioned. Falls back to PDP if hardware is compromised.</p>
+    </div>
+    <div class="card reveal">
+      <div class="accent-line"></div>
+      <div class="tag">Economics</div>
+      <h3>1 Byte = 1 Byte</h3>
+      <p>No multipliers. No privileged data. Every byte earns equally. Dual rewards split between storage and compute by demand. 50% fee burn post-halving.</p>
     </div>
   </div>
 </section>
 
-<div class="divider"></div>
+<div class="section-line"></div>
 
-<section id="technology">
-  <div class="container">
-    <h2>Core Technology</h2>
-    <h3>Two problems. One protocol.</h3>
-    <p class="dim" style="max-width:640px;margin-bottom:16px">Storage networks can't verify compute. Compute networks can't prove storage. Prova does both, with math, not trust.</p>
+<!-- TOKEN -->
+<section class="section" id="token">
+  <div class="reveal">
+    <div class="label">Token</div>
+    <h2><svg class="prova-symbol" width="32" height="32" style="color:var(--brass);margin-right:8px"><use href="#prova-mark"/></svg> PROVA</h2>
+    <p class="desc">Stake. Pay. Challenge. Govern. Burn. Not a governance wrapper. A working utility token with protocol-level demand.</p>
+  </div>
 
-    <div class="innovations">
-      <div class="card">
-        <div class="tag">Compute Verification</div>
-        <h4>Quantized Bisection Proofs</h4>
-        <p>INT8 quantized neural networks produce deterministic outputs. When two nodes disagree, binary search finds the diverging layer in O(log L) steps. Verify one layer instead of re-running the entire model. Less than 2% of original compute cost.</p>
-      </div>
-      <div class="card">
-        <div class="tag">Storage — Baseline</div>
-        <h4>Provable Data Possession</h4>
-        <p>Lightweight Merkle proofs over raw data. No sealing, no hours-long onboarding. Data stored in minutes, proven continuously. Logarithmic gas scaling from 100 to 10,000 roots.</p>
-      </div>
-      <div class="card">
-        <div class="tag">Storage — Fast Path</div>
-        <h4>TEE-Attested Proofs</h4>
-        <p>Hardware-managed encryption with unique replicas per machine. Onboarding in seconds. Open-source enclave, chain-versioned, governance-approved. Falls back to PDP if TEE is compromised. Hardware accelerates, never replaces math.</p>
-      </div>
-      <div class="card">
-        <div class="tag">Economics</div>
-        <h4>One Byte = One Byte</h4>
-        <p>No quality multipliers. No privileged data classes. No DataCap. Every byte earns equally. Dual reward streams split dynamically between storage and compute based on network demand.</p>
-      </div>
+  <div class="alloc-bar reveal">
+    <div style="width:45%;background:var(--brass)" title="Mining"></div>
+    <div style="width:15%;background:var(--blue)" title="Public"></div>
+    <div style="width:15%;background:var(--text3)" title="Team"></div>
+    <div style="width:10%;background:var(--green)" title="Ecosystem"></div>
+    <div style="width:7%;background:var(--text2)" title="Seed"></div>
+    <div style="width:5%;background:var(--brass-dim)" title="Liquidity"></div>
+    <div style="width:3%;background:var(--red)" title="Reserve"></div>
+  </div>
+
+  <div class="token-layout reveal">
+    <table class="spec">
+      <tr><th>Allocation</th><th>%</th></tr>
+      <tr><td>Network mining</td><td>45%</td></tr>
+      <tr><td>Public sale</td><td>15%</td></tr>
+      <tr><td>Team & founders</td><td>15%</td></tr>
+      <tr><td>Ecosystem grants</td><td>10%</td></tr>
+      <tr><td>Early backers</td><td>7%</td></tr>
+      <tr><td>Liquidity</td><td>5%</td></tr>
+      <tr><td>Reserve</td><td>3%</td></tr>
+    </table>
+    <table class="spec">
+      <tr><th>Parameter</th><th>Value</th></tr>
+      <tr><td>Total supply</td><td>1,000,000,000</td></tr>
+      <tr><td>ICO price</td><td>$0.015</td></tr>
+      <tr><td>FDV at launch</td><td>$15,000,000</td></tr>
+      <tr><td>Team cliff</td><td>12 months</td></tr>
+      <tr><td>TGE unlock</td><td>25%</td></tr>
+      <tr><td>Fee burn</td><td>50%</td></tr>
+      <tr><td>Halvings</td><td>7 (~14 years)</td></tr>
+    </table>
+  </div>
+
+  <!-- Buy Panel -->
+  <div class="buy-panel reveal" id="buyPanel">
+    <h4>Acquire
+      <svg class="prova-symbol" width="18" height="18" style="color:var(--brass);margin:0 4px"><use href="#prova-mark"/></svg>
+      PROVA
+    </h4>
+    <div class="pay-opts">
+      <div class="pay-opt on" data-t="ETH" onclick="selPay('ETH')">ETH</div>
+      <div class="pay-opt" data-t="USDC" onclick="selPay('USDC')">USDC</div>
+      <div class="pay-opt" data-t="USDT" onclick="selPay('USDT')">USDT</div>
+      <div class="pay-opt" data-t="DAI" onclick="selPay('DAI')">DAI</div>
+      <div class="pay-opt" data-t="WBTC" onclick="selPay('WBTC')">WBTC</div>
+    </div>
+    <div class="input-row">
+      <input type="number" id="payAmt" placeholder="0.0" oninput="calcProva()">
+      <div class="tag" id="paySuf">ETH</div>
+    </div>
+    <div class="output">You receive <b id="provaOut">0</b> PROVA</div>
+    <button class="btn-buy" id="buyBtn" onclick="buyTokens()" disabled>Connect Wallet</button>
+    <div class="status" id="wStatus"></div>
+  </div>
+</section>
+
+<div class="section-line"></div>
+
+<!-- ROADMAP -->
+<section class="section" id="roadmap">
+  <div class="reveal">
+    <div class="label">Roadmap</div>
+    <h2>Code first. Promises second.</h2>
+  </div>
+  <div class="timeline">
+    <div class="phase done reveal"><div class="dot"></div>
+      <div class="time">Q1 2026 — Done</div>
+      <h3>Foundation</h3>
+      <p>63K lines of Rust. 1,690 tests. 22 specs. QBP protocol designed and validated. PDP integration. Node, SDK, CLI. GPU determinism confirmed on RTX 5080 and RTX 6000.</p>
+    </div>
+    <div class="phase done reveal"><div class="dot"></div>
+      <div class="time">Q2 2026 — Active</div>
+      <h3>Token & Community</h3>
+      <p>ERC-20 deployment. Seed round. Public ICO. Multi-token crowdsale. Website. Whitepaper. Community.</p>
+    </div>
+    <div class="phase reveal"><div class="dot"></div>
+      <div class="time">Q3 2026</div>
+      <h3>Public Testnet</h3>
+      <p>Real networking (TCP/QUIC). Persistent state. Live GPU inference integration. Developer SDK. Testnet operator program.</p>
+    </div>
+    <div class="phase reveal"><div class="dot"></div>
+      <div class="time">Q4 2026</div>
+      <h3>Security</h3>
+      <p>External audit. Formal verification of bisection protocol. TEE enclave prototype. Stress testing. Bug bounty.</p>
+    </div>
+    <div class="phase reveal"><div class="dot"></div>
+      <div class="time">Q1 2027</div>
+      <h3>Mainnet</h3>
+      <p>Genesis. 1:1 swap from ERC-20 to native PROVA. Exchange listings. Ecosystem grants. The machine turns on.</p>
     </div>
   </div>
 </section>
 
-<div class="divider"></div>
+<div class="section-line"></div>
 
-<section id="token">
-  <div class="container">
-    <h2>Token</h2>
-    <h3>PROVA — utility from day one</h3>
-    <p class="dim" style="max-width:640px;margin-bottom:8px">Stake to provide services. Pay for storage and inference. Challenge dishonest nodes. Govern protocol parameters. Burn on every transaction.</p>
-
-    <!-- Allocation bar -->
-    <div class="alloc-bar">
-      <div style="width:45%;background:var(--brass)" title="Mining 45%"></div>
-      <div style="width:15%;background:var(--blue)" title="Public Sale 15%"></div>
-      <div style="width:15%;background:var(--text3)" title="Team 15%"></div>
-      <div style="width:10%;background:var(--green)" title="Ecosystem 10%"></div>
-      <div style="width:7%;background:var(--iron)" title="Seed 7%"></div>
-      <div style="width:5%;background:var(--brass-dim)" title="Liquidity 5%"></div>
-      <div style="width:3%;background:var(--red)" title="Reserve 3%"></div>
-    </div>
-    <div class="alloc-legend">
-      <span style="--c:var(--brass)"><i style="background:var(--brass);width:8px;height:8px;display:block;border-radius:1px"></i> Mining 45%</span>
-      <span><i style="background:var(--blue);width:8px;height:8px;display:block;border-radius:1px"></i> Public 15%</span>
-      <span><i style="background:var(--text3);width:8px;height:8px;display:block;border-radius:1px"></i> Team 15%</span>
-      <span><i style="background:var(--green);width:8px;height:8px;display:block;border-radius:1px"></i> Ecosystem 10%</span>
-      <span><i style="background:var(--iron);width:8px;height:8px;display:block;border-radius:1px"></i> Seed 7%</span>
-    </div>
-
-    <div class="token-grid" style="margin-top:32px">
-      <div>
-        <table class="alloc-table">
-          <tr><th>Allocation</th><th>Tokens</th><th>%</th></tr>
-          <tr><td>Network mining</td><td>450M</td><td>45%</td></tr>
-          <tr><td>Public sale</td><td>150M</td><td>15%</td></tr>
-          <tr><td>Team & founders</td><td>150M</td><td>15%</td></tr>
-          <tr><td>Ecosystem & grants</td><td>100M</td><td>10%</td></tr>
-          <tr><td>Early backers</td><td>70M</td><td>7%</td></tr>
-          <tr><td>Liquidity</td><td>50M</td><td>5%</td></tr>
-          <tr><td>Reserve</td><td>30M</td><td>3%</td></tr>
-        </table>
-      </div>
-      <div>
-        <table class="alloc-table">
-          <tr><th>Parameter</th><th colspan="2">Value</th></tr>
-          <tr><td>Total supply</td><td colspan="2">1,000,000,000</td></tr>
-          <tr><td>Public price</td><td colspan="2">$0.015</td></tr>
-          <tr><td>FDV at ICO</td><td colspan="2">$15,000,000</td></tr>
-          <tr><td>Team vesting</td><td colspan="2">12mo cliff + 36mo</td></tr>
-          <tr><td>TGE unlock</td><td colspan="2">25% (public only)</td></tr>
-          <tr><td>Deflationary</td><td colspan="2">50% fee burn</td></tr>
-          <tr><td>Max halvings</td><td colspan="2">7 (~14 years)</td></tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- Buy Panel -->
-    <div class="buy-panel" id="buyPanel">
-      <h4>ACQUIRE PROVA</h4>
-      <div class="pay-options">
-        <div class="pay-opt active" data-token="ETH" onclick="selectPayment('ETH')">ETH</div>
-        <div class="pay-opt" data-token="USDC" onclick="selectPayment('USDC')">USDC</div>
-        <div class="pay-opt" data-token="USDT" onclick="selectPayment('USDT')">USDT</div>
-        <div class="pay-opt" data-token="DAI" onclick="selectPayment('DAI')">DAI</div>
-        <div class="pay-opt" data-token="WBTC" onclick="selectPayment('WBTC')">WBTC</div>
-      </div>
-      <div class="buy-input">
-        <input type="number" id="payAmount" placeholder="0.0" oninput="updateProvaAmount()">
-        <div class="suffix" id="paySuffix">ETH</div>
-      </div>
-      <div class="buy-output">You receive: <span id="provaAmount">0</span> PROVA</div>
-      <button class="btn-buy" id="buyBtn" onclick="buyTokens()" disabled>Connect Wallet First</button>
-      <div class="wallet-status" id="walletStatus"></div>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<section id="roadmap">
-  <div class="container">
-    <h2>Roadmap</h2>
-    <h3>Code first. Promises second.</h3>
-
-    <div class="timeline">
-      <div class="phase active">
-        <div class="time">Q1 2026 — Complete</div>
-        <h4>Foundation</h4>
-        <p>63K lines of Rust. 1,690 tests. 22 specifications. QBP protocol designed and tested. PDP integration. Full node, SDK, and CLI. GPU determinism experiments validated on RTX 5080 and RTX 6000.</p>
-      </div>
-      <div class="phase active">
-        <div class="time">Q2 2026 — Active</div>
-        <h4>Token & Community</h4>
-        <p>ERC-20 token deployment. Seed round. Public ICO. Website and whitepaper. Community building. Smart contracts audited.</p>
-      </div>
-      <div class="phase">
-        <div class="time">Q3 2026</div>
-        <h4>Public Testnet</h4>
-        <p>Real networking (TCP/QUIC). Persistent state. Compute layer integration with live GPU inference. Developer SDK. Testnet operator program.</p>
-      </div>
-      <div class="phase">
-        <div class="time">Q4 2026</div>
-        <h4>Security</h4>
-        <p>External security audit. Formal verification of bisection protocol. TEE enclave prototype. Stress testing. Bug bounty program.</p>
-      </div>
-      <div class="phase">
-        <div class="time">Q1 2027</div>
-        <h4>Mainnet</h4>
-        <p>Genesis block. 1:1 token swap from ERC-20 to native PROVA. Exchange listings. Ecosystem grant program. The machine turns on.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<section class="cta-section">
-  <div class="container">
-    <h3>The code exists. The proofs work. <br>The machine is ready.</h3>
-    <p class="dim">63,000 lines of Rust. Not promises. Not a pitch deck. Working code.</p>
-    <div class="ctas" style="justify-content:center">
-      <a href="#token" class="btn btn-primary">Join the Sale</a>
-      <a href="https://github.com/Reiers/prova" class="btn btn-secondary" target="_blank">Verify Yourself</a>
+<!-- FINAL CTA -->
+<section class="final-cta">
+  <div class="reveal">
+    <h2>63,000 lines of working code.<br>Not a pitch deck.</h2>
+    <p>The proofs work. The contracts are auditable. The code is open.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="#token" class="btn btn-p">Join the Sale</a>
+      <a href="https://github.com/Reiers/prova" class="btn btn-s" target="_blank">Verify Yourself</a>
     </div>
   </div>
 </section>
 
 <footer>
-  <div class="inner">
-    <div class="copy">© 2026 Prova Team.</div>
-    <div class="links">
+  <div class="wrap">
+    <span>© 2026 Prova Team.</span>
+    <div style="display:flex;gap:20px">
       <a href="https://github.com/Reiers/prova" target="_blank">GitHub</a>
-      <a href="https://x.com/ProvaNetwork" target="_blank">X / Twitter</a>
       <a href="whitepaper.html">Whitepaper</a>
+      <a href="https://x.com/ProvaNetwork" target="_blank">X</a>
     </div>
   </div>
 </footer>
 
+<!-- Background animation (subtle grid + floating particles) -->
 <script>
-// Wallet state
-let walletAddress = null;
-let selectedToken = 'ETH';
-let provider = null;
+(function(){
+  const c=document.getElementById('bgCanvas'),x=c.getContext('2d');
+  let w,h;
+  function resize(){w=c.width=window.innerWidth;h=c.height=window.innerHeight}
+  resize();window.addEventListener('resize',resize);
 
-// Token prices relative to PROVA (how many PROVA per 1 unit of payment token)
-// At $0.015/PROVA: 1 ETH (~$3500) = ~233,333 PROVA, 1 USDC = 66.67 PROVA, etc.
-const rates = {
-  ETH: 233333,
-  USDC: 66.67,
-  USDT: 66.67,
-  DAI: 66.67,
-  WBTC: 4666666  // ~$70K per BTC
-};
-
-// Contract addresses (to be filled after deployment)
-const CONTRACTS = {
-  crowdsale: '0x0000000000000000000000000000000000000000', // ProvaCrowdsale
-  provaToken: '0x0000000000000000000000000000000000000000',
-  // Payment tokens (Ethereum mainnet)
-  USDC: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-  USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-  DAI: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-  WBTC: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'
-};
-
-async function connectWallet() {
-  if (typeof window.ethereum === 'undefined') {
-    alert('Please install MetaMask to connect your wallet.');
-    window.open('https://metamask.io/download/', '_blank');
-    return;
+  const dots=[];
+  for(let i=0;i<40;i++){
+    dots.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,r:Math.random()*1.5+0.5});
   }
 
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    walletAddress = accounts[0];
+  function draw(){
+    x.clearRect(0,0,w,h);
+    // Grid
+    x.strokeStyle='rgba(201,168,76,0.03)';
+    x.lineWidth=0.5;
+    for(let i=0;i<w;i+=80){x.beginPath();x.moveTo(i,0);x.lineTo(i,h);x.stroke()}
+    for(let i=0;i<h;i+=80){x.beginPath();x.moveTo(0,i);x.lineTo(w,i);x.stroke()}
 
-    const btn = document.getElementById('connectBtn');
-    btn.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
-    btn.classList.add('connected');
-
-    const buyBtn = document.getElementById('buyBtn');
-    buyBtn.disabled = false;
-    buyBtn.textContent = 'BUY PROVA';
-
-    document.getElementById('walletStatus').textContent = 'Connected: ' + walletAddress;
-
-    // Listen for account changes
-    window.ethereum.on('accountsChanged', (accounts) => {
-      if (accounts.length === 0) {
-        disconnectWallet();
-      } else {
-        walletAddress = accounts[0];
-        btn.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
-        document.getElementById('walletStatus').textContent = 'Connected: ' + walletAddress;
-      }
+    // Dots
+    dots.forEach(d=>{
+      d.x+=d.vx;d.y+=d.vy;
+      if(d.x<0||d.x>w)d.vx*=-1;
+      if(d.y<0||d.y>h)d.vy*=-1;
+      x.beginPath();x.arc(d.x,d.y,d.r,0,Math.PI*2);
+      x.fillStyle='rgba(201,168,76,0.08)';x.fill();
     });
-  } catch (err) {
-    console.error('Wallet connect failed:', err);
-    document.getElementById('walletStatus').textContent = 'Connection failed. Try again.';
-  }
-}
 
-function disconnectWallet() {
-  walletAddress = null;
-  const btn = document.getElementById('connectBtn');
-  btn.textContent = 'Connect Wallet';
-  btn.classList.remove('connected');
-  document.getElementById('buyBtn').disabled = true;
-  document.getElementById('buyBtn').textContent = 'Connect Wallet First';
-  document.getElementById('walletStatus').textContent = '';
-}
-
-function selectPayment(token) {
-  selectedToken = token;
-  document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('active'));
-  document.querySelector(`[data-token="${token}"]`).classList.add('active');
-  document.getElementById('paySuffix').textContent = token;
-  updateProvaAmount();
-}
-
-function updateProvaAmount() {
-  const input = document.getElementById('payAmount').value;
-  const amount = parseFloat(input) || 0;
-  const provaAmount = amount * (rates[selectedToken] || 0);
-  document.getElementById('provaAmount').textContent = provaAmount.toLocaleString('en-US', { maximumFractionDigits: 0 });
-}
-
-async function buyTokens() {
-  if (!walletAddress) {
-    connectWallet();
-    return;
-  }
-
-  const amount = parseFloat(document.getElementById('payAmount').value);
-  if (!amount || amount <= 0) {
-    alert('Enter an amount.');
-    return;
-  }
-
-  const buyBtn = document.getElementById('buyBtn');
-  const status = document.getElementById('walletStatus');
-
-  try {
-    buyBtn.disabled = true;
-    buyBtn.textContent = 'PROCESSING...';
-
-    if (selectedToken === 'ETH') {
-      // Send ETH directly to crowdsale contract
-      const weiAmount = '0x' + BigInt(Math.floor(amount * 1e18)).toString(16);
-      const txHash = await window.ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: walletAddress,
-          to: CONTRACTS.crowdsale,
-          value: weiAmount,
-          gas: '0x30000'
-        }]
-      });
-      status.textContent = 'TX sent: ' + txHash.slice(0, 20) + '...';
-    } else {
-      // ERC-20: need approval then buy
-      // For MVP, just show the approval flow
-      const tokenAddr = CONTRACTS[selectedToken];
-      if (!tokenAddr) {
-        status.textContent = 'Token not supported yet.';
-        return;
+    // Lines between close dots
+    for(let i=0;i<dots.length;i++){
+      for(let j=i+1;j<dots.length;j++){
+        const dx=dots[i].x-dots[j].x,dy=dots[i].y-dots[j].y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<150){
+          x.beginPath();x.moveTo(dots[i].x,dots[i].y);x.lineTo(dots[j].x,dots[j].y);
+          x.strokeStyle=`rgba(201,168,76,${0.03*(1-dist/150)})`;x.stroke();
+        }
       }
-
-      // Simplified: show user needs to approve + buy via contract
-      // In production, this would use ethers.js with proper ABI encoding
-      const decimals = selectedToken === 'WBTC' ? 8 : (selectedToken === 'USDC' || selectedToken === 'USDT' ? 6 : 18);
-      const rawAmount = BigInt(Math.floor(amount * (10 ** decimals)));
-
-      // ERC-20 approve(spender, amount) function selector: 0x095ea7b3
-      const approveData = '0x095ea7b3'
-        + CONTRACTS.crowdsale.slice(2).padStart(64, '0')
-        + rawAmount.toString(16).padStart(64, '0');
-
-      status.textContent = 'Requesting token approval...';
-      const approveTx = await window.ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: walletAddress,
-          to: tokenAddr,
-          data: approveData,
-          gas: '0x20000'
-        }]
-      });
-      status.textContent = 'Approved. Now purchasing... TX: ' + approveTx.slice(0, 16) + '...';
-
-      // buy(amount) function selector: 0xd96a094a (simplified)
-      // In production, use proper ABI encoding via ethers.js
-      const buyData = '0xd96a094a' + rawAmount.toString(16).padStart(64, '0');
-      const buyTx = await window.ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: walletAddress,
-          to: CONTRACTS.crowdsale,
-          data: buyData,
-          gas: '0x50000'
-        }]
-      });
-      status.textContent = 'Purchase sent! TX: ' + buyTx.slice(0, 20) + '...';
     }
-
-    buyBtn.textContent = 'BUY PROVA';
-    buyBtn.disabled = false;
-  } catch (err) {
-    console.error('Transaction failed:', err);
-    status.textContent = 'Transaction failed: ' + (err.message || 'User rejected');
-    buyBtn.textContent = 'BUY PROVA';
-    buyBtn.disabled = false;
+    requestAnimationFrame(draw);
   }
+  draw();
+})();
+</script>
+
+<!-- Scroll reveal + nav background -->
+<script>
+// Nav scroll
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',window.scrollY>50)});
+
+// Hero entrance
+window.addEventListener('DOMContentLoaded',()=>{
+  const els=document.querySelectorAll('.hero-badge,.hero h1,.hero .sub,.hero .metrics,.hero .ctas,.hero-scroll');
+  els.forEach((el,i)=>{setTimeout(()=>{el.style.transition='opacity 0.8s ease, transform 0.8s ease';el.style.opacity='1';el.style.transform='none'},200+i*120)});
+});
+
+// Reveal on scroll
+const observer=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}});
+},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+</script>
+
+<!-- Wallet + Buy logic -->
+<script>
+let wallet=null,payToken='ETH';
+const rates={ETH:233333,USDC:66.67,USDT:66.67,DAI:66.67,WBTC:4666666};
+const CONTRACTS={sale:'0x0000000000000000000000000000000000000000',USDC:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',USDT:'0xdAC17F958D2ee523a2206206994597C13D831ec7',DAI:'0x6B175474E89094C44Da98b954EedeAC495271d0F',WBTC:'0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'};
+
+async function connectWallet(){
+  if(!window.ethereum){window.open('https://metamask.io/download/','_blank');return}
+  try{
+    const a=await window.ethereum.request({method:'eth_requestAccounts'});
+    wallet=a[0];
+    const b=document.getElementById('connectBtn');
+    b.textContent=wallet.slice(0,6)+'...'+wallet.slice(-4);
+    b.classList.add('connected');
+    document.getElementById('buyBtn').disabled=false;
+    document.getElementById('buyBtn').textContent='BUY PROVA';
+    document.getElementById('wStatus').textContent='Connected';
+    window.ethereum.on('accountsChanged',a=>{if(!a.length){wallet=null;b.textContent='Connect';b.classList.remove('connected');document.getElementById('buyBtn').disabled=true;document.getElementById('buyBtn').textContent='Connect Wallet'}else{wallet=a[0];b.textContent=wallet.slice(0,6)+'...'+wallet.slice(-4)}});
+  }catch(e){document.getElementById('wStatus').textContent='Failed: '+e.message}
 }
 
-// Auto-connect if already authorized
-if (window.ethereum) {
-  window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
-    if (accounts.length > 0) {
-      walletAddress = accounts[0];
-      const btn = document.getElementById('connectBtn');
-      btn.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
-      btn.classList.add('connected');
-      document.getElementById('buyBtn').disabled = false;
-      document.getElementById('buyBtn').textContent = 'BUY PROVA';
+function selPay(t){payToken=t;document.querySelectorAll('.pay-opt').forEach(e=>e.classList.remove('on'));document.querySelector(`[data-t="${t}"]`).classList.add('on');document.getElementById('paySuf').textContent=t;calcProva()}
+function calcProva(){const v=parseFloat(document.getElementById('payAmt').value)||0;document.getElementById('provaOut').textContent=(v*(rates[payToken]||0)).toLocaleString('en-US',{maximumFractionDigits:0})}
+
+async function buyTokens(){
+  if(!wallet){connectWallet();return}
+  const amt=parseFloat(document.getElementById('payAmt').value);
+  if(!amt||amt<=0){alert('Enter an amount');return}
+  const btn=document.getElementById('buyBtn'),st=document.getElementById('wStatus');
+  try{
+    btn.disabled=true;btn.textContent='PROCESSING...';
+    if(payToken==='ETH'){
+      const tx=await window.ethereum.request({method:'eth_sendTransaction',params:[{from:wallet,to:CONTRACTS.sale,value:'0x'+BigInt(Math.floor(amt*1e18)).toString(16),gas:'0x30000'}]});
+      st.textContent='TX: '+tx.slice(0,20)+'...';
+    }else{
+      const addr=CONTRACTS[payToken];if(!addr){st.textContent='Not supported';return}
+      const dec=payToken==='WBTC'?8:(payToken==='USDC'||payToken==='USDT'?6:18);
+      const raw=BigInt(Math.floor(amt*(10**dec)));
+      const appData='0x095ea7b3'+CONTRACTS.sale.slice(2).padStart(64,'0')+raw.toString(16).padStart(64,'0');
+      st.textContent='Approving...';
+      await window.ethereum.request({method:'eth_sendTransaction',params:[{from:wallet,to:addr,data:appData,gas:'0x20000'}]});
+      const buyData='0xd96a094a'+raw.toString(16).padStart(64,'0');
+      st.textContent='Buying...';
+      const tx=await window.ethereum.request({method:'eth_sendTransaction',params:[{from:wallet,to:CONTRACTS.sale,data:buyData,gas:'0x50000'}]});
+      st.textContent='Done! TX: '+tx.slice(0,16)+'...';
     }
-  });
+    btn.textContent='BUY PROVA';btn.disabled=false;
+  }catch(e){st.textContent='Failed: '+(e.message||'Rejected');btn.textContent='BUY PROVA';btn.disabled=false}
 }
+
+if(window.ethereum)window.ethereum.request({method:'eth_accounts'}).then(a=>{if(a.length){wallet=a[0];const b=document.getElementById('connectBtn');b.textContent=wallet.slice(0,6)+'...'+wallet.slice(-4);b.classList.add('connected');document.getElementById('buyBtn').disabled=false;document.getElementById('buyBtn').textContent='BUY PROVA'}});
 </script>
 
 </body>
