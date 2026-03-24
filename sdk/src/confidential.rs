@@ -4,9 +4,9 @@
 //! inference results. Wraps the chain's `ConfidentialStore` with encryption
 //! helpers, blinding factor management, and automatic reveal logic.
 
-use prova_chain::confidential::{ConfidentialStore, ConfidentialStatus};
+use prova_chain::confidential::{ConfidentialStatus, ConfidentialStore};
 use prova_chain::types::*;
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 
 // ── Encryption helpers (symmetric, simplified for simulation) ────────────
@@ -127,7 +127,9 @@ impl ConfidentialClient {
         epoch: Epoch,
         auto_reveal: bool,
     ) -> Result<SubmitResult, String> {
-        let key = self.provider_keys.get(&provider)
+        let key = self
+            .provider_keys
+            .get(&provider)
             .ok_or_else(|| "No encryption key registered for provider".to_string())?;
 
         let encrypted = encrypt_root(&plaintext_root, key);
@@ -136,14 +138,17 @@ impl ConfidentialClient {
 
         let commit_id = self.store.commit(provider, model_id, encrypted, bh, epoch);
 
-        self.pending.insert(commit_id, PendingCommit {
+        self.pending.insert(
             commit_id,
-            plaintext_root,
-            blinding_factor: bf,
-            encryption_key: *key,
-            model_id,
-            auto_reveal,
-        });
+            PendingCommit {
+                commit_id,
+                plaintext_root,
+                blinding_factor: bf,
+                encryption_key: *key,
+                model_id,
+                auto_reveal,
+            },
+        );
 
         Ok(SubmitResult {
             commit_id,
@@ -177,18 +182,20 @@ impl ConfidentialClient {
         ) {
             Ok(()) => {
                 self.pending.remove(&commit_id);
-                RevealOutcome::Accepted { plaintext_root: pending.plaintext_root }
+                RevealOutcome::Accepted {
+                    plaintext_root: pending.plaintext_root,
+                }
             }
-            Err(e) if e.contains("not") && e.contains("disputed") => {
-                RevealOutcome::NotDisputed
-            }
+            Err(e) if e.contains("not") && e.contains("disputed") => RevealOutcome::NotDisputed,
             Err(_) => RevealOutcome::VerificationFailed,
         }
     }
 
     /// Auto-reveal all disputed commits that have auto_reveal enabled.
     pub fn auto_reveal_disputed(&mut self, current_epoch: Epoch) -> Vec<(CommitId, RevealOutcome)> {
-        let auto_ids: Vec<CommitId> = self.pending.iter()
+        let auto_ids: Vec<CommitId> = self
+            .pending
+            .iter()
             .filter(|(_, p)| p.auto_reveal)
             .map(|(id, _)| *id)
             .collect();
@@ -226,9 +233,11 @@ impl ConfidentialClient {
 
     /// Get all pending commit IDs for a provider.
     pub fn pending_commits(&self, provider: &Address) -> Vec<CommitId> {
-        self.pending.iter()
+        self.pending
+            .iter()
             .filter(|(_, p)| {
-                self.store.get(p.commit_id)
+                self.store
+                    .get(p.commit_id)
                     .map(|c| c.provider == *provider)
                     .unwrap_or(false)
             })
@@ -255,7 +264,9 @@ impl ConfidentialClient {
         provider: &Address,
         encrypted_root: &Hash,
     ) -> Result<Hash, String> {
-        let key = self.provider_keys.get(provider)
+        let key = self
+            .provider_keys
+            .get(provider)
             .ok_or_else(|| "No key for provider".to_string())?;
         Ok(decrypt_root(encrypted_root, key))
     }
@@ -267,10 +278,26 @@ impl ConfidentialClient {
 mod tests {
     use super::*;
 
-    fn addr(n: u8) -> Address { let mut a = [0u8; 20]; a[0] = n; Address(a) }
-    fn hash_val(n: u8) -> Hash { let mut h = [0u8; 32]; h[0] = n; h }
-    fn model(n: u8) -> ModelId { let mut h = [0u8; 32]; h[0] = n; ModelId(h) }
-    fn key(n: u8) -> [u8; 32] { let mut k = [0u8; 32]; k[0] = n; k }
+    fn addr(n: u8) -> Address {
+        let mut a = [0u8; 20];
+        a[0] = n;
+        Address(a)
+    }
+    fn hash_val(n: u8) -> Hash {
+        let mut h = [0u8; 32];
+        h[0] = n;
+        h
+    }
+    fn model(n: u8) -> ModelId {
+        let mut h = [0u8; 32];
+        h[0] = n;
+        ModelId(h)
+    }
+    fn key(n: u8) -> [u8; 32] {
+        let mut k = [0u8; 32];
+        k[0] = n;
+        k
+    }
 
     fn setup() -> ConfidentialClient {
         let mut c = ConfidentialClient::new();
@@ -365,7 +392,11 @@ mod tests {
     #[test]
     fn test_batch_submit() {
         let mut c = setup();
-        let jobs = vec![(model(1), hash_val(1)), (model(2), hash_val(2)), (model(3), hash_val(3))];
+        let jobs = vec![
+            (model(1), hash_val(1)),
+            (model(2), hash_val(2)),
+            (model(3), hash_val(3)),
+        ];
         let results = c.batch_submit(addr(1), jobs, 0, false);
         assert_eq!(results.len(), 3);
         assert!(results.iter().all(|r| r.is_ok()));

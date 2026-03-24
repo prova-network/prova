@@ -8,8 +8,8 @@
 // - Timing attacks: delay blocks to specific validators
 // - Man-in-the-middle: intercept and modify messages between peers
 
-use crate::network_sim::*;
 use crate::chaos::*;
+use crate::network_sim::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Types of adversarial attacks.
@@ -152,7 +152,8 @@ impl EclipseAttack {
         let mut actions = Vec::new();
 
         // Step 1: Partition victim from all honest nodes.
-        let honest: Vec<NodeId> = honest_nodes.iter()
+        let honest: Vec<NodeId> = honest_nodes
+            .iter()
             .filter(|n| **n != self.victim && !self.attacker_nodes.contains(n))
             .copied()
             .collect();
@@ -189,13 +190,19 @@ impl EclipseAttack {
 
     /// Verify the victim wasn't permanently eclipsed.
     pub fn verify_recovery(sim: &NetworkSim) -> EclipseVerification {
-        let tips: Vec<(NodeId, u64)> = sim.nodes.iter()
+        let tips: Vec<(NodeId, u64)> = sim
+            .nodes
+            .iter()
             .filter(|(_, n)| !n.crashed)
             .map(|(id, n)| (*id, n.chain_tip))
             .collect();
 
         if tips.is_empty() {
-            return EclipseVerification { recovered: false, max_divergence: 0, detail: "no alive nodes".into() };
+            return EclipseVerification {
+                recovered: false,
+                max_divergence: 0,
+                detail: "no alive nodes".into(),
+            };
         }
 
         let max_tip = tips.iter().map(|(_, t)| *t).max().unwrap();
@@ -205,7 +212,10 @@ impl EclipseAttack {
         EclipseVerification {
             recovered: divergence <= 1,
             max_divergence: divergence,
-            detail: format!("tips range {}..{}, divergence {}", min_tip, max_tip, divergence),
+            detail: format!(
+                "tips range {}..{}, divergence {}",
+                min_tip, max_tip, divergence
+            ),
         }
     }
 }
@@ -227,7 +237,12 @@ pub struct FloodAttack {
 
 impl FloodAttack {
     pub fn new(attackers: Vec<NodeId>, rate: u64, duration_ticks: u64) -> Self {
-        Self { attackers, rate, duration_ticks, targets: Vec::new() }
+        Self {
+            attackers,
+            rate,
+            duration_ticks,
+            targets: Vec::new(),
+        }
     }
 
     pub fn with_targets(mut self, targets: Vec<NodeId>) -> Self {
@@ -240,10 +255,13 @@ impl FloodAttack {
         let mut msgs = Vec::new();
         for attacker in &self.attackers {
             for i in 0..self.rate {
-                msgs.push((*attacker, NetMessage::Ping {
-                    from: *attacker,
-                    seq: tick * 1000 + i,
-                }));
+                msgs.push((
+                    *attacker,
+                    NetMessage::Ping {
+                        from: *attacker,
+                        seq: tick * 1000 + i,
+                    },
+                ));
             }
         }
         msgs
@@ -295,7 +313,12 @@ pub struct PeerRateLimiter {
 
 impl PeerRateLimiter {
     pub fn new(max_per_tick: u64) -> Self {
-        Self { max_per_tick, counters: HashMap::new(), dropped: 0, current_tick: 0 }
+        Self {
+            max_per_tick,
+            counters: HashMap::new(),
+            dropped: 0,
+            current_tick: 0,
+        }
     }
 
     /// Advance to a new tick, resetting counters.
@@ -336,7 +359,12 @@ pub struct SuppressionAttack {
 
 impl SuppressionAttack {
     pub fn new(relays: Vec<NodeId>, filter: MessageFilter, duration_ticks: u64) -> Self {
-        Self { relays, filter, duration_ticks, messages_suppressed: 0 }
+        Self {
+            relays,
+            filter,
+            duration_ticks,
+            messages_suppressed: 0,
+        }
     }
 
     /// Check if a message should be suppressed.
@@ -395,7 +423,12 @@ pub struct TimingAttack {
 
 impl TimingAttack {
     pub fn new(attacker: NodeId, target: NodeId, extra_delay_ms: u64, duration_ticks: u64) -> Self {
-        Self { attacker, target, extra_delay_ms, duration_ticks }
+        Self {
+            attacker,
+            target,
+            extra_delay_ms,
+            duration_ticks,
+        }
     }
 
     /// Convert to chaos actions.
@@ -481,7 +514,10 @@ impl AdversarialScenarioBuilder {
         // Initial block production to establish chain.
         for h in 1..=5 {
             let producer = (h - 1) % self.validators;
-            actions.push(ChaosAction::ProduceBlock { producer, height: h });
+            actions.push(ChaosAction::ProduceBlock {
+                producer,
+                height: h,
+            });
             actions.push(ChaosAction::Wait(20));
         }
         actions.push(ChaosAction::AssertConverged);
@@ -489,24 +525,48 @@ impl AdversarialScenarioBuilder {
         // Execute each attack.
         for attack in &self.attacks {
             match attack {
-                AttackType::Eclipse { victim, attacker_nodes, isolation_ticks } => {
-                    let eclipse = EclipseAttack::new(*victim, attacker_nodes.clone(), *isolation_ticks);
+                AttackType::Eclipse {
+                    victim,
+                    attacker_nodes,
+                    isolation_ticks,
+                } => {
+                    let eclipse =
+                        EclipseAttack::new(*victim, attacker_nodes.clone(), *isolation_ticks);
                     let honest: Vec<NodeId> = (0..self.node_count).collect();
                     actions.extend(eclipse.to_chaos_actions(&honest));
                 }
-                AttackType::Flood { attackers, rate, duration_ticks, .. } => {
+                AttackType::Flood {
+                    attackers,
+                    rate,
+                    duration_ticks,
+                    ..
+                } => {
                     let flood = FloodAttack::new(attackers.clone(), *rate, *duration_ticks);
                     actions.extend(flood.to_chaos_actions());
                 }
-                AttackType::SelectiveDrop { relays, filter, duration_ticks } => {
-                    let suppression = SuppressionAttack::new(relays.clone(), filter.clone(), *duration_ticks);
+                AttackType::SelectiveDrop {
+                    relays,
+                    filter,
+                    duration_ticks,
+                } => {
+                    let suppression =
+                        SuppressionAttack::new(relays.clone(), filter.clone(), *duration_ticks);
                     actions.extend(suppression.to_chaos_actions());
                 }
-                AttackType::TimingAttack { attacker, target, delay_ms, duration_ticks } => {
+                AttackType::TimingAttack {
+                    attacker,
+                    target,
+                    delay_ms,
+                    duration_ticks,
+                } => {
                     let timing = TimingAttack::new(*attacker, *target, *delay_ms, *duration_ticks);
                     actions.extend(timing.to_chaos_actions());
                 }
-                AttackType::Sybil { count, stake_each, behavior } => {
+                AttackType::Sybil {
+                    count,
+                    stake_each,
+                    behavior,
+                } => {
                     // Sybil nodes are added as crashed-then-restarted nodes at high IDs.
                     let base_id = self.node_count + 100;
                     for i in 0..*count {
@@ -517,7 +577,10 @@ impl AdversarialScenarioBuilder {
                                     for j in 0..*rate {
                                         actions.push(ChaosAction::BroadcastMessage {
                                             from: sybil_id,
-                                            msg: NetMessage::Ping { from: sybil_id, seq: j },
+                                            msg: NetMessage::Ping {
+                                                from: sybil_id,
+                                                seq: j,
+                                            },
                                         });
                                     }
                                 }
@@ -568,7 +631,10 @@ impl AdversarialScenarioBuilder {
         // Final block production to test recovery.
         for h in 6..=10 {
             let producer = (h - 1) % self.validators;
-            actions.push(ChaosAction::ProduceBlock { producer, height: h });
+            actions.push(ChaosAction::ProduceBlock {
+                producer,
+                height: h,
+            });
             actions.push(ChaosAction::Wait(20));
         }
         actions.push(ChaosAction::AssertConverged);
@@ -664,7 +730,11 @@ mod tests {
     #[test]
     fn test_message_filter_block_announcements() {
         let filter = MessageFilter::BlockAnnouncements;
-        let block = NetMessage::BlockAnnounce { height: 1, producer: 0, hash: [0; 32] };
+        let block = NetMessage::BlockAnnounce {
+            height: 1,
+            producer: 0,
+            hash: [0; 32],
+        };
         let ping = NetMessage::Ping { from: 0, seq: 1 };
         assert!(filter.matches(&block, 0, 1));
         assert!(!filter.matches(&ping, 0, 1));
@@ -673,7 +743,11 @@ mod tests {
     #[test]
     fn test_message_filter_checkpoint_votes() {
         let filter = MessageFilter::CheckpointVotes;
-        let vote = NetMessage::CheckpointVote { epoch: 1, voter: 0, approve: true };
+        let vote = NetMessage::CheckpointVote {
+            epoch: 1,
+            voter: 0,
+            approve: true,
+        };
         assert!(filter.matches(&vote, 0, 1));
     }
 
@@ -691,8 +765,16 @@ mod tests {
             MessageFilter::BlockAnnouncements,
             MessageFilter::CheckpointVotes,
         ]);
-        let block = NetMessage::BlockAnnounce { height: 1, producer: 0, hash: [0; 32] };
-        let vote = NetMessage::CheckpointVote { epoch: 1, voter: 0, approve: true };
+        let block = NetMessage::BlockAnnounce {
+            height: 1,
+            producer: 0,
+            hash: [0; 32],
+        };
+        let vote = NetMessage::CheckpointVote {
+            epoch: 1,
+            voter: 0,
+            approve: true,
+        };
         let ping = NetMessage::Ping { from: 0, seq: 1 };
         assert!(filter.matches(&block, 0, 1));
         assert!(filter.matches(&vote, 0, 1));
@@ -763,12 +845,12 @@ mod tests {
 
     #[test]
     fn test_suppression_attack_should_suppress() {
-        let attack = SuppressionAttack::new(
-            vec![5],
-            MessageFilter::BlockAnnouncements,
-            100,
-        );
-        let block = NetMessage::BlockAnnounce { height: 1, producer: 0, hash: [0; 32] };
+        let attack = SuppressionAttack::new(vec![5], MessageFilter::BlockAnnouncements, 100);
+        let block = NetMessage::BlockAnnounce {
+            height: 1,
+            producer: 0,
+            hash: [0; 32],
+        };
         let ping = NetMessage::Ping { from: 5, seq: 1 };
         assert!(attack.should_suppress(&block, 5, 0));
         assert!(!attack.should_suppress(&ping, 5, 0));

@@ -189,8 +189,7 @@ impl<T: Transport> RpcClient<T> {
     /// Get node info (version, epoch, counts).
     pub fn node_info(&self) -> Result<NodeInfo, RpcClientError> {
         let val = self.call("prova_nodeInfo", Value::Array(vec![]))?;
-        serde_json::from_value(val)
-            .map_err(|e| RpcClientError::Serialization(e.to_string()))
+        serde_json::from_value(val).map_err(|e| RpcClientError::Serialization(e.to_string()))
     }
 
     /// Get current epoch.
@@ -203,22 +202,19 @@ impl<T: Transport> RpcClient<T> {
     /// Look up a model by ID hex.
     pub fn get_model(&self, id_hex: &str) -> Result<ModelInfo, RpcClientError> {
         let val = self.call("prova_getModel", serde_json::json!([id_hex]))?;
-        serde_json::from_value(val)
-            .map_err(|e| RpcClientError::Serialization(e.to_string()))
+        serde_json::from_value(val).map_err(|e| RpcClientError::Serialization(e.to_string()))
     }
 
     /// Look up a commit by ID.
     pub fn get_commit(&self, commit_id: u64) -> Result<CommitInfo, RpcClientError> {
         let val = self.call("prova_getCommit", serde_json::json!([commit_id]))?;
-        serde_json::from_value(val)
-            .map_err(|e| RpcClientError::Serialization(e.to_string()))
+        serde_json::from_value(val).map_err(|e| RpcClientError::Serialization(e.to_string()))
     }
 
     /// Get stake info for an address.
     pub fn get_stake(&self, address: &str) -> Result<StakeInfo, RpcClientError> {
         let val = self.call("prova_getStake", serde_json::json!([address]))?;
-        serde_json::from_value(val)
-            .map_err(|e| RpcClientError::Serialization(e.to_string()))
+        serde_json::from_value(val).map_err(|e| RpcClientError::Serialization(e.to_string()))
     }
 
     /// Submit an inference commit. Returns a receipt.
@@ -231,15 +227,13 @@ impl<T: Transport> RpcClient<T> {
             "prova_submitCommit",
             serde_json::json!([model_id_hex, activation_root_hex]),
         )?;
-        serde_json::from_value(val)
-            .map_err(|e| RpcClientError::Serialization(e.to_string()))
+        serde_json::from_value(val).map_err(|e| RpcClientError::Serialization(e.to_string()))
     }
 
     /// Get payment channel info.
     pub fn get_payment_channel(&self, channel_id: &str) -> Result<ChannelInfo, RpcClientError> {
         let val = self.call("prova_getPaymentChannel", serde_json::json!([channel_id]))?;
-        serde_json::from_value(val)
-            .map_err(|e| RpcClientError::Serialization(e.to_string()))
+        serde_json::from_value(val).map_err(|e| RpcClientError::Serialization(e.to_string()))
     }
 
     /// Poll a job until it reaches a terminal status or max attempts.
@@ -284,8 +278,14 @@ impl std::fmt::Display for RpcClientError {
             Self::Transport(msg) => write!(f, "transport error: {msg}"),
             Self::Serialization(msg) => write!(f, "serialization error: {msg}"),
             Self::Rpc(e) => write!(f, "{e}"),
-            Self::PollExhausted { commit_id, attempts } => {
-                write!(f, "polling commit {commit_id} exhausted after {attempts} attempts")
+            Self::PollExhausted {
+                commit_id,
+                attempts,
+            } => {
+                write!(
+                    f,
+                    "polling commit {commit_id} exhausted after {attempts} attempts"
+                )
             }
         }
     }
@@ -307,74 +307,125 @@ mod tests {
         let id = req["id"].clone();
 
         let (result, error) = match method {
-            "prova_nodeInfo" => (Some(serde_json::json!({
-                "version": "prova-node/0.1.0",
-                "epoch": 100,
-                "models": 1,
-                "commits": 2,
-            })), None),
+            "prova_nodeInfo" => (
+                Some(serde_json::json!({
+                    "version": "prova-node/0.1.0",
+                    "epoch": 100,
+                    "models": 1,
+                    "commits": 2,
+                })),
+                None,
+            ),
             "prova_getEpoch" => (Some(serde_json::json!(100)), None),
             "prova_getModel" => {
                 let id_hex = params[0].as_str().unwrap_or("");
                 if id_hex == "model1" {
-                    (Some(serde_json::json!({
-                        "id_hex": "model1", "name": "llama-7b",
-                        "arch_group": "nvidia-sm89-int8", "layer_count": 32,
-                        "registered_epoch": 10
-                    })), None)
+                    (
+                        Some(serde_json::json!({
+                            "id_hex": "model1", "name": "llama-7b",
+                            "arch_group": "nvidia-sm89-int8", "layer_count": 32,
+                            "registered_epoch": 10
+                        })),
+                        None,
+                    )
                 } else {
-                    (None, Some(serde_json::json!({"code": -32000, "message": format!("Model not found: {id_hex}")})))
+                    (
+                        None,
+                        Some(
+                            serde_json::json!({"code": -32000, "message": format!("Model not found: {id_hex}")}),
+                        ),
+                    )
                 }
             }
             "prova_getCommit" => {
                 let cid = params[0].as_u64().unwrap_or(0);
                 match cid {
-                    1 => (Some(serde_json::json!({
-                        "id": 1, "provider": "0xprov", "model_id_hex": "model1",
-                        "activation_root_hex": "aabbccdd", "epoch": 98, "status": "Pending"
-                    })), None),
-                    2 => (Some(serde_json::json!({
-                        "id": 2, "provider": "0xprov", "model_id_hex": "model1",
-                        "activation_root_hex": "11223344", "epoch": 99, "status": "Finalized"
-                    })), None),
-                    _ => (None, Some(serde_json::json!({"code": -32000, "message": format!("Commit not found: {cid}")}))),
+                    1 => (
+                        Some(serde_json::json!({
+                            "id": 1, "provider": "0xprov", "model_id_hex": "model1",
+                            "activation_root_hex": "aabbccdd", "epoch": 98, "status": "Pending"
+                        })),
+                        None,
+                    ),
+                    2 => (
+                        Some(serde_json::json!({
+                            "id": 2, "provider": "0xprov", "model_id_hex": "model1",
+                            "activation_root_hex": "11223344", "epoch": 99, "status": "Finalized"
+                        })),
+                        None,
+                    ),
+                    _ => (
+                        None,
+                        Some(
+                            serde_json::json!({"code": -32000, "message": format!("Commit not found: {cid}")}),
+                        ),
+                    ),
                 }
             }
             "prova_getStake" => {
                 let addr = params[0].as_str().unwrap_or("");
                 if addr == "0xprov" {
-                    (Some(serde_json::json!({
-                        "address": "0xprov", "total": 5_000_000u64,
-                        "locked": 1_000_000u64, "available": 4_000_000u64
-                    })), None)
+                    (
+                        Some(serde_json::json!({
+                            "address": "0xprov", "total": 5_000_000u64,
+                            "locked": 1_000_000u64, "available": 4_000_000u64
+                        })),
+                        None,
+                    )
                 } else {
-                    (None, Some(serde_json::json!({"code": -32000, "message": format!("No stake: {addr}")})))
+                    (
+                        None,
+                        Some(
+                            serde_json::json!({"code": -32000, "message": format!("No stake: {addr}")}),
+                        ),
+                    )
                 }
             }
             "prova_submitCommit" => {
                 let model_id = params[0].as_str().unwrap_or("");
                 let root = params[1].as_str().unwrap_or("");
                 if model_id == "model1" {
-                    (Some(serde_json::json!({
-                        "commit_id": 3, "model_id": model_id,
-                        "activation_root": root, "epoch": 100, "status": "Pending"
-                    })), None)
+                    (
+                        Some(serde_json::json!({
+                            "commit_id": 3, "model_id": model_id,
+                            "activation_root": root, "epoch": 100, "status": "Pending"
+                        })),
+                        None,
+                    )
                 } else {
-                    (None, Some(serde_json::json!({"code": -32001, "message": format!("Model not registered: {model_id}")})))
+                    (
+                        None,
+                        Some(
+                            serde_json::json!({"code": -32001, "message": format!("Model not registered: {model_id}")}),
+                        ),
+                    )
                 }
             }
             "prova_getPaymentChannel" => {
                 let ch_id = params[0].as_str().unwrap_or("");
                 if ch_id == "pay-1" {
-                    (Some(serde_json::json!({
-                        "id": "pay-1", "payer": "0xclient", "payee": "0xprov",
-                        "balance": 250_000u64, "rate_per_epoch": 50u64
-                    })), None)
+                    (
+                        Some(serde_json::json!({
+                            "id": "pay-1", "payer": "0xclient", "payee": "0xprov",
+                            "balance": 250_000u64, "rate_per_epoch": 50u64
+                        })),
+                        None,
+                    )
                 } else {
-                    (None, Some(serde_json::json!({"code": -32000, "message": format!("Channel not found: {ch_id}")})))
+                    (
+                        None,
+                        Some(
+                            serde_json::json!({"code": -32000, "message": format!("Channel not found: {ch_id}")}),
+                        ),
+                    )
                 }
             }
-            _ => (None, Some(serde_json::json!({"code": -32601, "message": format!("Unknown method: {method}")}))),
+            _ => (
+                None,
+                Some(
+                    serde_json::json!({"code": -32601, "message": format!("Unknown method: {method}")}),
+                ),
+            ),
         };
 
         let resp = serde_json::json!({
@@ -478,7 +529,13 @@ mod tests {
         let c = test_client();
         // Commit 1 is Pending, will never finalize in this static state
         let err = c.poll_commit(1, 3).unwrap_err();
-        assert!(matches!(err, RpcClientError::PollExhausted { commit_id: 1, attempts: 3 }));
+        assert!(matches!(
+            err,
+            RpcClientError::PollExhausted {
+                commit_id: 1,
+                attempts: 3
+            }
+        ));
     }
 
     #[test]

@@ -15,8 +15,8 @@
 //!   owners <wallet> [--add <addr> | --remove <addr>]
 //!   threshold <wallet> <new-threshold>
 
-use std::fmt;
 use std::collections::HashMap;
+use std::fmt;
 
 pub type Address = [u8; 32];
 pub type WalletId = [u8; 32];
@@ -40,44 +40,24 @@ pub enum MultisigCmd {
         data: Option<Vec<u8>>,
     },
     /// Approve a pending proposal.
-    Approve {
-        wallet: String,
-        proposal_id: u64,
-    },
+    Approve { wallet: String, proposal_id: u64 },
     /// Reject a pending proposal.
-    Reject {
-        wallet: String,
-        proposal_id: u64,
-    },
+    Reject { wallet: String, proposal_id: u64 },
     /// Execute a fully-approved proposal.
-    Execute {
-        wallet: String,
-        proposal_id: u64,
-    },
+    Execute { wallet: String, proposal_id: u64 },
     /// Cancel a proposal (only proposer).
-    Cancel {
-        wallet: String,
-        proposal_id: u64,
-    },
+    Cancel { wallet: String, proposal_id: u64 },
     /// List proposals in a wallet.
     List {
         wallet: String,
         filter: ProposalFilter,
     },
     /// Show wallet info (owners, threshold, nonce, limits).
-    Info {
-        wallet: String,
-    },
+    Info { wallet: String },
     /// Manage owners (add or remove).
-    Owners {
-        wallet: String,
-        action: OwnerAction,
-    },
+    Owners { wallet: String, action: OwnerAction },
     /// Change the approval threshold.
-    Threshold {
-        wallet: String,
-        new_threshold: u32,
-    },
+    Threshold { wallet: String, new_threshold: u32 },
     /// Show help for multisig subcommands.
     Help,
 }
@@ -155,15 +135,24 @@ fn parse_create(args: &[&str]) -> Result<MultisigCmd, ParseError> {
         match args[i] {
             "--threshold" | "-t" => {
                 i += 1;
-                threshold = Some(parse_u32(args.get(i).ok_or(ParseError::MissingArgument("threshold".into()))?)?);
+                threshold = Some(parse_u32(
+                    args.get(i)
+                        .ok_or(ParseError::MissingArgument("threshold".into()))?,
+                )?);
             }
             "--daily-limit" => {
                 i += 1;
-                daily_limit = Some(parse_u64(args.get(i).ok_or(ParseError::MissingArgument("daily-limit".into()))?)?);
+                daily_limit = Some(parse_u64(
+                    args.get(i)
+                        .ok_or(ParseError::MissingArgument("daily-limit".into()))?,
+                )?);
             }
             "--ttl" => {
                 i += 1;
-                proposal_ttl = parse_u64(args.get(i).ok_or(ParseError::MissingArgument("ttl".into()))?)?;
+                proposal_ttl = parse_u64(
+                    args.get(i)
+                        .ok_or(ParseError::MissingArgument("ttl".into()))?,
+                )?;
             }
             s if s.starts_with('-') => return Err(ParseError::InvalidFlag(s.to_string())),
             owner => owners.push(owner.to_string()),
@@ -174,7 +163,12 @@ fn parse_create(args: &[&str]) -> Result<MultisigCmd, ParseError> {
         return Err(ParseError::TooFewOwners);
     }
     let threshold = threshold.ok_or(ParseError::MissingArgument("--threshold".into()))?;
-    Ok(MultisigCmd::Create { owners, threshold, daily_limit, proposal_ttl })
+    Ok(MultisigCmd::Create {
+        owners,
+        threshold,
+        daily_limit,
+        proposal_ttl,
+    })
 }
 
 fn parse_propose(args: &[&str]) -> Result<MultisigCmd, ParseError> {
@@ -190,7 +184,9 @@ fn parse_propose(args: &[&str]) -> Result<MultisigCmd, ParseError> {
         match args[i] {
             "--data" => {
                 i += 1;
-                let hex_str = args.get(i).ok_or(ParseError::MissingArgument("data".into()))?;
+                let hex_str = args
+                    .get(i)
+                    .ok_or(ParseError::MissingArgument("data".into()))?;
                 data = Some(parse_hex(hex_str)?);
             }
             s if s.starts_with('-') => return Err(ParseError::InvalidFlag(s.to_string())),
@@ -198,20 +194,39 @@ fn parse_propose(args: &[&str]) -> Result<MultisigCmd, ParseError> {
         }
         i += 1;
     }
-    Ok(MultisigCmd::Propose { wallet, target, value, data })
+    Ok(MultisigCmd::Propose {
+        wallet,
+        target,
+        value,
+        data,
+    })
 }
 
 fn parse_wallet_proposal(args: &[&str], cmd: &str) -> Result<MultisigCmd, ParseError> {
     if args.len() < 2 {
-        return Err(ParseError::MissingArgument(format!("wallet proposal-id for {cmd}")));
+        return Err(ParseError::MissingArgument(format!(
+            "wallet proposal-id for {cmd}"
+        )));
     }
     let wallet = args[0].to_string();
     let proposal_id = parse_u64(args[1])?;
     match cmd {
-        "approve" => Ok(MultisigCmd::Approve { wallet, proposal_id }),
-        "reject" => Ok(MultisigCmd::Reject { wallet, proposal_id }),
-        "execute" => Ok(MultisigCmd::Execute { wallet, proposal_id }),
-        "cancel" => Ok(MultisigCmd::Cancel { wallet, proposal_id }),
+        "approve" => Ok(MultisigCmd::Approve {
+            wallet,
+            proposal_id,
+        }),
+        "reject" => Ok(MultisigCmd::Reject {
+            wallet,
+            proposal_id,
+        }),
+        "execute" => Ok(MultisigCmd::Execute {
+            wallet,
+            proposal_id,
+        }),
+        "cancel" => Ok(MultisigCmd::Cancel {
+            wallet,
+            proposal_id,
+        }),
         _ => unreachable!(),
     }
 }
@@ -238,7 +253,9 @@ fn parse_info(args: &[&str]) -> Result<MultisigCmd, ParseError> {
     if args.is_empty() {
         return Err(ParseError::MissingArgument("wallet".into()));
     }
-    Ok(MultisigCmd::Info { wallet: args[0].to_string() })
+    Ok(MultisigCmd::Info {
+        wallet: args[0].to_string(),
+    })
 }
 
 fn parse_owners(args: &[&str]) -> Result<MultisigCmd, ParseError> {
@@ -252,12 +269,16 @@ fn parse_owners(args: &[&str]) -> Result<MultisigCmd, ParseError> {
         match args[i] {
             "--add" => {
                 i += 1;
-                let addr = args.get(i).ok_or(ParseError::MissingArgument("address".into()))?;
+                let addr = args
+                    .get(i)
+                    .ok_or(ParseError::MissingArgument("address".into()))?;
                 action = OwnerAction::Add(addr.to_string());
             }
             "--remove" => {
                 i += 1;
-                let addr = args.get(i).ok_or(ParseError::MissingArgument("address".into()))?;
+                let addr = args
+                    .get(i)
+                    .ok_or(ParseError::MissingArgument("address".into()))?;
                 action = OwnerAction::Remove(addr.to_string());
             }
             s if s.starts_with('-') => return Err(ParseError::InvalidFlag(s.to_string())),
@@ -274,15 +295,20 @@ fn parse_threshold(args: &[&str]) -> Result<MultisigCmd, ParseError> {
     }
     let wallet = args[0].to_string();
     let new_threshold = parse_u32(args[1])?;
-    Ok(MultisigCmd::Threshold { wallet, new_threshold })
+    Ok(MultisigCmd::Threshold {
+        wallet,
+        new_threshold,
+    })
 }
 
 fn parse_u32(s: &str) -> Result<u32, ParseError> {
-    s.parse().map_err(|_| ParseError::InvalidNumber(s.to_string()))
+    s.parse()
+        .map_err(|_| ParseError::InvalidNumber(s.to_string()))
 }
 
 fn parse_u64(s: &str) -> Result<u64, ParseError> {
-    s.parse().map_err(|_| ParseError::InvalidNumber(s.to_string()))
+    s.parse()
+        .map_err(|_| ParseError::InvalidNumber(s.to_string()))
 }
 
 fn parse_hex(s: &str) -> Result<Vec<u8>, ParseError> {
@@ -292,7 +318,9 @@ fn parse_hex(s: &str) -> Result<Vec<u8>, ParseError> {
     }
     (0..s.len())
         .step_by(2)
-        .map(|i| u8::from_str_radix(&s[i..i + 2], 16).map_err(|_| ParseError::InvalidHex(s.to_string())))
+        .map(|i| {
+            u8::from_str_radix(&s[i..i + 2], 16).map_err(|_| ParseError::InvalidHex(s.to_string()))
+        })
         .collect()
 }
 
@@ -301,18 +329,68 @@ fn parse_hex(s: &str) -> Result<Vec<u8>, ParseError> {
 /// Result of executing a multi-sig CLI command.
 #[derive(Debug, Clone, PartialEq)]
 pub enum MultisigResult {
-    WalletCreated { wallet_id: String, owners: usize, threshold: u32 },
-    ProposalCreated { wallet: String, proposal_id: u64 },
-    ProposalApproved { wallet: String, proposal_id: u64, approvals: u32, threshold: u32 },
-    ProposalRejected { wallet: String, proposal_id: u64, rejections: u32 },
-    ProposalExecuted { wallet: String, proposal_id: u64, target: String, value: u64 },
-    ProposalCancelled { wallet: String, proposal_id: u64 },
-    ProposalList { wallet: String, proposals: Vec<ProposalSummary> },
-    WalletInfo { wallet: String, owners: Vec<String>, threshold: u32, nonce: u64, daily_limit: Option<u64>, daily_spent: u64, pending_count: usize },
-    OwnersListed { wallet: String, owners: Vec<String> },
-    OwnerAdded { wallet: String, new_owner: String, total_owners: usize },
-    OwnerRemoved { wallet: String, removed: String, total_owners: usize },
-    ThresholdChanged { wallet: String, old: u32, new_threshold: u32 },
+    WalletCreated {
+        wallet_id: String,
+        owners: usize,
+        threshold: u32,
+    },
+    ProposalCreated {
+        wallet: String,
+        proposal_id: u64,
+    },
+    ProposalApproved {
+        wallet: String,
+        proposal_id: u64,
+        approvals: u32,
+        threshold: u32,
+    },
+    ProposalRejected {
+        wallet: String,
+        proposal_id: u64,
+        rejections: u32,
+    },
+    ProposalExecuted {
+        wallet: String,
+        proposal_id: u64,
+        target: String,
+        value: u64,
+    },
+    ProposalCancelled {
+        wallet: String,
+        proposal_id: u64,
+    },
+    ProposalList {
+        wallet: String,
+        proposals: Vec<ProposalSummary>,
+    },
+    WalletInfo {
+        wallet: String,
+        owners: Vec<String>,
+        threshold: u32,
+        nonce: u64,
+        daily_limit: Option<u64>,
+        daily_spent: u64,
+        pending_count: usize,
+    },
+    OwnersListed {
+        wallet: String,
+        owners: Vec<String>,
+    },
+    OwnerAdded {
+        wallet: String,
+        new_owner: String,
+        total_owners: usize,
+    },
+    OwnerRemoved {
+        wallet: String,
+        removed: String,
+        total_owners: usize,
+    },
+    ThresholdChanged {
+        wallet: String,
+        old: u32,
+        new_threshold: u32,
+    },
     HelpText(String),
 }
 
@@ -332,28 +410,74 @@ pub struct ProposalSummary {
 impl fmt::Display for MultisigResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::WalletCreated { wallet_id, owners, threshold } =>
-                write!(f, "✅ Wallet {wallet_id} created ({threshold}-of-{owners})"),
-            Self::ProposalCreated { wallet, proposal_id } =>
-                write!(f, "📝 Proposal #{proposal_id} created in {wallet}"),
-            Self::ProposalApproved { wallet, proposal_id, approvals, threshold } =>
-                write!(f, "👍 Proposal #{proposal_id} approved ({approvals}/{threshold}) in {wallet}"),
-            Self::ProposalRejected { wallet, proposal_id, rejections } =>
-                write!(f, "👎 Proposal #{proposal_id} rejected ({rejections} rejections) in {wallet}"),
-            Self::ProposalExecuted { wallet, proposal_id, target, value } =>
-                write!(f, "⚡ Proposal #{proposal_id} executed: {value} → {target} in {wallet}"),
-            Self::ProposalCancelled { wallet, proposal_id } =>
-                write!(f, "🚫 Proposal #{proposal_id} cancelled in {wallet}"),
+            Self::WalletCreated {
+                wallet_id,
+                owners,
+                threshold,
+            } => write!(f, "✅ Wallet {wallet_id} created ({threshold}-of-{owners})"),
+            Self::ProposalCreated {
+                wallet,
+                proposal_id,
+            } => write!(f, "📝 Proposal #{proposal_id} created in {wallet}"),
+            Self::ProposalApproved {
+                wallet,
+                proposal_id,
+                approvals,
+                threshold,
+            } => write!(
+                f,
+                "👍 Proposal #{proposal_id} approved ({approvals}/{threshold}) in {wallet}"
+            ),
+            Self::ProposalRejected {
+                wallet,
+                proposal_id,
+                rejections,
+            } => write!(
+                f,
+                "👎 Proposal #{proposal_id} rejected ({rejections} rejections) in {wallet}"
+            ),
+            Self::ProposalExecuted {
+                wallet,
+                proposal_id,
+                target,
+                value,
+            } => write!(
+                f,
+                "⚡ Proposal #{proposal_id} executed: {value} → {target} in {wallet}"
+            ),
+            Self::ProposalCancelled {
+                wallet,
+                proposal_id,
+            } => write!(f, "🚫 Proposal #{proposal_id} cancelled in {wallet}"),
             Self::ProposalList { wallet, proposals } => {
                 write!(f, "📋 Proposals in {wallet} ({} total):", proposals.len())?;
                 for p in proposals {
-                    let status = if p.executed { "✅" } else if p.cancelled { "🚫" } else if p.expired { "⏰" } else { "⏳" };
-                    write!(f, "\n  {status} #{}: {} → {} ({} approve, {} reject)",
-                        p.id, p.value, p.target, p.approvals, p.rejections)?;
+                    let status = if p.executed {
+                        "✅"
+                    } else if p.cancelled {
+                        "🚫"
+                    } else if p.expired {
+                        "⏰"
+                    } else {
+                        "⏳"
+                    };
+                    write!(
+                        f,
+                        "\n  {status} #{}: {} → {} ({} approve, {} reject)",
+                        p.id, p.value, p.target, p.approvals, p.rejections
+                    )?;
                 }
                 Ok(())
             }
-            Self::WalletInfo { wallet, owners, threshold, nonce, daily_limit, daily_spent, pending_count } => {
+            Self::WalletInfo {
+                wallet,
+                owners,
+                threshold,
+                nonce,
+                daily_limit,
+                daily_spent,
+                pending_count,
+            } => {
                 write!(f, "🔐 Wallet {wallet}\n  Threshold: {threshold}-of-{}\n  Nonce: {nonce}\n  Pending: {pending_count}",
                     owners.len())?;
                 if let Some(limit) = daily_limit {
@@ -363,15 +487,35 @@ impl fmt::Display for MultisigResult {
             }
             Self::OwnersListed { wallet, owners } => {
                 write!(f, "👥 Owners of {wallet}:")?;
-                for o in owners { write!(f, "\n  • {o}")?; }
+                for o in owners {
+                    write!(f, "\n  • {o}")?;
+                }
                 Ok(())
             }
-            Self::OwnerAdded { wallet, new_owner, total_owners } =>
-                write!(f, "➕ Added {new_owner} to {wallet} ({total_owners} owners)"),
-            Self::OwnerRemoved { wallet, removed, total_owners } =>
-                write!(f, "➖ Removed {removed} from {wallet} ({total_owners} owners)"),
-            Self::ThresholdChanged { wallet, old, new_threshold } =>
-                write!(f, "🔧 Threshold changed {old} → {new_threshold} in {wallet}"),
+            Self::OwnerAdded {
+                wallet,
+                new_owner,
+                total_owners,
+            } => write!(
+                f,
+                "➕ Added {new_owner} to {wallet} ({total_owners} owners)"
+            ),
+            Self::OwnerRemoved {
+                wallet,
+                removed,
+                total_owners,
+            } => write!(
+                f,
+                "➖ Removed {removed} from {wallet} ({total_owners} owners)"
+            ),
+            Self::ThresholdChanged {
+                wallet,
+                old,
+                new_threshold,
+            } => write!(
+                f,
+                "🔧 Threshold changed {old} → {new_threshold} in {wallet}"
+            ),
             Self::HelpText(s) => write!(f, "{s}"),
         }
     }
@@ -459,16 +603,31 @@ impl fmt::Display for ExecError {
 
 impl MultisigExecutor {
     pub fn new(signer: String, epoch: u64) -> Self {
-        Self { wallets: HashMap::new(), signer, current_epoch: epoch }
+        Self {
+            wallets: HashMap::new(),
+            signer,
+            current_epoch: epoch,
+        }
     }
 
-    pub fn set_epoch(&mut self, epoch: u64) { self.current_epoch = epoch; }
-    pub fn set_signer(&mut self, signer: String) { self.signer = signer; }
+    pub fn set_epoch(&mut self, epoch: u64) {
+        self.current_epoch = epoch;
+    }
+    pub fn set_signer(&mut self, signer: String) {
+        self.signer = signer;
+    }
 
     pub fn execute_cmd(&mut self, cmd: MultisigCmd) -> Result<MultisigResult, ExecError> {
         match cmd {
-            MultisigCmd::Create { owners, threshold, daily_limit, proposal_ttl } => {
-                if owners.len() < 2 { return Err(ExecError::TooFewOwners); }
+            MultisigCmd::Create {
+                owners,
+                threshold,
+                daily_limit,
+                proposal_ttl,
+            } => {
+                if owners.len() < 2 {
+                    return Err(ExecError::TooFewOwners);
+                }
                 if threshold == 0 || threshold as usize > owners.len() {
                     return Err(ExecError::InvalidThreshold);
                 }
@@ -477,88 +636,174 @@ impl MultisigExecutor {
                     return Err(ExecError::WalletAlreadyExists(id));
                 }
                 let n_owners = owners.len();
-                self.wallets.insert(id.clone(), WalletState {
-                    owners,
+                self.wallets.insert(
+                    id.clone(),
+                    WalletState {
+                        owners,
+                        threshold,
+                        daily_limit,
+                        daily_spent: 0,
+                        daily_reset_epoch: self.current_epoch,
+                        proposal_ttl,
+                        proposals: HashMap::new(),
+                        next_id: 1,
+                        nonce: 0,
+                    },
+                );
+                Ok(MultisigResult::WalletCreated {
+                    wallet_id: id,
+                    owners: n_owners,
                     threshold,
-                    daily_limit,
-                    daily_spent: 0,
-                    daily_reset_epoch: self.current_epoch,
-                    proposal_ttl,
-                    proposals: HashMap::new(),
-                    next_id: 1,
-                    nonce: 0,
-                });
-                Ok(MultisigResult::WalletCreated { wallet_id: id, owners: n_owners, threshold })
+                })
             }
 
-            MultisigCmd::Propose { wallet, target, value, data } => {
-                let w = self.wallets.get_mut(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
-                if !w.owners.contains(&self.signer) { return Err(ExecError::NotOwner); }
+            MultisigCmd::Propose {
+                wallet,
+                target,
+                value,
+                data,
+            } => {
+                let w = self
+                    .wallets
+                    .get_mut(&wallet)
+                    .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+                if !w.owners.contains(&self.signer) {
+                    return Err(ExecError::NotOwner);
+                }
                 let id = w.next_id;
                 w.next_id += 1;
-                w.proposals.insert(id, SimProposal {
+                w.proposals.insert(
                     id,
-                    proposer: self.signer.clone(),
-                    target,
-                    value,
-                    data: data.unwrap_or_default(),
-                    approvals: vec![self.signer.clone()],
-                    rejections: vec![],
-                    created_at: self.current_epoch,
-                    executed: false,
-                    cancelled: false,
-                });
-                Ok(MultisigResult::ProposalCreated { wallet, proposal_id: id })
+                    SimProposal {
+                        id,
+                        proposer: self.signer.clone(),
+                        target,
+                        value,
+                        data: data.unwrap_or_default(),
+                        approvals: vec![self.signer.clone()],
+                        rejections: vec![],
+                        created_at: self.current_epoch,
+                        executed: false,
+                        cancelled: false,
+                    },
+                );
+                Ok(MultisigResult::ProposalCreated {
+                    wallet,
+                    proposal_id: id,
+                })
             }
 
-            MultisigCmd::Approve { wallet, proposal_id } => {
-                let w = self.wallets.get_mut(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
-                if !w.owners.contains(&self.signer) { return Err(ExecError::NotOwner); }
-                let p = w.proposals.get_mut(&proposal_id).ok_or(ExecError::ProposalNotFound(proposal_id))?;
-                if p.executed { return Err(ExecError::AlreadyExecuted); }
-                if p.cancelled { return Err(ExecError::ProposalCancelled); }
-                if self.current_epoch > p.created_at + w.proposal_ttl { return Err(ExecError::ProposalExpired); }
-                if p.approvals.contains(&self.signer) { return Err(ExecError::AlreadyApproved); }
-                if p.rejections.contains(&self.signer) { return Err(ExecError::AlreadyRejected); }
+            MultisigCmd::Approve {
+                wallet,
+                proposal_id,
+            } => {
+                let w = self
+                    .wallets
+                    .get_mut(&wallet)
+                    .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+                if !w.owners.contains(&self.signer) {
+                    return Err(ExecError::NotOwner);
+                }
+                let p = w
+                    .proposals
+                    .get_mut(&proposal_id)
+                    .ok_or(ExecError::ProposalNotFound(proposal_id))?;
+                if p.executed {
+                    return Err(ExecError::AlreadyExecuted);
+                }
+                if p.cancelled {
+                    return Err(ExecError::ProposalCancelled);
+                }
+                if self.current_epoch > p.created_at + w.proposal_ttl {
+                    return Err(ExecError::ProposalExpired);
+                }
+                if p.approvals.contains(&self.signer) {
+                    return Err(ExecError::AlreadyApproved);
+                }
+                if p.rejections.contains(&self.signer) {
+                    return Err(ExecError::AlreadyRejected);
+                }
                 p.approvals.push(self.signer.clone());
                 Ok(MultisigResult::ProposalApproved {
-                    wallet, proposal_id,
+                    wallet,
+                    proposal_id,
                     approvals: p.approvals.len() as u32,
                     threshold: w.threshold,
                 })
             }
 
-            MultisigCmd::Reject { wallet, proposal_id } => {
-                let w = self.wallets.get_mut(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
-                if !w.owners.contains(&self.signer) { return Err(ExecError::NotOwner); }
-                let p = w.proposals.get_mut(&proposal_id).ok_or(ExecError::ProposalNotFound(proposal_id))?;
-                if p.executed { return Err(ExecError::AlreadyExecuted); }
-                if p.cancelled { return Err(ExecError::ProposalCancelled); }
-                if self.current_epoch > p.created_at + w.proposal_ttl { return Err(ExecError::ProposalExpired); }
-                if p.rejections.contains(&self.signer) { return Err(ExecError::AlreadyRejected); }
-                if p.approvals.contains(&self.signer) { return Err(ExecError::AlreadyApproved); }
+            MultisigCmd::Reject {
+                wallet,
+                proposal_id,
+            } => {
+                let w = self
+                    .wallets
+                    .get_mut(&wallet)
+                    .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+                if !w.owners.contains(&self.signer) {
+                    return Err(ExecError::NotOwner);
+                }
+                let p = w
+                    .proposals
+                    .get_mut(&proposal_id)
+                    .ok_or(ExecError::ProposalNotFound(proposal_id))?;
+                if p.executed {
+                    return Err(ExecError::AlreadyExecuted);
+                }
+                if p.cancelled {
+                    return Err(ExecError::ProposalCancelled);
+                }
+                if self.current_epoch > p.created_at + w.proposal_ttl {
+                    return Err(ExecError::ProposalExpired);
+                }
+                if p.rejections.contains(&self.signer) {
+                    return Err(ExecError::AlreadyRejected);
+                }
+                if p.approvals.contains(&self.signer) {
+                    return Err(ExecError::AlreadyApproved);
+                }
                 p.rejections.push(self.signer.clone());
                 Ok(MultisigResult::ProposalRejected {
-                    wallet, proposal_id,
+                    wallet,
+                    proposal_id,
                     rejections: p.rejections.len() as u32,
                 })
             }
 
-            MultisigCmd::Execute { wallet, proposal_id } => {
-                let w = self.wallets.get_mut(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+            MultisigCmd::Execute {
+                wallet,
+                proposal_id,
+            } => {
+                let w = self
+                    .wallets
+                    .get_mut(&wallet)
+                    .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
                 // Reset daily if needed
                 let day_epochs = 2880u64;
                 if self.current_epoch >= w.daily_reset_epoch + day_epochs {
                     w.daily_spent = 0;
                     w.daily_reset_epoch = self.current_epoch - (self.current_epoch % day_epochs);
                 }
-                let p = w.proposals.get(&proposal_id).ok_or(ExecError::ProposalNotFound(proposal_id))?;
-                if p.executed { return Err(ExecError::AlreadyExecuted); }
-                if p.cancelled { return Err(ExecError::ProposalCancelled); }
-                if self.current_epoch > p.created_at + w.proposal_ttl { return Err(ExecError::ProposalExpired); }
-                if (p.approvals.len() as u32) < w.threshold { return Err(ExecError::InsufficientApprovals); }
+                let p = w
+                    .proposals
+                    .get(&proposal_id)
+                    .ok_or(ExecError::ProposalNotFound(proposal_id))?;
+                if p.executed {
+                    return Err(ExecError::AlreadyExecuted);
+                }
+                if p.cancelled {
+                    return Err(ExecError::ProposalCancelled);
+                }
+                if self.current_epoch > p.created_at + w.proposal_ttl {
+                    return Err(ExecError::ProposalExpired);
+                }
+                if (p.approvals.len() as u32) < w.threshold {
+                    return Err(ExecError::InsufficientApprovals);
+                }
                 if let Some(limit) = w.daily_limit {
-                    if w.daily_spent + p.value > limit { return Err(ExecError::DailyLimitExceeded); }
+                    if w.daily_spent + p.value > limit {
+                        return Err(ExecError::DailyLimitExceeded);
+                    }
                 }
                 let target = p.target.clone();
                 let value = p.value;
@@ -566,21 +811,47 @@ impl MultisigExecutor {
                 p.executed = true;
                 w.nonce += 1;
                 w.daily_spent += value;
-                Ok(MultisigResult::ProposalExecuted { wallet, proposal_id, target, value })
+                Ok(MultisigResult::ProposalExecuted {
+                    wallet,
+                    proposal_id,
+                    target,
+                    value,
+                })
             }
 
-            MultisigCmd::Cancel { wallet, proposal_id } => {
-                let w = self.wallets.get_mut(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
-                let p = w.proposals.get_mut(&proposal_id).ok_or(ExecError::ProposalNotFound(proposal_id))?;
-                if p.executed { return Err(ExecError::AlreadyExecuted); }
-                if p.proposer != self.signer { return Err(ExecError::OnlyProposerCanCancel); }
+            MultisigCmd::Cancel {
+                wallet,
+                proposal_id,
+            } => {
+                let w = self
+                    .wallets
+                    .get_mut(&wallet)
+                    .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+                let p = w
+                    .proposals
+                    .get_mut(&proposal_id)
+                    .ok_or(ExecError::ProposalNotFound(proposal_id))?;
+                if p.executed {
+                    return Err(ExecError::AlreadyExecuted);
+                }
+                if p.proposer != self.signer {
+                    return Err(ExecError::OnlyProposerCanCancel);
+                }
                 p.cancelled = true;
-                Ok(MultisigResult::ProposalCancelled { wallet, proposal_id })
+                Ok(MultisigResult::ProposalCancelled {
+                    wallet,
+                    proposal_id,
+                })
             }
 
             MultisigCmd::List { wallet, filter } => {
-                let w = self.wallets.get(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
-                let proposals: Vec<ProposalSummary> = w.proposals.values()
+                let w = self
+                    .wallets
+                    .get(&wallet)
+                    .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+                let proposals: Vec<ProposalSummary> = w
+                    .proposals
+                    .values()
                     .filter(|p| match filter {
                         ProposalFilter::Pending => !p.executed && !p.cancelled,
                         ProposalFilter::Executed => p.executed,
@@ -602,8 +873,15 @@ impl MultisigExecutor {
             }
 
             MultisigCmd::Info { wallet } => {
-                let w = self.wallets.get(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
-                let pending_count = w.proposals.values().filter(|p| !p.executed && !p.cancelled).count();
+                let w = self
+                    .wallets
+                    .get(&wallet)
+                    .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+                let pending_count = w
+                    .proposals
+                    .values()
+                    .filter(|p| !p.executed && !p.cancelled)
+                    .count();
                 Ok(MultisigResult::WalletInfo {
                     wallet,
                     owners: w.owners.clone(),
@@ -615,39 +893,77 @@ impl MultisigExecutor {
                 })
             }
 
-            MultisigCmd::Owners { wallet, action } => {
-                match action {
-                    OwnerAction::List => {
-                        let w = self.wallets.get(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
-                        Ok(MultisigResult::OwnersListed { wallet, owners: w.owners.clone() })
-                    }
-                    OwnerAction::Add(new_owner) => {
-                        let w = self.wallets.get_mut(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
-                        if w.owners.contains(&new_owner) { return Err(ExecError::OwnerAlreadyExists); }
-                        w.owners.push(new_owner.clone());
-                        let total = w.owners.len();
-                        Ok(MultisigResult::OwnerAdded { wallet, new_owner, total_owners: total })
-                    }
-                    OwnerAction::Remove(owner) => {
-                        let w = self.wallets.get_mut(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
-                        let idx = w.owners.iter().position(|o| o == &owner).ok_or(ExecError::OwnerNotFound)?;
-                        if w.owners.len() - 1 < w.threshold as usize { return Err(ExecError::ThresholdWouldExceedOwners); }
-                        if w.owners.len() - 1 < 2 { return Err(ExecError::TooFewOwners); }
-                        w.owners.remove(idx);
-                        let total = w.owners.len();
-                        Ok(MultisigResult::OwnerRemoved { wallet, removed: owner, total_owners: total })
-                    }
+            MultisigCmd::Owners { wallet, action } => match action {
+                OwnerAction::List => {
+                    let w = self
+                        .wallets
+                        .get(&wallet)
+                        .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+                    Ok(MultisigResult::OwnersListed {
+                        wallet,
+                        owners: w.owners.clone(),
+                    })
                 }
-            }
+                OwnerAction::Add(new_owner) => {
+                    let w = self
+                        .wallets
+                        .get_mut(&wallet)
+                        .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+                    if w.owners.contains(&new_owner) {
+                        return Err(ExecError::OwnerAlreadyExists);
+                    }
+                    w.owners.push(new_owner.clone());
+                    let total = w.owners.len();
+                    Ok(MultisigResult::OwnerAdded {
+                        wallet,
+                        new_owner,
+                        total_owners: total,
+                    })
+                }
+                OwnerAction::Remove(owner) => {
+                    let w = self
+                        .wallets
+                        .get_mut(&wallet)
+                        .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+                    let idx = w
+                        .owners
+                        .iter()
+                        .position(|o| o == &owner)
+                        .ok_or(ExecError::OwnerNotFound)?;
+                    if w.owners.len() - 1 < w.threshold as usize {
+                        return Err(ExecError::ThresholdWouldExceedOwners);
+                    }
+                    if w.owners.len() - 1 < 2 {
+                        return Err(ExecError::TooFewOwners);
+                    }
+                    w.owners.remove(idx);
+                    let total = w.owners.len();
+                    Ok(MultisigResult::OwnerRemoved {
+                        wallet,
+                        removed: owner,
+                        total_owners: total,
+                    })
+                }
+            },
 
-            MultisigCmd::Threshold { wallet, new_threshold } => {
-                let w = self.wallets.get_mut(&wallet).ok_or(ExecError::WalletNotFound(wallet.clone()))?;
+            MultisigCmd::Threshold {
+                wallet,
+                new_threshold,
+            } => {
+                let w = self
+                    .wallets
+                    .get_mut(&wallet)
+                    .ok_or(ExecError::WalletNotFound(wallet.clone()))?;
                 if new_threshold == 0 || new_threshold as usize > w.owners.len() {
                     return Err(ExecError::InvalidThreshold);
                 }
                 let old = w.threshold;
                 w.threshold = new_threshold;
-                Ok(MultisigResult::ThresholdChanged { wallet, old, new_threshold })
+                Ok(MultisigResult::ThresholdChanged {
+                    wallet,
+                    old,
+                    new_threshold,
+                })
             }
 
             MultisigCmd::Help => Ok(MultisigResult::HelpText(HELP_TEXT.to_string())),
@@ -691,23 +1007,41 @@ mod tests {
     #[test]
     fn parse_create_basic() {
         let cmd = parse_multisig_cmd(&["create", "alice", "bob", "--threshold", "2"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Create {
-            owners: vec!["alice".into(), "bob".into()],
-            threshold: 2,
-            daily_limit: None,
-            proposal_ttl: 2880,
-        });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Create {
+                owners: vec!["alice".into(), "bob".into()],
+                threshold: 2,
+                daily_limit: None,
+                proposal_ttl: 2880,
+            }
+        );
     }
 
     #[test]
     fn parse_create_with_options() {
-        let cmd = parse_multisig_cmd(&["create", "a", "b", "c", "-t", "2", "--daily-limit", "5000", "--ttl", "100"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Create {
-            owners: vec!["a".into(), "b".into(), "c".into()],
-            threshold: 2,
-            daily_limit: Some(5000),
-            proposal_ttl: 100,
-        });
+        let cmd = parse_multisig_cmd(&[
+            "create",
+            "a",
+            "b",
+            "c",
+            "-t",
+            "2",
+            "--daily-limit",
+            "5000",
+            "--ttl",
+            "100",
+        ])
+        .unwrap();
+        assert_eq!(
+            cmd,
+            MultisigCmd::Create {
+                owners: vec!["a".into(), "b".into(), "c".into()],
+                threshold: 2,
+                daily_limit: Some(5000),
+                proposal_ttl: 100,
+            }
+        );
     }
 
     #[test]
@@ -721,59 +1055,101 @@ mod tests {
     #[test]
     fn parse_propose_basic() {
         let cmd = parse_multisig_cmd(&["propose", "msig-0000", "recipient", "1000"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Propose {
-            wallet: "msig-0000".into(),
-            target: "recipient".into(),
-            value: 1000,
-            data: None,
-        });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Propose {
+                wallet: "msig-0000".into(),
+                target: "recipient".into(),
+                value: 1000,
+                data: None,
+            }
+        );
     }
 
     #[test]
     fn parse_propose_with_data() {
         let cmd = parse_multisig_cmd(&["propose", "w", "t", "0", "--data", "0xdeadbeef"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Propose {
-            wallet: "w".into(),
-            target: "t".into(),
-            value: 0,
-            data: Some(vec![0xde, 0xad, 0xbe, 0xef]),
-        });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Propose {
+                wallet: "w".into(),
+                target: "t".into(),
+                value: 0,
+                data: Some(vec![0xde, 0xad, 0xbe, 0xef]),
+            }
+        );
     }
 
     #[test]
     fn parse_approve() {
         let cmd = parse_multisig_cmd(&["approve", "w", "5"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Approve { wallet: "w".into(), proposal_id: 5 });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Approve {
+                wallet: "w".into(),
+                proposal_id: 5
+            }
+        );
     }
 
     #[test]
     fn parse_reject() {
         let cmd = parse_multisig_cmd(&["reject", "w", "3"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Reject { wallet: "w".into(), proposal_id: 3 });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Reject {
+                wallet: "w".into(),
+                proposal_id: 3
+            }
+        );
     }
 
     #[test]
     fn parse_execute() {
         let cmd = parse_multisig_cmd(&["execute", "w", "1"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Execute { wallet: "w".into(), proposal_id: 1 });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Execute {
+                wallet: "w".into(),
+                proposal_id: 1
+            }
+        );
     }
 
     #[test]
     fn parse_cancel() {
         let cmd = parse_multisig_cmd(&["cancel", "w", "2"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Cancel { wallet: "w".into(), proposal_id: 2 });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Cancel {
+                wallet: "w".into(),
+                proposal_id: 2
+            }
+        );
     }
 
     #[test]
     fn parse_list_default_pending() {
         let cmd = parse_multisig_cmd(&["list", "w"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::List { wallet: "w".into(), filter: ProposalFilter::Pending });
+        assert_eq!(
+            cmd,
+            MultisigCmd::List {
+                wallet: "w".into(),
+                filter: ProposalFilter::Pending
+            }
+        );
     }
 
     #[test]
     fn parse_list_all() {
         let cmd = parse_multisig_cmd(&["list", "w", "--all"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::List { wallet: "w".into(), filter: ProposalFilter::All });
+        assert_eq!(
+            cmd,
+            MultisigCmd::List {
+                wallet: "w".into(),
+                filter: ProposalFilter::All
+            }
+        );
     }
 
     #[test]
@@ -785,25 +1161,49 @@ mod tests {
     #[test]
     fn parse_owners_list() {
         let cmd = parse_multisig_cmd(&["owners", "w"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Owners { wallet: "w".into(), action: OwnerAction::List });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Owners {
+                wallet: "w".into(),
+                action: OwnerAction::List
+            }
+        );
     }
 
     #[test]
     fn parse_owners_add() {
         let cmd = parse_multisig_cmd(&["owners", "w", "--add", "newguy"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Owners { wallet: "w".into(), action: OwnerAction::Add("newguy".into()) });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Owners {
+                wallet: "w".into(),
+                action: OwnerAction::Add("newguy".into())
+            }
+        );
     }
 
     #[test]
     fn parse_owners_remove() {
         let cmd = parse_multisig_cmd(&["owners", "w", "--remove", "oldguy"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Owners { wallet: "w".into(), action: OwnerAction::Remove("oldguy".into()) });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Owners {
+                wallet: "w".into(),
+                action: OwnerAction::Remove("oldguy".into())
+            }
+        );
     }
 
     #[test]
     fn parse_threshold() {
         let cmd = parse_multisig_cmd(&["threshold", "w", "3"]).unwrap();
-        assert_eq!(cmd, MultisigCmd::Threshold { wallet: "w".into(), new_threshold: 3 });
+        assert_eq!(
+            cmd,
+            MultisigCmd::Threshold {
+                wallet: "w".into(),
+                new_threshold: 3
+            }
+        );
     }
 
     #[test]
@@ -813,7 +1213,10 @@ mod tests {
 
     #[test]
     fn parse_missing_subcommand() {
-        assert_eq!(parse_multisig_cmd(&[]).unwrap_err(), ParseError::MissingSubcommand);
+        assert_eq!(
+            parse_multisig_cmd(&[]).unwrap_err(),
+            ParseError::MissingSubcommand
+        );
     }
 
     #[test]
@@ -847,7 +1250,8 @@ mod tests {
     }
 
     fn create_wallet(ex: &mut MultisigExecutor) -> String {
-        let cmd = parse_multisig_cmd(&["create", "alice", "bob", "carol", "--threshold", "2"]).unwrap();
+        let cmd =
+            parse_multisig_cmd(&["create", "alice", "bob", "carol", "--threshold", "2"]).unwrap();
         match ex.execute_cmd(cmd).unwrap() {
             MultisigResult::WalletCreated { wallet_id, .. } => wallet_id,
             _ => panic!("expected WalletCreated"),
@@ -878,7 +1282,11 @@ mod tests {
         ex.set_signer("bob".into());
         let cmd = parse_multisig_cmd(&["approve", &wid, "1"]).unwrap();
         match ex.execute_cmd(cmd).unwrap() {
-            MultisigResult::ProposalApproved { approvals, threshold, .. } => {
+            MultisigResult::ProposalApproved {
+                approvals,
+                threshold,
+                ..
+            } => {
                 assert_eq!(approvals, 2);
                 assert_eq!(threshold, 2);
             }
@@ -914,7 +1322,10 @@ mod tests {
 
         // try execute — only 1 approval (alice auto), threshold=2
         let cmd = parse_multisig_cmd(&["execute", &wid, "1"]).unwrap();
-        assert_eq!(ex.execute_cmd(cmd).unwrap_err(), ExecError::InsufficientApprovals);
+        assert_eq!(
+            ex.execute_cmd(cmd).unwrap_err(),
+            ExecError::InsufficientApprovals
+        );
     }
 
     #[test]
@@ -928,18 +1339,26 @@ mod tests {
         // bob cannot cancel alice's proposal
         ex.set_signer("bob".into());
         let cmd = parse_multisig_cmd(&["cancel", &wid, "1"]).unwrap();
-        assert_eq!(ex.execute_cmd(cmd).unwrap_err(), ExecError::OnlyProposerCanCancel);
+        assert_eq!(
+            ex.execute_cmd(cmd).unwrap_err(),
+            ExecError::OnlyProposerCanCancel
+        );
 
         // alice can
         ex.set_signer("alice".into());
         let cmd = parse_multisig_cmd(&["cancel", &wid, "1"]).unwrap();
-        assert!(matches!(ex.execute_cmd(cmd).unwrap(), MultisigResult::ProposalCancelled { .. }));
+        assert!(matches!(
+            ex.execute_cmd(cmd).unwrap(),
+            MultisigResult::ProposalCancelled { .. }
+        ));
     }
 
     #[test]
     fn exec_proposal_expiry() {
         let mut ex = MultisigExecutor::new("alice".into(), 100);
-        let cmd = parse_multisig_cmd(&["create", "alice", "bob", "--threshold", "2", "--ttl", "50"]).unwrap();
+        let cmd =
+            parse_multisig_cmd(&["create", "alice", "bob", "--threshold", "2", "--ttl", "50"])
+                .unwrap();
         let wid = match ex.execute_cmd(cmd).unwrap() {
             MultisigResult::WalletCreated { wallet_id, .. } => wallet_id,
             _ => panic!(),
@@ -957,7 +1376,16 @@ mod tests {
     #[test]
     fn exec_daily_limit() {
         let mut ex = make_executor();
-        let cmd = parse_multisig_cmd(&["create", "alice", "bob", "--threshold", "1", "--daily-limit", "1000"]).unwrap();
+        let cmd = parse_multisig_cmd(&[
+            "create",
+            "alice",
+            "bob",
+            "--threshold",
+            "1",
+            "--daily-limit",
+            "1000",
+        ])
+        .unwrap();
         let wid = match ex.execute_cmd(cmd).unwrap() {
             MultisigResult::WalletCreated { wallet_id, .. } => wallet_id,
             _ => panic!(),
@@ -971,7 +1399,10 @@ mod tests {
         let cmd = parse_multisig_cmd(&["propose", &wid, "t", "300"]).unwrap();
         ex.execute_cmd(cmd).unwrap();
         let cmd = parse_multisig_cmd(&["execute", &wid, "2"]).unwrap();
-        assert_eq!(ex.execute_cmd(cmd).unwrap_err(), ExecError::DailyLimitExceeded);
+        assert_eq!(
+            ex.execute_cmd(cmd).unwrap_err(),
+            ExecError::DailyLimitExceeded
+        );
     }
 
     #[test]
@@ -998,7 +1429,13 @@ mod tests {
 
         let cmd = parse_multisig_cmd(&["info", &wid]).unwrap();
         match ex.execute_cmd(cmd).unwrap() {
-            MultisigResult::WalletInfo { owners, threshold, nonce, pending_count, .. } => {
+            MultisigResult::WalletInfo {
+                owners,
+                threshold,
+                nonce,
+                pending_count,
+                ..
+            } => {
                 assert_eq!(owners.len(), 3);
                 assert_eq!(threshold, 2);
                 assert_eq!(nonce, 0);
@@ -1031,7 +1468,10 @@ mod tests {
         let cmd = parse_multisig_cmd(&["owners", &wid, "--remove", "carol"]).unwrap();
         ex.execute_cmd(cmd).unwrap();
         let cmd = parse_multisig_cmd(&["owners", &wid, "--remove", "bob"]).unwrap();
-        assert_eq!(ex.execute_cmd(cmd).unwrap_err(), ExecError::ThresholdWouldExceedOwners);
+        assert_eq!(
+            ex.execute_cmd(cmd).unwrap_err(),
+            ExecError::ThresholdWouldExceedOwners
+        );
     }
 
     #[test]
@@ -1041,7 +1481,9 @@ mod tests {
 
         let cmd = parse_multisig_cmd(&["threshold", &wid, "3"]).unwrap();
         match ex.execute_cmd(cmd).unwrap() {
-            MultisigResult::ThresholdChanged { old, new_threshold, .. } => {
+            MultisigResult::ThresholdChanged {
+                old, new_threshold, ..
+            } => {
                 assert_eq!(old, 2);
                 assert_eq!(new_threshold, 3);
             }
@@ -1050,7 +1492,10 @@ mod tests {
 
         // Invalid threshold
         let cmd = parse_multisig_cmd(&["threshold", &wid, "5"]).unwrap();
-        assert_eq!(ex.execute_cmd(cmd).unwrap_err(), ExecError::InvalidThreshold);
+        assert_eq!(
+            ex.execute_cmd(cmd).unwrap_err(),
+            ExecError::InvalidThreshold
+        );
     }
 
     #[test]
@@ -1080,7 +1525,10 @@ mod tests {
     fn exec_wallet_not_found() {
         let mut ex = make_executor();
         let cmd = parse_multisig_cmd(&["info", "nonexistent"]).unwrap();
-        assert_eq!(ex.execute_cmd(cmd).unwrap_err(), ExecError::WalletNotFound("nonexistent".into()));
+        assert_eq!(
+            ex.execute_cmd(cmd).unwrap_err(),
+            ExecError::WalletNotFound("nonexistent".into())
+        );
     }
 
     #[test]
@@ -1095,10 +1543,19 @@ mod tests {
 
     #[test]
     fn display_formats() {
-        let r = MultisigResult::WalletCreated { wallet_id: "w".into(), owners: 3, threshold: 2 };
+        let r = MultisigResult::WalletCreated {
+            wallet_id: "w".into(),
+            owners: 3,
+            threshold: 2,
+        };
         assert!(format!("{r}").contains("2-of-3"));
 
-        let r = MultisigResult::ProposalExecuted { wallet: "w".into(), proposal_id: 1, target: "t".into(), value: 100 };
+        let r = MultisigResult::ProposalExecuted {
+            wallet: "w".into(),
+            proposal_id: 1,
+            target: "t".into(),
+            value: 100,
+        };
         assert!(format!("{r}").contains("100"));
     }
 }

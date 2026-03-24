@@ -44,11 +44,19 @@ pub struct SampleRequest {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SampleResponse {
     /// Provider returned valid chunk proofs.
-    Success { blob_id: BlobId, round: u32, proofs: Vec<ChunkProof> },
+    Success {
+        blob_id: BlobId,
+        round: u32,
+        proofs: Vec<ChunkProof>,
+    },
     /// Provider did not respond in time.
     Timeout { blob_id: BlobId, round: u32 },
     /// Provider returned invalid/partial data.
-    Invalid { blob_id: BlobId, round: u32, reason: String },
+    Invalid {
+        blob_id: BlobId,
+        round: u32,
+        reason: String,
+    },
 }
 
 /// Status of a validation task.
@@ -158,30 +166,39 @@ impl DasValidator {
         if self.tasks.len() >= MAX_CONCURRENT_VALIDATIONS {
             // Queue it for later
             self.queue.push_back(blob_id);
-            self.tasks.insert(blob_id, ValidationTask {
+            self.tasks.insert(
+                blob_id,
+                ValidationTask {
+                    blob_id,
+                    provider,
+                    data_root,
+                    chunk_count,
+                    status: ValidationStatus::Queued,
+                    started_epoch: self.current_epoch,
+                    last_activity: self.current_epoch,
+                    rounds_completed: 0,
+                    rounds_needed: REQUIRED_ROUNDS,
+                },
+            );
+            return Ok(());
+        }
+        self.tasks.insert(
+            blob_id,
+            ValidationTask {
                 blob_id,
                 provider,
                 data_root,
                 chunk_count,
-                status: ValidationStatus::Queued,
+                status: ValidationStatus::Sampling {
+                    round: 0,
+                    retries: 0,
+                },
                 started_epoch: self.current_epoch,
                 last_activity: self.current_epoch,
                 rounds_completed: 0,
                 rounds_needed: REQUIRED_ROUNDS,
-            });
-            return Ok(());
-        }
-        self.tasks.insert(blob_id, ValidationTask {
-            blob_id,
-            provider,
-            data_root,
-            chunk_count,
-            status: ValidationStatus::Sampling { round: 0, retries: 0 },
-            started_epoch: self.current_epoch,
-            last_activity: self.current_epoch,
-            rounds_completed: 0,
-            rounds_needed: REQUIRED_ROUNDS,
-        });
+            },
+        );
         Ok(())
     }
 
@@ -195,7 +212,10 @@ impl DasValidator {
             if let Some(blob_id) = self.queue.pop_front() {
                 if let Some(task) = self.tasks.get_mut(&blob_id) {
                     if task.status == ValidationStatus::Queued {
-                        task.status = ValidationStatus::Sampling { round: 0, retries: 0 };
+                        task.status = ValidationStatus::Sampling {
+                            round: 0,
+                            retries: 0,
+                        };
                     }
                 }
             } else {
@@ -231,7 +251,11 @@ impl DasValidator {
     /// Process a response from a provider.
     pub fn on_response(&mut self, response: SampleResponse) -> Result<(), &'static str> {
         match response {
-            SampleResponse::Success { blob_id, round, proofs } => {
+            SampleResponse::Success {
+                blob_id,
+                round,
+                proofs,
+            } => {
                 // Extract what we need before mutable borrow
                 let task = self.tasks.get(&blob_id).ok_or("unknown blob")?;
                 let provider = task.provider;
@@ -267,7 +291,10 @@ impl DasValidator {
                 if task.rounds_completed >= task.rounds_needed {
                     task.status = ValidationStatus::Confirmed;
                 } else {
-                    task.status = ValidationStatus::Sampling { round: round + 1, retries: 0 };
+                    task.status = ValidationStatus::Sampling {
+                        round: round + 1,
+                        retries: 0,
+                    };
                 }
 
                 let stats = self.provider_stats.entry(provider).or_default();
@@ -323,7 +350,10 @@ impl DasValidator {
 
     /// Number of actively sampling tasks.
     pub fn active_count(&self) -> usize {
-        self.tasks.values().filter(|t| matches!(t.status, ValidationStatus::Sampling { .. })).count()
+        self.tasks
+            .values()
+            .filter(|t| matches!(t.status, ValidationStatus::Sampling { .. }))
+            .count()
     }
 
     /// Number of completed (confirmed + failed) blobs.
@@ -338,8 +368,17 @@ impl DasValidator {
 
     /// Clean up completed tasks and free slots.
     pub fn gc_completed(&mut self) {
-        let done: Vec<BlobId> = self.tasks.iter()
-            .filter(|(_, t)| matches!(t.status, ValidationStatus::Confirmed | ValidationStatus::Failed | ValidationStatus::Abandoned))
+        let done: Vec<BlobId> = self
+            .tasks
+            .iter()
+            .filter(|(_, t)| {
+                matches!(
+                    t.status,
+                    ValidationStatus::Confirmed
+                        | ValidationStatus::Failed
+                        | ValidationStatus::Abandoned
+                )
+            })
             .map(|(id, _)| *id)
             .collect();
         for id in done {
@@ -398,7 +437,7 @@ pub use prova_chain::das::{hash_leaf, verify_proof};
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prova_chain::das::{prepare_blob, build_chunk_proofs};
+    use prova_chain::das::{build_chunk_proofs, prepare_blob};
 
     fn make_chunks(n: usize, size: usize) -> Vec<Vec<u8>> {
         (0..n).map(|i| vec![(i & 0xff) as u8; size]).collect()
@@ -423,23 +462,34 @@ mod tests {
     #[test]
     fn test_register_commitment() {
         let (mut v, blob_id, root, chunks, _) = setup_validator();
-        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap();
         assert_eq!(v.active_count(), 1);
-        assert_eq!(v.task_status(&blob_id), Some(ValidationStatus::Sampling { round: 0, retries: 0 }));
+        assert_eq!(
+            v.task_status(&blob_id),
+            Some(ValidationStatus::Sampling {
+                round: 0,
+                retries: 0
+            })
+        );
     }
 
     #[test]
     fn test_duplicate_commitment_rejected() {
         let (mut v, blob_id, root, chunks, _) = setup_validator();
-        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap();
-        let err = v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap_err();
+        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap();
+        let err = v
+            .on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap_err();
         assert_eq!(err, "already tracking this blob");
     }
 
     #[test]
     fn test_generate_requests() {
         let (mut v, blob_id, root, chunks, _) = setup_validator();
-        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap();
         let reqs = v.generate_requests();
         assert_eq!(reqs.len(), 1);
         assert_eq!(reqs[0].blob_id, blob_id);
@@ -450,7 +500,8 @@ mod tests {
     #[test]
     fn test_full_validation_flow() {
         let (mut v, blob_id, root, chunks, layers) = setup_validator();
-        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap();
 
         for round in 0..REQUIRED_ROUNDS {
             let reqs = v.generate_requests();
@@ -460,7 +511,8 @@ mod tests {
                 blob_id,
                 round,
                 proofs,
-            }).unwrap();
+            })
+            .unwrap();
         }
 
         assert_eq!(v.task_status(&blob_id), Some(ValidationStatus::Confirmed));
@@ -469,21 +521,31 @@ mod tests {
     #[test]
     fn test_timeout_triggers_retry() {
         let (mut v, blob_id, root, chunks, _) = setup_validator();
-        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap();
         v.generate_requests();
 
-        v.on_response(SampleResponse::Timeout { blob_id, round: 0 }).unwrap();
-        assert_eq!(v.task_status(&blob_id), Some(ValidationStatus::Sampling { round: 0, retries: 1 }));
+        v.on_response(SampleResponse::Timeout { blob_id, round: 0 })
+            .unwrap();
+        assert_eq!(
+            v.task_status(&blob_id),
+            Some(ValidationStatus::Sampling {
+                round: 0,
+                retries: 1
+            })
+        );
     }
 
     #[test]
     fn test_max_retries_marks_failed() {
         let (mut v, blob_id, root, chunks, _) = setup_validator();
-        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap();
         v.generate_requests();
 
         for _ in 0..SAMPLE_RETRY_LIMIT {
-            v.on_response(SampleResponse::Timeout { blob_id, round: 0 }).unwrap();
+            v.on_response(SampleResponse::Timeout { blob_id, round: 0 })
+                .unwrap();
         }
 
         assert_eq!(v.task_status(&blob_id), Some(ValidationStatus::Failed));
@@ -492,27 +554,41 @@ mod tests {
     #[test]
     fn test_invalid_response_counts_retry() {
         let (mut v, blob_id, root, chunks, _) = setup_validator();
-        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap();
         v.generate_requests();
 
         v.on_response(SampleResponse::Invalid {
             blob_id,
             round: 0,
             reason: "bad data".into(),
-        }).unwrap();
-        assert_eq!(v.task_status(&blob_id), Some(ValidationStatus::Sampling { round: 0, retries: 1 }));
+        })
+        .unwrap();
+        assert_eq!(
+            v.task_status(&blob_id),
+            Some(ValidationStatus::Sampling {
+                round: 0,
+                retries: 1
+            })
+        );
     }
 
     #[test]
     fn test_provider_stats_tracking() {
         let (mut v, blob_id, root, chunks, layers) = setup_validator();
         let provider = Address::test(1);
-        v.on_new_commitment(blob_id, provider, root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, provider, root, chunks.len())
+            .unwrap();
 
         // One successful round
         let reqs = v.generate_requests();
         let proofs = build_chunk_proofs(&reqs[0].indices, &chunks, &layers);
-        v.on_response(SampleResponse::Success { blob_id, round: 0, proofs }).unwrap();
+        v.on_response(SampleResponse::Success {
+            blob_id,
+            round: 0,
+            proofs,
+        })
+        .unwrap();
 
         let stats = v.provider_stats(&provider).unwrap();
         assert_eq!(stats.challenges_sent, 1);
@@ -524,13 +600,19 @@ mod tests {
     #[test]
     fn test_gc_completed_frees_slots() {
         let (mut v, blob_id, root, chunks, layers) = setup_validator();
-        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap();
 
         // Complete all rounds
         for round in 0..REQUIRED_ROUNDS {
             let reqs = v.generate_requests();
             let proofs = build_chunk_proofs(&reqs[0].indices, &chunks, &layers);
-            v.on_response(SampleResponse::Success { blob_id, round, proofs }).unwrap();
+            v.on_response(SampleResponse::Success {
+                blob_id,
+                round,
+                proofs,
+            })
+            .unwrap();
         }
 
         assert_eq!(v.active_count(), 0); // Confirmed, not "sampling"
@@ -542,7 +624,8 @@ mod tests {
     #[test]
     fn test_drain_outbox() {
         let (mut v, blob_id, root, chunks, _) = setup_validator();
-        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap();
         v.generate_requests();
 
         let outbox = v.drain_outbox();
@@ -560,8 +643,10 @@ mod tests {
         let (id1, root1, chunks1, _) = prepare_blob(&orig1);
         let (id2, root2, chunks2, _) = prepare_blob(&orig2);
 
-        v.on_new_commitment(id1, Address::test(1), root1, chunks1.len()).unwrap();
-        v.on_new_commitment(id2, Address::test(2), root2, chunks2.len()).unwrap();
+        v.on_new_commitment(id1, Address::test(1), root1, chunks1.len())
+            .unwrap();
+        v.on_new_commitment(id2, Address::test(2), root2, chunks2.len())
+            .unwrap();
 
         let reqs = v.generate_requests();
         assert_eq!(reqs.len(), 2);
@@ -571,12 +656,19 @@ mod tests {
     #[test]
     fn test_wrong_round_rejected() {
         let (mut v, blob_id, root, chunks, layers) = setup_validator();
-        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, Address::test(1), root, chunks.len())
+            .unwrap();
         let reqs = v.generate_requests();
         let proofs = build_chunk_proofs(&reqs[0].indices, &chunks, &layers);
 
         // Try round 1 when expecting round 0
-        let err = v.on_response(SampleResponse::Success { blob_id, round: 1, proofs }).unwrap_err();
+        let err = v
+            .on_response(SampleResponse::Success {
+                blob_id,
+                round: 1,
+                proofs,
+            })
+            .unwrap_err();
         assert_eq!(err, "unexpected round");
     }
 
@@ -584,12 +676,19 @@ mod tests {
     fn test_provider_stats_mixed() {
         let (mut v, blob_id, root, chunks, _) = setup_validator();
         let provider = Address::test(1);
-        v.on_new_commitment(blob_id, provider, root, chunks.len()).unwrap();
+        v.on_new_commitment(blob_id, provider, root, chunks.len())
+            .unwrap();
         v.generate_requests();
 
         // Timeout then invalid
-        v.on_response(SampleResponse::Timeout { blob_id, round: 0 }).unwrap();
-        v.on_response(SampleResponse::Invalid { blob_id, round: 0, reason: "bad".into() }).unwrap();
+        v.on_response(SampleResponse::Timeout { blob_id, round: 0 })
+            .unwrap();
+        v.on_response(SampleResponse::Invalid {
+            blob_id,
+            round: 0,
+            reason: "bad".into(),
+        })
+        .unwrap();
 
         let stats = v.provider_stats(&provider).unwrap();
         assert_eq!(stats.challenges_sent, 2);
@@ -603,7 +702,12 @@ mod tests {
     fn test_unknown_blob_response_rejected() {
         let mut v = DasValidator::new(Address::test(99));
         let fake_id = BlobId([42u8; 32]);
-        let err = v.on_response(SampleResponse::Timeout { blob_id: fake_id, round: 0 }).unwrap_err();
+        let err = v
+            .on_response(SampleResponse::Timeout {
+                blob_id: fake_id,
+                round: 0,
+            })
+            .unwrap_err();
         assert_eq!(err, "unknown blob");
     }
 }

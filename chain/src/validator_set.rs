@@ -47,12 +47,12 @@ pub enum EjectionReason {
 pub struct Validator {
     pub address: String,
     pub stake: u64,
-    pub reputation: f64,        // 0.0–1.0
+    pub reputation: f64, // 0.0–1.0
     pub status: ValidatorStatus,
     pub registered_epoch: u64,
     pub consecutive_misses: u64,
     pub blocks_produced: u64,
-    pub capacity: u64,          // declared inference capacity (ops/s)
+    pub capacity: u64, // declared inference capacity (ops/s)
 }
 
 impl Validator {
@@ -70,7 +70,7 @@ impl Validator {
 #[derive(Debug, Clone)]
 pub struct EpochRecord {
     pub epoch: u64,
-    pub active_set: Vec<String>,       // ordered by score
+    pub active_set: Vec<String>, // ordered by score
     pub total_stake: u64,
 }
 
@@ -134,7 +134,10 @@ impl ValidatorSet {
 
     /// Add stake to an existing validator
     pub fn add_stake(&mut self, address: &str, amount: u64) -> Result<u64, ValidatorError> {
-        let v = self.validators.get_mut(address).ok_or(ValidatorError::NotFound)?;
+        let v = self
+            .validators
+            .get_mut(address)
+            .ok_or(ValidatorError::NotFound)?;
         match v.status {
             ValidatorStatus::Exited | ValidatorStatus::Ejected { .. } => {
                 return Err(ValidatorError::AlreadyExited);
@@ -147,7 +150,10 @@ impl ValidatorSet {
 
     /// Initiate voluntary exit
     pub fn begin_exit(&mut self, address: &str) -> Result<u64, ValidatorError> {
-        let v = self.validators.get_mut(address).ok_or(ValidatorError::NotFound)?;
+        let v = self
+            .validators
+            .get_mut(address)
+            .ok_or(ValidatorError::NotFound)?;
         match v.status {
             ValidatorStatus::Unbonding { .. } => return Err(ValidatorError::AlreadyUnbonding),
             ValidatorStatus::Exited | ValidatorStatus::Ejected { .. } => {
@@ -162,7 +168,10 @@ impl ValidatorSet {
 
     /// Complete exit after unbonding period — returns stake
     pub fn complete_exit(&mut self, address: &str) -> Result<u64, ValidatorError> {
-        let v = self.validators.get_mut(address).ok_or(ValidatorError::NotFound)?;
+        let v = self
+            .validators
+            .get_mut(address)
+            .ok_or(ValidatorError::NotFound)?;
         match v.status {
             ValidatorStatus::Unbonding { exit_epoch } => {
                 if self.current_epoch < exit_epoch + UNBONDING_EPOCHS {
@@ -185,7 +194,10 @@ impl ValidatorSet {
 
     /// Record a block produced by a validator
     pub fn record_block(&mut self, address: &str) -> Result<(), ValidatorError> {
-        let v = self.validators.get_mut(address).ok_or(ValidatorError::NotFound)?;
+        let v = self
+            .validators
+            .get_mut(address)
+            .ok_or(ValidatorError::NotFound)?;
         v.blocks_produced += 1;
         v.consecutive_misses = 0;
         Ok(())
@@ -193,7 +205,10 @@ impl ValidatorSet {
 
     /// Record a missed slot
     pub fn record_miss(&mut self, address: &str) -> Result<bool, ValidatorError> {
-        let v = self.validators.get_mut(address).ok_or(ValidatorError::NotFound)?;
+        let v = self
+            .validators
+            .get_mut(address)
+            .ok_or(ValidatorError::NotFound)?;
         v.consecutive_misses += 1;
         if v.consecutive_misses >= DOWNTIME_THRESHOLD {
             v.status = ValidatorStatus::Ejected {
@@ -207,7 +222,10 @@ impl ValidatorSet {
 
     /// Slash a validator (reduce stake, eject)
     pub fn slash(&mut self, address: &str, penalty: u64) -> Result<u64, ValidatorError> {
-        let v = self.validators.get_mut(address).ok_or(ValidatorError::NotFound)?;
+        let v = self
+            .validators
+            .get_mut(address)
+            .ok_or(ValidatorError::NotFound)?;
         let actual = penalty.min(v.stake);
         v.stake -= actual;
         v.status = ValidatorStatus::Ejected {
@@ -222,7 +240,10 @@ impl ValidatorSet {
         if rep < 0.0 || rep > 1.0 {
             return Err(ValidatorError::InvalidReputation);
         }
-        let v = self.validators.get_mut(address).ok_or(ValidatorError::NotFound)?;
+        let v = self
+            .validators
+            .get_mut(address)
+            .ok_or(ValidatorError::NotFound)?;
         v.reputation = rep;
         Ok(())
     }
@@ -248,8 +269,10 @@ impl ValidatorSet {
             .validators
             .values()
             .filter(|v| {
-                matches!(v.status, ValidatorStatus::Candidate | ValidatorStatus::Active)
-                    && v.stake >= MIN_VALIDATOR_STAKE
+                matches!(
+                    v.status,
+                    ValidatorStatus::Candidate | ValidatorStatus::Active
+                ) && v.stake >= MIN_VALIDATOR_STAKE
             })
             .map(|v| v.stake)
             .max()
@@ -259,8 +282,10 @@ impl ValidatorSet {
             .validators
             .iter()
             .filter(|(_, v)| {
-                matches!(v.status, ValidatorStatus::Candidate | ValidatorStatus::Active)
-                    && v.stake >= MIN_VALIDATOR_STAKE
+                matches!(
+                    v.status,
+                    ValidatorStatus::Candidate | ValidatorStatus::Active
+                ) && v.stake >= MIN_VALIDATOR_STAKE
             })
             .map(|(addr, v)| (addr.clone(), v.score(max_stake)))
             .collect();
@@ -398,7 +423,10 @@ mod tests {
         assert!(ejected);
         assert!(matches!(
             vs.get(&addr(1)).unwrap().status,
-            ValidatorStatus::Ejected { reason: EjectionReason::Downtime, .. }
+            ValidatorStatus::Ejected {
+                reason: EjectionReason::Downtime,
+                ..
+            }
         ));
     }
 
@@ -412,7 +440,10 @@ mod tests {
         assert_eq!(vs.get(&addr(1)).unwrap().stake, 150_000);
         assert!(matches!(
             vs.get(&addr(1)).unwrap().status,
-            ValidatorStatus::Ejected { reason: EjectionReason::Slashed, .. }
+            ValidatorStatus::Ejected {
+                reason: EjectionReason::Slashed,
+                ..
+            }
         ));
     }
 
@@ -513,7 +544,8 @@ mod tests {
         // Re-register to test the epoch-based ejection path
         // Actually slash already ejected. Let's test differently:
         let mut vs2 = ValidatorSet::new();
-        vs2.register(&addr(1), MIN_VALIDATOR_STAKE + 10_000, 100).unwrap();
+        vs2.register(&addr(1), MIN_VALIDATOR_STAKE + 10_000, 100)
+            .unwrap();
         vs2.advance_epoch();
         // Simulate external stake reduction (e.g., delegation withdrawal)
         vs2.validators.get_mut(&addr(1)).unwrap().stake = MIN_VALIDATOR_STAKE - 1;
@@ -521,7 +553,10 @@ mod tests {
         assert!(!rec.active_set.contains(&addr(1)));
         assert!(matches!(
             vs2.get(&addr(1)).unwrap().status,
-            ValidatorStatus::Ejected { reason: EjectionReason::InsufficientStake, .. }
+            ValidatorStatus::Ejected {
+                reason: EjectionReason::InsufficientStake,
+                ..
+            }
         ));
     }
 

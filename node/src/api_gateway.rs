@@ -68,27 +68,55 @@ pub struct ApiResponse {
 
 impl ApiResponse {
     pub fn ok(body: &str) -> Self {
-        Self { status: 200, body: body.to_string(), headers: Self::json_headers() }
+        Self {
+            status: 200,
+            body: body.to_string(),
+            headers: Self::json_headers(),
+        }
     }
     pub fn created(body: &str) -> Self {
-        Self { status: 201, body: body.to_string(), headers: Self::json_headers() }
+        Self {
+            status: 201,
+            body: body.to_string(),
+            headers: Self::json_headers(),
+        }
     }
     pub fn bad_request(msg: &str) -> Self {
-        Self { status: 400, body: format!(r#"{{"error":"{}"}}"#, msg), headers: Self::json_headers() }
+        Self {
+            status: 400,
+            body: format!(r#"{{"error":"{}"}}"#, msg),
+            headers: Self::json_headers(),
+        }
     }
     pub fn unauthorized() -> Self {
-        Self { status: 401, body: r#"{"error":"unauthorized"}"#.to_string(), headers: Self::json_headers() }
+        Self {
+            status: 401,
+            body: r#"{"error":"unauthorized"}"#.to_string(),
+            headers: Self::json_headers(),
+        }
     }
     pub fn forbidden(msg: &str) -> Self {
-        Self { status: 403, body: format!(r#"{{"error":"{}"}}"#, msg), headers: Self::json_headers() }
+        Self {
+            status: 403,
+            body: format!(r#"{{"error":"{}"}}"#, msg),
+            headers: Self::json_headers(),
+        }
     }
     pub fn not_found() -> Self {
-        Self { status: 404, body: r#"{"error":"not found"}"#.to_string(), headers: Self::json_headers() }
+        Self {
+            status: 404,
+            body: r#"{"error":"not found"}"#.to_string(),
+            headers: Self::json_headers(),
+        }
     }
     pub fn rate_limited(retry_after: u64) -> Self {
         let mut h = Self::json_headers();
         h.insert("Retry-After".into(), retry_after.to_string());
-        Self { status: 429, body: r#"{"error":"rate limit exceeded"}"#.to_string(), headers: h }
+        Self {
+            status: 429,
+            body: r#"{"error":"rate limit exceeded"}"#.to_string(),
+            headers: h,
+        }
     }
     fn json_headers() -> HashMap<String, String> {
         let mut h = HashMap::new();
@@ -285,7 +313,10 @@ impl ApiGateway {
         match jobs.get_mut(job_id) {
             Some(j) if j.status == JobStatus::Queued || j.status == JobStatus::Running => {
                 j.status = JobStatus::Cancelled;
-                ApiResponse::ok(&format!(r#"{{"job_id":"{}","status":"cancelled"}}"#, job_id))
+                ApiResponse::ok(&format!(
+                    r#"{{"job_id":"{}","status":"cancelled"}}"#,
+                    job_id
+                ))
             }
             Some(_) => ApiResponse::bad_request("job already terminal"),
             None => ApiResponse::not_found(),
@@ -347,7 +378,12 @@ impl ApiGateway {
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(256);
         let callback_url = Self::extract_field(body, "callback_url");
-        Some(InferenceRequest { model_id, input, max_tokens, callback_url })
+        Some(InferenceRequest {
+            model_id,
+            input,
+            max_tokens,
+            callback_url,
+        })
     }
 
     fn extract_field(body: &str, field: &str) -> Option<String> {
@@ -363,7 +399,9 @@ impl ApiGateway {
         if let Some(start) = body.find(&pattern_num) {
             let value_start = start + pattern_num.len();
             let rest = &body[value_start..];
-            let end = rest.find(|c: char| !c.is_ascii_digit()).unwrap_or(rest.len());
+            let end = rest
+                .find(|c: char| !c.is_ascii_digit())
+                .unwrap_or(rest.len());
             if end > 0 {
                 return Some(rest[..end].to_string());
             }
@@ -381,7 +419,10 @@ mod tests {
             key: "test-key-1".into(),
             owner: "alice".into(),
             permissions: perms,
-            rate_limit: RateLimit { max_requests: 10, window_secs: 60 },
+            rate_limit: RateLimit {
+                max_requests: 10,
+                window_secs: 60,
+            },
             created_at: 1000,
             enabled: true,
         }
@@ -430,14 +471,24 @@ mod tests {
         k.key = "disabled-key".into();
         k.enabled = false;
         gw.register_key(k);
-        let r = gw.handle(&req(HttpMethod::Get, "/v1/models", Some("disabled-key"), None));
+        let r = gw.handle(&req(
+            HttpMethod::Get,
+            "/v1/models",
+            Some("disabled-key"),
+            None,
+        ));
         assert_eq!(r.status, 403);
     }
 
     #[test]
     fn test_health_check() {
         let gw = test_gateway();
-        let r = gw.handle(&req(HttpMethod::Get, "/v1/health", Some("test-key-1"), None));
+        let r = gw.handle(&req(
+            HttpMethod::Get,
+            "/v1/health",
+            Some("test-key-1"),
+            None,
+        ));
         assert_eq!(r.status, 200);
         assert!(r.body.contains("healthy"));
     }
@@ -445,7 +496,12 @@ mod tests {
     #[test]
     fn test_list_models() {
         let gw = test_gateway();
-        let r = gw.handle(&req(HttpMethod::Get, "/v1/models", Some("test-key-1"), None));
+        let r = gw.handle(&req(
+            HttpMethod::Get,
+            "/v1/models",
+            Some("test-key-1"),
+            None,
+        ));
         assert_eq!(r.status, 200);
         assert!(r.body.contains("llama-7b"));
         assert!(r.body.contains("mistral-7b"));
@@ -455,7 +511,12 @@ mod tests {
     fn test_submit_inference() {
         let gw = test_gateway();
         let body = r#"{"model_id":"llama-7b","input":"hello world","max_tokens":128}"#;
-        let r = gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
+        let r = gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
         assert_eq!(r.status, 201);
         assert!(r.body.contains("job-000001"));
         assert!(r.body.contains("queued"));
@@ -466,7 +527,12 @@ mod tests {
     fn test_submit_unknown_model() {
         let gw = test_gateway();
         let body = r#"{"model_id":"gpt-4","input":"hello"}"#;
-        let r = gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
+        let r = gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
         assert_eq!(r.status, 400);
         assert!(r.body.contains("unknown model"));
     }
@@ -475,8 +541,18 @@ mod tests {
     fn test_get_job_status() {
         let gw = test_gateway();
         let body = r#"{"model_id":"llama-7b","input":"test"}"#;
-        gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
-        let r = gw.handle(&req(HttpMethod::Get, "/v1/inference/job-000001", Some("test-key-1"), None));
+        gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
+        let r = gw.handle(&req(
+            HttpMethod::Get,
+            "/v1/inference/job-000001",
+            Some("test-key-1"),
+            None,
+        ));
         assert_eq!(r.status, 200);
         assert!(r.body.contains("queued"));
     }
@@ -484,7 +560,12 @@ mod tests {
     #[test]
     fn test_get_nonexistent_job() {
         let gw = test_gateway();
-        let r = gw.handle(&req(HttpMethod::Get, "/v1/inference/job-999", Some("test-key-1"), None));
+        let r = gw.handle(&req(
+            HttpMethod::Get,
+            "/v1/inference/job-999",
+            Some("test-key-1"),
+            None,
+        ));
         assert_eq!(r.status, 404);
     }
 
@@ -492,8 +573,18 @@ mod tests {
     fn test_cancel_job() {
         let gw = test_gateway();
         let body = r#"{"model_id":"llama-7b","input":"test"}"#;
-        gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
-        let r = gw.handle(&req(HttpMethod::Delete, "/v1/inference/job-000001", Some("test-key-1"), None));
+        gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
+        let r = gw.handle(&req(
+            HttpMethod::Delete,
+            "/v1/inference/job-000001",
+            Some("test-key-1"),
+            None,
+        ));
         assert_eq!(r.status, 200);
         assert!(r.body.contains("cancelled"));
     }
@@ -502,9 +593,19 @@ mod tests {
     fn test_cancel_completed_job() {
         let gw = test_gateway();
         let body = r#"{"model_id":"llama-7b","input":"test"}"#;
-        gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
+        gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
         gw.complete_job("job-000001", "result");
-        let r = gw.handle(&req(HttpMethod::Delete, "/v1/inference/job-000001", Some("test-key-1"), None));
+        let r = gw.handle(&req(
+            HttpMethod::Delete,
+            "/v1/inference/job-000001",
+            Some("test-key-1"),
+            None,
+        ));
         assert_eq!(r.status, 400);
         assert!(r.body.contains("already terminal"));
     }
@@ -513,9 +614,19 @@ mod tests {
     fn test_complete_job() {
         let gw = test_gateway();
         let body = r#"{"model_id":"llama-7b","input":"test"}"#;
-        gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
+        gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
         assert!(gw.complete_job("job-000001", "generated text"));
-        let r = gw.handle(&req(HttpMethod::Get, "/v1/inference/job-000001", Some("test-key-1"), None));
+        let r = gw.handle(&req(
+            HttpMethod::Get,
+            "/v1/inference/job-000001",
+            Some("test-key-1"),
+            None,
+        ));
         assert!(r.body.contains("completed"));
         assert!(r.body.contains("generated text"));
     }
@@ -524,9 +635,19 @@ mod tests {
     fn test_fail_job() {
         let gw = test_gateway();
         let body = r#"{"model_id":"llama-7b","input":"test"}"#;
-        gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
+        gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
         assert!(gw.fail_job("job-000001"));
-        let r = gw.handle(&req(HttpMethod::Get, "/v1/inference/job-000001", Some("test-key-1"), None));
+        let r = gw.handle(&req(
+            HttpMethod::Get,
+            "/v1/inference/job-000001",
+            Some("test-key-1"),
+            None,
+        ));
         assert!(r.body.contains("failed"));
     }
 
@@ -534,14 +655,27 @@ mod tests {
     fn test_rate_limiting() {
         let mut gw = ApiGateway::new(vec!["llama-7b".into()]);
         let mut key = test_key(vec![Permission::ListModels]);
-        key.rate_limit = RateLimit { max_requests: 3, window_secs: 60 };
+        key.rate_limit = RateLimit {
+            max_requests: 3,
+            window_secs: 60,
+        };
         gw.register_key(key);
 
         for i in 0..3 {
-            let r = gw.handle(&req(HttpMethod::Get, "/v1/models", Some("test-key-1"), None));
+            let r = gw.handle(&req(
+                HttpMethod::Get,
+                "/v1/models",
+                Some("test-key-1"),
+                None,
+            ));
             assert_eq!(r.status, 200, "request {} should succeed", i);
         }
-        let r = gw.handle(&req(HttpMethod::Get, "/v1/models", Some("test-key-1"), None));
+        let r = gw.handle(&req(
+            HttpMethod::Get,
+            "/v1/models",
+            Some("test-key-1"),
+            None,
+        ));
         assert_eq!(r.status, 429);
         assert!(r.headers.contains_key("Retry-After"));
     }
@@ -550,10 +684,20 @@ mod tests {
     fn test_rate_limit_window_reset() {
         let mut gw = ApiGateway::new(vec!["llama-7b".into()]);
         let mut key = test_key(vec![Permission::ListModels]);
-        key.rate_limit = RateLimit { max_requests: 2, window_secs: 10 };
+        key.rate_limit = RateLimit {
+            max_requests: 2,
+            window_secs: 10,
+        };
         gw.register_key(key);
 
-        let mut r = ApiRequest { method: HttpMethod::Get, path: "/v1/models".into(), api_key: Some("test-key-1".into()), body: None, headers: HashMap::new(), timestamp: 1000 };
+        let mut r = ApiRequest {
+            method: HttpMethod::Get,
+            path: "/v1/models".into(),
+            api_key: Some("test-key-1".into()),
+            body: None,
+            headers: HashMap::new(),
+            timestamp: 1000,
+        };
         assert_eq!(gw.handle(&r).status, 200);
         assert_eq!(gw.handle(&r).status, 200);
         assert_eq!(gw.handle(&r).status, 429);
@@ -569,7 +713,12 @@ mod tests {
         let mut key = test_key(vec![Permission::ListModels]); // no SubmitInference
         gw.register_key(key);
         let body = r#"{"model_id":"llama-7b","input":"test"}"#;
-        let r = gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
+        let r = gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
         assert_eq!(r.status, 403);
     }
 
@@ -584,17 +733,30 @@ mod tests {
             active: true,
         });
         let body = r#"{"model_id":"llama-7b","input":"test"}"#;
-        gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
+        gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
         gw.complete_job("job-000001", "done");
         let deliveries = gw.webhook_deliveries();
         assert_eq!(deliveries.len(), 1);
-        assert_eq!(deliveries[0], ("wh-1".to_string(), "job-000001".to_string()));
+        assert_eq!(
+            deliveries[0],
+            ("wh-1".to_string(), "job-000001".to_string())
+        );
     }
 
     #[test]
     fn test_not_found_route() {
         let gw = test_gateway();
-        let r = gw.handle(&req(HttpMethod::Get, "/v1/unknown", Some("test-key-1"), None));
+        let r = gw.handle(&req(
+            HttpMethod::Get,
+            "/v1/unknown",
+            Some("test-key-1"),
+            None,
+        ));
         assert_eq!(r.status, 404);
     }
 
@@ -602,8 +764,18 @@ mod tests {
     fn test_multiple_jobs_sequential_ids() {
         let gw = test_gateway();
         let body = r#"{"model_id":"llama-7b","input":"a"}"#;
-        let r1 = gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
-        let r2 = gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), Some(body)));
+        let r1 = gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
+        let r2 = gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            Some(body),
+        ));
         assert!(r1.body.contains("job-000001"));
         assert!(r2.body.contains("job-000002"));
         assert_eq!(gw.job_count(), 2);
@@ -612,7 +784,12 @@ mod tests {
     #[test]
     fn test_missing_body() {
         let gw = test_gateway();
-        let r = gw.handle(&req(HttpMethod::Post, "/v1/inference", Some("test-key-1"), None));
+        let r = gw.handle(&req(
+            HttpMethod::Post,
+            "/v1/inference",
+            Some("test-key-1"),
+            None,
+        ));
         assert_eq!(r.status, 400);
     }
 }

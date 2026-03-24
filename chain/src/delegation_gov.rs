@@ -136,7 +136,9 @@ impl DelegationGov {
         vote: GovVote,
         current_epoch: Epoch,
     ) -> Result<(), DelegationGovError> {
-        let proposal = self.proposals.get(&proposal_id)
+        let proposal = self
+            .proposals
+            .get(&proposal_id)
             .ok_or(DelegationGovError::ProposalNotFound)?;
         if proposal.status != DelegationGovStatus::Active {
             return Err(DelegationGovError::ProposalNotActive);
@@ -145,7 +147,9 @@ impl DelegationGov {
         if current_epoch >= end {
             return Err(DelegationGovError::VotingPeriodEnded);
         }
-        let snapshot = self.snapshots.get(&proposal_id)
+        let snapshot = self
+            .snapshots
+            .get(&proposal_id)
             .ok_or(DelegationGovError::SnapshotMissing)?;
 
         // Check voter has power: either a provider (self-stake) or a delegator
@@ -166,7 +170,9 @@ impl DelegationGov {
         proposal_id: ProposalId,
         current_epoch: Epoch,
     ) -> Result<DelegationGovStatus, DelegationGovError> {
-        let proposal = self.proposals.get(&proposal_id)
+        let proposal = self
+            .proposals
+            .get(&proposal_id)
             .ok_or(DelegationGovError::ProposalNotFound)?;
         if proposal.status != DelegationGovStatus::Active {
             return Err(DelegationGovError::AlreadyFinalized);
@@ -176,12 +182,18 @@ impl DelegationGov {
             return Err(DelegationGovError::VotingPeriodNotEnded);
         }
 
-        let snapshot = self.snapshots.get(&proposal_id)
+        let snapshot = self
+            .snapshots
+            .get(&proposal_id)
             .ok_or(DelegationGovError::SnapshotMissing)?;
 
         // Compute total voting power
         let total_power: Amount = snapshot.provider_self_stake.values().sum::<Amount>()
-            + snapshot.delegations.values().map(|(_, a)| *a).sum::<Amount>();
+            + snapshot
+                .delegations
+                .values()
+                .map(|(_, a)| *a)
+                .sum::<Amount>();
 
         if total_power == 0 {
             let p = self.proposals.get_mut(&proposal_id).unwrap();
@@ -212,7 +224,11 @@ impl DelegationGov {
         // Step 2: Provider votes with remaining delegated weight
         for (provider, &self_stake) in &snapshot.provider_self_stake {
             if let Some(pvote) = votes.get(provider) {
-                let delegated_total = snapshot.provider_delegated.get(provider).copied().unwrap_or(0);
+                let delegated_total = snapshot
+                    .provider_delegated
+                    .get(provider)
+                    .copied()
+                    .unwrap_or(0);
                 let overridden_amount = overridden.get(provider).copied().unwrap_or(0);
                 let effective_delegated = delegated_total.saturating_sub(overridden_amount);
                 let provider_power = self_stake + effective_delegated;
@@ -250,13 +266,21 @@ impl DelegationGov {
         &self,
         proposal_id: ProposalId,
     ) -> Result<VoteBreakdown, DelegationGovError> {
-        let proposal = self.proposals.get(&proposal_id)
+        let proposal = self
+            .proposals
+            .get(&proposal_id)
             .ok_or(DelegationGovError::ProposalNotFound)?;
-        let snapshot = self.snapshots.get(&proposal_id)
+        let snapshot = self
+            .snapshots
+            .get(&proposal_id)
             .ok_or(DelegationGovError::SnapshotMissing)?;
 
         let total_power: Amount = snapshot.provider_self_stake.values().sum::<Amount>()
-            + snapshot.delegations.values().map(|(_, a)| *a).sum::<Amount>();
+            + snapshot
+                .delegations
+                .values()
+                .map(|(_, a)| *a)
+                .sum::<Amount>();
 
         let mut yes: Amount = 0;
         let mut no: Amount = 0;
@@ -278,7 +302,11 @@ impl DelegationGov {
 
         for (provider, &self_stake) in &snapshot.provider_self_stake {
             if let Some(pvote) = proposal.votes.get(provider) {
-                let delegated_total = snapshot.provider_delegated.get(provider).copied().unwrap_or(0);
+                let delegated_total = snapshot
+                    .provider_delegated
+                    .get(provider)
+                    .copied()
+                    .unwrap_or(0);
                 let ov = overridden.get(provider).copied().unwrap_or(0);
                 let power = self_stake + delegated_total.saturating_sub(ov);
                 match pvote {
@@ -350,7 +378,10 @@ mod tests {
         delegations: &[(u8, u8, Amount)],
     ) -> DelegationSnapshot {
         let ps: Vec<_> = providers.iter().map(|&(n, s)| (addr(n), s)).collect();
-        let ds: Vec<_> = delegations.iter().map(|&(d, p, a)| (addr(d), addr(p), a)).collect();
+        let ds: Vec<_> = delegations
+            .iter()
+            .map(|&(d, p, a)| (addr(d), addr(p), a))
+            .collect();
         build_snapshot(&ps, &ds)
     }
 
@@ -362,7 +393,9 @@ mod tests {
             &[(1, 100), (2, 200)],
             &[(10, 1, 200), (11, 1, 200), (20, 2, 300)],
         );
-        let id = gov.create_proposal(addr(1), 1000, 1000, 6670, 0, snap).unwrap();
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 6670, 0, snap)
+            .unwrap();
         gov.vote(id, addr(1), GovVote::Yes, 500).unwrap();
         gov.vote(id, addr(2), GovVote::No, 500).unwrap();
         let status = gov.finalize(id, 1000).unwrap();
@@ -375,11 +408,10 @@ mod tests {
     fn test_delegator_override_flips_result() {
         let mut gov = DelegationGov::new();
         // Provider 1 has 100 self + 400 delegated
-        let snap = make_snapshot(
-            &[(1, 100)],
-            &[(10, 1, 200), (11, 1, 200)],
-        );
-        let id = gov.create_proposal(addr(1), 1000, 1000, 5010, 0, snap).unwrap();
+        let snap = make_snapshot(&[(1, 100)], &[(10, 1, 200), (11, 1, 200)]);
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 5010, 0, snap)
+            .unwrap();
         // Provider votes Yes (would be 500 total)
         gov.vote(id, addr(1), GovVote::Yes, 500).unwrap();
         // Delegator 10 overrides with No (200 removed from provider, added to No)
@@ -393,14 +425,13 @@ mod tests {
     #[test]
     fn test_all_delegators_override() {
         let mut gov = DelegationGov::new();
-        let snap = make_snapshot(
-            &[(1, 50)],
-            &[(10, 1, 200), (11, 1, 250)],
-        );
-        let id = gov.create_proposal(addr(1), 1000, 1000, 5010, 0, snap).unwrap();
+        let snap = make_snapshot(&[(1, 50)], &[(10, 1, 200), (11, 1, 250)]);
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 5010, 0, snap)
+            .unwrap();
         gov.vote(id, addr(1), GovVote::Yes, 500).unwrap(); // 50 effective (self only)
-        gov.vote(id, addr(10), GovVote::No, 500).unwrap();  // 200 No
-        gov.vote(id, addr(11), GovVote::No, 500).unwrap();  // 250 No
+        gov.vote(id, addr(10), GovVote::No, 500).unwrap(); // 200 No
+        gov.vote(id, addr(11), GovVote::No, 500).unwrap(); // 250 No
         let status = gov.finalize(id, 1000).unwrap();
         // 50 Yes vs 450 No → Rejected
         assert_eq!(status, DelegationGovStatus::Rejected);
@@ -409,11 +440,10 @@ mod tests {
     #[test]
     fn test_non_voting_provider_power_unused() {
         let mut gov = DelegationGov::new();
-        let snap = make_snapshot(
-            &[(1, 100), (2, 100)],
-            &[(10, 2, 800)],
-        );
-        let id = gov.create_proposal(addr(1), 1000, 500, 5010, 0, snap).unwrap();
+        let snap = make_snapshot(&[(1, 100), (2, 100)], &[(10, 2, 800)]);
+        let id = gov
+            .create_proposal(addr(1), 1000, 500, 5010, 0, snap)
+            .unwrap();
         // Only provider 1 votes, provider 2 (with 900 total) abstains by not voting
         gov.vote(id, addr(1), GovVote::Yes, 500).unwrap();
         let status = gov.finalize(id, 1000).unwrap();
@@ -425,11 +455,10 @@ mod tests {
     #[test]
     fn test_quorum_not_met() {
         let mut gov = DelegationGov::new();
-        let snap = make_snapshot(
-            &[(1, 10), (2, 990)],
-            &[],
-        );
-        let id = gov.create_proposal(addr(1), 1000, 2000, 5010, 0, snap).unwrap();
+        let snap = make_snapshot(&[(1, 10), (2, 990)], &[]);
+        let id = gov
+            .create_proposal(addr(1), 1000, 2000, 5010, 0, snap)
+            .unwrap();
         gov.vote(id, addr(1), GovVote::Yes, 500).unwrap();
         let status = gov.finalize(id, 1000).unwrap();
         // 10 participated / 1000 total = 1% < 20% quorum → Expired
@@ -440,7 +469,9 @@ mod tests {
     fn test_delegator_cannot_vote_without_delegation() {
         let mut gov = DelegationGov::new();
         let snap = make_snapshot(&[(1, 100)], &[]);
-        let id = gov.create_proposal(addr(1), 1000, 1000, 5010, 0, snap).unwrap();
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 5010, 0, snap)
+            .unwrap();
         let err = gov.vote(id, addr(99), GovVote::Yes, 500);
         assert_eq!(err, Err(DelegationGovError::NoVotingPower));
     }
@@ -449,7 +480,9 @@ mod tests {
     fn test_cannot_vote_after_period() {
         let mut gov = DelegationGov::new();
         let snap = make_snapshot(&[(1, 100)], &[]);
-        let id = gov.create_proposal(addr(1), 1000, 1000, 5010, 0, snap).unwrap();
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 5010, 0, snap)
+            .unwrap();
         let err = gov.vote(id, addr(1), GovVote::Yes, 1000);
         assert_eq!(err, Err(DelegationGovError::VotingPeriodEnded));
     }
@@ -458,7 +491,9 @@ mod tests {
     fn test_cannot_finalize_early() {
         let mut gov = DelegationGov::new();
         let snap = make_snapshot(&[(1, 100)], &[]);
-        let id = gov.create_proposal(addr(1), 1000, 1000, 5010, 0, snap).unwrap();
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 5010, 0, snap)
+            .unwrap();
         let err = gov.finalize(id, 500);
         assert_eq!(err, Err(DelegationGovError::VotingPeriodNotEnded));
     }
@@ -467,7 +502,9 @@ mod tests {
     fn test_vote_change_allowed() {
         let mut gov = DelegationGov::new();
         let snap = make_snapshot(&[(1, 500), (2, 500)], &[]);
-        let id = gov.create_proposal(addr(1), 1000, 1000, 6670, 0, snap).unwrap();
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 6670, 0, snap)
+            .unwrap();
         gov.vote(id, addr(1), GovVote::No, 500).unwrap();
         gov.vote(id, addr(1), GovVote::Yes, 500).unwrap(); // change
         gov.vote(id, addr(2), GovVote::Yes, 500).unwrap();
@@ -478,11 +515,10 @@ mod tests {
     #[test]
     fn test_vote_breakdown() {
         let mut gov = DelegationGov::new();
-        let snap = make_snapshot(
-            &[(1, 100)],
-            &[(10, 1, 200), (11, 1, 300)],
-        );
-        let id = gov.create_proposal(addr(1), 1000, 1000, 5010, 0, snap).unwrap();
+        let snap = make_snapshot(&[(1, 100)], &[(10, 1, 200), (11, 1, 300)]);
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 5010, 0, snap)
+            .unwrap();
         gov.vote(id, addr(1), GovVote::Yes, 500).unwrap();
         gov.vote(id, addr(10), GovVote::No, 500).unwrap();
 
@@ -500,11 +536,10 @@ mod tests {
     #[test]
     fn test_multiple_providers_mixed_voting() {
         let mut gov = DelegationGov::new();
-        let snap = make_snapshot(
-            &[(1, 100), (2, 100)],
-            &[(10, 1, 150), (20, 2, 150)],
-        );
-        let id = gov.create_proposal(addr(1), 1000, 1000, 5010, 0, snap).unwrap();
+        let snap = make_snapshot(&[(1, 100), (2, 100)], &[(10, 1, 150), (20, 2, 150)]);
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 5010, 0, snap)
+            .unwrap();
         gov.vote(id, addr(1), GovVote::Yes, 500).unwrap();
         gov.vote(id, addr(2), GovVote::No, 500).unwrap();
         gov.vote(id, addr(20), GovVote::Yes, 500).unwrap(); // override provider 2
@@ -521,7 +556,9 @@ mod tests {
     fn test_cannot_double_finalize() {
         let mut gov = DelegationGov::new();
         let snap = make_snapshot(&[(1, 100)], &[]);
-        let id = gov.create_proposal(addr(1), 1000, 1000, 5010, 0, snap).unwrap();
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 5010, 0, snap)
+            .unwrap();
         gov.vote(id, addr(1), GovVote::Yes, 500).unwrap();
         gov.finalize(id, 1000).unwrap();
         let err = gov.finalize(id, 1000);
@@ -548,7 +585,9 @@ mod tests {
     fn test_abstain_counts_quorum_not_threshold() {
         let mut gov = DelegationGov::new();
         let snap = make_snapshot(&[(1, 300), (2, 300), (3, 400)], &[]);
-        let id = gov.create_proposal(addr(1), 1000, 1000, 6670, 0, snap).unwrap();
+        let id = gov
+            .create_proposal(addr(1), 1000, 1000, 6670, 0, snap)
+            .unwrap();
         gov.vote(id, addr(1), GovVote::Yes, 500).unwrap();
         gov.vote(id, addr(2), GovVote::No, 500).unwrap();
         gov.vote(id, addr(3), GovVote::Abstain, 500).unwrap();
@@ -563,7 +602,9 @@ mod tests {
         // Create snapshot where proposer has power but total is technically 0 after...
         // Actually: provider with 0 stake can't propose. Use minimal:
         let snap = make_snapshot(&[(1, 1)], &[]);
-        let id = gov.create_proposal(addr(1), 1000, 10000, 5010, 0, snap).unwrap();
+        let id = gov
+            .create_proposal(addr(1), 1000, 10000, 5010, 0, snap)
+            .unwrap();
         // Don't vote → quorum 100% not met → Expired
         let status = gov.finalize(id, 1000).unwrap();
         assert_eq!(status, DelegationGovStatus::Expired);

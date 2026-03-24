@@ -5,8 +5,8 @@
 //! tracks active listings, handles bid matching, and enforces minimum stake
 //! requirements for listing.
 
-use std::collections::{BTreeMap, HashMap};
 use crate::types::{Address, Epoch, Hash, ModelId, StakeAmount};
+use std::collections::{BTreeMap, HashMap};
 
 /// Unique listing identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -110,7 +110,10 @@ pub struct Marketplace {
 
 #[derive(Debug, PartialEq)]
 pub enum MarketError {
-    InsufficientStake { required: StakeAmount, actual: StakeAmount },
+    InsufficientStake {
+        required: StakeAmount,
+        actual: StakeAmount,
+    },
     ListingNotFound(ListingId),
     ListingNotActive(ListingId),
     NotListingOwner,
@@ -194,7 +197,9 @@ impl Marketplace {
         listing_id: ListingId,
         caller: Address,
     ) -> Result<(), MarketError> {
-        let listing = self.listings.get_mut(&listing_id)
+        let listing = self
+            .listings
+            .get_mut(&listing_id)
             .ok_or(MarketError::ListingNotFound(listing_id))?;
         if listing.provider != caller {
             return Err(MarketError::NotListingOwner);
@@ -211,7 +216,9 @@ impl Marketplace {
         price_per_m_input: TokenPrice,
         price_per_m_output: TokenPrice,
     ) -> Result<(), MarketError> {
-        let listing = self.listings.get_mut(&listing_id)
+        let listing = self
+            .listings
+            .get_mut(&listing_id)
             .ok_or(MarketError::ListingNotFound(listing_id))?;
         if listing.provider != caller {
             return Err(MarketError::NotListingOwner);
@@ -255,7 +262,10 @@ impl Marketplace {
 
     /// Match a bid to the cheapest available listing.
     pub fn match_bid(&mut self, bid_id: u64) -> Result<ListingId, MarketError> {
-        let bid = self.bids.get(&bid_id).ok_or(MarketError::BidNotFound(bid_id))?;
+        let bid = self
+            .bids
+            .get(&bid_id)
+            .ok_or(MarketError::BidNotFound(bid_id))?;
         if bid.matched {
             return Err(MarketError::BidAlreadyMatched(bid_id));
         }
@@ -268,7 +278,9 @@ impl Marketplace {
         let max_output = bid.max_price_output;
 
         // Find cheapest active listing with capacity
-        let listing_ids = self.model_index.get(&model_id)
+        let listing_ids = self
+            .model_index
+            .get(&model_id)
             .ok_or(MarketError::NoMatchingListings)?;
 
         let mut best: Option<ListingId> = None;
@@ -309,7 +321,9 @@ impl Marketplace {
 
     /// Mark an inference as complete, freeing capacity.
     pub fn complete_inference(&mut self, listing_id: ListingId) -> Result<(), MarketError> {
-        let listing = self.listings.get_mut(&listing_id)
+        let listing = self
+            .listings
+            .get_mut(&listing_id)
             .ok_or(MarketError::ListingNotFound(listing_id))?;
         if listing.active_requests == 0 {
             return Ok(());
@@ -326,24 +340,37 @@ impl Marketplace {
             None => return vec![],
         };
 
-        let mut results: Vec<&Listing> = listing_ids.iter()
+        let mut results: Vec<&Listing> = listing_ids
+            .iter()
             .filter_map(|id| self.listings.get(id))
             .filter(|l| {
-                if !l.active { return false; }
+                if !l.active {
+                    return false;
+                }
                 if let Some(max) = filter.max_price_input {
-                    if l.price_per_m_input > max { return false; }
+                    if l.price_per_m_input > max {
+                        return false;
+                    }
                 }
                 if let Some(max) = filter.max_price_output {
-                    if l.price_per_m_output > max { return false; }
+                    if l.price_per_m_output > max {
+                        return false;
+                    }
                 }
                 if let Some(min) = filter.min_stake {
-                    if l.staked_amount < min { return false; }
+                    if l.staked_amount < min {
+                        return false;
+                    }
                 }
                 if let Some(max_lat) = filter.max_latency_ms {
-                    if l.latency_sla_ms > max_lat { return false; }
+                    if l.latency_sla_ms > max_lat {
+                        return false;
+                    }
                 }
                 if let Some(ref ag) = filter.arch_group {
-                    if &l.arch_group != ag { return false; }
+                    if &l.arch_group != ag {
+                        return false;
+                    }
                 }
                 true
             })
@@ -351,10 +378,13 @@ impl Marketplace {
 
         match filter.sort_by {
             SortBy::PriceAsc => results.sort_by_key(|l| l.price_per_m_input + l.price_per_m_output),
-            SortBy::PriceDesc => results.sort_by_key(|l| std::cmp::Reverse(l.price_per_m_input + l.price_per_m_output)),
+            SortBy::PriceDesc => results
+                .sort_by_key(|l| std::cmp::Reverse(l.price_per_m_input + l.price_per_m_output)),
             SortBy::LatencyAsc => results.sort_by_key(|l| l.latency_sla_ms),
             SortBy::StakeDesc => results.sort_by_key(|l| std::cmp::Reverse(l.staked_amount)),
-            SortBy::CompletedDesc => results.sort_by_key(|l| std::cmp::Reverse(l.completed_inferences)),
+            SortBy::CompletedDesc => {
+                results.sort_by_key(|l| std::cmp::Reverse(l.completed_inferences))
+            }
         }
 
         results.truncate(filter.limit);
@@ -368,7 +398,8 @@ impl Marketplace {
 
     /// Get all listings for a provider.
     pub fn provider_listings(&self, provider: Address) -> Vec<&Listing> {
-        self.provider_index.get(&provider)
+        self.provider_index
+            .get(&provider)
             .map(|ids| ids.iter().filter_map(|id| self.listings.get(id)).collect())
             .unwrap_or_default()
     }
@@ -385,7 +416,9 @@ impl Marketplace {
 
     /// Expire stale bids for a model. Returns count of expired bids.
     pub fn expire_bids(&mut self, model_id: ModelId) -> usize {
-        let bid_ids: Vec<u64> = self.bid_index.get(&model_id)
+        let bid_ids: Vec<u64> = self
+            .bid_index
+            .get(&model_id)
             .map(|ids| ids.clone())
             .unwrap_or_default();
 
@@ -419,7 +452,9 @@ mod tests {
     #[test]
     fn test_create_listing() {
         let mut mp = Marketplace::new(1000, 50);
-        let lid = mp.create_listing(addr(1), model(1), 100, 200, 10, 2000, 50, "sm90").unwrap();
+        let lid = mp
+            .create_listing(addr(1), model(1), 100, 200, 10, 2000, 50, "sm90")
+            .unwrap();
         assert_eq!(mp.active_listing_count(), 1);
         let l = mp.get_listing(lid).unwrap();
         assert_eq!(l.provider, addr(1));
@@ -429,14 +464,24 @@ mod tests {
     #[test]
     fn test_insufficient_stake() {
         let mut mp = Marketplace::new(1000, 50);
-        let err = mp.create_listing(addr(1), model(1), 100, 200, 10, 500, 50, "sm90").unwrap_err();
-        assert_eq!(err, MarketError::InsufficientStake { required: 1000, actual: 500 });
+        let err = mp
+            .create_listing(addr(1), model(1), 100, 200, 10, 500, 50, "sm90")
+            .unwrap_err();
+        assert_eq!(
+            err,
+            MarketError::InsufficientStake {
+                required: 1000,
+                actual: 500
+            }
+        );
     }
 
     #[test]
     fn test_deactivate_listing() {
         let mut mp = Marketplace::new(100, 50);
-        let lid = mp.create_listing(addr(1), model(1), 100, 200, 10, 200, 50, "sm90").unwrap();
+        let lid = mp
+            .create_listing(addr(1), model(1), 100, 200, 10, 200, 50, "sm90")
+            .unwrap();
         mp.deactivate_listing(lid, addr(1)).unwrap();
         assert!(!mp.get_listing(lid).unwrap().active);
         assert_eq!(mp.active_listing_count(), 0);
@@ -445,14 +490,21 @@ mod tests {
     #[test]
     fn test_deactivate_wrong_owner() {
         let mut mp = Marketplace::new(100, 50);
-        let lid = mp.create_listing(addr(1), model(1), 100, 200, 10, 200, 50, "sm90").unwrap();
-        assert_eq!(mp.deactivate_listing(lid, addr(2)).unwrap_err(), MarketError::NotListingOwner);
+        let lid = mp
+            .create_listing(addr(1), model(1), 100, 200, 10, 200, 50, "sm90")
+            .unwrap();
+        assert_eq!(
+            mp.deactivate_listing(lid, addr(2)).unwrap_err(),
+            MarketError::NotListingOwner
+        );
     }
 
     #[test]
     fn test_update_pricing() {
         let mut mp = Marketplace::new(100, 50);
-        let lid = mp.create_listing(addr(1), model(1), 100, 200, 10, 200, 50, "sm90").unwrap();
+        let lid = mp
+            .create_listing(addr(1), model(1), 100, 200, 10, 200, 50, "sm90")
+            .unwrap();
         mp.update_pricing(lid, addr(1), 50, 75).unwrap();
         let l = mp.get_listing(lid).unwrap();
         assert_eq!(l.price_per_m_input, 50);
@@ -462,7 +514,9 @@ mod tests {
     #[test]
     fn test_place_and_match_bid() {
         let mut mp = Marketplace::new(100, 50); // 0.5% fee
-        let lid = mp.create_listing(addr(1), model(1), 100, 200, 5, 200, 50, "sm90").unwrap();
+        let lid = mp
+            .create_listing(addr(1), model(1), 100, 200, 5, 200, 50, "sm90")
+            .unwrap();
         let bid_id = mp.place_bid(addr(2), model(1), 150, 250, 0);
         let matched = mp.match_bid(bid_id).unwrap();
         assert_eq!(matched, lid);
@@ -475,19 +529,28 @@ mod tests {
     #[test]
     fn test_bid_price_filter() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 500, 500, 5, 200, 50, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 500, 500, 5, 200, 50, "sm90")
+            .unwrap();
         let bid_id = mp.place_bid(addr(2), model(1), 100, 100, 0);
-        assert_eq!(mp.match_bid(bid_id).unwrap_err(), MarketError::NoMatchingListings);
+        assert_eq!(
+            mp.match_bid(bid_id).unwrap_err(),
+            MarketError::NoMatchingListings
+        );
     }
 
     #[test]
     fn test_bid_capacity_exhaustion() {
         let mut mp = Marketplace::new(100, 50);
-        let lid = mp.create_listing(addr(1), model(1), 100, 100, 1, 200, 50, "sm90").unwrap();
+        let lid = mp
+            .create_listing(addr(1), model(1), 100, 100, 1, 200, 50, "sm90")
+            .unwrap();
         let b1 = mp.place_bid(addr(2), model(1), 200, 200, 0);
         mp.match_bid(b1).unwrap();
         let b2 = mp.place_bid(addr(3), model(1), 200, 200, 0);
-        assert_eq!(mp.match_bid(b2).unwrap_err(), MarketError::NoMatchingListings);
+        assert_eq!(
+            mp.match_bid(b2).unwrap_err(),
+            MarketError::NoMatchingListings
+        );
         // Complete first, then second should match
         mp.complete_inference(lid).unwrap();
         let b3 = mp.place_bid(addr(3), model(1), 200, 200, 0);
@@ -497,10 +560,14 @@ mod tests {
     #[test]
     fn test_bid_expiry() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90")
+            .unwrap();
         let bid_id = mp.place_bid(addr(2), model(1), 200, 200, 10);
         mp.set_epoch(10);
-        assert_eq!(mp.match_bid(bid_id).unwrap_err(), MarketError::BidExpired(bid_id));
+        assert_eq!(
+            mp.match_bid(bid_id).unwrap_err(),
+            MarketError::BidExpired(bid_id)
+        );
     }
 
     #[test]
@@ -517,9 +584,12 @@ mod tests {
     #[test]
     fn test_discovery_price_sort() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 300, 300, 5, 200, 50, "sm90").unwrap();
-        mp.create_listing(addr(2), model(1), 100, 100, 5, 200, 30, "sm90").unwrap();
-        mp.create_listing(addr(3), model(1), 200, 200, 5, 200, 40, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 300, 300, 5, 200, 50, "sm90")
+            .unwrap();
+        mp.create_listing(addr(2), model(1), 100, 100, 5, 200, 30, "sm90")
+            .unwrap();
+        mp.create_listing(addr(3), model(1), 200, 200, 5, 200, 40, "sm90")
+            .unwrap();
 
         let filter = DiscoveryFilter {
             model_id: model(1),
@@ -540,9 +610,12 @@ mod tests {
     #[test]
     fn test_discovery_filters() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 100, 100, 5, 5000, 20, "sm90").unwrap();
-        mp.create_listing(addr(2), model(1), 500, 500, 5, 200, 100, "sm89").unwrap();
-        mp.create_listing(addr(3), model(1), 200, 200, 5, 3000, 40, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 100, 100, 5, 5000, 20, "sm90")
+            .unwrap();
+        mp.create_listing(addr(2), model(1), 500, 500, 5, 200, 100, "sm89")
+            .unwrap();
+        mp.create_listing(addr(3), model(1), 200, 200, 5, 3000, 40, "sm90")
+            .unwrap();
 
         let filter = DiscoveryFilter {
             model_id: model(1),
@@ -564,7 +637,8 @@ mod tests {
     fn test_discovery_limit() {
         let mut mp = Marketplace::new(100, 50);
         for i in 0..10 {
-            mp.create_listing(addr(i), model(1), 100 + i as u128, 100, 5, 200, 50, "sm90").unwrap();
+            mp.create_listing(addr(i), model(1), 100 + i as u128, 100, 5, 200, 50, "sm90")
+                .unwrap();
         }
         let filter = DiscoveryFilter {
             model_id: model(1),
@@ -582,9 +656,12 @@ mod tests {
     #[test]
     fn test_provider_listings() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90").unwrap();
-        mp.create_listing(addr(1), model(2), 200, 200, 5, 200, 50, "sm90").unwrap();
-        mp.create_listing(addr(2), model(1), 100, 100, 5, 200, 50, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90")
+            .unwrap();
+        mp.create_listing(addr(1), model(2), 200, 200, 5, 200, 50, "sm90")
+            .unwrap();
+        mp.create_listing(addr(2), model(1), 100, 100, 5, 200, 50, "sm90")
+            .unwrap();
         assert_eq!(mp.provider_listings(addr(1)).len(), 2);
         assert_eq!(mp.provider_listings(addr(2)).len(), 1);
         assert_eq!(mp.provider_listings(addr(3)).len(), 0);
@@ -593,7 +670,9 @@ mod tests {
     #[test]
     fn test_complete_inference_tracking() {
         let mut mp = Marketplace::new(100, 50);
-        let lid = mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90").unwrap();
+        let lid = mp
+            .create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90")
+            .unwrap();
         let b1 = mp.place_bid(addr(2), model(1), 200, 200, 0);
         mp.match_bid(b1).unwrap();
         mp.complete_inference(lid).unwrap();
@@ -605,9 +684,13 @@ mod tests {
     #[test]
     fn test_cheapest_listing_wins_match() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 500, 500, 5, 200, 50, "sm90").unwrap();
-        let cheap = mp.create_listing(addr(2), model(1), 50, 50, 5, 200, 50, "sm90").unwrap();
-        mp.create_listing(addr(3), model(1), 300, 300, 5, 200, 50, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 500, 500, 5, 200, 50, "sm90")
+            .unwrap();
+        let cheap = mp
+            .create_listing(addr(2), model(1), 50, 50, 5, 200, 50, "sm90")
+            .unwrap();
+        mp.create_listing(addr(3), model(1), 300, 300, 5, 200, 50, "sm90")
+            .unwrap();
         let bid = mp.place_bid(addr(4), model(1), 600, 600, 0);
         assert_eq!(mp.match_bid(bid).unwrap(), cheap);
     }
@@ -615,9 +698,13 @@ mod tests {
     #[test]
     fn test_double_match_rejected() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90")
+            .unwrap();
         let bid = mp.place_bid(addr(2), model(1), 200, 200, 0);
         mp.match_bid(bid).unwrap();
-        assert_eq!(mp.match_bid(bid).unwrap_err(), MarketError::BidAlreadyMatched(bid));
+        assert_eq!(
+            mp.match_bid(bid).unwrap_err(),
+            MarketError::BidAlreadyMatched(bid)
+        );
     }
 }

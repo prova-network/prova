@@ -220,7 +220,9 @@ impl Mempool {
         }
 
         // Pool capacity check
-        if self.txs.len() >= self.config.max_txs || self.total_bytes + tx.size > self.config.max_bytes {
+        if self.txs.len() >= self.config.max_txs
+            || self.total_bytes + tx.size > self.config.max_bytes
+        {
             // Evict lowest priority if new tx is better
             if let Some(worst) = self.priority.iter().next_back().cloned() {
                 let pk = priority_key(&tx);
@@ -268,11 +270,7 @@ impl Mempool {
     pub fn sender_queue(&self, sender: &Address) -> Vec<&Transaction> {
         self.sender_txs
             .get(sender)
-            .map(|m| {
-                m.values()
-                    .filter_map(|h| self.txs.get(h))
-                    .collect()
-            })
+            .map(|m| m.values().filter_map(|h| self.txs.get(h)).collect())
             .unwrap_or_default()
     }
 
@@ -383,7 +381,7 @@ mod tests {
     #[test]
     fn test_priority_ordering() {
         let mut pool = Mempool::new(MempoolConfig::default());
-        pool.add(make_tx(1, 1, 0, 50));  // low fee
+        pool.add(make_tx(1, 1, 0, 50)); // low fee
         pool.add(make_tx(2, 2, 0, 200)); // high fee
         pool.add(make_tx(3, 3, 0, 100)); // mid fee
 

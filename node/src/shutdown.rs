@@ -187,8 +187,8 @@ impl PersistenceCheckpoint {
         let mut known_peers = Vec::with_capacity(peer_count);
         for _ in 0..peer_count {
             let len = read_u32(data, &mut pos)? as usize;
-            let s = std::str::from_utf8(read_bytes(data, &mut pos, len)?)
-                .map_err(|e| e.to_string())?;
+            let s =
+                std::str::from_utf8(read_bytes(data, &mut pos, len)?).map_err(|e| e.to_string())?;
             known_peers.push(s.to_string());
         }
 
@@ -260,7 +260,10 @@ impl ShutdownReport {
         self.phase_reached == ShutdownPhase::Stopped
             && !self.forced
             && self.persisted
-            && self.subsystems.iter().all(|s| matches!(s.drain_result, DrainResult::Clean { .. }))
+            && self
+                .subsystems
+                .iter()
+                .all(|s| matches!(s.drain_result, DrainResult::Clean { .. }))
     }
 }
 
@@ -420,9 +423,8 @@ mod tests {
 
     #[test]
     fn test_subsystem_handle_drain_clean() {
-        let mut handle = SubsystemHandle::new("rpc", 0, |_timeout| {
-            DrainResult::Clean { pending_items: 3 }
-        });
+        let mut handle =
+            SubsystemHandle::new("rpc", 0, |_timeout| DrainResult::Clean { pending_items: 3 });
         let result = handle.drain(Duration::from_secs(1));
         assert_eq!(result, DrainResult::Clean { pending_items: 3 });
         assert_eq!(handle.name, "rpc");
@@ -431,8 +433,8 @@ mod tests {
 
     #[test]
     fn test_subsystem_handle_drain_timeout() {
-        let mut handle = SubsystemHandle::new("inference", 20, |_timeout| {
-            DrainResult::TimedOut { abandoned: 5 }
+        let mut handle = SubsystemHandle::new("inference", 20, |_timeout| DrainResult::TimedOut {
+            abandoned: 5,
         });
         let result = handle.drain(Duration::from_secs(1));
         assert_eq!(result, DrainResult::TimedOut { abandoned: 5 });
@@ -443,11 +445,11 @@ mod tests {
         let config = ShutdownConfig::default();
         let mut coord = ShutdownCoordinator::new(config);
 
-        coord.register(SubsystemHandle::new("rpc", 0, |_| {
-            DrainResult::Clean { pending_items: 0 }
+        coord.register(SubsystemHandle::new("rpc", 0, |_| DrainResult::Clean {
+            pending_items: 0,
         }));
-        coord.register(SubsystemHandle::new("p2p", 10, |_| {
-            DrainResult::Clean { pending_items: 2 }
+        coord.register(SubsystemHandle::new("p2p", 10, |_| DrainResult::Clean {
+            pending_items: 2,
         }));
         coord.register(SubsystemHandle::new("storage", 20, |_| {
             DrainResult::Clean { pending_items: 0 }
@@ -501,8 +503,8 @@ mod tests {
     #[test]
     fn test_coordinator_no_checkpoint() {
         let mut coord = ShutdownCoordinator::new(ShutdownConfig::default());
-        coord.register(SubsystemHandle::new("rpc", 0, |_| {
-            DrainResult::Clean { pending_items: 0 }
+        coord.register(SubsystemHandle::new("rpc", 0, |_| DrainResult::Clean {
+            pending_items: 0,
         }));
         let report = coord.execute();
         assert!(!report.persisted);
@@ -525,7 +527,10 @@ mod tests {
         });
         let report = coord.execute();
         assert!(!report.clean());
-        assert_eq!(report.subsystems[0].drain_result, DrainResult::Error("disk full".into()));
+        assert_eq!(
+            report.subsystems[0].drain_result,
+            DrainResult::Error("disk full".into())
+        );
     }
 
     #[test]
@@ -578,7 +583,9 @@ mod tests {
         data.extend_from_slice(&[0u8; 100]);
         let result = PersistenceCheckpoint::deserialize(&data);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("unsupported checkpoint version"));
+        assert!(result
+            .unwrap_err()
+            .contains("unsupported checkpoint version"));
     }
 
     #[test]

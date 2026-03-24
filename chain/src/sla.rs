@@ -28,7 +28,7 @@ impl SlaTier {
         Self {
             name: "bronze".into(),
             max_latency_ms: 5000,
-            availability_bps: 9500,  // 95%
+            availability_bps: 9500, // 95%
             min_throughput_per_epoch: 1,
             reward_multiplier_bps: 10000, // 1.0x
         }
@@ -38,7 +38,7 @@ impl SlaTier {
         Self {
             name: "silver".into(),
             max_latency_ms: 2000,
-            availability_bps: 9900,  // 99%
+            availability_bps: 9900, // 99%
             min_throughput_per_epoch: 5,
             reward_multiplier_bps: 12000, // 1.2x
         }
@@ -48,7 +48,7 @@ impl SlaTier {
         Self {
             name: "gold".into(),
             max_latency_ms: 500,
-            availability_bps: 9990,  // 99.9%
+            availability_bps: 9990, // 99.9%
             min_throughput_per_epoch: 20,
             reward_multiplier_bps: 15000, // 1.5x
         }
@@ -95,8 +95,8 @@ const MAJOR_SLASH_THRESHOLD: u64 = 500;
 const TERMINATION_THRESHOLD: u64 = 1000;
 
 /// Slash percentages in basis points.
-const MINOR_SLASH_BPS: u64 = 100;   // 1%
-const MAJOR_SLASH_BPS: u64 = 500;   // 5%
+const MINOR_SLASH_BPS: u64 = 100; // 1%
+const MAJOR_SLASH_BPS: u64 = 500; // 5%
 const TERMINATION_SLASH_BPS: u64 = 2000; // 20%
 
 /// Action triggered by a penalty evaluation.
@@ -133,15 +133,18 @@ impl SlaRegistry {
         if self.slas.contains_key(&key) {
             return Err(SlaError::AlreadyRegistered);
         }
-        self.slas.insert(key, ProviderSla {
-            provider,
-            model_id,
-            tier,
-            registered_at: epoch,
-            violations: Vec::new(),
-            penalty_points: 0,
-            terminated: false,
-        });
+        self.slas.insert(
+            key,
+            ProviderSla {
+                provider,
+                model_id,
+                tier,
+                registered_at: epoch,
+                violations: Vec::new(),
+                penalty_points: 0,
+                terminated: false,
+            },
+        );
         Ok(())
     }
 
@@ -191,26 +194,31 @@ impl SlaRegistry {
 
     /// Get the current penalty points for a provider's SLA.
     pub fn penalty_points(&self, provider: Address, model_id: ModelId) -> Option<u64> {
-        self.slas.get(&(provider, model_id)).map(|s| s.penalty_points)
+        self.slas
+            .get(&(provider, model_id))
+            .map(|s| s.penalty_points)
     }
 
     /// Check if a provider's SLA is active (registered and not terminated).
     pub fn is_active(&self, provider: Address, model_id: ModelId) -> bool {
-        self.slas.get(&(provider, model_id))
+        self.slas
+            .get(&(provider, model_id))
             .map(|s| !s.terminated)
             .unwrap_or(false)
     }
 
     /// Get violation count for a provider.
     pub fn violation_count(&self, provider: Address, model_id: ModelId) -> usize {
-        self.slas.get(&(provider, model_id))
+        self.slas
+            .get(&(provider, model_id))
             .map(|s| s.violations.len())
             .unwrap_or(0)
     }
 
     /// Compute the reward multiplier for a provider (returns bps).
     pub fn reward_multiplier_bps(&self, provider: Address, model_id: ModelId) -> u16 {
-        self.slas.get(&(provider, model_id))
+        self.slas
+            .get(&(provider, model_id))
             .filter(|s| !s.terminated)
             .map(|s| s.tier.reward_multiplier_bps)
             .unwrap_or(10000) // default 1.0x
@@ -223,7 +231,9 @@ impl SlaRegistry {
         provider: Address,
         model_id: ModelId,
     ) -> Result<(), SlaError> {
-        let sla = self.slas.get_mut(&(provider, model_id))
+        let sla = self
+            .slas
+            .get_mut(&(provider, model_id))
             .ok_or(SlaError::NotRegistered)?;
         if sla.terminated {
             return Err(SlaError::Terminated);
@@ -243,7 +253,9 @@ impl SlaRegistry {
         model_id: ModelId,
         new_tier: SlaTier,
     ) -> Result<(), SlaError> {
-        let sla = self.slas.get_mut(&(provider, model_id))
+        let sla = self
+            .slas
+            .get_mut(&(provider, model_id))
             .ok_or(SlaError::NotRegistered)?;
         if sla.terminated {
             return Err(SlaError::Terminated);
@@ -301,7 +313,10 @@ mod tests {
         let p = provider(1);
         let m = test_model();
         reg.register(p, m, SlaTier::bronze(), 100).unwrap();
-        assert_eq!(reg.register(p, m, SlaTier::gold(), 200), Err(SlaError::AlreadyRegistered));
+        assert_eq!(
+            reg.register(p, m, SlaTier::gold(), 200),
+            Err(SlaError::AlreadyRegistered)
+        );
     }
 
     #[test]
@@ -312,20 +327,29 @@ mod tests {
         reg.register(p, m, SlaTier::gold(), 100).unwrap();
 
         // 1st violation: points = 1
-        let v = Violation { epoch: 101, kind: ViolationKind::Unavailable };
+        let v = Violation {
+            epoch: 101,
+            kind: ViolationKind::Unavailable,
+        };
         reg.record_violation(p, m, v, 1_000_000).unwrap();
         assert_eq!(reg.penalty_points(p, m), Some(1));
 
         // 5th violation: points = 25
         for i in 2..=5 {
-            let v = Violation { epoch: 100 + i, kind: ViolationKind::Unavailable };
+            let v = Violation {
+                epoch: 100 + i,
+                kind: ViolationKind::Unavailable,
+            };
             reg.record_violation(p, m, v, 1_000_000).unwrap();
         }
         assert_eq!(reg.penalty_points(p, m), Some(25));
 
         // 10th violation: points = 100
         for i in 6..=10 {
-            let v = Violation { epoch: 100 + i, kind: ViolationKind::Unavailable };
+            let v = Violation {
+                epoch: 100 + i,
+                kind: ViolationKind::Unavailable,
+            };
             reg.record_violation(p, m, v, 1_000_000).unwrap();
         }
         assert_eq!(reg.penalty_points(p, m), Some(100));
@@ -340,12 +364,18 @@ mod tests {
 
         // Need ceil(sqrt(50)) = 8 violations to reach 50+ points (8^2 = 64)
         for i in 1..=7 {
-            let v = Violation { epoch: 100 + i, kind: ViolationKind::Unavailable };
+            let v = Violation {
+                epoch: 100 + i,
+                kind: ViolationKind::Unavailable,
+            };
             let action = reg.record_violation(p, m, v, 1_000_000).unwrap();
             assert_eq!(action, PenaltyAction::None);
         }
         // 8th: 64 >= 50
-        let v = Violation { epoch: 108, kind: ViolationKind::Unavailable };
+        let v = Violation {
+            epoch: 108,
+            kind: ViolationKind::Unavailable,
+        };
         let action = reg.record_violation(p, m, v, 1_000_000).unwrap();
         assert_eq!(action, PenaltyAction::Warning);
     }
@@ -360,12 +390,29 @@ mod tests {
 
         // Need ceil(sqrt(200)) = 15 violations (15^2 = 225)
         for i in 1..=14 {
-            let v = Violation { epoch: 100 + i, kind: ViolationKind::LatencyExceeded { actual_ms: 6000, limit_ms: 5000 } };
+            let v = Violation {
+                epoch: 100 + i,
+                kind: ViolationKind::LatencyExceeded {
+                    actual_ms: 6000,
+                    limit_ms: 5000,
+                },
+            };
             reg.record_violation(p, m, v, stake).unwrap();
         }
-        let v = Violation { epoch: 115, kind: ViolationKind::LatencyExceeded { actual_ms: 6000, limit_ms: 5000 } };
+        let v = Violation {
+            epoch: 115,
+            kind: ViolationKind::LatencyExceeded {
+                actual_ms: 6000,
+                limit_ms: 5000,
+            },
+        };
         let action = reg.record_violation(p, m, v, stake).unwrap();
-        assert_eq!(action, PenaltyAction::MinorSlash { amount: stake * 100 / 10000 }); // 1%
+        assert_eq!(
+            action,
+            PenaltyAction::MinorSlash {
+                amount: stake * 100 / 10000
+            }
+        ); // 1%
     }
 
     #[test]
@@ -378,12 +425,23 @@ mod tests {
 
         // Need ceil(sqrt(1000)) = 32 violations (32^2 = 1024)
         for i in 1..=31 {
-            let v = Violation { epoch: 100 + i, kind: ViolationKind::JobMissed };
+            let v = Violation {
+                epoch: 100 + i,
+                kind: ViolationKind::JobMissed,
+            };
             reg.record_violation(p, m, v, stake).unwrap();
         }
-        let v = Violation { epoch: 132, kind: ViolationKind::JobMissed };
+        let v = Violation {
+            epoch: 132,
+            kind: ViolationKind::JobMissed,
+        };
         let action = reg.record_violation(p, m, v, stake).unwrap();
-        assert_eq!(action, PenaltyAction::Termination { amount: stake * 2000 / 10000 }); // 20%
+        assert_eq!(
+            action,
+            PenaltyAction::Termination {
+                amount: stake * 2000 / 10000
+            }
+        ); // 20%
         assert!(!reg.is_active(p, m));
     }
 
@@ -396,11 +454,20 @@ mod tests {
 
         // Force termination
         for i in 1..=32 {
-            let v = Violation { epoch: 100 + i, kind: ViolationKind::Unavailable };
+            let v = Violation {
+                epoch: 100 + i,
+                kind: ViolationKind::Unavailable,
+            };
             reg.record_violation(p, m, v, 10_000_000).unwrap();
         }
-        let v = Violation { epoch: 200, kind: ViolationKind::Unavailable };
-        assert_eq!(reg.record_violation(p, m, v, 10_000_000), Err(SlaError::Terminated));
+        let v = Violation {
+            epoch: 200,
+            kind: ViolationKind::Unavailable,
+        };
+        assert_eq!(
+            reg.record_violation(p, m, v, 10_000_000),
+            Err(SlaError::Terminated)
+        );
     }
 
     #[test]
@@ -412,7 +479,10 @@ mod tests {
 
         // Add a few violations (below minor slash)
         for i in 1..=5 {
-            let v = Violation { epoch: 100 + i, kind: ViolationKind::Unavailable };
+            let v = Violation {
+                epoch: 100 + i,
+                kind: ViolationKind::Unavailable,
+            };
             reg.record_violation(p, m, v, 1_000_000).unwrap();
         }
         assert_eq!(reg.penalty_points(p, m), Some(25));
@@ -430,7 +500,10 @@ mod tests {
 
         // Push past minor slash threshold (15 violations = 225 points)
         for i in 1..=15 {
-            let v = Violation { epoch: 100 + i, kind: ViolationKind::Unavailable };
+            let v = Violation {
+                epoch: 100 + i,
+                kind: ViolationKind::Unavailable,
+            };
             reg.record_violation(p, m, v, 1_000_000).unwrap();
         }
         assert_eq!(reg.reset_penalties(p, m), Err(SlaError::PenaltyTooHigh));
@@ -456,12 +529,21 @@ mod tests {
 
         let v = Violation {
             epoch: 101,
-            kind: ViolationKind::LatencyExceeded { actual_ms: 3500, limit_ms: 2000 },
+            kind: ViolationKind::LatencyExceeded {
+                actual_ms: 3500,
+                limit_ms: 2000,
+            },
         };
         reg.record_violation(p, m, v, 1_000_000).unwrap();
         let sla = reg.slas.get(&(p, m)).unwrap();
         assert_eq!(sla.violations.len(), 1);
-        assert_eq!(sla.violations[0].kind, ViolationKind::LatencyExceeded { actual_ms: 3500, limit_ms: 2000 });
+        assert_eq!(
+            sla.violations[0].kind,
+            ViolationKind::LatencyExceeded {
+                actual_ms: 3500,
+                limit_ms: 2000
+            }
+        );
     }
 
     #[test]
@@ -473,7 +555,10 @@ mod tests {
 
         let v = Violation {
             epoch: 101,
-            kind: ViolationKind::ThroughputDeficit { actual: 5, required: 20 },
+            kind: ViolationKind::ThroughputDeficit {
+                actual: 5,
+                required: 20,
+            },
         };
         let action = reg.record_violation(p, m, v, 1_000_000).unwrap();
         assert_eq!(action, PenaltyAction::None); // first violation = 1 point
@@ -487,8 +572,14 @@ mod tests {
         let m = test_model();
         assert_eq!(reg.penalty_points(p, m), None);
         assert!(!reg.is_active(p, m));
-        let v = Violation { epoch: 100, kind: ViolationKind::Unavailable };
-        assert_eq!(reg.record_violation(p, m, v, 1_000_000), Err(SlaError::NotRegistered));
+        let v = Violation {
+            epoch: 100,
+            kind: ViolationKind::Unavailable,
+        };
+        assert_eq!(
+            reg.record_violation(p, m, v, 1_000_000),
+            Err(SlaError::NotRegistered)
+        );
     }
 
     #[test]

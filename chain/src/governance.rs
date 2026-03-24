@@ -62,10 +62,22 @@ pub enum Vote {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProposalPayload {
-    ParameterChange { key: String, value: u128 },
-    TreasurySpend { recipient: Address, amount: u128, memo: String },
-    ModelPolicy { key: String, value: u128 },
-    EmergencyPause { module: String },
+    ParameterChange {
+        key: String,
+        value: u128,
+    },
+    TreasurySpend {
+        recipient: Address,
+        amount: u128,
+        memo: String,
+    },
+    ModelPolicy {
+        key: String,
+        value: u128,
+    },
+    EmergencyPause {
+        module: String,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -128,7 +140,9 @@ impl GovernanceState {
 
         let mut snapshot: HashMap<Address, u128> = HashMap::new();
         for (addr, &stake) in stakes {
-            if stake == 0 { continue; }
+            if stake == 0 {
+                continue;
+            }
             let voter = self.delegations.get(addr).copied().unwrap_or(*addr);
             *snapshot.entry(voter).or_default() += stake;
         }
@@ -156,7 +170,10 @@ impl GovernanceState {
         voter: Address,
         vote: Vote,
     ) -> Result<(), &'static str> {
-        let proposal = self.proposals.get_mut(&proposal_id).ok_or("proposal not found")?;
+        let proposal = self
+            .proposals
+            .get_mut(&proposal_id)
+            .ok_or("proposal not found")?;
         if proposal.status != ProposalStatus::Active {
             return Err("proposal not active");
         }
@@ -188,7 +205,10 @@ impl GovernanceState {
         proposal_id: ProposalId,
         current_epoch: Epoch,
     ) -> Result<ProposalStatus, &'static str> {
-        let proposal = self.proposals.get(&proposal_id).ok_or("proposal not found")?;
+        let proposal = self
+            .proposals
+            .get(&proposal_id)
+            .ok_or("proposal not found")?;
         if proposal.status != ProposalStatus::Active {
             return Err("proposal not active");
         }
@@ -244,7 +264,10 @@ impl GovernanceState {
         proposal_id: ProposalId,
         current_epoch: Epoch,
     ) -> Result<(), &'static str> {
-        let proposal = self.proposals.get(&proposal_id).ok_or("proposal not found")?;
+        let proposal = self
+            .proposals
+            .get(&proposal_id)
+            .ok_or("proposal not found")?;
         if proposal.status != ProposalStatus::Passed {
             return Err("proposal not passed");
         }
@@ -287,7 +310,9 @@ impl GovernanceState {
 mod tests {
     use super::*;
 
-    fn a(n: u8) -> Address { Address::test(n) }
+    fn a(n: u8) -> Address {
+        Address::test(n)
+    }
 
     fn stakes_map(pairs: &[(u8, u128)]) -> HashMap<Address, u128> {
         pairs.iter().map(|&(n, s)| (a(n), s)).collect()
@@ -297,11 +322,19 @@ mod tests {
     fn test_create_proposal() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 500), (2, 300), (3, 200)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ParameterChange,
-            ProposalPayload::ParameterChange { key: "block_reward".into(), value: 20 },
-            "Increase reward".into(), 100, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ParameterChange,
+                ProposalPayload::ParameterChange {
+                    key: "block_reward".into(),
+                    value: 20,
+                },
+                "Increase reward".into(),
+                100,
+                &stakes,
+            )
+            .unwrap();
         assert_eq!(id, 1);
         assert_eq!(gov.proposals[&1].status, ProposalStatus::Active);
     }
@@ -310,11 +343,19 @@ mod tests {
     fn test_vote_and_pass() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 500), (2, 300), (3, 200)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ParameterChange,
-            ProposalPayload::ParameterChange { key: "block_reward".into(), value: 20 },
-            "Increase".into(), 100, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ParameterChange,
+                ProposalPayload::ParameterChange {
+                    key: "block_reward".into(),
+                    value: 20,
+                },
+                "Increase".into(),
+                100,
+                &stakes,
+            )
+            .unwrap();
         gov.vote(id, a(1), Vote::Yes).unwrap();
         gov.vote(id, a(2), Vote::Yes).unwrap();
         let status = gov.finalize(id, 100 + 20_160).unwrap();
@@ -325,11 +366,19 @@ mod tests {
     fn test_vote_rejected() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 500), (2, 300), (3, 200)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ParameterChange,
-            ProposalPayload::ParameterChange { key: "block_reward".into(), value: 20 },
-            "Increase".into(), 100, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ParameterChange,
+                ProposalPayload::ParameterChange {
+                    key: "block_reward".into(),
+                    value: 20,
+                },
+                "Increase".into(),
+                100,
+                &stakes,
+            )
+            .unwrap();
         gov.vote(id, a(1), Vote::No).unwrap();
         gov.vote(id, a(2), Vote::Yes).unwrap();
         gov.vote(id, a(3), Vote::No).unwrap();
@@ -341,11 +390,19 @@ mod tests {
     fn test_quorum_not_met_expired() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 50), (2, 50), (3, 900)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ParameterChange,
-            ProposalPayload::ParameterChange { key: "block_reward".into(), value: 20 },
-            "Increase".into(), 100, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ParameterChange,
+                ProposalPayload::ParameterChange {
+                    key: "block_reward".into(),
+                    value: 20,
+                },
+                "Increase".into(),
+                100,
+                &stakes,
+            )
+            .unwrap();
         gov.vote(id, a(1), Vote::Yes).unwrap();
         let status = gov.finalize(id, 100 + 20_160).unwrap();
         assert_eq!(status, ProposalStatus::Expired);
@@ -355,11 +412,19 @@ mod tests {
     fn test_deposit_slashed_low_participation() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 10), (2, 10), (3, 980)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ParameterChange,
-            ProposalPayload::ParameterChange { key: "x".into(), value: 1 },
-            "test".into(), 0, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ParameterChange,
+                ProposalPayload::ParameterChange {
+                    key: "x".into(),
+                    value: 1,
+                },
+                "test".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
         let status = gov.finalize(id, 20_160).unwrap();
         assert_eq!(status, ProposalStatus::Expired);
         assert_eq!(gov.treasury, PROPOSAL_DEPOSIT);
@@ -370,11 +435,19 @@ mod tests {
         let mut gov = GovernanceState::new();
         gov.delegate(a(1), a(2)).unwrap();
         let stakes = stakes_map(&[(1, 400), (2, 300), (3, 300)]);
-        let id = gov.create_proposal(
-            a(2), ProposalType::ModelPolicy,
-            ProposalPayload::ModelPolicy { key: "min_stake".into(), value: 500 },
-            "Raise min".into(), 0, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(2),
+                ProposalType::ModelPolicy,
+                ProposalPayload::ModelPolicy {
+                    key: "min_stake".into(),
+                    value: 500,
+                },
+                "Raise min".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
         gov.vote(id, a(2), Vote::Yes).unwrap();
         let status = gov.finalize(id, 8_640).unwrap();
         assert_eq!(status, ProposalStatus::Passed);
@@ -397,11 +470,19 @@ mod tests {
     fn test_execute_parameter_change() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 1000)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ParameterChange,
-            ProposalPayload::ParameterChange { key: "block_reward".into(), value: 20 },
-            "Double reward".into(), 100, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ParameterChange,
+                ProposalPayload::ParameterChange {
+                    key: "block_reward".into(),
+                    value: 20,
+                },
+                "Double reward".into(),
+                100,
+                &stakes,
+            )
+            .unwrap();
         gov.vote(id, a(1), Vote::Yes).unwrap();
         gov.finalize(id, 100 + 20_160).unwrap();
         assert!(gov.execute(id, 100 + 20_160).is_err());
@@ -415,11 +496,20 @@ mod tests {
         let mut gov = GovernanceState::new();
         gov.treasury = 100_000;
         let stakes = stakes_map(&[(1, 600), (2, 400)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::TreasurySpend,
-            ProposalPayload::TreasurySpend { recipient: a(5), amount: 5_000, memo: "grant".into() },
-            "Fund dev".into(), 0, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::TreasurySpend,
+                ProposalPayload::TreasurySpend {
+                    recipient: a(5),
+                    amount: 5_000,
+                    memo: "grant".into(),
+                },
+                "Fund dev".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
         gov.vote(id, a(1), Vote::Yes).unwrap();
         gov.vote(id, a(2), Vote::Yes).unwrap();
         gov.finalize(id, 40_320).unwrap();
@@ -432,11 +522,20 @@ mod tests {
         let mut gov = GovernanceState::new();
         gov.treasury = 100_000;
         let stakes = stakes_map(&[(1, 1000)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::TreasurySpend,
-            ProposalPayload::TreasurySpend { recipient: a(5), amount: 20_000, memo: "too much".into() },
-            "Big spend".into(), 0, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::TreasurySpend,
+                ProposalPayload::TreasurySpend {
+                    recipient: a(5),
+                    amount: 20_000,
+                    memo: "too much".into(),
+                },
+                "Big spend".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
         gov.vote(id, a(1), Vote::Yes).unwrap();
         gov.finalize(id, 40_320).unwrap();
         assert!(gov.execute(id, 40_320 + TIMELOCK_EPOCHS).is_err());
@@ -446,11 +545,18 @@ mod tests {
     fn test_emergency_high_quorum() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 200), (2, 100), (3, 700)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::EmergencyAction,
-            ProposalPayload::EmergencyPause { module: "disputes".into() },
-            "Pause disputes".into(), 0, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::EmergencyAction,
+                ProposalPayload::EmergencyPause {
+                    module: "disputes".into(),
+                },
+                "Pause disputes".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
         gov.vote(id, a(1), Vote::Yes).unwrap();
         gov.vote(id, a(2), Vote::Yes).unwrap();
         let status = gov.finalize(id, 2_880).unwrap();
@@ -461,11 +567,19 @@ mod tests {
     fn test_abstain_counts_quorum_not_threshold() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 400), (2, 300), (3, 300)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ParameterChange,
-            ProposalPayload::ParameterChange { key: "x".into(), value: 1 },
-            "test".into(), 0, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ParameterChange,
+                ProposalPayload::ParameterChange {
+                    key: "x".into(),
+                    value: 1,
+                },
+                "test".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
         gov.vote(id, a(1), Vote::Yes).unwrap();
         gov.vote(id, a(2), Vote::No).unwrap();
         gov.vote(id, a(3), Vote::Abstain).unwrap();
@@ -477,11 +591,19 @@ mod tests {
     fn test_vote_change() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 500), (2, 500)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ModelPolicy,
-            ProposalPayload::ModelPolicy { key: "x".into(), value: 1 },
-            "test".into(), 0, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ModelPolicy,
+                ProposalPayload::ModelPolicy {
+                    key: "x".into(),
+                    value: 1,
+                },
+                "test".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
         gov.vote(id, a(1), Vote::No).unwrap();
         gov.vote(id, a(1), Vote::Yes).unwrap();
         gov.vote(id, a(2), Vote::Yes).unwrap();
@@ -493,11 +615,19 @@ mod tests {
     fn test_cannot_vote_without_power() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 1000)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ParameterChange,
-            ProposalPayload::ParameterChange { key: "x".into(), value: 1 },
-            "test".into(), 0, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ParameterChange,
+                ProposalPayload::ParameterChange {
+                    key: "x".into(),
+                    value: 1,
+                },
+                "test".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
         assert!(gov.vote(id, a(9), Vote::Yes).is_err());
     }
 
@@ -505,11 +635,19 @@ mod tests {
     fn test_cannot_finalize_early() {
         let mut gov = GovernanceState::new();
         let stakes = stakes_map(&[(1, 1000)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ParameterChange,
-            ProposalPayload::ParameterChange { key: "x".into(), value: 1 },
-            "test".into(), 100, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ParameterChange,
+                ProposalPayload::ParameterChange {
+                    key: "x".into(),
+                    value: 1,
+                },
+                "test".into(),
+                100,
+                &stakes,
+            )
+            .unwrap();
         assert!(gov.finalize(id, 100 + 10_000).is_err());
     }
 
@@ -519,11 +657,19 @@ mod tests {
         gov.delegate(a(1), a(2)).unwrap();
         gov.undelegate(a(1));
         let stakes = stakes_map(&[(1, 500), (2, 500)]);
-        let id = gov.create_proposal(
-            a(1), ProposalType::ModelPolicy,
-            ProposalPayload::ModelPolicy { key: "x".into(), value: 1 },
-            "test".into(), 0, &stakes,
-        ).unwrap();
+        let id = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ModelPolicy,
+                ProposalPayload::ModelPolicy {
+                    key: "x".into(),
+                    value: 1,
+                },
+                "test".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
         let snapshot = &gov.snapshots[&id];
         assert_eq!(snapshot[&a(1)], 500);
         assert_eq!(snapshot[&a(2)], 500);

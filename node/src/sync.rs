@@ -122,7 +122,12 @@ pub struct PeerScore {
 
 impl PeerScore {
     pub fn new(peer: PeerId) -> Self {
-        Self { peer, good: 0, bad: 0, banned: false }
+        Self {
+            peer,
+            good: 0,
+            bad: 0,
+            banned: false,
+        }
     }
 
     pub fn score(&self) -> i64 {
@@ -231,7 +236,11 @@ impl ChainSync {
 
     /// Get best known peer epoch.
     pub fn best_peer_epoch(&self) -> u64 {
-        self.peer_statuses.values().map(|s| s.best_epoch).max().unwrap_or(0)
+        self.peer_statuses
+            .values()
+            .map(|s| s.best_epoch)
+            .max()
+            .unwrap_or(0)
     }
 
     /// Number of verified headers pending body download.
@@ -251,7 +260,9 @@ impl ChainSync {
             self.record_bad(status.peer);
             return;
         }
-        self.peer_scores.entry(status.peer).or_insert_with(|| PeerScore::new(status.peer));
+        self.peer_scores
+            .entry(status.peer)
+            .or_insert_with(|| PeerScore::new(status.peer));
         self.peer_statuses.insert(status.peer, status);
     }
 
@@ -296,7 +307,10 @@ impl ChainSync {
         // Phase 2: Request missing bodies.
         if !self.bodies_needed.is_empty() {
             self.state = SyncState::SyncingBodies;
-            let batch: Vec<BlockHash> = self.bodies_needed.drain(..self.bodies_needed.len().min(MAX_BODIES_PER_REQUEST)).collect();
+            let batch: Vec<BlockHash> = self
+                .bodies_needed
+                .drain(..self.bodies_needed.len().min(MAX_BODIES_PER_REQUEST))
+                .collect();
             if let Some(peer) = self.pick_peer() {
                 let req = SyncRequest::GetBodies { hashes: batch };
                 requests.push((peer, req));
@@ -337,12 +351,16 @@ impl ChainSync {
             // Verify hash.
             if !header.verify_hash() {
                 self.record_bad(peer);
-                return Err(SyncError::InvalidHeaderHash { epoch: header.epoch });
+                return Err(SyncError::InvalidHeaderHash {
+                    epoch: header.epoch,
+                });
             }
             // Verify linkage.
             if header.parent_hash != prev_hash {
                 self.record_bad(peer);
-                return Err(SyncError::BrokenChain { epoch: header.epoch });
+                return Err(SyncError::BrokenChain {
+                    epoch: header.epoch,
+                });
             }
             prev_hash = header.hash;
         }
@@ -359,7 +377,11 @@ impl ChainSync {
     }
 
     /// Handle incoming block bodies from a peer.
-    pub fn on_bodies(&mut self, peer: PeerId, bodies: Vec<(BlockHash, SyncBody)>) -> Result<(), SyncError> {
+    pub fn on_bodies(
+        &mut self,
+        peer: PeerId,
+        bodies: Vec<(BlockHash, SyncBody)>,
+    ) -> Result<(), SyncError> {
         if bodies.is_empty() {
             self.record_bad(peer);
             return Err(SyncError::EmptyResponse);
@@ -367,7 +389,9 @@ impl ChainSync {
 
         for (hash, body) in bodies {
             // Find the header for this body.
-            let epoch = self.verified_headers.iter()
+            let epoch = self
+                .verified_headers
+                .iter()
                 .find(|(_, h)| h.hash == hash)
                 .map(|(&e, _)| e);
 
@@ -439,7 +463,10 @@ impl ChainSync {
 
     /// Check if a peer is banned.
     pub fn is_banned(&self, peer: &PeerId) -> bool {
-        self.peer_scores.get(peer).map(|s| s.banned).unwrap_or(false)
+        self.peer_scores
+            .get(peer)
+            .map(|s| s.banned)
+            .unwrap_or(false)
     }
 
     /// Get peer score.
@@ -449,20 +476,25 @@ impl ChainSync {
 
     /// Pick the best non-banned peer that has blocks we need.
     fn pick_peer(&self) -> Option<PeerId> {
-        self.peer_statuses.iter()
-            .filter(|(id, status)| {
-                !self.is_banned(id) && status.best_epoch > self.local_tip
-            })
+        self.peer_statuses
+            .iter()
+            .filter(|(id, status)| !self.is_banned(id) && status.best_epoch > self.local_tip)
             .max_by_key(|(id, _)| self.peer_score(id))
             .map(|(id, _)| *id)
     }
 
     fn record_good(&mut self, peer: PeerId) {
-        self.peer_scores.entry(peer).or_insert_with(|| PeerScore::new(peer)).record_good();
+        self.peer_scores
+            .entry(peer)
+            .or_insert_with(|| PeerScore::new(peer))
+            .record_good();
     }
 
     fn record_bad(&mut self, peer: PeerId) {
-        self.peer_scores.entry(peer).or_insert_with(|| PeerScore::new(peer)).record_bad();
+        self.peer_scores
+            .entry(peer)
+            .or_insert_with(|| PeerScore::new(peer))
+            .record_bad();
     }
 }
 
@@ -482,7 +514,9 @@ impl std::fmt::Display for SyncError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::EmptyResponse => write!(f, "peer sent empty response"),
-            Self::InvalidHeaderHash { epoch } => write!(f, "invalid header hash at epoch {}", epoch),
+            Self::InvalidHeaderHash { epoch } => {
+                write!(f, "invalid header hash at epoch {}", epoch)
+            }
             Self::BrokenChain { epoch } => write!(f, "broken chain linkage at epoch {}", epoch),
             Self::DisconnectedChain => write!(f, "headers don't connect to known chain"),
             Self::UnrequestedBody { .. } => write!(f, "received body for unrequested block"),
@@ -613,7 +647,10 @@ mod tests {
         headers[1].parent_hash = [42u8; 32]; // break link
 
         let result = sync.on_headers(peer, headers);
-        assert!(matches!(result, Err(SyncError::InvalidHeaderHash { .. }) | Err(SyncError::BrokenChain { .. })));
+        assert!(matches!(
+            result,
+            Err(SyncError::InvalidHeaderHash { .. }) | Err(SyncError::BrokenChain { .. })
+        ));
     }
 
     #[test]
@@ -634,9 +671,8 @@ mod tests {
         sync.on_headers(peer, headers).unwrap();
 
         // Send correct bodies.
-        let bodies: Vec<(BlockHash, SyncBody)> = chain.iter()
-            .map(|(h, b)| (h.hash, b.clone()))
-            .collect();
+        let bodies: Vec<(BlockHash, SyncBody)> =
+            chain.iter().map(|(h, b)| (h.hash, b.clone())).collect();
         assert!(sync.on_bodies(peer, bodies).is_ok());
         assert_eq!(sync.ready_block_count(), 3);
     }
@@ -659,9 +695,14 @@ mod tests {
         sync.on_headers(peer, headers).unwrap();
 
         // Send body with wrong tx data.
-        let bad_body = SyncBody { tx_data: vec![b"wrong".to_vec()] };
+        let bad_body = SyncBody {
+            tx_data: vec![b"wrong".to_vec()],
+        };
         let result = sync.on_bodies(peer, vec![(chain[0].0.hash, bad_body)]);
-        assert!(matches!(result, Err(SyncError::TxRootMismatch { .. }) | Err(SyncError::TxCountMismatch { .. })));
+        assert!(matches!(
+            result,
+            Err(SyncError::TxRootMismatch { .. }) | Err(SyncError::TxCountMismatch { .. })
+        ));
     }
 
     #[test]
@@ -681,9 +722,8 @@ mod tests {
         let headers: Vec<SyncHeader> = chain.iter().map(|(h, _)| h.clone()).collect();
         sync.on_headers(peer, headers).unwrap();
 
-        let bodies: Vec<(BlockHash, SyncBody)> = chain.iter()
-            .map(|(h, b)| (h.hash, b.clone()))
-            .collect();
+        let bodies: Vec<(BlockHash, SyncBody)> =
+            chain.iter().map(|(h, b)| (h.hash, b.clone())).collect();
         sync.on_bodies(peer, bodies).unwrap();
 
         // Take first 3.
@@ -742,9 +782,8 @@ mod tests {
 
         let headers: Vec<SyncHeader> = chain.iter().map(|(h, _)| h.clone()).collect();
         sync.on_headers(peer, headers).unwrap();
-        let bodies: Vec<(BlockHash, SyncBody)> = chain.iter()
-            .map(|(h, b)| (h.hash, b.clone()))
-            .collect();
+        let bodies: Vec<(BlockHash, SyncBody)> =
+            chain.iter().map(|(h, b)| (h.hash, b.clone())).collect();
         sync.on_bodies(peer, bodies).unwrap();
 
         let batch = sync.take_executable_blocks(10);
@@ -773,8 +812,14 @@ mod tests {
         let mut sync = ChainSync::new(gh, 0, gh);
         let peer = PeerId::test(1);
 
-        assert!(matches!(sync.on_headers(peer, vec![]), Err(SyncError::EmptyResponse)));
-        assert!(matches!(sync.on_bodies(peer, vec![]), Err(SyncError::EmptyResponse)));
+        assert!(matches!(
+            sync.on_headers(peer, vec![]),
+            Err(SyncError::EmptyResponse)
+        ));
+        assert!(matches!(
+            sync.on_bodies(peer, vec![]),
+            Err(SyncError::EmptyResponse)
+        ));
     }
 
     #[test]
@@ -825,9 +870,8 @@ mod tests {
         assert!(!reqs2.is_empty());
 
         // 5. Receive bodies.
-        let bodies: Vec<(BlockHash, SyncBody)> = chain.iter()
-            .map(|(h, b)| (h.hash, b.clone()))
-            .collect();
+        let bodies: Vec<(BlockHash, SyncBody)> =
+            chain.iter().map(|(h, b)| (h.hash, b.clone())).collect();
         sync.on_bodies(peer, bodies).unwrap();
 
         // 6. Execute.

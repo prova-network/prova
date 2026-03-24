@@ -13,8 +13,8 @@
 //! - Revenue goes to the marketplace fee pool
 //! - Anti-sniping: if a bid arrives in the last `snipe_guard_epochs`, deadline extends
 
-use std::collections::HashMap;
 use crate::types::{Address, Epoch, ModelId};
+use std::collections::HashMap;
 
 /// Unique auction identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -135,10 +135,14 @@ impl AuctionHouse {
         snipe_guard_epochs: u64,
     ) -> Result<AuctionId, AuctionError> {
         if total_slots == 0 {
-            return Err(AuctionError::InvalidParams("total_slots must be > 0".into()));
+            return Err(AuctionError::InvalidParams(
+                "total_slots must be > 0".into(),
+            ));
         }
         if start_price < reserve_price {
-            return Err(AuctionError::InvalidParams("start_price must be >= reserve_price".into()));
+            return Err(AuctionError::InvalidParams(
+                "start_price must be >= reserve_price".into(),
+            ));
         }
         if duration_epochs == 0 {
             return Err(AuctionError::InvalidParams("duration must be > 0".into()));
@@ -176,7 +180,9 @@ impl AuctionHouse {
         max_payment: u128,
     ) -> Result<AuctionFill, AuctionError> {
         // Check auction exists and is active
-        let auction = self.auctions.get(&auction_id)
+        let auction = self
+            .auctions
+            .get(&auction_id)
             .ok_or(AuctionError::AuctionNotFound(auction_id))?;
 
         if auction.status != AuctionStatus::Active {
@@ -198,7 +204,9 @@ impl AuctionHouse {
         }
 
         // Calculate current price
-        let price = auction.price_at(self.current_epoch).unwrap_or(auction.reserve_price);
+        let price = auction
+            .price_at(self.current_epoch)
+            .unwrap_or(auction.reserve_price);
         if max_payment < price {
             return Err(AuctionError::InsufficientFunds {
                 required: price,
@@ -254,7 +262,9 @@ impl AuctionHouse {
         auction_id: AuctionId,
         caller: Address,
     ) -> Result<(), AuctionError> {
-        let auction = self.auctions.get(&auction_id)
+        let auction = self
+            .auctions
+            .get(&auction_id)
             .ok_or(AuctionError::AuctionNotFound(auction_id))?;
         if auction.creator != caller {
             return Err(AuctionError::NotCreator);
@@ -277,14 +287,16 @@ impl AuctionHouse {
 
     /// Get all auctions for a model.
     pub fn model_auctions(&self, model_id: ModelId) -> Vec<&Auction> {
-        self.model_index.get(&model_id)
+        self.model_index
+            .get(&model_id)
             .map(|ids| ids.iter().filter_map(|id| self.auctions.get(id)).collect())
             .unwrap_or_default()
     }
 
     /// Get active auctions for a model.
     pub fn active_auctions(&self, model_id: ModelId) -> Vec<&Auction> {
-        self.model_auctions(model_id).into_iter()
+        self.model_auctions(model_id)
+            .into_iter()
             .filter(|a| a.status == AuctionStatus::Active)
             .collect()
     }
@@ -316,7 +328,9 @@ mod tests {
     #[test]
     fn test_create_auction() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 3, 1000, 100, 10, 100, 5).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 10, 100, 5)
+            .unwrap();
         let a = house.get_auction(aid).unwrap();
         assert_eq!(a.total_slots, 3);
         assert_eq!(a.start_price, 1000);
@@ -328,17 +342,25 @@ mod tests {
     fn test_invalid_params() {
         let mut house = AuctionHouse::new();
         // zero slots
-        assert!(house.create_auction(addr(1), model(1), 0, 1000, 100, 10, 100, 5).is_err());
+        assert!(house
+            .create_auction(addr(1), model(1), 0, 1000, 100, 10, 100, 5)
+            .is_err());
         // start < reserve
-        assert!(house.create_auction(addr(1), model(1), 3, 50, 100, 10, 100, 5).is_err());
+        assert!(house
+            .create_auction(addr(1), model(1), 3, 50, 100, 10, 100, 5)
+            .is_err());
         // zero duration
-        assert!(house.create_auction(addr(1), model(1), 3, 1000, 100, 10, 0, 5).is_err());
+        assert!(house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 10, 0, 5)
+            .is_err());
     }
 
     #[test]
     fn test_price_decreases_linearly() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 5, 1000, 0, 0, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 5, 1000, 0, 0, 100, 0)
+            .unwrap();
         let a = house.get_auction(aid).unwrap();
         // At epoch 0: 1000, epoch 50: 500, epoch 100: 0
         assert_eq!(a.price_at(0), Some(1000));
@@ -351,7 +373,9 @@ mod tests {
     #[test]
     fn test_price_with_reserve() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 5, 1000, 200, 0, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 5, 1000, 200, 0, 100, 0)
+            .unwrap();
         let a = house.get_auction(aid).unwrap();
         // Range is 800 over 100 epochs. At 50: 1000 - 400 = 600
         assert_eq!(a.price_at(0), Some(1000));
@@ -362,7 +386,9 @@ mod tests {
     #[test]
     fn test_accept_current_price() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0)
+            .unwrap();
         house.set_epoch(50);
         // Price at 50: 1000 - (900 * 50/100) = 550
         let fill = house.accept_current_price(aid, addr(2), 600).unwrap();
@@ -375,20 +401,33 @@ mod tests {
     #[test]
     fn test_insufficient_funds() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0)
+            .unwrap();
         house.set_epoch(0); // price = 1000
         let err = house.accept_current_price(aid, addr(2), 500).unwrap_err();
-        assert_eq!(err, AuctionError::InsufficientFunds { required: 1000, provided: 500 });
+        assert_eq!(
+            err,
+            AuctionError::InsufficientFunds {
+                required: 1000,
+                provided: 500
+            }
+        );
     }
 
     #[test]
     fn test_all_slots_filled() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 2, 1000, 100, 0, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 2, 1000, 100, 0, 100, 0)
+            .unwrap();
         house.set_epoch(50);
         house.accept_current_price(aid, addr(2), 1000).unwrap();
         house.accept_current_price(aid, addr(3), 1000).unwrap();
-        assert_eq!(house.get_auction(aid).unwrap().status, AuctionStatus::FilledAll);
+        assert_eq!(
+            house.get_auction(aid).unwrap().status,
+            AuctionStatus::FilledAll
+        );
         // Third bid fails
         let err = house.accept_current_price(aid, addr(4), 1000).unwrap_err();
         assert_eq!(err, AuctionError::AuctionNotActive(aid));
@@ -397,7 +436,9 @@ mod tests {
     #[test]
     fn test_no_duplicate_bidder() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 5, 1000, 100, 0, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 5, 1000, 100, 0, 100, 0)
+            .unwrap();
         house.set_epoch(50);
         house.accept_current_price(aid, addr(2), 1000).unwrap();
         let err = house.accept_current_price(aid, addr(2), 1000).unwrap_err();
@@ -407,17 +448,27 @@ mod tests {
     #[test]
     fn test_auction_not_started() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 3, 1000, 100, 50, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 50, 100, 0)
+            .unwrap();
         house.set_epoch(10);
         let err = house.accept_current_price(aid, addr(2), 1000).unwrap_err();
-        assert_eq!(err, AuctionError::AuctionNotStarted { auction: aid, starts: 50 });
+        assert_eq!(
+            err,
+            AuctionError::AuctionNotStarted {
+                auction: aid,
+                starts: 50
+            }
+        );
     }
 
     #[test]
     fn test_snipe_guard_extends_deadline() {
         let mut house = AuctionHouse::new();
         // Auction: epochs 0-100, snipe guard = 10 epochs
-        let aid = house.create_auction(addr(1), model(1), 5, 1000, 100, 0, 100, 10).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 5, 1000, 100, 0, 100, 10)
+            .unwrap();
         assert_eq!(house.get_auction(aid).unwrap().end_epoch, 100);
 
         // Bid at epoch 95 (within snipe guard zone: 100-10=90)
@@ -430,44 +481,70 @@ mod tests {
     #[test]
     fn test_finalize_expired() {
         let mut house = AuctionHouse::new();
-        let a1 = house.create_auction(addr(1), model(1), 3, 1000, 100, 0, 50, 0).unwrap();
-        let a2 = house.create_auction(addr(1), model(2), 3, 1000, 100, 0, 100, 0).unwrap();
+        let a1 = house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 0, 50, 0)
+            .unwrap();
+        let a2 = house
+            .create_auction(addr(1), model(2), 3, 1000, 100, 0, 100, 0)
+            .unwrap();
         house.set_epoch(60);
         let expired = house.finalize_expired();
         assert_eq!(expired, vec![a1]);
-        assert_eq!(house.get_auction(a1).unwrap().status, AuctionStatus::Expired);
+        assert_eq!(
+            house.get_auction(a1).unwrap().status,
+            AuctionStatus::Expired
+        );
         assert_eq!(house.get_auction(a2).unwrap().status, AuctionStatus::Active);
     }
 
     #[test]
     fn test_cancel_auction() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0)
+            .unwrap();
         house.cancel_auction(aid, addr(1)).unwrap();
-        assert_eq!(house.get_auction(aid).unwrap().status, AuctionStatus::Cancelled);
+        assert_eq!(
+            house.get_auction(aid).unwrap().status,
+            AuctionStatus::Cancelled
+        );
     }
 
     #[test]
     fn test_cancel_wrong_creator() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0).unwrap();
-        assert_eq!(house.cancel_auction(aid, addr(2)).unwrap_err(), AuctionError::NotCreator);
+        let aid = house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0)
+            .unwrap();
+        assert_eq!(
+            house.cancel_auction(aid, addr(2)).unwrap_err(),
+            AuctionError::NotCreator
+        );
     }
 
     #[test]
     fn test_cancel_with_fills_rejected() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0)
+            .unwrap();
         house.set_epoch(50);
         house.accept_current_price(aid, addr(2), 1000).unwrap();
-        assert_eq!(house.cancel_auction(aid, addr(1)).unwrap_err(), AuctionError::HasFills);
+        assert_eq!(
+            house.cancel_auction(aid, addr(1)).unwrap_err(),
+            AuctionError::HasFills
+        );
     }
 
     #[test]
     fn test_active_auctions_query() {
         let mut house = AuctionHouse::new();
-        house.create_auction(addr(1), model(1), 3, 1000, 100, 0, 50, 0).unwrap();
-        house.create_auction(addr(1), model(1), 3, 500, 50, 0, 100, 0).unwrap();
+        house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 0, 50, 0)
+            .unwrap();
+        house
+            .create_auction(addr(1), model(1), 3, 500, 50, 0, 100, 0)
+            .unwrap();
         house.set_epoch(60);
         house.finalize_expired();
         assert_eq!(house.active_auctions(model(1)).len(), 1);
@@ -477,7 +554,9 @@ mod tests {
     #[test]
     fn test_revenue_accumulates() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 3, 1000, 0, 0, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 3, 1000, 0, 0, 100, 0)
+            .unwrap();
         house.set_epoch(0); // price = 1000
         house.accept_current_price(aid, addr(2), 1000).unwrap();
         house.set_epoch(50); // price = 500
@@ -489,7 +568,9 @@ mod tests {
     #[test]
     fn test_current_price_helper() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 3, 1000, 100, 0, 100, 0)
+            .unwrap();
         house.set_epoch(25);
         assert_eq!(house.current_price(aid), Some(775)); // 1000 - 900*25/100
     }
@@ -497,7 +578,9 @@ mod tests {
     #[test]
     fn test_later_bidders_pay_less() {
         let mut house = AuctionHouse::new();
-        let aid = house.create_auction(addr(1), model(1), 3, 900, 0, 0, 90, 0).unwrap();
+        let aid = house
+            .create_auction(addr(1), model(1), 3, 900, 0, 0, 90, 0)
+            .unwrap();
         // Each epoch = 10 price decrease
         house.set_epoch(10);
         let f1 = house.accept_current_price(aid, addr(2), 900).unwrap();
@@ -508,6 +591,9 @@ mod tests {
         assert_eq!(f1.price, 800);
         assert_eq!(f2.price, 600);
         assert_eq!(f3.price, 300);
-        assert_eq!(house.get_auction(aid).unwrap().status, AuctionStatus::FilledAll);
+        assert_eq!(
+            house.get_auction(aid).unwrap().status,
+            AuctionStatus::FilledAll
+        );
     }
 }

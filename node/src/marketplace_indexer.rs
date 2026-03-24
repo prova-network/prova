@@ -11,8 +11,8 @@
 //! - Supports cursor-based pagination and time-range queries
 //! - Tracks indexer head (last processed block) for resumption after restart
 
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, VecDeque};
-use sha2::{Sha256, Digest};
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -164,7 +164,10 @@ pub struct Cursor {
 
 impl Default for Cursor {
     fn default() -> Self {
-        Cursor { offset: 0, limit: 50 }
+        Cursor {
+            offset: 0,
+            limit: 50,
+        }
     }
 }
 
@@ -262,7 +265,9 @@ impl MarketplaceIndexer {
     // ── Event handlers ─────────────────────────────────────────
 
     fn handle_listing_created(&mut self, event: &RawEvent) {
-        if event.data.len() < 88 { return; } // listing_id(8) + price_in(16) + price_out(16) + model(32) + provider(20) min
+        if event.data.len() < 88 {
+            return;
+        } // listing_id(8) + price_in(16) + price_out(16) + model(32) + provider(20) min
         let listing_id = u64::from_be_bytes(event.data[0..8].try_into().unwrap_or([0; 8]));
         let price_input = u128::from_be_bytes(event.data[8..24].try_into().unwrap_or([0; 16]));
         let price_output = u128::from_be_bytes(event.data[24..40].try_into().unwrap_or([0; 16]));
@@ -287,18 +292,27 @@ impl MarketplaceIndexer {
         };
 
         self.listings.insert(listing_id, listing);
-        self.listings_by_model.entry(model_id.clone()).or_default().push(listing_id);
-        self.listings_by_provider.entry(provider).or_default().push(listing_id);
+        self.listings_by_model
+            .entry(model_id.clone())
+            .or_default()
+            .push(listing_id);
+        self.listings_by_provider
+            .entry(provider)
+            .or_default()
+            .push(listing_id);
 
         // Update price snapshot.
         self.update_price_snapshot(&model_id, event.block_number);
     }
 
     fn handle_listing_updated(&mut self, event: &RawEvent) {
-        if event.data.len() < 40 { return; }
+        if event.data.len() < 40 {
+            return;
+        }
         let listing_id = u64::from_be_bytes(event.data[0..8].try_into().unwrap_or([0; 8]));
         let new_price_input = u128::from_be_bytes(event.data[8..24].try_into().unwrap_or([0; 16]));
-        let new_price_output = u128::from_be_bytes(event.data[24..40].try_into().unwrap_or([0; 16]));
+        let new_price_output =
+            u128::from_be_bytes(event.data[24..40].try_into().unwrap_or([0; 16]));
 
         if let Some(listing) = self.listings.get_mut(&listing_id) {
             listing.price_input = new_price_input;
@@ -310,7 +324,9 @@ impl MarketplaceIndexer {
     }
 
     fn handle_listing_deactivated(&mut self, event: &RawEvent) {
-        if event.data.len() < 8 { return; }
+        if event.data.len() < 8 {
+            return;
+        }
         let listing_id = u64::from_be_bytes(event.data[0..8].try_into().unwrap_or([0; 8]));
         if let Some(listing) = self.listings.get_mut(&listing_id) {
             listing.active = false;
@@ -319,10 +335,13 @@ impl MarketplaceIndexer {
     }
 
     fn handle_bid_placed(&mut self, event: &RawEvent) {
-        if event.data.len() < 84 { return; }
+        if event.data.len() < 84 {
+            return;
+        }
         let bid_id = u64::from_be_bytes(event.data[0..8].try_into().unwrap_or([0; 8]));
         let max_price_input = u128::from_be_bytes(event.data[8..24].try_into().unwrap_or([0; 16]));
-        let max_price_output = u128::from_be_bytes(event.data[24..40].try_into().unwrap_or([0; 16]));
+        let max_price_output =
+            u128::from_be_bytes(event.data[24..40].try_into().unwrap_or([0; 16]));
         let mut model_bytes = [0u8; 32];
         model_bytes.copy_from_slice(&event.data[40..72]);
         let model_id = ModelId(model_bytes);
@@ -350,7 +369,9 @@ impl MarketplaceIndexer {
     }
 
     fn handle_bid_matched(&mut self, event: &RawEvent) {
-        if event.data.len() < 56 { return; }
+        if event.data.len() < 56 {
+            return;
+        }
         let bid_id = u64::from_be_bytes(event.data[0..8].try_into().unwrap_or([0; 8]));
         let listing_id = u64::from_be_bytes(event.data[8..16].try_into().unwrap_or([0; 8]));
         let mut client_bytes = [0u8; 20];
@@ -376,7 +397,9 @@ impl MarketplaceIndexer {
     }
 
     fn handle_bid_expired(&mut self, event: &RawEvent) {
-        if event.data.len() < 8 { return; }
+        if event.data.len() < 8 {
+            return;
+        }
         let bid_id = u64::from_be_bytes(event.data[0..8].try_into().unwrap_or([0; 8]));
         // Mark as expired by removing from active consideration (keep record).
         // Bids don't have an explicit expired flag; matched=false + age is sufficient.
@@ -384,7 +407,9 @@ impl MarketplaceIndexer {
     }
 
     fn handle_auction_created(&mut self, event: &RawEvent) {
-        if event.data.len() < 80 { return; }
+        if event.data.len() < 80 {
+            return;
+        }
         let auction_id = u64::from_be_bytes(event.data[0..8].try_into().unwrap_or([0; 8]));
         let start_price = u128::from_be_bytes(event.data[8..24].try_into().unwrap_or([0; 16]));
         let reserve_price = u128::from_be_bytes(event.data[24..40].try_into().unwrap_or([0; 16]));
@@ -394,22 +419,27 @@ impl MarketplaceIndexer {
         model_bytes.copy_from_slice(&event.data[52..84].get(..32).unwrap_or(&[0; 32]));
         let model_id = ModelId(model_bytes);
 
-        self.auctions.insert(auction_id, IndexedAuction {
+        self.auctions.insert(
             auction_id,
-            model_id,
-            start_price,
-            reserve_price,
-            duration_epochs,
-            created_at: event.block_number,
-            total_slots,
-            filled_slots: 0,
-            status: AuctionIndexStatus::Active,
-            fills: Vec::new(),
-        });
+            IndexedAuction {
+                auction_id,
+                model_id,
+                start_price,
+                reserve_price,
+                duration_epochs,
+                created_at: event.block_number,
+                total_slots,
+                filled_slots: 0,
+                status: AuctionIndexStatus::Active,
+                fills: Vec::new(),
+            },
+        );
     }
 
     fn handle_auction_filled(&mut self, event: &RawEvent) {
-        if event.data.len() < 32 { return; }
+        if event.data.len() < 32 {
+            return;
+        }
         let auction_id = u64::from_be_bytes(event.data[0..8].try_into().unwrap_or([0; 8]));
         let price = u128::from_be_bytes(event.data[8..24].try_into().unwrap_or([0; 16]));
         let slot_index = u32::from_be_bytes(event.data[24..28].try_into().unwrap_or([0; 4]));
@@ -430,7 +460,9 @@ impl MarketplaceIndexer {
     }
 
     fn handle_auction_completed(&mut self, event: &RawEvent) {
-        if event.data.len() < 9 { return; }
+        if event.data.len() < 9 {
+            return;
+        }
         let auction_id = u64::from_be_bytes(event.data[0..8].try_into().unwrap_or([0; 8]));
         let status_byte = event.data[8];
         let status = match status_byte {
@@ -448,15 +480,20 @@ impl MarketplaceIndexer {
     // ── Price tracking ─────────────────────────────────────────
 
     fn update_price_snapshot(&mut self, model_id: &ModelId, epoch: Epoch) {
-        let active_listings: Vec<_> = self.listings_by_model
+        let active_listings: Vec<_> = self
+            .listings_by_model
             .get(model_id)
-            .map(|ids| ids.iter()
-                .filter_map(|id| self.listings.get(id))
-                .filter(|l| l.active)
-                .collect())
+            .map(|ids| {
+                ids.iter()
+                    .filter_map(|id| self.listings.get(id))
+                    .filter(|l| l.active)
+                    .collect()
+            })
             .unwrap_or_default();
 
-        if active_listings.is_empty() { return; }
+        if active_listings.is_empty() {
+            return;
+        }
 
         let count = active_listings.len() as u128;
         let avg_input = active_listings.iter().map(|l| l.price_input).sum::<u128>() / count;
@@ -470,7 +507,10 @@ impl MarketplaceIndexer {
             listing_count: active_listings.len() as u32,
         };
 
-        let history = self.price_history.entry(model_id.clone()).or_insert_with(VecDeque::new);
+        let history = self
+            .price_history
+            .entry(model_id.clone())
+            .or_insert_with(VecDeque::new);
         history.push_back(point);
         if history.len() > self.max_price_history {
             history.pop_front();
@@ -488,10 +528,12 @@ impl MarketplaceIndexer {
     pub fn get_listings_by_model(&self, model_id: &ModelId) -> Vec<&IndexedListing> {
         self.listings_by_model
             .get(model_id)
-            .map(|ids| ids.iter()
-                .filter_map(|id| self.listings.get(id))
-                .filter(|l| l.active)
-                .collect())
+            .map(|ids| {
+                ids.iter()
+                    .filter_map(|id| self.listings.get(id))
+                    .filter(|l| l.active)
+                    .collect()
+            })
             .unwrap_or_default()
     }
 
@@ -499,9 +541,7 @@ impl MarketplaceIndexer {
     pub fn get_listings_by_provider(&self, provider: &Address) -> Vec<&IndexedListing> {
         self.listings_by_provider
             .get(provider)
-            .map(|ids| ids.iter()
-                .filter_map(|id| self.listings.get(id))
-                .collect())
+            .map(|ids| ids.iter().filter_map(|id| self.listings.get(id)).collect())
             .unwrap_or_default()
     }
 
@@ -514,9 +554,7 @@ impl MarketplaceIndexer {
     pub fn get_bids_by_client(&self, client: &Address) -> Vec<&IndexedBid> {
         self.bids_by_client
             .get(client)
-            .map(|ids| ids.iter()
-                .filter_map(|id| self.bids.get(id))
-                .collect())
+            .map(|ids| ids.iter().filter_map(|id| self.bids.get(id)).collect())
             .unwrap_or_default()
     }
 
@@ -524,10 +562,12 @@ impl MarketplaceIndexer {
     pub fn get_open_bids_by_model(&self, model_id: &ModelId) -> Vec<&IndexedBid> {
         self.bids_by_model
             .get(model_id)
-            .map(|ids| ids.iter()
-                .filter_map(|id| self.bids.get(id))
-                .filter(|b| !b.matched)
-                .collect())
+            .map(|ids| {
+                ids.iter()
+                    .filter_map(|id| self.bids.get(id))
+                    .filter(|b| !b.matched)
+                    .collect()
+            })
             .unwrap_or_default()
     }
 
@@ -540,7 +580,8 @@ impl MarketplaceIndexer {
 
     /// Get matches in an epoch range.
     pub fn get_matches_in_range(&self, range: EpochRange) -> Vec<&IndexedMatch> {
-        self.matches.iter()
+        self.matches
+            .iter()
             .filter(|m| m.epoch >= range.from && m.epoch <= range.to)
             .collect()
     }
@@ -552,17 +593,23 @@ impl MarketplaceIndexer {
 
     /// Get all active auctions.
     pub fn get_active_auctions(&self) -> Vec<&IndexedAuction> {
-        self.auctions.values()
+        self.auctions
+            .values()
             .filter(|a| a.status == AuctionIndexStatus::Active)
             .collect()
     }
 
     /// Get price history for a model.
-    pub fn get_price_history(&self, model_id: &ModelId, range: Option<EpochRange>) -> Vec<&PricePoint> {
+    pub fn get_price_history(
+        &self,
+        model_id: &ModelId,
+        range: Option<EpochRange>,
+    ) -> Vec<&PricePoint> {
         self.price_history
             .get(model_id)
             .map(|history| {
-                history.iter()
+                history
+                    .iter()
                     .filter(|p| match range {
                         Some(r) => p.epoch >= r.from && p.epoch <= r.to,
                         None => true,
@@ -582,7 +629,11 @@ impl MarketplaceIndexer {
             matched_bids: self.bids.values().filter(|b| b.matched).count(),
             total_matches: self.matches.len(),
             total_auctions: self.auctions.len(),
-            active_auctions: self.auctions.values().filter(|a| a.status == AuctionIndexStatus::Active).count(),
+            active_auctions: self
+                .auctions
+                .values()
+                .filter(|a| a.status == AuctionIndexStatus::Active)
+                .count(),
             events_processed: self.events_processed,
         }
     }
@@ -626,7 +677,13 @@ mod tests {
         ModelId([seed; 32])
     }
 
-    fn encode_listing_created(listing_id: u64, price_in: u128, price_out: u128, model: &ModelId, provider: &Address) -> Vec<u8> {
+    fn encode_listing_created(
+        listing_id: u64,
+        price_in: u128,
+        price_out: u128,
+        model: &ModelId,
+        provider: &Address,
+    ) -> Vec<u8> {
         let mut data = Vec::new();
         data.extend_from_slice(&listing_id.to_be_bytes());
         data.extend_from_slice(&price_in.to_be_bytes());
@@ -648,7 +705,13 @@ mod tests {
         listing_id.to_be_bytes().to_vec()
     }
 
-    fn encode_bid_placed(bid_id: u64, max_in: u128, max_out: u128, model: &ModelId, client: &Address) -> Vec<u8> {
+    fn encode_bid_placed(
+        bid_id: u64,
+        max_in: u128,
+        max_out: u128,
+        model: &ModelId,
+        client: &Address,
+    ) -> Vec<u8> {
         let mut data = Vec::new();
         data.extend_from_slice(&bid_id.to_be_bytes());
         data.extend_from_slice(&max_in.to_be_bytes());
@@ -658,7 +721,12 @@ mod tests {
         data
     }
 
-    fn encode_bid_matched(bid_id: u64, listing_id: u64, client: &Address, provider: &Address) -> Vec<u8> {
+    fn encode_bid_matched(
+        bid_id: u64,
+        listing_id: u64,
+        client: &Address,
+        provider: &Address,
+    ) -> Vec<u8> {
         let mut data = Vec::new();
         data.extend_from_slice(&bid_id.to_be_bytes());
         data.extend_from_slice(&listing_id.to_be_bytes());
@@ -667,7 +735,14 @@ mod tests {
         data
     }
 
-    fn encode_auction_created(id: u64, start: u128, reserve: u128, dur: u64, slots: u32, model: &ModelId) -> Vec<u8> {
+    fn encode_auction_created(
+        id: u64,
+        start: u128,
+        reserve: u128,
+        dur: u64,
+        slots: u32,
+        model: &ModelId,
+    ) -> Vec<u8> {
         let mut data = Vec::new();
         data.extend_from_slice(&id.to_be_bytes());
         data.extend_from_slice(&start.to_be_bytes());
@@ -1109,15 +1184,24 @@ mod tests {
             }]);
         }
 
-        let page1 = idx.get_matches(Cursor { offset: 0, limit: 3 });
+        let page1 = idx.get_matches(Cursor {
+            offset: 0,
+            limit: 3,
+        });
         assert_eq!(page1.len(), 3);
         assert_eq!(page1[0].bid_id, 0);
 
-        let page2 = idx.get_matches(Cursor { offset: 3, limit: 3 });
+        let page2 = idx.get_matches(Cursor {
+            offset: 3,
+            limit: 3,
+        });
         assert_eq!(page2.len(), 3);
         assert_eq!(page2[0].bid_id, 3);
 
-        let last = idx.get_matches(Cursor { offset: 9, limit: 5 });
+        let last = idx.get_matches(Cursor {
+            offset: 9,
+            limit: 5,
+        });
         assert_eq!(last.len(), 1);
     }
 

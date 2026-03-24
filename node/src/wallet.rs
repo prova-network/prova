@@ -7,9 +7,9 @@
 //   - Transaction signing and verification
 //   - Multi-key keyring
 
-use sha2::{Digest, Sha256, Sha512};
-use serde::{Deserialize, Serialize};
 use prova_chain::types::Address;
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256, Sha512};
 
 // ── Ed25519 minimal implementation (no external crate) ──────────────────
 // We implement the signing math over the Ed25519 curve using the standard
@@ -52,8 +52,8 @@ impl<'de> Deserialize<'de> for Signature {
         }
         let mut bytes = [0u8; 64];
         for i in 0..64 {
-            bytes[i] = u8::from_str_radix(&s[i*2..i*2+2], 16)
-                .map_err(serde::de::Error::custom)?;
+            bytes[i] =
+                u8::from_str_radix(&s[i * 2..i * 2 + 2], 16).map_err(serde::de::Error::custom)?;
         }
         Ok(Signature(bytes))
     }
@@ -205,7 +205,12 @@ impl EncryptedKey {
     pub fn encrypt(secret: &SecretKey, password: &str) -> Self {
         let salt = Self::derive_salt(&secret.public_key().address());
         let mask = Self::derive_mask(password, &salt);
-        let ciphertext: Vec<u8> = secret.0.iter().zip(mask.iter()).map(|(a, b)| a ^ b).collect();
+        let ciphertext: Vec<u8> = secret
+            .0
+            .iter()
+            .zip(mask.iter())
+            .map(|(a, b)| a ^ b)
+            .collect();
         let addr = secret.public_key().address();
         EncryptedKey {
             address: format!("{}", addr),

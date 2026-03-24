@@ -287,12 +287,13 @@ impl EventReplayEngine {
     /// Start a new replay session for the given epoch range.
     pub fn start_replay(&mut self, from: Epoch, to: Epoch) -> &ReplayProgress {
         // Check if cache already covers part of the range.
-        let effective_from = if self.cache.high_watermark() >= from && self.cache.low_watermark() <= from {
-            // Resume from after cached data.
-            self.cache.high_watermark() + 1
-        } else {
-            from
-        };
+        let effective_from =
+            if self.cache.high_watermark() >= from && self.cache.low_watermark() <= from {
+                // Resume from after cached data.
+                self.cache.high_watermark() + 1
+            } else {
+                from
+            };
 
         self.progress = Some(ReplayProgress::new(effective_from, to));
         self.progress.as_ref().unwrap()
@@ -547,11 +548,14 @@ mod tests {
     fn test_cache_is_range_cached() {
         let mut cache = EventCache::new(1000);
         for i in 10..=15 {
-            cache.insert(i, vec![CachedEvent {
-                event: make_event(1, 1),
-                proof_verified: true,
-                block_hash: make_hash(1),
-            }]);
+            cache.insert(
+                i,
+                vec![CachedEvent {
+                    event: make_event(1, 1),
+                    proof_verified: true,
+                    block_hash: make_hash(1),
+                }],
+            );
         }
         assert!(cache.is_range_cached(10, 15));
         assert!(!cache.is_range_cached(9, 15));
@@ -561,11 +565,14 @@ mod tests {
     #[test]
     fn test_cache_clear() {
         let mut cache = EventCache::new(1000);
-        cache.insert(1, vec![CachedEvent {
-            event: make_event(1, 1),
-            proof_verified: true,
-            block_hash: make_hash(1),
-        }]);
+        cache.insert(
+            1,
+            vec![CachedEvent {
+                event: make_event(1, 1),
+                proof_verified: true,
+                block_hash: make_hash(1),
+            }],
+        );
         assert_eq!(cache.total_count(), 1);
         cache.clear();
         assert_eq!(cache.total_count(), 0);
@@ -575,34 +582,54 @@ mod tests {
     #[test]
     fn test_cache_overwrite_epoch() {
         let mut cache = EventCache::new(1000);
-        cache.insert(100, vec![CachedEvent {
-            event: make_event(1, 1),
-            proof_verified: true,
-            block_hash: make_hash(1),
-        }]);
+        cache.insert(
+            100,
+            vec![CachedEvent {
+                event: make_event(1, 1),
+                proof_verified: true,
+                block_hash: make_hash(1),
+            }],
+        );
         assert_eq!(cache.total_count(), 1);
 
         // Overwrite with 2 events.
-        cache.insert(100, vec![
-            CachedEvent { event: make_event(2, 2), proof_verified: true, block_hash: make_hash(2) },
-            CachedEvent { event: make_event(3, 3), proof_verified: true, block_hash: make_hash(3) },
-        ]);
+        cache.insert(
+            100,
+            vec![
+                CachedEvent {
+                    event: make_event(2, 2),
+                    proof_verified: true,
+                    block_hash: make_hash(2),
+                },
+                CachedEvent {
+                    event: make_event(3, 3),
+                    proof_verified: true,
+                    block_hash: make_hash(3),
+                },
+            ],
+        );
         assert_eq!(cache.total_count(), 2);
     }
 
     #[test]
     fn test_cache_watermarks_export() {
         let mut cache = EventCache::new(1000);
-        cache.insert(50, vec![CachedEvent {
-            event: make_event(1, 1),
-            proof_verified: true,
-            block_hash: make_hash(1),
-        }]);
-        cache.insert(100, vec![CachedEvent {
-            event: make_event(2, 2),
-            proof_verified: true,
-            block_hash: make_hash(2),
-        }]);
+        cache.insert(
+            50,
+            vec![CachedEvent {
+                event: make_event(1, 1),
+                proof_verified: true,
+                block_hash: make_hash(1),
+            }],
+        );
+        cache.insert(
+            100,
+            vec![CachedEvent {
+                event: make_event(2, 2),
+                proof_verified: true,
+                block_hash: make_hash(2),
+            }],
+        );
         let wm = cache.export_watermarks();
         assert_eq!(wm.low, 50);
         assert_eq!(wm.high, 100);
@@ -662,11 +689,14 @@ mod tests {
 
         // Pre-populate cache.
         for epoch in 0..50u64 {
-            engine.cache.insert(epoch, vec![CachedEvent {
-                event: make_event(1, 1),
-                proof_verified: true,
-                block_hash: make_hash(1),
-            }]);
+            engine.cache.insert(
+                epoch,
+                vec![CachedEvent {
+                    event: make_event(1, 1),
+                    proof_verified: true,
+                    block_hash: make_hash(1),
+                }],
+            );
         }
 
         // Resume should start from epoch 50.

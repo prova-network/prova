@@ -182,16 +182,19 @@ impl BlobStore {
         self.total_bytes = new_total;
 
         // Update metadata
-        let meta = self.metadata.entry(blob_id).or_insert_with(|| BlobMetadata {
-            blob_id,
-            total_size: 0,
-            chunk_count: TOTAL_CHUNKS,
-            chunks_stored: 0,
-            stored_at: current_epoch,
-            expires_at: current_epoch + retention_epochs,
-            pinned: false,
-            last_accessed: current_epoch,
-        });
+        let meta = self
+            .metadata
+            .entry(blob_id)
+            .or_insert_with(|| BlobMetadata {
+                blob_id,
+                total_size: 0,
+                chunk_count: TOTAL_CHUNKS,
+                chunks_stored: 0,
+                stored_at: current_epoch,
+                expires_at: current_epoch + retention_epochs,
+                pinned: false,
+                last_accessed: current_epoch,
+            });
         meta.total_size = meta.total_size - existing_size + chunk_size;
         if is_new_chunk {
             meta.chunks_stored += 1;
@@ -292,7 +295,8 @@ impl BlobStore {
 
     /// Evict LRU unpinned blobs until we're below eviction threshold.
     pub fn evict(&mut self) -> EvictionResult {
-        let threshold = self.quota_bytes - (self.quota_bytes as f64 * EVICTION_THRESHOLD_RATIO) as u64;
+        let threshold =
+            self.quota_bytes - (self.quota_bytes as f64 * EVICTION_THRESHOLD_RATIO) as u64;
         let mut result = EvictionResult {
             blobs_evicted: 0,
             bytes_freed: 0,
@@ -433,7 +437,9 @@ mod tests {
         let mut store = BlobStore::new(200);
         let bid = blob_id(1);
         store.put_chunk(bid, 0, chunk_data(100), 1, 100).unwrap();
-        let err = store.put_chunk(bid, 1, chunk_data(150), 1, 100).unwrap_err();
+        let err = store
+            .put_chunk(bid, 1, chunk_data(150), 1, 100)
+            .unwrap_err();
         assert!(matches!(err, StoreError::QuotaExceeded { .. }));
     }
 

@@ -32,7 +32,11 @@ pub enum MessagePayload {
     /// Relay a checkpoint attestation to L1.
     CheckpointAttestation { sequence: u64, state_root: Hash },
     /// Relay a dispute result to L1 (for slashing finality).
-    DisputeResult { commit_id: u64, slashed: Address, amount: u128 },
+    DisputeResult {
+        commit_id: u64,
+        slashed: Address,
+        amount: u128,
+    },
     /// Relay an L1 stake deposit notification to Prova.
     StakeDeposit { staker: Address, amount: u128 },
     /// Relay an L1 governance action to Prova.
@@ -80,12 +84,19 @@ impl BridgeMessage {
                 h.update(recipient.0);
                 h.update(amount.to_le_bytes());
             }
-            MessagePayload::CheckpointAttestation { sequence, state_root } => {
+            MessagePayload::CheckpointAttestation {
+                sequence,
+                state_root,
+            } => {
                 h.update([1u8]);
                 h.update(sequence.to_le_bytes());
                 h.update(state_root);
             }
-            MessagePayload::DisputeResult { commit_id, slashed, amount } => {
+            MessagePayload::DisputeResult {
+                commit_id,
+                slashed,
+                amount,
+            } => {
                 h.update([2u8]);
                 h.update(commit_id.to_le_bytes());
                 h.update(slashed.0);
@@ -96,7 +107,10 @@ impl BridgeMessage {
                 h.update(staker.0);
                 h.update(amount.to_le_bytes());
             }
-            MessagePayload::GovernanceAction { proposal_id, action_hash } => {
+            MessagePayload::GovernanceAction {
+                proposal_id,
+                action_hash,
+            } => {
                 h.update([4u8]);
                 h.update(proposal_id.to_le_bytes());
                 h.update(action_hash);
@@ -613,11 +627,27 @@ mod tests {
             },
         };
         let payloads = vec![
-            MessagePayload::TokenTransfer { recipient: Address::test(2), amount: 100 },
-            MessagePayload::CheckpointAttestation { sequence: 1, state_root: [1u8; 32] },
-            MessagePayload::DisputeResult { commit_id: 1, slashed: Address::test(3), amount: 50 },
-            MessagePayload::StakeDeposit { staker: Address::test(4), amount: 200 },
-            MessagePayload::GovernanceAction { proposal_id: 1, action_hash: [2u8; 32] },
+            MessagePayload::TokenTransfer {
+                recipient: Address::test(2),
+                amount: 100,
+            },
+            MessagePayload::CheckpointAttestation {
+                sequence: 1,
+                state_root: [1u8; 32],
+            },
+            MessagePayload::DisputeResult {
+                commit_id: 1,
+                slashed: Address::test(3),
+                amount: 50,
+            },
+            MessagePayload::StakeDeposit {
+                staker: Address::test(4),
+                amount: 200,
+            },
+            MessagePayload::GovernanceAction {
+                proposal_id: 1,
+                action_hash: [2u8; 32],
+            },
             MessagePayload::RawData(vec![1, 2, 3]),
         ];
         let hashes: Vec<Hash> = payloads
@@ -668,9 +698,7 @@ mod tests {
     fn test_e2e_outbox_to_inbox() {
         // Full flow: queue → seal → prove → receive
         let mut outbox = Outbox::new();
-        let msgs: Vec<BridgeMessage> = (0..3)
-            .map(|i| make_inbound_msg(1, i, 100 + i))
-            .collect();
+        let msgs: Vec<BridgeMessage> = (0..3).map(|i| make_inbound_msg(1, i, 100 + i)).collect();
         // Use outbox as the source chain's outbox
         let mut src_outbox = Outbox::new();
         for m in &msgs {

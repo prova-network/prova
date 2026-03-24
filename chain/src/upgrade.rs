@@ -21,7 +21,11 @@ pub struct ProtocolVersion {
 
 impl ProtocolVersion {
     pub fn new(major: u32, minor: u32, patch: u32) -> Self {
-        Self { major, minor, patch }
+        Self {
+            major,
+            minor,
+            patch,
+        }
     }
 
     /// Check if this version is compatible with another (same major).
@@ -180,7 +184,10 @@ impl UpgradeManager {
         }
         // Check version isn't already proposed or active.
         for p in self.proposals.values() {
-            if p.version == version && p.state != UpgradeState::Failed && p.state != UpgradeState::Cancelled {
+            if p.version == version
+                && p.state != UpgradeState::Failed
+                && p.state != UpgradeState::Cancelled
+            {
                 return Err(UpgradeError::DuplicateVersion);
             }
         }
@@ -194,29 +201,39 @@ impl UpgradeManager {
             UpgradeState::Proposed
         };
 
-        self.proposals.insert(id, UpgradeProposal {
+        self.proposals.insert(
             id,
-            name: name.to_string(),
-            version,
-            fork_type,
-            description: description.to_string(),
-            signal_start,
-            signal_deadline,
-            threshold_bps,
-            activation_delay,
-            state,
-            activation_epoch: None,
-            proposer,
-            emergency,
-        });
+            UpgradeProposal {
+                id,
+                name: name.to_string(),
+                version,
+                fork_type,
+                description: description.to_string(),
+                signal_start,
+                signal_deadline,
+                threshold_bps,
+                activation_delay,
+                state,
+                activation_epoch: None,
+                proposer,
+                emergency,
+            },
+        );
 
         self.signals.insert(id, HashSet::new());
         Ok(id)
     }
 
     /// Validator signals readiness for an upgrade.
-    pub fn signal(&mut self, validator: Address, proposal_id: u64, epoch: Epoch) -> Result<(), UpgradeError> {
-        let proposal = self.proposals.get(&proposal_id)
+    pub fn signal(
+        &mut self,
+        validator: Address,
+        proposal_id: u64,
+        epoch: Epoch,
+    ) -> Result<(), UpgradeError> {
+        let proposal = self
+            .proposals
+            .get(&proposal_id)
             .ok_or(UpgradeError::NotFound)?;
 
         if proposal.state != UpgradeState::Signaling {
@@ -229,13 +246,18 @@ impl UpgradeManager {
             return Err(UpgradeError::NotValidator);
         }
 
-        self.signals.get_mut(&proposal_id).unwrap().insert(validator);
+        self.signals
+            .get_mut(&proposal_id)
+            .unwrap()
+            .insert(validator);
         Ok(())
     }
 
     /// Get signal progress for a proposal (basis points).
     pub fn signal_progress(&self, proposal_id: u64) -> Result<u32, UpgradeError> {
-        let _proposal = self.proposals.get(&proposal_id)
+        let _proposal = self
+            .proposals
+            .get(&proposal_id)
             .ok_or(UpgradeError::NotFound)?;
 
         let signalers = self.signals.get(&proposal_id).unwrap();
@@ -244,7 +266,8 @@ impl UpgradeManager {
             return Ok(0);
         }
 
-        let signaled_stake: StakeAmount = signalers.iter()
+        let signaled_stake: StakeAmount = signalers
+            .iter()
             .filter_map(|v| self.stake_weights.get(v))
             .sum();
 
@@ -269,10 +292,15 @@ impl UpgradeManager {
                     let progress = {
                         let signalers = self.signals.get(&id).unwrap();
                         let total: StakeAmount = self.stake_weights.values().sum();
-                        if total == 0 { 0 } else {
-                            ((signalers.iter()
+                        if total == 0 {
+                            0
+                        } else {
+                            ((signalers
+                                .iter()
                                 .filter_map(|v| self.stake_weights.get(v))
-                                .sum::<StakeAmount>() * 10000) / total) as u32
+                                .sum::<StakeAmount>()
+                                * 10000)
+                                / total) as u32
                         }
                     };
 
@@ -309,8 +337,14 @@ impl UpgradeManager {
     }
 
     /// Emergency activation by governance — skips signaling.
-    pub fn emergency_activate(&mut self, proposal_id: u64, epoch: Epoch) -> Result<UpgradeEvent, UpgradeError> {
-        let proposal = self.proposals.get_mut(&proposal_id)
+    pub fn emergency_activate(
+        &mut self,
+        proposal_id: u64,
+        epoch: Epoch,
+    ) -> Result<UpgradeEvent, UpgradeError> {
+        let proposal = self
+            .proposals
+            .get_mut(&proposal_id)
             .ok_or(UpgradeError::NotFound)?;
 
         if !proposal.emergency {
@@ -330,7 +364,9 @@ impl UpgradeManager {
 
     /// Cancel a proposal (governance action).
     pub fn cancel(&mut self, proposal_id: u64) -> Result<(), UpgradeError> {
-        let proposal = self.proposals.get_mut(&proposal_id)
+        let proposal = self
+            .proposals
+            .get_mut(&proposal_id)
             .ok_or(UpgradeError::NotFound)?;
 
         match proposal.state {
@@ -382,10 +418,20 @@ impl UpgradeManager {
 /// Events emitted during upgrade processing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UpgradeEvent {
-    SignalingStarted { proposal_id: u64 },
-    LockedIn { proposal_id: u64, activation_epoch: Epoch },
-    Failed { proposal_id: u64 },
-    Activated { proposal_id: u64, version: ProtocolVersion },
+    SignalingStarted {
+        proposal_id: u64,
+    },
+    LockedIn {
+        proposal_id: u64,
+        activation_epoch: Epoch,
+    },
+    Failed {
+        proposal_id: u64,
+    },
+    Activated {
+        proposal_id: u64,
+        version: ProtocolVersion,
+    },
 }
 
 /// Errors from upgrade operations.
@@ -436,10 +482,20 @@ mod tests {
     #[test]
     fn test_propose_and_list() {
         let mut mgr = setup();
-        let id = mgr.propose(
-            "v1.1.0", ProtocolVersion::new(1, 1, 0), ForkType::Soft,
-            "Minor improvements", 10, 100, 8000, 50, Address::test(1), false,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "v1.1.0",
+                ProtocolVersion::new(1, 1, 0),
+                ForkType::Soft,
+                "Minor improvements",
+                10,
+                100,
+                8000,
+                50,
+                Address::test(1),
+                false,
+            )
+            .unwrap();
         assert_eq!(id, 1);
         assert_eq!(mgr.proposals().len(), 1);
         assert_eq!(mgr.get_proposal(id).unwrap().state, UpgradeState::Proposed);
@@ -448,20 +504,40 @@ mod tests {
     #[test]
     fn test_invalid_window() {
         let mut mgr = setup();
-        let err = mgr.propose(
-            "bad", ProtocolVersion::new(2, 0, 0), ForkType::Hard,
-            "Bad window", 100, 50, 8000, 10, Address::test(1), false,
-        ).unwrap_err();
+        let err = mgr
+            .propose(
+                "bad",
+                ProtocolVersion::new(2, 0, 0),
+                ForkType::Hard,
+                "Bad window",
+                100,
+                50,
+                8000,
+                10,
+                Address::test(1),
+                false,
+            )
+            .unwrap_err();
         assert_eq!(err, UpgradeError::InvalidWindow);
     }
 
     #[test]
     fn test_signaling_lifecycle() {
         let mut mgr = setup();
-        let id = mgr.propose(
-            "v1.1.0", ProtocolVersion::new(1, 1, 0), ForkType::Soft,
-            "Test", 10, 100, 6000, 20, Address::test(1), false,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "v1.1.0",
+                ProtocolVersion::new(1, 1, 0),
+                ForkType::Soft,
+                "Test",
+                10,
+                100,
+                6000,
+                20,
+                Address::test(1),
+                false,
+            )
+            .unwrap();
 
         // Before signal_start — still proposed.
         let events = mgr.tick(5);
@@ -469,7 +545,10 @@ mod tests {
 
         // At signal_start — transitions to signaling.
         let events = mgr.tick(10);
-        assert_eq!(events, vec![UpgradeEvent::SignalingStarted { proposal_id: id }]);
+        assert_eq!(
+            events,
+            vec![UpgradeEvent::SignalingStarted { proposal_id: id }]
+        );
 
         // Signal from 2/3 validators (66.6% > 60% threshold).
         mgr.signal(Address::test(1), id, 15).unwrap();
@@ -482,7 +561,10 @@ mod tests {
         let events = mgr.tick(16);
         assert_eq!(events.len(), 1);
         match &events[0] {
-            UpgradeEvent::LockedIn { proposal_id, activation_epoch } => {
+            UpgradeEvent::LockedIn {
+                proposal_id,
+                activation_epoch,
+            } => {
                 assert_eq!(*proposal_id, id);
                 assert_eq!(*activation_epoch, 36); // 16 + 20
             }
@@ -491,23 +573,36 @@ mod tests {
 
         // Tick at activation epoch.
         let events = mgr.tick(36);
-        assert_eq!(events, vec![UpgradeEvent::Activated {
-            proposal_id: id,
-            version: ProtocolVersion::new(1, 1, 0),
-        }]);
+        assert_eq!(
+            events,
+            vec![UpgradeEvent::Activated {
+                proposal_id: id,
+                version: ProtocolVersion::new(1, 1, 0),
+            }]
+        );
         assert_eq!(*mgr.current_version(), ProtocolVersion::new(1, 1, 0));
     }
 
     #[test]
     fn test_signaling_failure() {
         let mut mgr = setup();
-        let id = mgr.propose(
-            "v2.0.0", ProtocolVersion::new(2, 0, 0), ForkType::Hard,
-            "Hard fork", 10, 50, 8000, 20, Address::test(1), false,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "v2.0.0",
+                ProtocolVersion::new(2, 0, 0),
+                ForkType::Hard,
+                "Hard fork",
+                10,
+                50,
+                8000,
+                20,
+                Address::test(1),
+                false,
+            )
+            .unwrap();
 
         mgr.tick(10); // start signaling
-        // Only 1/3 signals (33% < 80%).
+                      // Only 1/3 signals (33% < 80%).
         mgr.signal(Address::test(1), id, 15).unwrap();
 
         // At deadline — fails.
@@ -519,10 +614,20 @@ mod tests {
     #[test]
     fn test_signal_not_validator() {
         let mut mgr = setup();
-        let id = mgr.propose(
-            "v1.1.0", ProtocolVersion::new(1, 1, 0), ForkType::Soft,
-            "Test", 0, 100, 8000, 20, Address::test(1), false,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "v1.1.0",
+                ProtocolVersion::new(1, 1, 0),
+                ForkType::Soft,
+                "Test",
+                0,
+                100,
+                8000,
+                20,
+                Address::test(1),
+                false,
+            )
+            .unwrap();
         mgr.tick(0);
         let err = mgr.signal(Address::test(99), id, 5).unwrap_err();
         assert_eq!(err, UpgradeError::NotValidator);
@@ -531,10 +636,20 @@ mod tests {
     #[test]
     fn test_signal_after_deadline() {
         let mut mgr = setup();
-        let id = mgr.propose(
-            "v1.1.0", ProtocolVersion::new(1, 1, 0), ForkType::Soft,
-            "Test", 0, 50, 8000, 20, Address::test(1), false,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "v1.1.0",
+                ProtocolVersion::new(1, 1, 0),
+                ForkType::Soft,
+                "Test",
+                0,
+                50,
+                8000,
+                20,
+                Address::test(1),
+                false,
+            )
+            .unwrap();
         mgr.tick(0); // start signaling
         let err = mgr.signal(Address::test(1), id, 51).unwrap_err();
         assert_eq!(err, UpgradeError::DeadlinePassed);
@@ -543,26 +658,49 @@ mod tests {
     #[test]
     fn test_emergency_activation() {
         let mut mgr = setup();
-        let id = mgr.propose(
-            "emergency-fix", ProtocolVersion::new(1, 0, 1), ForkType::Hard,
-            "Critical fix", 0, 100, 8000, 20, Address::test(1), true,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "emergency-fix",
+                ProtocolVersion::new(1, 0, 1),
+                ForkType::Hard,
+                "Critical fix",
+                0,
+                100,
+                8000,
+                20,
+                Address::test(1),
+                true,
+            )
+            .unwrap();
 
         let event = mgr.emergency_activate(id, 5).unwrap();
-        assert_eq!(event, UpgradeEvent::Activated {
-            proposal_id: id,
-            version: ProtocolVersion::new(1, 0, 1),
-        });
+        assert_eq!(
+            event,
+            UpgradeEvent::Activated {
+                proposal_id: id,
+                version: ProtocolVersion::new(1, 0, 1),
+            }
+        );
         assert_eq!(*mgr.current_version(), ProtocolVersion::new(1, 0, 1));
     }
 
     #[test]
     fn test_emergency_on_non_emergency() {
         let mut mgr = setup();
-        let id = mgr.propose(
-            "normal", ProtocolVersion::new(1, 1, 0), ForkType::Soft,
-            "Normal", 10, 100, 8000, 20, Address::test(1), false,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "normal",
+                ProtocolVersion::new(1, 1, 0),
+                ForkType::Soft,
+                "Normal",
+                10,
+                100,
+                8000,
+                20,
+                Address::test(1),
+                false,
+            )
+            .unwrap();
         let err = mgr.emergency_activate(id, 5).unwrap_err();
         assert_eq!(err, UpgradeError::NotEmergency);
     }
@@ -570,10 +708,20 @@ mod tests {
     #[test]
     fn test_cancel_proposal() {
         let mut mgr = setup();
-        let id = mgr.propose(
-            "v1.1.0", ProtocolVersion::new(1, 1, 0), ForkType::Soft,
-            "Test", 10, 100, 8000, 20, Address::test(1), false,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "v1.1.0",
+                ProtocolVersion::new(1, 1, 0),
+                ForkType::Soft,
+                "Test",
+                10,
+                100,
+                8000,
+                20,
+                Address::test(1),
+                false,
+            )
+            .unwrap();
         mgr.cancel(id).unwrap();
         assert_eq!(mgr.get_proposal(id).unwrap().state, UpgradeState::Cancelled);
     }
@@ -581,10 +729,20 @@ mod tests {
     #[test]
     fn test_cancel_active_fails() {
         let mut mgr = setup();
-        let id = mgr.propose(
-            "e", ProtocolVersion::new(1, 0, 1), ForkType::Hard,
-            "Fix", 0, 100, 8000, 20, Address::test(1), true,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "e",
+                ProtocolVersion::new(1, 0, 1),
+                ForkType::Hard,
+                "Fix",
+                0,
+                100,
+                8000,
+                20,
+                Address::test(1),
+                true,
+            )
+            .unwrap();
         mgr.emergency_activate(id, 0).unwrap();
         assert_eq!(mgr.cancel(id).unwrap_err(), UpgradeError::AlreadyActive);
     }
@@ -593,13 +751,32 @@ mod tests {
     fn test_duplicate_version_rejected() {
         let mut mgr = setup();
         mgr.propose(
-            "v1.1.0", ProtocolVersion::new(1, 1, 0), ForkType::Soft,
-            "First", 10, 100, 8000, 20, Address::test(1), false,
-        ).unwrap();
-        let err = mgr.propose(
-            "v1.1.0-dup", ProtocolVersion::new(1, 1, 0), ForkType::Hard,
-            "Dup", 10, 100, 8000, 20, Address::test(2), false,
-        ).unwrap_err();
+            "v1.1.0",
+            ProtocolVersion::new(1, 1, 0),
+            ForkType::Soft,
+            "First",
+            10,
+            100,
+            8000,
+            20,
+            Address::test(1),
+            false,
+        )
+        .unwrap();
+        let err = mgr
+            .propose(
+                "v1.1.0-dup",
+                ProtocolVersion::new(1, 1, 0),
+                ForkType::Hard,
+                "Dup",
+                10,
+                100,
+                8000,
+                20,
+                Address::test(2),
+                false,
+            )
+            .unwrap_err();
         assert_eq!(err, UpgradeError::DuplicateVersion);
     }
 
@@ -643,10 +820,20 @@ mod tests {
     #[test]
     fn test_activation_history() {
         let mut mgr = setup();
-        let id = mgr.propose(
-            "e", ProtocolVersion::new(1, 0, 1), ForkType::Hard,
-            "Fix", 0, 100, 8000, 20, Address::test(1), true,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "e",
+                ProtocolVersion::new(1, 0, 1),
+                ForkType::Hard,
+                "Fix",
+                0,
+                100,
+                8000,
+                20,
+                Address::test(1),
+                true,
+            )
+            .unwrap();
         mgr.emergency_activate(id, 42).unwrap();
         let history = mgr.activation_history();
         assert_eq!(history.len(), 2); // genesis + emergency
@@ -662,10 +849,20 @@ mod tests {
         mgr.set_stake(Address::test(2), 500);
         mgr.set_stake(Address::test(3), 500);
 
-        let id = mgr.propose(
-            "v1.1.0", ProtocolVersion::new(1, 1, 0), ForkType::Soft,
-            "Whale test", 0, 100, 8000, 10, Address::test(1), false,
-        ).unwrap();
+        let id = mgr
+            .propose(
+                "v1.1.0",
+                ProtocolVersion::new(1, 1, 0),
+                ForkType::Soft,
+                "Whale test",
+                0,
+                100,
+                8000,
+                10,
+                Address::test(1),
+                false,
+            )
+            .unwrap();
         mgr.tick(0); // start signaling
 
         // Just the whale signals — 90% > 80%.

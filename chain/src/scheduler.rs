@@ -40,9 +40,15 @@ pub enum JobStatus {
     /// Waiting in queue for assignment.
     Pending,
     /// Assigned to a provider, awaiting result.
-    Assigned { provider: Address, assigned_at: Epoch },
+    Assigned {
+        provider: Address,
+        assigned_at: Epoch,
+    },
     /// Provider delivered a result commit.
-    Completed { provider: Address, commit_hash: Hash },
+    Completed {
+        provider: Address,
+        commit_hash: Hash,
+    },
     /// Expired past deadline without assignment.
     Expired,
     /// Cancelled by requester before assignment.
@@ -183,9 +189,7 @@ impl Scheduler {
                 .providers
                 .values()
                 .filter(|p| {
-                    p.available()
-                        && p.models.contains(&req.model_id)
-                        && p.price <= req.max_price
+                    p.available() && p.models.contains(&req.model_id) && p.price <= req.max_price
                 })
                 .max_by_key(|p| p.score());
 
@@ -266,9 +270,7 @@ impl Scheduler {
                 JobStatus::Assigned {
                     provider,
                     assigned_at,
-                } if new_epoch > assigned_at + self.result_timeout => {
-                    Some((*id, *provider))
-                }
+                } if new_epoch > assigned_at + self.result_timeout => Some((*id, *provider)),
                 _ => None,
             })
             .collect();
@@ -316,7 +318,9 @@ impl Scheduler {
 
     /// Iterate over all jobs (id, request, status).
     pub fn all_jobs(&self) -> impl Iterator<Item = (&JobId, &JobRequest, &JobStatus)> {
-        self.jobs.iter().map(|(id, (req, status))| (id, req, status))
+        self.jobs
+            .iter()
+            .map(|(id, (req, status))| (id, req, status))
     }
 }
 
@@ -350,7 +354,9 @@ mod tests {
         let m = model(1);
         sched.register_provider(make_provider(1, &[m], 100, 1_000_000_000, 2));
 
-        let jid = sched.submit_job(Address::test(10), m, [0; 32], 200, 50).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [0; 32], 200, 50)
+            .unwrap();
         assert_eq!(sched.pending_count(), 1);
 
         let assignments = sched.assign_pending();
@@ -371,7 +377,9 @@ mod tests {
         // Provider asks 300, but requester max is 200 → no match
         sched.register_provider(make_provider(1, &[m], 300, 1_000_000_000, 2));
 
-        sched.submit_job(Address::test(10), m, [0; 32], 200, 50).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [0; 32], 200, 50)
+            .unwrap();
         let assignments = sched.assign_pending();
         assert!(assignments.is_empty());
         assert_eq!(sched.pending_count(), 1);
@@ -386,7 +394,9 @@ mod tests {
         sched.register_provider(make_provider(1, &[m1], 100, 1_000_000_000, 2));
 
         // Job requests model 2 → no match
-        sched.submit_job(Address::test(10), m2, [0; 32], 200, 50).unwrap();
+        sched
+            .submit_job(Address::test(10), m2, [0; 32], 200, 50)
+            .unwrap();
         let assignments = sched.assign_pending();
         assert!(assignments.is_empty());
     }
@@ -397,8 +407,12 @@ mod tests {
         let m = model(1);
         sched.register_provider(make_provider(1, &[m], 100, 1_000_000_000, 1)); // capacity=1
 
-        let j1 = sched.submit_job(Address::test(10), m, [0; 32], 200, 50).unwrap();
-        let j2 = sched.submit_job(Address::test(11), m, [1; 32], 200, 50).unwrap();
+        let j1 = sched
+            .submit_job(Address::test(10), m, [0; 32], 200, 50)
+            .unwrap();
+        let j2 = sched
+            .submit_job(Address::test(11), m, [1; 32], 200, 50)
+            .unwrap();
 
         let a = sched.assign_pending();
         assert_eq!(a.len(), 1); // only 1 slot
@@ -419,7 +433,9 @@ mod tests {
         pb.reputation = 900;
         sched.register_provider(pb);
 
-        sched.submit_job(Address::test(10), m, [0; 32], 200, 50).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [0; 32], 200, 50)
+            .unwrap();
         let a = sched.assign_pending();
         assert_eq!(a[0].1, Address::test(2)); // B wins
     }
@@ -430,11 +446,15 @@ mod tests {
         let m = model(1);
         sched.register_provider(make_provider(1, &[m], 100, 1_000_000_000, 2));
 
-        let jid = sched.submit_job(Address::test(10), m, [0; 32], 200, 50).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [0; 32], 200, 50)
+            .unwrap();
         sched.assign_pending();
 
         let commit = [42u8; 32];
-        sched.deliver_result(jid, &Address::test(1), commit).unwrap();
+        sched
+            .deliver_result(jid, &Address::test(1), commit)
+            .unwrap();
 
         match sched.job_status(&jid).unwrap() {
             JobStatus::Completed { commit_hash, .. } => assert_eq!(*commit_hash, commit),
@@ -450,10 +470,14 @@ mod tests {
         let m = model(1);
         sched.register_provider(make_provider(1, &[m], 100, 1_000_000_000, 2));
 
-        let jid = sched.submit_job(Address::test(10), m, [0; 32], 200, 50).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [0; 32], 200, 50)
+            .unwrap();
         sched.assign_pending();
 
-        let err = sched.deliver_result(jid, &Address::test(99), [0; 32]).unwrap_err();
+        let err = sched
+            .deliver_result(jid, &Address::test(99), [0; 32])
+            .unwrap_err();
         assert_eq!(err, "not assigned provider");
     }
 
@@ -473,7 +497,9 @@ mod tests {
     fn test_cancel_wrong_caller() {
         let mut sched = Scheduler::new(10);
         let m = model(1);
-        let jid = sched.submit_job(Address::test(10), m, [0; 32], 200, 50).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [0; 32], 200, 50)
+            .unwrap();
 
         let err = sched.cancel_job(jid, &Address::test(99)).unwrap_err();
         assert_eq!(err, "only requester can cancel");
@@ -484,7 +510,9 @@ mod tests {
         let mut sched = Scheduler::new(10);
         let m = model(1);
         // No providers registered → job stays pending
-        let jid = sched.submit_job(Address::test(10), m, [0; 32], 200, 5).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [0; 32], 200, 5)
+            .unwrap();
 
         let (expired, _) = sched.tick(6);
         assert_eq!(expired, vec![jid]);
@@ -497,7 +525,9 @@ mod tests {
         let m = model(1);
         sched.register_provider(make_provider(1, &[m], 100, 1_000_000_000, 2));
 
-        let jid = sched.submit_job(Address::test(10), m, [0; 32], 200, 50).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [0; 32], 200, 50)
+            .unwrap();
         sched.assign_pending(); // assigned at epoch 0
 
         let (_, timed_out) = sched.tick(11); // 11 > 0 + 10
@@ -522,7 +552,9 @@ mod tests {
         let mut sched = Scheduler::new(10);
         let m = model(1);
         sched.register_provider(make_provider(1, &[m], 100, 1_000_000_000, 2));
-        sched.submit_job(Address::test(10), m, [0; 32], 200, 50).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [0; 32], 200, 50)
+            .unwrap();
         sched.assign_pending();
 
         let err = sched.deregister_provider(&Address::test(1)).unwrap_err();
@@ -547,7 +579,9 @@ mod tests {
     fn test_deadline_past_rejected() {
         let mut sched = Scheduler::new(10);
         sched.tick(100);
-        let err = sched.submit_job(Address::test(10), model(1), [0; 32], 200, 50).unwrap_err();
+        let err = sched
+            .submit_job(Address::test(10), model(1), [0; 32], 200, 50)
+            .unwrap_err();
         assert_eq!(err, "deadline must be in the future");
     }
 
@@ -558,9 +592,15 @@ mod tests {
         sched.register_provider(make_provider(1, &[m], 100, 1_000_000_000, 10));
 
         // Submit 3 jobs with different deadlines
-        let j1 = sched.submit_job(Address::test(10), m, [1; 32], 200, 30).unwrap();
-        let j2 = sched.submit_job(Address::test(11), m, [2; 32], 200, 10).unwrap();
-        let j3 = sched.submit_job(Address::test(12), m, [3; 32], 200, 20).unwrap();
+        let j1 = sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 30)
+            .unwrap();
+        let j2 = sched
+            .submit_job(Address::test(11), m, [2; 32], 200, 10)
+            .unwrap();
+        let j3 = sched
+            .submit_job(Address::test(12), m, [3; 32], 200, 20)
+            .unwrap();
 
         let a = sched.assign_pending();
         assert_eq!(a.len(), 3);

@@ -61,7 +61,11 @@ pub struct InferenceOutput {
 /// Trait for the inference backend — allows mocking.
 pub trait InferenceBackend {
     /// Run inference for a given model + input, return the commit hash.
-    fn run_inference(&self, model_id: &ModelId, input_hash: &Hash) -> Result<InferenceOutput, String>;
+    fn run_inference(
+        &self,
+        model_id: &ModelId,
+        input_hash: &Hash,
+    ) -> Result<InferenceOutput, String>;
 }
 
 /// Mock inference backend for testing.
@@ -88,7 +92,11 @@ impl MockInferenceBackend {
 }
 
 impl InferenceBackend for MockInferenceBackend {
-    fn run_inference(&self, _model_id: &ModelId, input_hash: &Hash) -> Result<InferenceOutput, String> {
+    fn run_inference(
+        &self,
+        _model_id: &ModelId,
+        input_hash: &Hash,
+    ) -> Result<InferenceOutput, String> {
         if let Some(ref err) = self.fail_with {
             return Err(err.clone());
         }
@@ -108,11 +116,24 @@ impl InferenceBackend for MockInferenceBackend {
 /// Executor event for observability / testing.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExecutorEvent {
-    Polled { found: usize },
-    JobStarted { job_id: JobId },
-    JobCompleted { job_id: JobId },
-    JobRetry { job_id: JobId, attempt: u32, error: String },
-    JobFailed { job_id: JobId, error: String },
+    Polled {
+        found: usize,
+    },
+    JobStarted {
+        job_id: JobId,
+    },
+    JobCompleted {
+        job_id: JobId,
+    },
+    JobRetry {
+        job_id: JobId,
+        attempt: u32,
+        error: String,
+    },
+    JobFailed {
+        job_id: JobId,
+        error: String,
+    },
     Idle,
     Shutdown,
 }
@@ -192,7 +213,9 @@ impl<B: InferenceBackend> JobExecutor<B> {
             })
             .collect();
 
-        self.events.push(ExecutorEvent::Polled { found: my_jobs.len() });
+        self.events.push(ExecutorEvent::Polled {
+            found: my_jobs.len(),
+        });
 
         if my_jobs.is_empty() && self.retry_queue.is_empty() {
             self.events.push(ExecutorEvent::Idle);
@@ -202,7 +225,8 @@ impl<B: InferenceBackend> JobExecutor<B> {
         let retries: Vec<_> = self.retry_queue.drain(..).collect();
         for (job_id, model_id, input_hash, retry_count) in retries {
             if self.active.len() >= self.config.max_concurrent as usize {
-                self.retry_queue.push_back((job_id, model_id, input_hash, retry_count));
+                self.retry_queue
+                    .push_back((job_id, model_id, input_hash, retry_count));
                 break;
             }
             processed += self.execute_job(job_id, model_id, input_hash, retry_count, scheduler);
@@ -230,17 +254,21 @@ impl<B: InferenceBackend> JobExecutor<B> {
         self.events.push(ExecutorEvent::JobStarted { job_id });
 
         let start = Instant::now();
-        self.active.insert(job_id, ActiveJob {
+        self.active.insert(
             job_id,
-            model_id,
-            input_hash,
-            started_at: start,
-            retries: retry_count,
-        });
+            ActiveJob {
+                job_id,
+                model_id,
+                input_hash,
+                started_at: start,
+                retries: retry_count,
+            },
+        );
 
         match self.backend.run_inference(&model_id, &input_hash) {
             Ok(output) => {
-                let _ = scheduler.deliver_result(job_id, &self.config.provider, output.activation_root);
+                let _ =
+                    scheduler.deliver_result(job_id, &self.config.provider, output.activation_root);
                 self.events.push(ExecutorEvent::JobCompleted { job_id });
                 self.active.remove(&job_id);
                 self.completed_count += 1;
@@ -254,9 +282,11 @@ impl<B: InferenceBackend> JobExecutor<B> {
                         attempt: retry_count + 1,
                         error: err,
                     });
-                    self.retry_queue.push_back((job_id, model_id, input_hash, retry_count + 1));
+                    self.retry_queue
+                        .push_back((job_id, model_id, input_hash, retry_count + 1));
                 } else {
-                    self.events.push(ExecutorEvent::JobFailed { job_id, error: err });
+                    self.events
+                        .push(ExecutorEvent::JobFailed { job_id, error: err });
                     self.failed_count += 1;
                 }
                 0
@@ -314,13 +344,18 @@ mod tests {
         let backend = MockInferenceBackend::new([m].into_iter().collect(), 32);
         let mut exec = JobExecutor::new(config, backend);
 
-        let jid = sched.submit_job(Address::test(10), m, [1u8; 32], 200, 100).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [1u8; 32], 200, 100)
+            .unwrap();
         sched.assign_pending();
 
         let processed = exec.tick(&mut sched);
         assert_eq!(processed, 1);
         assert_eq!(exec.completed_count(), 1);
-        assert!(matches!(sched.job_status(&jid).unwrap(), JobStatus::Completed { .. }));
+        assert!(matches!(
+            sched.job_status(&jid).unwrap(),
+            JobStatus::Completed { .. }
+        ));
     }
 
     #[test]
@@ -331,7 +366,10 @@ mod tests {
         let mut exec = JobExecutor::new(config, backend);
 
         exec.tick(&mut sched);
-        assert!(exec.events().iter().any(|e| matches!(e, ExecutorEvent::Idle)));
+        assert!(exec
+            .events()
+            .iter()
+            .any(|e| matches!(e, ExecutorEvent::Idle)));
     }
 
     #[test]
@@ -342,16 +380,24 @@ mod tests {
         backend.fail_with = Some("GPU OOM".into());
         let mut exec = JobExecutor::new(config, backend);
 
-        sched.submit_job(Address::test(10), m, [1u8; 32], 200, 100).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [1u8; 32], 200, 100)
+            .unwrap();
         sched.assign_pending();
 
         exec.tick(&mut sched); // attempt 1 → retry
-        assert!(exec.events().iter().any(|e| matches!(e, ExecutorEvent::JobRetry { .. })));
+        assert!(exec
+            .events()
+            .iter()
+            .any(|e| matches!(e, ExecutorEvent::JobRetry { .. })));
 
         exec.tick(&mut sched); // attempt 2 → retry
         exec.tick(&mut sched); // attempt 3 → permanent failure
         assert_eq!(exec.failed_count(), 1);
-        assert!(exec.events().iter().any(|e| matches!(e, ExecutorEvent::JobFailed { .. })));
+        assert!(exec
+            .events()
+            .iter()
+            .any(|e| matches!(e, ExecutorEvent::JobFailed { .. })));
     }
 
     #[test]
@@ -363,12 +409,16 @@ mod tests {
         let m = model(1);
         let backend = MockInferenceBackend::new([m].into_iter().collect(), 32);
         let mut exec = JobExecutor::new(
-            ExecutorConfig { max_concurrent: 1, ..config },
+            ExecutorConfig {
+                max_concurrent: 1,
+                ..config
+            },
             backend,
         );
 
         for i in 1..=3u8 {
-            let mut h = [0u8; 32]; h[0] = i;
+            let mut h = [0u8; 32];
+            h[0] = i;
             sched.submit_job(Address::test(10), m, h, 200, 100).unwrap();
         }
         sched.assign_pending();
@@ -387,7 +437,8 @@ mod tests {
         let mut exec = JobExecutor::new(config, backend);
 
         for i in 1..=4u8 {
-            let mut h = [0u8; 32]; h[0] = i;
+            let mut h = [0u8; 32];
+            h[0] = i;
             sched.submit_job(Address::test(10), m, h, 200, 100).unwrap();
         }
         sched.assign_pending();
@@ -407,7 +458,10 @@ mod tests {
         exec.request_shutdown();
         assert!(exec.is_shutdown());
         assert_eq!(exec.tick(&mut sched), 0);
-        assert!(exec.events().iter().any(|e| matches!(e, ExecutorEvent::Shutdown)));
+        assert!(exec
+            .events()
+            .iter()
+            .any(|e| matches!(e, ExecutorEvent::Shutdown)));
     }
 
     #[test]
@@ -421,7 +475,9 @@ mod tests {
         let backend = MockInferenceBackend::new([m].into_iter().collect(), 32);
         let mut exec = JobExecutor::new(config, backend); // provider 1
 
-        sched.submit_job(Address::test(10), m, [1u8; 32], 200, 100).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [1u8; 32], 200, 100)
+            .unwrap();
         sched.assign_pending(); // goes to provider 2
 
         assert_eq!(exec.tick(&mut sched), 0);
@@ -457,7 +513,9 @@ mod tests {
         assert_eq!(exec.failed_count(), 0);
         assert_eq!(exec.active_count(), 0);
 
-        sched.submit_job(Address::test(10), m, [1u8; 32], 200, 100).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [1u8; 32], 200, 100)
+            .unwrap();
         sched.assign_pending();
         exec.tick(&mut sched);
         assert_eq!(exec.completed_count(), 1);
@@ -472,7 +530,8 @@ mod tests {
 
         // Provider capacity is 4, so only 4 get assigned
         for i in 1..=4u8 {
-            let mut h = [0u8; 32]; h[0] = i;
+            let mut h = [0u8; 32];
+            h[0] = i;
             sched.submit_job(Address::test(10), m, h, 200, 100).unwrap();
         }
         sched.assign_pending();

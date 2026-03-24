@@ -4,8 +4,8 @@
 //! with typed methods for key management, inference submission, status polling,
 //! cancellation, model listing, and webhook registration.
 
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use sha2::{Sha256, Digest};
 
 // ── Error types ──────────────────────────────────────────────
 
@@ -27,7 +27,9 @@ impl std::fmt::Display for GatewayError {
             Self::Unauthorized => write!(f, "unauthorized"),
             Self::Forbidden(m) => write!(f, "forbidden: {}", m),
             Self::NotFound => write!(f, "not found"),
-            Self::RateLimited { retry_after_secs } => write!(f, "rate limited, retry after {}s", retry_after_secs),
+            Self::RateLimited { retry_after_secs } => {
+                write!(f, "rate limited, retry after {}s", retry_after_secs)
+            }
             Self::BadRequest(m) => write!(f, "bad request: {}", m),
             Self::ServerError(m) => write!(f, "server error: {}", m),
             Self::Transport(m) => write!(f, "transport error: {}", m),
@@ -40,7 +42,13 @@ impl std::fmt::Display for GatewayError {
 
 /// HTTP-like transport for gateway requests.
 pub trait GatewayTransport {
-    fn request(&self, method: &str, path: &str, api_key: &str, body: Option<&str>) -> TransportResponse;
+    fn request(
+        &self,
+        method: &str,
+        path: &str,
+        api_key: &str,
+        body: Option<&str>,
+    ) -> TransportResponse;
 }
 
 #[derive(Debug, Clone)]
@@ -61,8 +69,16 @@ impl<F: Fn(&str, &str, &str, Option<&str>) -> TransportResponse> InProcessGatewa
     }
 }
 
-impl<F: Fn(&str, &str, &str, Option<&str>) -> TransportResponse> GatewayTransport for InProcessGatewayTransport<F> {
-    fn request(&self, method: &str, path: &str, api_key: &str, body: Option<&str>) -> TransportResponse {
+impl<F: Fn(&str, &str, &str, Option<&str>) -> TransportResponse> GatewayTransport
+    for InProcessGatewayTransport<F>
+{
+    fn request(
+        &self,
+        method: &str,
+        path: &str,
+        api_key: &str,
+        body: Option<&str>,
+    ) -> TransportResponse {
         (self.handler)(method, path, api_key, body)
     }
 }
@@ -167,7 +183,10 @@ pub struct ApiKeyConfig {
 
 impl ApiKeyConfig {
     pub fn new(key: impl Into<String>) -> Self {
-        Self { key: key.into(), label: None }
+        Self {
+            key: key.into(),
+            label: None,
+        }
     }
 
     pub fn with_label(mut self, label: impl Into<String>) -> Self {
@@ -198,7 +217,10 @@ pub struct KeyRing {
 
 impl KeyRing {
     pub fn new() -> Self {
-        Self { keys: Vec::new(), active_index: 0 }
+        Self {
+            keys: Vec::new(),
+            active_index: 0,
+        }
     }
 
     pub fn add_key(&mut self, key: ApiKeyConfig) {
@@ -277,12 +299,18 @@ impl<T: GatewayTransport> GatewayClient<T> {
     }
 
     fn active_api_key(&self) -> Result<&str, GatewayError> {
-        self.key_ring.active_key()
+        self.key_ring
+            .active_key()
             .map(|k| k.key.as_str())
             .ok_or(GatewayError::Unauthorized)
     }
 
-    fn do_request(&self, method: &str, path: &str, body: Option<&str>) -> Result<TransportResponse, GatewayError> {
+    fn do_request(
+        &self,
+        method: &str,
+        path: &str,
+        body: Option<&str>,
+    ) -> Result<TransportResponse, GatewayError> {
         let key = self.active_api_key()?;
         Ok(self.transport.request(method, path, key, body))
     }
@@ -295,21 +323,32 @@ impl<T: GatewayTransport> GatewayClient<T> {
             403 => Err(GatewayError::Forbidden(extract_error(&resp.body))),
             404 => Err(GatewayError::NotFound),
             429 => {
-                let retry = resp.headers.get("Retry-After")
+                let retry = resp
+                    .headers
+                    .get("Retry-After")
                     .and_then(|v| v.parse().ok())
                     .unwrap_or(60);
-                Err(GatewayError::RateLimited { retry_after_secs: retry })
+                Err(GatewayError::RateLimited {
+                    retry_after_secs: retry,
+                })
             }
-            s => Err(GatewayError::ServerError(format!("status {}: {}", s, resp.body))),
+            s => Err(GatewayError::ServerError(format!(
+                "status {}: {}",
+                s, resp.body
+            ))),
         }
     }
 
     // ── Inference operations ─────────────────────────────────
 
-    pub fn submit_inference(&self, req: &InferenceRequestBuilder) -> Result<SubmitResult, GatewayError> {
+    pub fn submit_inference(
+        &self,
+        req: &InferenceRequestBuilder,
+    ) -> Result<SubmitResult, GatewayError> {
         let resp = self.do_request("POST", "/v1/inference", Some(&req.to_json()))?;
         let body = self.parse_response(resp)?;
-        let job_id = extract_field(&body, "job_id").ok_or(GatewayError::ParseError("missing job_id".into()))?;
+        let job_id = extract_field(&body, "job_id")
+            .ok_or(GatewayError::ParseError("missing job_id".into()))?;
         let status_str = extract_field(&body, "status").unwrap_or_else(|| "queued".into());
         let model = extract_field(&body, "model").unwrap_or_default();
         Ok(SubmitResult {
@@ -345,7 +384,11 @@ impl<T: GatewayTransport> GatewayClient<T> {
     }
 
     /// Poll a job until it reaches a terminal state, up to max_polls attempts.
-    pub fn poll_until_done(&self, job_id: &str, max_polls: usize) -> Result<JobResult, GatewayError> {
+    pub fn poll_until_done(
+        &self,
+        job_id: &str,
+        max_polls: usize,
+    ) -> Result<JobResult, GatewayError> {
         for _ in 0..max_polls {
             let result = self.get_job(job_id)?;
             if result.status.is_terminal() {
@@ -377,7 +420,10 @@ impl<T: GatewayTransport> GatewayClient<T> {
     // ── Batch operations ─────────────────────────────────────
 
     /// Submit multiple inference requests, returning results for each.
-    pub fn submit_batch(&self, requests: &[InferenceRequestBuilder]) -> Vec<Result<SubmitResult, GatewayError>> {
+    pub fn submit_batch(
+        &self,
+        requests: &[InferenceRequestBuilder],
+    ) -> Vec<Result<SubmitResult, GatewayError>> {
         requests.iter().map(|r| self.submit_inference(r)).collect()
     }
 
@@ -410,7 +456,8 @@ fn extract_string_array(body: &str, field: &str) -> Vec<String> {
         let arr_start = start + pattern.len();
         if let Some(arr_end) = body[arr_start..].find(']') {
             let arr_str = &body[arr_start..arr_start + arr_end];
-            return arr_str.split('"')
+            return arr_str
+                .split('"')
                 .filter(|s| !s.is_empty() && *s != ",")
                 .map(|s| s.to_string())
                 .collect();
@@ -426,9 +473,12 @@ mod tests {
     use super::*;
 
     // Helper: create a mock transport that dispatches to a simple in-memory gateway
-    fn mock_transport() -> InProcessGatewayTransport<impl Fn(&str, &str, &str, Option<&str>) -> TransportResponse> {
+    fn mock_transport(
+    ) -> InProcessGatewayTransport<impl Fn(&str, &str, &str, Option<&str>) -> TransportResponse>
+    {
         use std::sync::{Arc, Mutex};
-        let jobs: Arc<Mutex<HashMap<String, (String, String)>>> = Arc::new(Mutex::new(HashMap::new())); // job_id -> (status, output)
+        let jobs: Arc<Mutex<HashMap<String, (String, String)>>> =
+            Arc::new(Mutex::new(HashMap::new())); // job_id -> (status, output)
         let counter: Arc<Mutex<u64>> = Arc::new(Mutex::new(0));
         let req_count: Arc<Mutex<u64>> = Arc::new(Mutex::new(0));
 
@@ -436,76 +486,124 @@ mod tests {
         let counter_c = counter.clone();
         let req_count_c = req_count.clone();
 
-        InProcessGatewayTransport::new(move |method: &str, path: &str, api_key: &str, body: Option<&str>| {
-            // Auth
-            if api_key != "valid-key" && api_key != "readonly-key" {
-                return TransportResponse { status: 401, body: r#"{"error":"unauthorized"}"#.into(), headers: HashMap::new() };
-            }
-
-            // Track requests for rate limit testing
-            let mut rc = req_count_c.lock().unwrap();
-            *rc += 1;
-
-            match (method, path) {
-                ("GET", "/v1/health") => TransportResponse {
-                    status: 200, body: r#"{"status":"healthy"}"#.into(), headers: HashMap::new(),
-                },
-                ("GET", "/v1/models") => TransportResponse {
-                    status: 200, body: r#"{"models":["llama-7b","mistral-7b","phi-3"]}"#.into(), headers: HashMap::new(),
-                },
-                ("POST", "/v1/inference") => {
-                    if api_key == "readonly-key" {
-                        return TransportResponse { status: 403, body: r#"{"error":"missing permission"}"#.into(), headers: HashMap::new() };
-                    }
-                    let body = body.unwrap_or("");
-                    let model = extract_field(body, "model_id").unwrap_or_default();
-                    if model != "llama-7b" && model != "mistral-7b" && model != "phi-3" {
-                        return TransportResponse { status: 400, body: r#"{"error":"unknown model"}"#.into(), headers: HashMap::new() };
-                    }
-                    let mut c = counter_c.lock().unwrap();
-                    *c += 1;
-                    let job_id = format!("job-{:06}", *c);
-                    jobs_c.lock().unwrap().insert(job_id.clone(), ("queued".into(), "".into()));
-                    TransportResponse {
-                        status: 201,
-                        body: format!(r#"{{"job_id":"{}","status":"queued","model":"{}"}}"#, job_id, model),
+        InProcessGatewayTransport::new(
+            move |method: &str, path: &str, api_key: &str, body: Option<&str>| {
+                // Auth
+                if api_key != "valid-key" && api_key != "readonly-key" {
+                    return TransportResponse {
+                        status: 401,
+                        body: r#"{"error":"unauthorized"}"#.into(),
                         headers: HashMap::new(),
-                    }
-                },
-                ("GET", p) if p.starts_with("/v1/inference/") => {
-                    let job_id = p.strip_prefix("/v1/inference/").unwrap();
-                    let jobs = jobs_c.lock().unwrap();
-                    match jobs.get(job_id) {
-                        Some((status, output)) => TransportResponse {
-                            status: 200,
-                            body: format!(r#"{{"job_id":"{}","status":"{}","output":"{}"}}"#, job_id, status, output),
-                            headers: HashMap::new(),
-                        },
-                        None => TransportResponse { status: 404, body: r#"{"error":"not found"}"#.into(), headers: HashMap::new() },
-                    }
-                },
-                ("DELETE", p) if p.starts_with("/v1/inference/") => {
-                    let job_id = p.strip_prefix("/v1/inference/").unwrap();
-                    let mut jobs = jobs_c.lock().unwrap();
-                    match jobs.get_mut(job_id) {
-                        Some((status, _)) if status == "queued" || status == "running" => {
-                            *status = "cancelled".into();
-                            TransportResponse {
-                                status: 200,
-                                body: format!(r#"{{"job_id":"{}","status":"cancelled"}}"#, job_id),
+                    };
+                }
+
+                // Track requests for rate limit testing
+                let mut rc = req_count_c.lock().unwrap();
+                *rc += 1;
+
+                match (method, path) {
+                    ("GET", "/v1/health") => TransportResponse {
+                        status: 200,
+                        body: r#"{"status":"healthy"}"#.into(),
+                        headers: HashMap::new(),
+                    },
+                    ("GET", "/v1/models") => TransportResponse {
+                        status: 200,
+                        body: r#"{"models":["llama-7b","mistral-7b","phi-3"]}"#.into(),
+                        headers: HashMap::new(),
+                    },
+                    ("POST", "/v1/inference") => {
+                        if api_key == "readonly-key" {
+                            return TransportResponse {
+                                status: 403,
+                                body: r#"{"error":"missing permission"}"#.into(),
                                 headers: HashMap::new(),
-                            }
+                            };
                         }
-                        Some(_) => TransportResponse { status: 400, body: r#"{"error":"job already terminal"}"#.into(), headers: HashMap::new() },
-                        None => TransportResponse { status: 404, body: r#"{"error":"not found"}"#.into(), headers: HashMap::new() },
+                        let body = body.unwrap_or("");
+                        let model = extract_field(body, "model_id").unwrap_or_default();
+                        if model != "llama-7b" && model != "mistral-7b" && model != "phi-3" {
+                            return TransportResponse {
+                                status: 400,
+                                body: r#"{"error":"unknown model"}"#.into(),
+                                headers: HashMap::new(),
+                            };
+                        }
+                        let mut c = counter_c.lock().unwrap();
+                        *c += 1;
+                        let job_id = format!("job-{:06}", *c);
+                        jobs_c
+                            .lock()
+                            .unwrap()
+                            .insert(job_id.clone(), ("queued".into(), "".into()));
+                        TransportResponse {
+                            status: 201,
+                            body: format!(
+                                r#"{{"job_id":"{}","status":"queued","model":"{}"}}"#,
+                                job_id, model
+                            ),
+                            headers: HashMap::new(),
+                        }
                     }
-                },
-                _ => TransportResponse { status: 404, body: r#"{"error":"not found"}"#.into(), headers: HashMap::new() },
-            }
-        })
+                    ("GET", p) if p.starts_with("/v1/inference/") => {
+                        let job_id = p.strip_prefix("/v1/inference/").unwrap();
+                        let jobs = jobs_c.lock().unwrap();
+                        match jobs.get(job_id) {
+                            Some((status, output)) => TransportResponse {
+                                status: 200,
+                                body: format!(
+                                    r#"{{"job_id":"{}","status":"{}","output":"{}"}}"#,
+                                    job_id, status, output
+                                ),
+                                headers: HashMap::new(),
+                            },
+                            None => TransportResponse {
+                                status: 404,
+                                body: r#"{"error":"not found"}"#.into(),
+                                headers: HashMap::new(),
+                            },
+                        }
+                    }
+                    ("DELETE", p) if p.starts_with("/v1/inference/") => {
+                        let job_id = p.strip_prefix("/v1/inference/").unwrap();
+                        let mut jobs = jobs_c.lock().unwrap();
+                        match jobs.get_mut(job_id) {
+                            Some((status, _)) if status == "queued" || status == "running" => {
+                                *status = "cancelled".into();
+                                TransportResponse {
+                                    status: 200,
+                                    body: format!(
+                                        r#"{{"job_id":"{}","status":"cancelled"}}"#,
+                                        job_id
+                                    ),
+                                    headers: HashMap::new(),
+                                }
+                            }
+                            Some(_) => TransportResponse {
+                                status: 400,
+                                body: r#"{"error":"job already terminal"}"#.into(),
+                                headers: HashMap::new(),
+                            },
+                            None => TransportResponse {
+                                status: 404,
+                                body: r#"{"error":"not found"}"#.into(),
+                                headers: HashMap::new(),
+                            },
+                        }
+                    }
+                    _ => TransportResponse {
+                        status: 404,
+                        body: r#"{"error":"not found"}"#.into(),
+                        headers: HashMap::new(),
+                    },
+                }
+            },
+        )
     }
 
-    fn make_client() -> GatewayClient<InProcessGatewayTransport<impl Fn(&str, &str, &str, Option<&str>) -> TransportResponse>> {
+    fn make_client() -> GatewayClient<
+        InProcessGatewayTransport<impl Fn(&str, &str, &str, Option<&str>) -> TransportResponse>,
+    > {
         let mut client = GatewayClient::new(mock_transport(), "http://localhost:8080");
         client.add_key(ApiKeyConfig::new("valid-key").with_label("primary"));
         client
@@ -513,7 +611,8 @@ mod tests {
 
     #[test]
     fn test_no_key_returns_unauthorized() {
-        let client: GatewayClient<_> = GatewayClient::new(mock_transport(), "http://localhost:8080");
+        let client: GatewayClient<_> =
+            GatewayClient::new(mock_transport(), "http://localhost:8080");
         let err = client.health().unwrap_err();
         assert_eq!(err, GatewayError::Unauthorized);
     }
@@ -730,7 +829,13 @@ mod tests {
     fn test_error_display() {
         assert_eq!(format!("{}", GatewayError::Unauthorized), "unauthorized");
         assert_eq!(format!("{}", GatewayError::NotFound), "not found");
-        assert!(format!("{}", GatewayError::RateLimited { retry_after_secs: 30 }).contains("30s"));
+        assert!(format!(
+            "{}",
+            GatewayError::RateLimited {
+                retry_after_secs: 30
+            }
+        )
+        .contains("30s"));
     }
 
     #[test]

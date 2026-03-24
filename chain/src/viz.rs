@@ -48,7 +48,9 @@ pub enum TraceValue {
 impl TraceValue {
     pub fn to_json(&self) -> String {
         match self {
-            TraceValue::String(s) => format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\"")),
+            TraceValue::String(s) => {
+                format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""))
+            }
             TraceValue::Number(n) => n.to_string(),
             TraceValue::Float(f) => format!("{:.6}", f),
             TraceValue::Bool(b) => b.to_string(),
@@ -71,7 +73,13 @@ impl TraceEvent {
         }
     }
 
-    pub fn complete(name: &str, category: &str, timestamp_us: u64, duration_us: u64, pid: u64) -> Self {
+    pub fn complete(
+        name: &str,
+        category: &str,
+        timestamp_us: u64,
+        duration_us: u64,
+        pid: u64,
+    ) -> Self {
         Self {
             name: name.to_string(),
             category: category.to_string(),
@@ -85,7 +93,13 @@ impl TraceEvent {
         }
     }
 
-    pub fn flow_start(name: &str, category: &str, timestamp_us: u64, pid: u64, flow_id: u64) -> Self {
+    pub fn flow_start(
+        name: &str,
+        category: &str,
+        timestamp_us: u64,
+        pid: u64,
+        flow_id: u64,
+    ) -> Self {
         Self {
             name: name.to_string(),
             category: category.to_string(),
@@ -134,7 +148,9 @@ impl TraceEvent {
             parts.push(format!("\"id\":{}", fid));
         }
         if !self.args.is_empty() {
-            let args_str: Vec<String> = self.args.iter()
+            let args_str: Vec<String> = self
+                .args
+                .iter()
                 .map(|(k, v)| format!("\"{}\":{}", k, v.to_json()))
                 .collect();
             parts.push(format!("\"args\":{{{}}}", args_str.join(",")));
@@ -231,9 +247,12 @@ impl TraceRecorder {
 
     /// Record partition heal.
     pub fn record_partition_heal(&mut self, timestamp_us: u64) {
-        self.events.push(
-            TraceEvent::instant("PartitionHeal", "partition", timestamp_us, 0),
-        );
+        self.events.push(TraceEvent::instant(
+            "PartitionHeal",
+            "partition",
+            timestamp_us,
+            0,
+        ));
     }
 
     /// Record a dispute lifecycle span.
@@ -247,10 +266,16 @@ impl TraceRecorder {
         outcome: &str,
     ) {
         self.events.push(
-            TraceEvent::complete("Dispute", "dispute", start_us, end_us - start_us, challenger)
-                .with_arg("job_id", TraceValue::Number(job_id as i64))
-                .with_arg("rounds", TraceValue::Number(rounds as i64))
-                .with_arg("outcome", TraceValue::String(outcome.into())),
+            TraceEvent::complete(
+                "Dispute",
+                "dispute",
+                start_us,
+                end_us - start_us,
+                challenger,
+            )
+            .with_arg("job_id", TraceValue::Number(job_id as i64))
+            .with_arg("rounds", TraceValue::Number(rounds as i64))
+            .with_arg("outcome", TraceValue::String(outcome.into())),
         );
     }
 
@@ -261,7 +286,10 @@ impl TraceRecorder {
 
     /// Get events filtered by category.
     pub fn events_by_category(&self, category: &str) -> Vec<&TraceEvent> {
-        self.events.iter().filter(|e| e.category == category).collect()
+        self.events
+            .iter()
+            .filter(|e| e.category == category)
+            .collect()
     }
 
     /// Get events filtered by node (pid).
@@ -282,13 +310,19 @@ impl TraceRecorder {
                 "Dispute" => {
                     s.disputes += 1;
                     if let Some(TraceValue::String(o)) = event.args.get("outcome") {
-                        if o == "challenger_wins" { s.disputes_won += 1; }
+                        if o == "challenger_wins" {
+                            s.disputes_won += 1;
+                        }
                     }
                 }
                 _ => {}
             }
-            if event.phase == 's' { s.messages_sent += 1; }
-            if event.phase == 'f' { s.messages_received += 1; }
+            if event.phase == 's' {
+                s.messages_sent += 1;
+            }
+            if event.phase == 'f' {
+                s.messages_received += 1;
+            }
         }
         stats
     }
@@ -299,7 +333,9 @@ impl TraceRecorder {
         // Add metadata events for node names
         let mut first = true;
         for (nid, name) in &self.node_names {
-            if !first { out.push(','); }
+            if !first {
+                out.push(',');
+            }
             first = false;
             out.push_str(&format!(
                 "{{\"name\":\"process_name\",\"ph\":\"M\",\"pid\":{},\"args\":{{\"name\":\"{}\"}}}}",
@@ -307,7 +343,9 @@ impl TraceRecorder {
             ));
         }
         for event in &self.events {
-            if !first { out.push(','); }
+            if !first {
+                out.push(',');
+            }
             first = false;
             out.push_str(&event.to_json());
         }
@@ -317,15 +355,27 @@ impl TraceRecorder {
 
     /// Serialize to newline-delimited JSON (one event per line) for streaming.
     pub fn to_ndjson(&self) -> String {
-        self.events.iter().map(|e| e.to_json()).collect::<Vec<_>>().join("\n")
+        self.events
+            .iter()
+            .map(|e| e.to_json())
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 
     /// Timeline summary: min/max timestamp, total events, duration.
     pub fn timeline_summary(&self) -> TimelineSummary {
-        let min_ts = self.events.iter().map(|e| e.timestamp_us).min().unwrap_or(0);
-        let max_ts = self.events.iter().map(|e| {
-            e.timestamp_us + e.duration_us.unwrap_or(0)
-        }).max().unwrap_or(0);
+        let min_ts = self
+            .events
+            .iter()
+            .map(|e| e.timestamp_us)
+            .min()
+            .unwrap_or(0);
+        let max_ts = self
+            .events
+            .iter()
+            .map(|e| e.timestamp_us + e.duration_us.unwrap_or(0))
+            .max()
+            .unwrap_or(0);
         TimelineSummary {
             start_us: min_ts,
             end_us: max_ts,
@@ -366,7 +416,10 @@ pub struct TimelineSummary {
 }
 
 fn hex_short(bytes: &[u8; 32]) -> String {
-    format!("{:02x}{:02x}..{:02x}{:02x}", bytes[0], bytes[1], bytes[30], bytes[31])
+    format!(
+        "{:02x}{:02x}..{:02x}{:02x}",
+        bytes[0], bytes[1], bytes[30], bytes[31]
+    )
 }
 
 #[cfg(test)]
@@ -544,7 +597,10 @@ mod tests {
     #[test]
     fn test_hex_short() {
         let mut h = [0u8; 32];
-        h[0] = 0xDE; h[1] = 0xAD; h[30] = 0xBE; h[31] = 0xEF;
+        h[0] = 0xDE;
+        h[1] = 0xAD;
+        h[30] = 0xBE;
+        h[31] = 0xEF;
         assert_eq!(hex_short(&h), "dead..beef");
     }
 }

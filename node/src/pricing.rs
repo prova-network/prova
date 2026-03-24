@@ -57,7 +57,7 @@ impl Default for PricingConfig {
             floor: 100,
             ceiling: 100_000,
             initial_price: 1_000,
-            ema_alpha_bps: 2000,  // α = 0.2
+            ema_alpha_bps: 2000, // α = 0.2
             utilization_target_pct: 70,
             adjustment_rate_bps: 500, // 5% per epoch
             undercut_margin_bps: 300, // 3% below market
@@ -200,7 +200,9 @@ impl AutoPricer {
         };
 
         // Clamp to bounds
-        self.current_price = self.current_price.clamp(self.config.floor, self.config.ceiling);
+        self.current_price = self
+            .current_price
+            .clamp(self.config.floor, self.config.ceiling);
         self.current_price
     }
 
@@ -322,7 +324,10 @@ mod tests {
     #[test]
     fn test_market_ema_first_observation() {
         let mut p = default_pricer();
-        p.observe_market_price(PriceSample { epoch: 1, price: 2000 });
+        p.observe_market_price(PriceSample {
+            epoch: 1,
+            price: 2000,
+        });
         assert_eq!(p.market_ema(), Some(2000));
     }
 
@@ -331,7 +336,10 @@ mod tests {
         let mut p = default_pricer();
         // Feed constant price, EMA should converge
         for i in 0..50 {
-            p.observe_market_price(PriceSample { epoch: i, price: 5000 });
+            p.observe_market_price(PriceSample {
+                epoch: i,
+                price: 5000,
+            });
         }
         // With α=0.2, after many samples EMA → 5000
         assert_eq!(p.market_ema(), Some(5000));
@@ -345,7 +353,10 @@ mod tests {
             ..Default::default()
         };
         let mut p = AutoPricer::new(config);
-        p.observe_market_price(PriceSample { epoch: 1, price: 5000 });
+        p.observe_market_price(PriceSample {
+            epoch: 1,
+            price: 5000,
+        });
         p.update_utilization(10, 10); // 100% utilized
         let price = p.adjust(1);
         assert_eq!(price, 777);
@@ -354,7 +365,10 @@ mod tests {
     #[test]
     fn test_price_rises_when_overutilized() {
         let mut p = default_pricer();
-        p.observe_market_price(PriceSample { epoch: 0, price: 1000 });
+        p.observe_market_price(PriceSample {
+            epoch: 0,
+            price: 1000,
+        });
         p.update_utilization(9, 10); // 90% → above 70% target
         let new_price = p.adjust(1);
         assert!(new_price > 1000, "price should rise: {new_price}");
@@ -363,7 +377,10 @@ mod tests {
     #[test]
     fn test_price_drops_when_underutilized() {
         let mut p = default_pricer();
-        p.observe_market_price(PriceSample { epoch: 0, price: 1000 });
+        p.observe_market_price(PriceSample {
+            epoch: 0,
+            price: 1000,
+        });
         p.update_utilization(2, 10); // 20% → well below 70% target
         let new_price = p.adjust(1);
         assert!(new_price < 1000, "price should drop: {new_price}");
@@ -379,10 +396,13 @@ mod tests {
         let mut p = AutoPricer::new(config);
         // Feed market price, set utilization at target
         for i in 0..20 {
-            p.observe_market_price(PriceSample { epoch: i, price: 2000 });
+            p.observe_market_price(PriceSample {
+                epoch: i,
+                price: 2000,
+            });
         }
         p.update_utilization(7, 10); // exactly at 70% target
-        // Run many adjustments to converge
+                                     // Run many adjustments to converge
         let mut price = 0;
         for epoch in 1..200 {
             price = p.adjust(epoch);
@@ -400,7 +420,10 @@ mod tests {
         };
         let mut p = AutoPricer::new(config);
         for i in 0..20 {
-            p.observe_market_price(PriceSample { epoch: i, price: 2000 });
+            p.observe_market_price(PriceSample {
+                epoch: i,
+                price: 2000,
+            });
         }
         p.update_utilization(7, 10);
         let mut price = 0;
@@ -419,7 +442,10 @@ mod tests {
             ..Default::default()
         };
         let mut p = AutoPricer::new(config);
-        p.observe_market_price(PriceSample { epoch: 0, price: 100 });
+        p.observe_market_price(PriceSample {
+            epoch: 0,
+            price: 100,
+        });
         p.update_utilization(0, 10); // 0% utilization → massive downward pressure
         for epoch in 1..100 {
             p.adjust(epoch);
@@ -435,7 +461,10 @@ mod tests {
             ..Default::default()
         };
         let mut p = AutoPricer::new(config);
-        p.observe_market_price(PriceSample { epoch: 0, price: 50000 });
+        p.observe_market_price(PriceSample {
+            epoch: 0,
+            price: 50000,
+        });
         p.update_utilization(10, 10); // 100% utilization
         for epoch in 1..100 {
             p.adjust(epoch);
@@ -458,7 +487,10 @@ mod tests {
     fn test_percentiles() {
         let mut p = default_pricer();
         for i in 1..=100 {
-            p.observe_market_price(PriceSample { epoch: i, price: i as u128 * 10 });
+            p.observe_market_price(PriceSample {
+                epoch: i,
+                price: i as u128 * 10,
+            });
         }
         let pct = p.percentiles().unwrap();
         assert_eq!(pct.min, 10);
@@ -470,7 +502,10 @@ mod tests {
     #[test]
     fn test_no_double_adjust_same_epoch() {
         let mut p = default_pricer();
-        p.observe_market_price(PriceSample { epoch: 0, price: 5000 });
+        p.observe_market_price(PriceSample {
+            epoch: 0,
+            price: 5000,
+        });
         p.update_utilization(9, 10);
         let first = p.adjust(1);
         let second = p.adjust(1); // same epoch
@@ -492,7 +527,10 @@ mod tests {
         };
         let mut p = AutoPricer::new(config);
         for i in 0..10 {
-            p.observe_market_price(PriceSample { epoch: i, price: i as u128 * 100 });
+            p.observe_market_price(PriceSample {
+                epoch: i,
+                price: i as u128 * 100,
+            });
         }
         assert_eq!(p.samples.len(), 5);
         // Oldest should be evicted — first remaining is epoch 5

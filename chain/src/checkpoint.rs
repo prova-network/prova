@@ -135,7 +135,11 @@ impl PendingCheckpoint {
                 state_root: self.state_root,
                 block_hash: self.block_hash,
                 validator_set_hash: self.validator_set_hash,
-                signatures: self.votes.iter().map(|(a, (s, _))| (*a, s.clone())).collect(),
+                signatures: self
+                    .votes
+                    .iter()
+                    .map(|(a, (s, _))| (*a, s.clone()))
+                    .collect(),
                 signed_stake: signed,
                 total_stake: self.total_stake,
             })
@@ -481,7 +485,8 @@ mod tests {
 
     #[test]
     fn test_pending_signed_stake() {
-        let mut pending = PendingCheckpoint::new(0, 1, 120, test_hash(1), test_hash(2), test_hash(3), 300);
+        let mut pending =
+            PendingCheckpoint::new(0, 1, 120, test_hash(1), test_hash(2), test_hash(3), 300);
         assert_eq!(pending.signed_stake(), 0);
         pending.add_vote(Address::test(1), vec![1], 100).unwrap();
         assert_eq!(pending.signed_stake(), 100);

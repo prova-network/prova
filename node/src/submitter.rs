@@ -249,10 +249,7 @@ impl CheckpointSubmitter {
     }
 
     /// Enqueue a checkpoint for submission.
-    pub fn enqueue(
-        &mut self,
-        encoded: EncodedCheckpoint,
-    ) -> Result<(), SubmitterError> {
+    pub fn enqueue(&mut self, encoded: EncodedCheckpoint) -> Result<(), SubmitterError> {
         let seq = encoded.sequence;
         if self.states.contains_key(&seq) {
             return Err(SubmitterError::AlreadyQueued(seq));
@@ -288,12 +285,18 @@ impl CheckpointSubmitter {
                                         },
                                     );
                                     self.failed_count += 1;
-                                    events.push(SubmitterEvent::GasExceeded { sequence: seq, gas: adjusted });
+                                    events.push(SubmitterEvent::GasExceeded {
+                                        sequence: seq,
+                                        gas: adjusted,
+                                    });
                                     continue;
                                 }
                             }
                             Err(e) => {
-                                events.push(SubmitterEvent::RpcError { sequence: seq, error: e });
+                                events.push(SubmitterEvent::RpcError {
+                                    sequence: seq,
+                                    error: e,
+                                });
                                 continue; // Retry next tick
                             }
                         }
@@ -306,35 +309,63 @@ impl CheckpointSubmitter {
                             L1Response::Accepted(tx_hash) => {
                                 self.states.insert(
                                     seq,
-                                    SubmissionState::Submitted { tx_hash, attempts: current_att },
+                                    SubmissionState::Submitted {
+                                        tx_hash,
+                                        attempts: current_att,
+                                    },
                                 );
                                 self.nonce += 1;
-                                events.push(SubmitterEvent::Submitted { sequence: seq, tx_hash });
+                                events.push(SubmitterEvent::Submitted {
+                                    sequence: seq,
+                                    tx_hash,
+                                });
                             }
                             L1Response::Rejected(reason) => {
                                 self.states.insert(
                                     seq,
-                                    SubmissionState::Failed { reason: reason.clone(), attempts: current_att },
+                                    SubmissionState::Failed {
+                                        reason: reason.clone(),
+                                        attempts: current_att,
+                                    },
                                 );
                                 self.failed_count += 1;
-                                events.push(SubmitterEvent::Failed { sequence: seq, reason });
+                                events.push(SubmitterEvent::Failed {
+                                    sequence: seq,
+                                    reason,
+                                });
                             }
                             L1Response::RpcError(e) => {
-                                events.push(SubmitterEvent::RpcError { sequence: seq, error: e });
+                                events.push(SubmitterEvent::RpcError {
+                                    sequence: seq,
+                                    error: e,
+                                });
                             }
                             _ => {}
                         }
                     }
                 }
-                SubmissionState::Submitted { tx_hash, attempts: _ } => {
+                SubmissionState::Submitted {
+                    tx_hash,
+                    attempts: _,
+                } => {
                     let total_attempts = self.attempts.get(&seq).copied().unwrap_or(1);
                     let resp = client.check_tx(seq);
                     match resp {
-                        L1Response::Confirmed { tx_hash: confirmed_hash, l1_epoch } => {
-                            let hash = if confirmed_hash != [0u8; 32] { confirmed_hash } else { tx_hash };
+                        L1Response::Confirmed {
+                            tx_hash: confirmed_hash,
+                            l1_epoch,
+                        } => {
+                            let hash = if confirmed_hash != [0u8; 32] {
+                                confirmed_hash
+                            } else {
+                                tx_hash
+                            };
                             self.states.insert(
                                 seq,
-                                SubmissionState::Confirmed { tx_hash: hash, l1_epoch },
+                                SubmissionState::Confirmed {
+                                    tx_hash: hash,
+                                    l1_epoch,
+                                },
                             );
                             self.confirmed_count += 1;
                             self.total_gas_spent += 500_000; // Simulated
@@ -351,24 +382,39 @@ impl CheckpointSubmitter {
                             if total_attempts < self.config.max_retries {
                                 // Retry: go back to pending
                                 self.states.insert(seq, SubmissionState::Pending);
-                                events.push(SubmitterEvent::Retry { sequence: seq, attempt: total_attempts + 1 });
-                            } else {
-                                self.states.insert(
-                                    seq,
-                                    SubmissionState::Failed { reason: reason.clone(), attempts: total_attempts },
-                                );
-                                self.failed_count += 1;
-                                events.push(SubmitterEvent::Failed { sequence: seq, reason });
-                            }
-                        }
-                        L1Response::RpcError(e) => {
-                            if total_attempts < self.config.max_retries {
-                                events.push(SubmitterEvent::RpcError { sequence: seq, error: e });
+                                events.push(SubmitterEvent::Retry {
+                                    sequence: seq,
+                                    attempt: total_attempts + 1,
+                                });
                             } else {
                                 self.states.insert(
                                     seq,
                                     SubmissionState::Failed {
-                                        reason: format!("RPC errors after {} attempts", total_attempts),
+                                        reason: reason.clone(),
+                                        attempts: total_attempts,
+                                    },
+                                );
+                                self.failed_count += 1;
+                                events.push(SubmitterEvent::Failed {
+                                    sequence: seq,
+                                    reason,
+                                });
+                            }
+                        }
+                        L1Response::RpcError(e) => {
+                            if total_attempts < self.config.max_retries {
+                                events.push(SubmitterEvent::RpcError {
+                                    sequence: seq,
+                                    error: e,
+                                });
+                            } else {
+                                self.states.insert(
+                                    seq,
+                                    SubmissionState::Failed {
+                                        reason: format!(
+                                            "RPC errors after {} attempts",
+                                            total_attempts
+                                        ),
                                         attempts: total_attempts,
                                     },
                                 );
@@ -413,12 +459,31 @@ impl CheckpointSubmitter {
 /// Events emitted by the submitter for logging/metrics.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SubmitterEvent {
-    Submitted { sequence: u64, tx_hash: TxHash },
-    Confirmed { sequence: u64, tx_hash: TxHash, l1_epoch: u64 },
-    Failed { sequence: u64, reason: String },
-    Retry { sequence: u64, attempt: u32 },
-    GasExceeded { sequence: u64, gas: u64 },
-    RpcError { sequence: u64, error: String },
+    Submitted {
+        sequence: u64,
+        tx_hash: TxHash,
+    },
+    Confirmed {
+        sequence: u64,
+        tx_hash: TxHash,
+        l1_epoch: u64,
+    },
+    Failed {
+        sequence: u64,
+        reason: String,
+    },
+    Retry {
+        sequence: u64,
+        attempt: u32,
+    },
+    GasExceeded {
+        sequence: u64,
+        gas: u64,
+    },
+    RpcError {
+        sequence: u64,
+        error: String,
+    },
 }
 
 /// Submitter errors.
@@ -451,9 +516,15 @@ mod tests {
 
     fn encode_test(submitter: &CheckpointSubmitter, seq: u64) -> EncodedCheckpoint {
         submitter.encode_checkpoint(
-            seq, seq * 120 + 1, (seq + 1) * 120,
-            test_hash(1), test_hash(2), test_hash(3),
-            3, 200, 300,
+            seq,
+            seq * 120 + 1,
+            (seq + 1) * 120,
+            test_hash(1),
+            test_hash(2),
+            test_hash(3),
+            3,
+            200,
+            300,
         )
     }
 
@@ -502,23 +573,44 @@ mod tests {
         let tx_hash = enc.calldata_hash();
 
         // Program: accept then confirm
-        client.program(0, vec![
-            L1Response::Accepted(tx_hash),
-            L1Response::Confirmed { tx_hash, l1_epoch: 1000 },
-        ]);
+        client.program(
+            0,
+            vec![
+                L1Response::Accepted(tx_hash),
+                L1Response::Confirmed {
+                    tx_hash,
+                    l1_epoch: 1000,
+                },
+            ],
+        );
 
         s.enqueue(enc).unwrap();
 
         // Tick 1: submit
         let events = s.tick(&mut client);
-        assert!(events.iter().any(|e| matches!(e, SubmitterEvent::Submitted { sequence: 0, .. })));
-        assert!(matches!(s.get_state(0), Some(SubmissionState::Submitted { .. })));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, SubmitterEvent::Submitted { sequence: 0, .. })));
+        assert!(matches!(
+            s.get_state(0),
+            Some(SubmissionState::Submitted { .. })
+        ));
         assert_eq!(s.nonce, 1);
 
         // Tick 2: confirm
         let events = s.tick(&mut client);
-        assert!(events.iter().any(|e| matches!(e, SubmitterEvent::Confirmed { sequence: 0, l1_epoch: 1000, .. })));
-        assert!(matches!(s.get_state(0), Some(SubmissionState::Confirmed { .. })));
+        assert!(events.iter().any(|e| matches!(
+            e,
+            SubmitterEvent::Confirmed {
+                sequence: 0,
+                l1_epoch: 1000,
+                ..
+            }
+        )));
+        assert!(matches!(
+            s.get_state(0),
+            Some(SubmissionState::Confirmed { .. })
+        ));
         assert_eq!(s.confirmed_count, 1);
     }
 
@@ -530,31 +622,49 @@ mod tests {
         let tx_hash = enc.calldata_hash();
 
         // Program: accept, then reject (triggers retry), then accept, then confirm
-        client.program(0, vec![
-            L1Response::Accepted(tx_hash),
-            L1Response::Rejected("nonce too low".into()),
-            L1Response::Accepted(tx_hash),
-            L1Response::Confirmed { tx_hash, l1_epoch: 1001 },
-        ]);
+        client.program(
+            0,
+            vec![
+                L1Response::Accepted(tx_hash),
+                L1Response::Rejected("nonce too low".into()),
+                L1Response::Accepted(tx_hash),
+                L1Response::Confirmed {
+                    tx_hash,
+                    l1_epoch: 1001,
+                },
+            ],
+        );
 
         s.enqueue(enc).unwrap();
 
         // Tick 1: submitted
         let events = s.tick(&mut client);
-        assert!(events.iter().any(|e| matches!(e, SubmitterEvent::Submitted { .. })));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, SubmitterEvent::Submitted { .. })));
 
         // Tick 2: rejected → retry (back to pending)
         let events = s.tick(&mut client);
-        assert!(events.iter().any(|e| matches!(e, SubmitterEvent::Retry { sequence: 0, attempt: 2 })));
+        assert!(events.iter().any(|e| matches!(
+            e,
+            SubmitterEvent::Retry {
+                sequence: 0,
+                attempt: 2
+            }
+        )));
         assert!(matches!(s.get_state(0), Some(SubmissionState::Pending)));
 
         // Tick 3: re-submit
         let events = s.tick(&mut client);
-        assert!(events.iter().any(|e| matches!(e, SubmitterEvent::Submitted { .. })));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, SubmitterEvent::Submitted { .. })));
 
         // Tick 4: confirm
         let events = s.tick(&mut client);
-        assert!(events.iter().any(|e| matches!(e, SubmitterEvent::Confirmed { .. })));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, SubmitterEvent::Confirmed { .. })));
         assert_eq!(s.confirmed_count, 1);
     }
 
@@ -569,8 +679,13 @@ mod tests {
         s.enqueue(enc).unwrap();
 
         let events = s.tick(&mut client);
-        assert!(events.iter().any(|e| matches!(e, SubmitterEvent::GasExceeded { .. })));
-        assert!(matches!(s.get_state(0), Some(SubmissionState::Failed { .. })));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, SubmitterEvent::GasExceeded { .. })));
+        assert!(matches!(
+            s.get_state(0),
+            Some(SubmissionState::Failed { .. })
+        ));
         assert_eq!(s.failed_count, 1);
     }
 
@@ -606,12 +721,15 @@ mod tests {
         let tx_hash = enc.calldata_hash();
 
         // Accept then reject twice (reaches max_retries)
-        client.program(0, vec![
-            L1Response::Accepted(tx_hash),
-            L1Response::Rejected("revert".into()),
-            L1Response::Accepted(tx_hash),
-            L1Response::Rejected("revert again".into()),
-        ]);
+        client.program(
+            0,
+            vec![
+                L1Response::Accepted(tx_hash),
+                L1Response::Rejected("revert".into()),
+                L1Response::Accepted(tx_hash),
+                L1Response::Rejected("revert again".into()),
+            ],
+        );
 
         s.enqueue(enc).unwrap();
         s.tick(&mut client); // submitted
@@ -619,7 +737,10 @@ mod tests {
         s.tick(&mut client); // re-submitted
         s.tick(&mut client); // rejected → max retries → failed
 
-        assert!(matches!(s.get_state(0), Some(SubmissionState::Failed { .. })));
+        assert!(matches!(
+            s.get_state(0),
+            Some(SubmissionState::Failed { .. })
+        ));
         assert_eq!(s.failed_count, 1);
     }
 

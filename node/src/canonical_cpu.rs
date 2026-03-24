@@ -119,7 +119,11 @@ impl CanonicalTensor {
 
     /// Canonical hash (must match GPU path hash for same data).
     pub fn canonical_hash(&self) -> Hash {
-        hash_tensor(DType::Int8, &[self.shape[0], self.shape[1]], self.as_bytes())
+        hash_tensor(
+            DType::Int8,
+            &[self.shape[0], self.shape[1]],
+            self.as_bytes(),
+        )
     }
 
     pub fn rows(&self) -> u64 {
@@ -218,10 +222,7 @@ pub fn canonical_cpu_inference(
 /// This is the critical property: if a dispute arises, the canonical CPU path
 /// must agree with correct GPU execution. Any GPU result that disagrees with
 /// the CPU canonical path is wrong by definition.
-pub fn cross_verify_gpu_cpu(
-    gpu_hashes: &[Hash],
-    cpu_hashes: &[Hash],
-) -> CrossVerifyResult {
+pub fn cross_verify_gpu_cpu(gpu_hashes: &[Hash], cpu_hashes: &[Hash]) -> CrossVerifyResult {
     assert_eq!(
         gpu_hashes.len(),
         cpu_hashes.len(),
@@ -293,17 +294,18 @@ impl CanonicalVerifier {
         claimed_hash: &Hash,
     ) -> (Hash, bool) {
         // Re-execute up to the target layer
-        let hashes = canonical_cpu_inference(
-            input,
-            &self.weights[..=layer_idx],
-            &self.output_quant,
-        );
+        let hashes =
+            canonical_cpu_inference(input, &self.weights[..=layer_idx], &self.output_quant);
         let expected = hashes[layer_idx + 1]; // +1 because index 0 is input
         (expected, expected == *claimed_hash)
     }
 
     /// Full verification: re-execute all layers and compare.
-    pub fn verify_full(&self, input: &CanonicalTensor, claimed_hashes: &[Hash]) -> CrossVerifyResult {
+    pub fn verify_full(
+        &self,
+        input: &CanonicalTensor,
+        claimed_hashes: &[Hash],
+    ) -> CrossVerifyResult {
         let cpu_hashes = canonical_cpu_inference(input, &self.weights, &self.output_quant);
         cross_verify_gpu_cpu(claimed_hashes, &cpu_hashes)
     }

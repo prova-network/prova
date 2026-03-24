@@ -155,14 +155,20 @@ impl ZkVerifier {
 
     /// Deactivate a verification key (governance action).
     pub fn deactivate_key(&mut self, circuit_id: &CircuitId) -> Result<(), ZkError> {
-        let key = self.keys.get_mut(circuit_id).ok_or(ZkError::UnknownCircuit(*circuit_id))?;
+        let key = self
+            .keys
+            .get_mut(circuit_id)
+            .ok_or(ZkError::UnknownCircuit(*circuit_id))?;
         key.active = false;
         Ok(())
     }
 
     /// Reactivate a previously deactivated key.
     pub fn reactivate_key(&mut self, circuit_id: &CircuitId) -> Result<(), ZkError> {
-        let key = self.keys.get_mut(circuit_id).ok_or(ZkError::UnknownCircuit(*circuit_id))?;
+        let key = self
+            .keys
+            .get_mut(circuit_id)
+            .ok_or(ZkError::UnknownCircuit(*circuit_id))?;
         key.active = true;
         Ok(())
     }
@@ -236,7 +242,10 @@ impl ZkVerifier {
 
     /// Get all proof records for a commit.
     pub fn records_for_commit(&self, commit_id: CommitId) -> Vec<&ProofRecord> {
-        self.records.iter().filter(|r| r.commit_id == commit_id).collect()
+        self.records
+            .iter()
+            .filter(|r| r.commit_id == commit_id)
+            .collect()
     }
 
     /// Get verification key for a circuit.
@@ -288,7 +297,7 @@ impl ZkVerifier {
         field_elements: &[[u8; 32]],
         vk: &VerificationKey,
     ) -> bool {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(&proof.a);
         hasher.update(&proof.b);
@@ -334,19 +343,26 @@ pub fn test_circuit_id(b: u8) -> CircuitId {
 }
 
 /// Create a test verification key with n public inputs.
-pub fn test_vk(circuit_id: CircuitId, registrar: Address, epoch: Epoch, n_inputs: usize) -> VerificationKey {
+pub fn test_vk(
+    circuit_id: CircuitId,
+    registrar: Address,
+    epoch: Epoch,
+    n_inputs: usize,
+) -> VerificationKey {
     VerificationKey {
         circuit_id,
         alpha_g1: [1u8; 64],
         beta_g2: [2u8; 128],
         gamma_g2: [3u8; 128],
         delta_g2: [4u8; 128],
-        ic_points: (0..=n_inputs).map(|i| {
-            let mut p = [0u8; 64];
-            p[0] = i as u8;
-            p[1] = 1; // non-zero
-            p
-        }).collect(),
+        ic_points: (0..=n_inputs)
+            .map(|i| {
+                let mut p = [0u8; 64];
+                p[0] = i as u8;
+                p[1] = 1; // non-zero
+                p
+            })
+            .collect(),
         registrar,
         registered_at: epoch,
         active: true,
@@ -356,7 +372,7 @@ pub fn test_vk(circuit_id: CircuitId, registrar: Address, epoch: Epoch, n_inputs
 /// Create a test proof that will pass simulated verification (first hash byte < 0x80).
 /// We brute-force the C point's first byte to find a passing proof.
 pub fn test_valid_proof(inputs: &PublicInputs, vk: &VerificationKey) -> Proof {
-    use sha2::{Sha256, Digest};
+    use sha2::{Digest, Sha256};
     let a = [1u8; 64]; // non-zero
     let b = [2u8; 128];
     let field_elems = inputs.to_field_elements();
@@ -431,7 +447,10 @@ mod tests {
     fn duplicate_key_rejected() {
         let (mut verifier, cid, _, _) = setup();
         let vk2 = test_vk(cid, Address::test(2), 200, 4);
-        assert_eq!(verifier.register_key(vk2), Err(ZkError::KeyAlreadyRegistered(cid)));
+        assert_eq!(
+            verifier.register_key(vk2),
+            Err(ZkError::KeyAlreadyRegistered(cid))
+        );
     }
 
     #[test]
@@ -440,7 +459,10 @@ mod tests {
         let cid = test_circuit_id(99);
         let mut vk = test_vk(cid, Address::test(1), 100, 0);
         vk.ic_points.clear();
-        assert!(matches!(verifier.register_key(vk), Err(ZkError::InvalidKey(_))));
+        assert!(matches!(
+            verifier.register_key(vk),
+            Err(ZkError::InvalidKey(_))
+        ));
     }
 
     #[test]
@@ -476,7 +498,14 @@ mod tests {
         let inputs = test_inputs(model_id);
         let proof = test_invalid_proof();
 
-        let (result, _) = verifier.verify(&proof, &inputs, &bad_cid, CommitId(3), Address::test(5), 150);
+        let (result, _) = verifier.verify(
+            &proof,
+            &inputs,
+            &bad_cid,
+            CommitId(3),
+            Address::test(5),
+            150,
+        );
         assert_eq!(result, VerifyResult::UnknownCircuit);
     }
 
@@ -488,8 +517,15 @@ mod tests {
         inputs.extra.push([99u8; 32]);
         let proof = test_invalid_proof();
 
-        let (result, _) = verifier.verify(&proof, &inputs, &cid, CommitId(4), Address::test(5), 150);
-        assert_eq!(result, VerifyResult::InputMismatch { expected: 4, got: 5 });
+        let (result, _) =
+            verifier.verify(&proof, &inputs, &cid, CommitId(4), Address::test(5), 150);
+        assert_eq!(
+            result,
+            VerifyResult::InputMismatch {
+                expected: 4,
+                got: 5
+            }
+        );
     }
 
     #[test]
@@ -499,7 +535,8 @@ mod tests {
 
         let inputs = test_inputs(model_id);
         let proof = test_invalid_proof();
-        let (result, _) = verifier.verify(&proof, &inputs, &cid, CommitId(5), Address::test(5), 150);
+        let (result, _) =
+            verifier.verify(&proof, &inputs, &cid, CommitId(5), Address::test(5), 150);
         assert_eq!(result, VerifyResult::KeyDeactivated);
     }
 
@@ -512,7 +549,8 @@ mod tests {
         let inputs = test_inputs(model_id);
         let vk = verifier.get_key(&cid).unwrap().clone();
         let proof = test_valid_proof(&inputs, &vk);
-        let (result, _) = verifier.verify(&proof, &inputs, &cid, CommitId(6), Address::test(5), 150);
+        let (result, _) =
+            verifier.verify(&proof, &inputs, &cid, CommitId(6), Address::test(5), 150);
         assert_eq!(result, VerifyResult::Valid);
     }
 
@@ -520,11 +558,17 @@ mod tests {
     fn gas_estimation() {
         let verifier = ZkVerifier::new();
         let inputs = test_inputs(ModelId([0u8; 32]));
-        assert_eq!(verifier.estimate_gas(&inputs), ZK_VERIFY_BASE_GAS + 4 * ZK_VERIFY_PER_INPUT_GAS);
+        assert_eq!(
+            verifier.estimate_gas(&inputs),
+            ZK_VERIFY_BASE_GAS + 4 * ZK_VERIFY_PER_INPUT_GAS
+        );
 
         let mut inputs_extra = inputs.clone();
         inputs_extra.extra.push([0u8; 32]);
-        assert_eq!(verifier.estimate_gas(&inputs_extra), ZK_VERIFY_BASE_GAS + 5 * ZK_VERIFY_PER_INPUT_GAS);
+        assert_eq!(
+            verifier.estimate_gas(&inputs_extra),
+            ZK_VERIFY_BASE_GAS + 5 * ZK_VERIFY_PER_INPUT_GAS
+        );
     }
 
     #[test]
@@ -567,7 +611,10 @@ mod tests {
     fn deactivate_unknown_circuit_error() {
         let mut verifier = ZkVerifier::new();
         let cid = test_circuit_id(42);
-        assert_eq!(verifier.deactivate_key(&cid), Err(ZkError::UnknownCircuit(cid)));
+        assert_eq!(
+            verifier.deactivate_key(&cid),
+            Err(ZkError::UnknownCircuit(cid))
+        );
     }
 
     #[test]
@@ -585,6 +632,12 @@ mod tests {
         let inputs = test_inputs(ModelId([0u8; 32]));
         let proof = test_invalid_proof();
         let (result, _) = verifier.verify(&proof, &inputs, &cid2, CommitId(1), reg, 100);
-        assert_eq!(result, VerifyResult::InputMismatch { expected: 2, got: 4 });
+        assert_eq!(
+            result,
+            VerifyResult::InputMismatch {
+                expected: 2,
+                got: 4
+            }
+        );
     }
 }

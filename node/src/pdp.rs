@@ -69,8 +69,8 @@ pub struct ProofSet {
 
 /// Lightweight SHA-256 hash (for scaffold: truncated std hasher; real impl uses SHA-256).
 fn hash_pair(left: &[u8; 32], right: &[u8; 32]) -> [u8; 32] {
-    use std::hash::{Hash, Hasher};
     use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
     let mut h = DefaultHasher::new();
     left.hash(&mut h);
     right.hash(&mut h);
@@ -127,7 +127,11 @@ pub fn generate_inclusion_proof(leaves: &[[u8; 32]], leaf_index: usize) -> Optio
     for level in &tree[..tree.len().saturating_sub(1)] {
         // Pad for sibling lookup
         let sibling_idx = if idx.is_multiple_of(2) {
-            if idx + 1 < level.len() { idx + 1 } else { idx }
+            if idx + 1 < level.len() {
+                idx + 1
+            } else {
+                idx
+            }
         } else {
             idx - 1
         };
@@ -221,9 +225,9 @@ impl PdpEngine {
 
     /// Check if a proof set needs proving at the given epoch.
     pub fn needs_proving(&self, proof_set_id: ProofSetId, epoch: Epoch) -> bool {
-        self.proof_sets.get(&proof_set_id).is_some_and(|ps| {
-            epoch >= ps.last_proven_epoch + ps.config.challenge_period
-        })
+        self.proof_sets
+            .get(&proof_set_id)
+            .is_some_and(|ps| epoch >= ps.last_proven_epoch + ps.config.challenge_period)
     }
 
     /// Generate a PDP proof for a proof set at a given epoch + drand seed.
@@ -460,11 +464,13 @@ mod tests {
     #[test]
     fn test_large_proof_set() {
         let mut engine = PdpEngine::new();
-        let roots: Vec<CommP> = (0..1000u16).map(|i| {
-            let mut c = [0u8; 32];
-            c[..2].copy_from_slice(&i.to_le_bytes());
-            c
-        }).collect();
+        let roots: Vec<CommP> = (0..1000u16)
+            .map(|i| {
+                let mut c = [0u8; 32];
+                c[..2].copy_from_slice(&i.to_le_bytes());
+                c
+            })
+            .collect();
         let id = engine.register_proof_set(roots, ProofSetConfig::default(), 0);
 
         let seed = test_seed();

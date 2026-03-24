@@ -342,7 +342,10 @@ impl NodeConfig {
                 _ => {
                     return Err(ConfigError {
                         field: "inference.backend".into(),
-                        message: format!("unknown backend: {} (expected mock|llamacpp|tensorrt)", v),
+                        message: format!(
+                            "unknown backend: {} (expected mock|llamacpp|tensorrt)",
+                            v
+                        ),
                     })
                 }
             };
@@ -368,7 +371,10 @@ impl NodeConfig {
                 _ => {
                     return Err(ConfigError {
                         field: "logging.level".into(),
-                        message: format!("unknown level: {} (expected trace|debug|info|warn|error)", v),
+                        message: format!(
+                            "unknown level: {} (expected trace|debug|info|warn|error)",
+                            v
+                        ),
                     })
                 }
             };
@@ -386,10 +392,7 @@ impl NodeConfig {
 
     /// Apply environment variable overrides (PROVA_ prefix).
     /// e.g. PROVA_NETWORK_LISTEN_ADDR=0.0.0.0:30303
-    pub fn apply_env_overrides(
-        map: &mut HashMap<String, String>,
-        env_vars: &[(String, String)],
-    ) {
+    pub fn apply_env_overrides(map: &mut HashMap<String, String>, env_vars: &[(String, String)]) {
         for (key, val) in env_vars {
             if let Some(suffix) = key.strip_prefix("PROVA_") {
                 // Convention: use dots for section separators in env vars

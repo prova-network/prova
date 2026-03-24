@@ -5,7 +5,7 @@
 //! Wraps RPC calls and transaction signing into ergonomic operations.
 
 use prova_chain::multisig::{
-    Address, WalletId, ProposalId, MultisigWallet, Proposal, MultisigError, MultisigRegistry,
+    Address, MultisigError, MultisigRegistry, MultisigWallet, Proposal, ProposalId, WalletId,
 };
 use std::collections::HashMap;
 
@@ -172,10 +172,15 @@ impl MultisigClient {
         calldata: Vec<u8>,
     ) -> Result<ProposalId, MultisigRpcError> {
         self.transport.call_log.push("propose".into());
-        let wallet = self.transport.registry.wallets.get_mut(wallet_id)
+        let wallet = self
+            .transport
+            .registry
+            .wallets
+            .get_mut(wallet_id)
             .ok_or(MultisigRpcError::WalletNotFound)?;
         let epoch = self.transport.current_epoch;
-        wallet.propose(self.signer, target, value, calldata, epoch)
+        wallet
+            .propose(self.signer, target, value, calldata, epoch)
             .map_err(MultisigRpcError::ChainError)
     }
 
@@ -186,10 +191,15 @@ impl MultisigClient {
         proposal_id: ProposalId,
     ) -> Result<(), MultisigRpcError> {
         self.transport.call_log.push("approve".into());
-        let wallet = self.transport.registry.wallets.get_mut(wallet_id)
+        let wallet = self
+            .transport
+            .registry
+            .wallets
+            .get_mut(wallet_id)
             .ok_or(MultisigRpcError::WalletNotFound)?;
         let epoch = self.transport.current_epoch;
-        wallet.approve(self.signer, proposal_id, epoch)
+        wallet
+            .approve(self.signer, proposal_id, epoch)
             .map_err(MultisigRpcError::ChainError)
     }
 
@@ -200,10 +210,15 @@ impl MultisigClient {
         proposal_id: ProposalId,
     ) -> Result<(), MultisigRpcError> {
         self.transport.call_log.push("reject".into());
-        let wallet = self.transport.registry.wallets.get_mut(wallet_id)
+        let wallet = self
+            .transport
+            .registry
+            .wallets
+            .get_mut(wallet_id)
             .ok_or(MultisigRpcError::WalletNotFound)?;
         let epoch = self.transport.current_epoch;
-        wallet.reject(self.signer, proposal_id, epoch)
+        wallet
+            .reject(self.signer, proposal_id, epoch)
             .map_err(MultisigRpcError::ChainError)
     }
 
@@ -214,10 +229,15 @@ impl MultisigClient {
         proposal_id: ProposalId,
     ) -> Result<(Address, u64, Vec<u8>), MultisigRpcError> {
         self.transport.call_log.push("execute".into());
-        let wallet = self.transport.registry.wallets.get_mut(wallet_id)
+        let wallet = self
+            .transport
+            .registry
+            .wallets
+            .get_mut(wallet_id)
             .ok_or(MultisigRpcError::WalletNotFound)?;
         let epoch = self.transport.current_epoch;
-        wallet.execute(proposal_id, epoch)
+        wallet
+            .execute(proposal_id, epoch)
             .map_err(MultisigRpcError::ChainError)
     }
 
@@ -228,17 +248,28 @@ impl MultisigClient {
         proposal_id: ProposalId,
     ) -> Result<(), MultisigRpcError> {
         self.transport.call_log.push("cancel".into());
-        let wallet = self.transport.registry.wallets.get_mut(wallet_id)
+        let wallet = self
+            .transport
+            .registry
+            .wallets
+            .get_mut(wallet_id)
             .ok_or(MultisigRpcError::WalletNotFound)?;
-        wallet.cancel(self.signer, proposal_id)
+        wallet
+            .cancel(self.signer, proposal_id)
             .map_err(MultisigRpcError::ChainError)
     }
 
     /// Get wallet summary.
     pub fn get_wallet(&self, wallet_id: &WalletId) -> Result<WalletSummary, MultisigRpcError> {
-        let wallet = self.transport.registry.wallets.get(wallet_id)
+        let wallet = self
+            .transport
+            .registry
+            .wallets
+            .get(wallet_id)
             .ok_or(MultisigRpcError::WalletNotFound)?;
-        let pending = wallet.proposals.values()
+        let pending = wallet
+            .proposals
+            .values()
             .filter(|p| !p.executed && !p.cancelled)
             .count();
         Ok(WalletSummary {
@@ -259,9 +290,15 @@ impl MultisigClient {
         wallet_id: &WalletId,
         proposal_id: ProposalId,
     ) -> Result<ProposalSummary, MultisigRpcError> {
-        let wallet = self.transport.registry.wallets.get(wallet_id)
+        let wallet = self
+            .transport
+            .registry
+            .wallets
+            .get(wallet_id)
             .ok_or(MultisigRpcError::WalletNotFound)?;
-        let prop = wallet.proposals.get(&proposal_id)
+        let prop = wallet
+            .proposals
+            .get(&proposal_id)
             .ok_or(MultisigRpcError::ProposalNotFound)?;
         let expired = self.transport.current_epoch > prop.created_at + wallet.proposal_ttl;
         Ok(ProposalSummary {
@@ -286,10 +323,16 @@ impl MultisigClient {
         wallet_id: &WalletId,
         pending_only: bool,
     ) -> Result<Vec<ProposalSummary>, MultisigRpcError> {
-        let wallet = self.transport.registry.wallets.get(wallet_id)
+        let wallet = self
+            .transport
+            .registry
+            .wallets
+            .get(wallet_id)
             .ok_or(MultisigRpcError::WalletNotFound)?;
         let epoch = self.transport.current_epoch;
-        let mut results: Vec<ProposalSummary> = wallet.proposals.values()
+        let mut results: Vec<ProposalSummary> = wallet
+            .proposals
+            .values()
             .filter(|p| !pending_only || (!p.executed && !p.cancelled))
             .map(|p| {
                 let expired = epoch > p.created_at + wallet.proposal_ttl;
@@ -375,12 +418,14 @@ mod tests {
     }
 
     fn make_wallet(client: &mut MultisigClient) -> WalletId {
-        client.create_wallet(
-            vec![addr(1), addr(2), addr(3)],
-            2,
-            1000, // proposal TTL
-            Some(1_000_000), // daily limit
-        ).unwrap()
+        client
+            .create_wallet(
+                vec![addr(1), addr(2), addr(3)],
+                2,
+                1000,            // proposal TTL
+                Some(1_000_000), // daily limit
+            )
+            .unwrap()
     }
 
     #[test]
@@ -520,7 +565,10 @@ mod tests {
     fn test_wallet_not_found() {
         let client = make_client(1);
         let fake_id = [0xFF; 32];
-        assert_eq!(client.get_wallet(&fake_id).unwrap_err(), MultisigRpcError::WalletNotFound);
+        assert_eq!(
+            client.get_wallet(&fake_id).unwrap_err(),
+            MultisigRpcError::WalletNotFound
+        );
     }
 
     #[test]
@@ -536,7 +584,9 @@ mod tests {
     #[test]
     fn test_non_owner_cannot_propose() {
         let mut client = make_client(99); // not an owner
-        let wid = client.create_wallet(vec![addr(1), addr(2)], 2, 1000, None).unwrap();
+        let wid = client
+            .create_wallet(vec![addr(1), addr(2)], 2, 1000, None)
+            .unwrap();
         let result = client.propose(&wid, addr(10), 100, vec![]);
         assert!(result.is_err());
     }

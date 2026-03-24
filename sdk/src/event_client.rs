@@ -56,7 +56,10 @@ impl SubscriptionRequest {
     pub fn historical(filter: EventFilter, from_epoch: Epoch, to_epoch: Epoch) -> Self {
         Self {
             filter,
-            mode: DeliveryMode::HistoricalOnly { from_epoch, to_epoch },
+            mode: DeliveryMode::HistoricalOnly {
+                from_epoch,
+                to_epoch,
+            },
             buffer_size: 16384,
         }
     }
@@ -140,12 +143,8 @@ impl EventCache {
         self.total += 1;
 
         // Update bounds.
-        self.earliest_epoch = Some(
-            self.earliest_epoch.map_or(epoch, |e| e.min(epoch)),
-        );
-        self.latest_epoch = Some(
-            self.latest_epoch.map_or(epoch, |e| e.max(epoch)),
-        );
+        self.earliest_epoch = Some(self.earliest_epoch.map_or(epoch, |e| e.min(epoch)));
+        self.latest_epoch = Some(self.latest_epoch.map_or(epoch, |e| e.max(epoch)));
 
         evicted
     }
@@ -305,7 +304,9 @@ impl EventClient {
         handle: SubscriptionHandle,
         max: usize,
     ) -> Result<Vec<ReceivedEvent>, EventClientError> {
-        let sub = self.subscriptions.get_mut(&handle)
+        let sub = self
+            .subscriptions
+            .get_mut(&handle)
             .ok_or(EventClientError::NotFound(handle))?;
 
         if sub.state == SubState::Cancelled {
@@ -357,9 +358,10 @@ impl EventClient {
                 DeliveryMode::ReplayThenRealtime { from_epoch } => {
                     (*from_epoch, self.current_epoch)
                 }
-                DeliveryMode::HistoricalOnly { from_epoch, to_epoch } => {
-                    (*from_epoch, *to_epoch)
-                }
+                DeliveryMode::HistoricalOnly {
+                    from_epoch,
+                    to_epoch,
+                } => (*from_epoch, *to_epoch),
                 _ => continue,
             };
 
@@ -398,18 +400,15 @@ impl EventClient {
     }
 
     /// Query the local cache directly (no subscription needed).
-    pub fn query_cache(
-        &self,
-        from: Epoch,
-        to: Epoch,
-        filter: &EventFilter,
-    ) -> Vec<&ReceivedEvent> {
+    pub fn query_cache(&self, from: Epoch, to: Epoch, filter: &EventFilter) -> Vec<&ReceivedEvent> {
         self.cache.query(from, to, filter)
     }
 
     /// Get subscription statistics.
     pub fn sub_stats(&self, handle: SubscriptionHandle) -> Result<SubStats, EventClientError> {
-        let sub = self.subscriptions.get(&handle)
+        let sub = self
+            .subscriptions
+            .get(&handle)
             .ok_or(EventClientError::NotFound(handle))?;
         Ok(SubStats {
             state: sub.state,
@@ -422,7 +421,8 @@ impl EventClient {
 
     /// Number of active (non-cancelled, non-errored) subscriptions.
     pub fn active_count(&self) -> usize {
-        self.subscriptions.values()
+        self.subscriptions
+            .values()
             .filter(|s| matches!(s.state, SubState::Live | SubState::Replaying))
             .count()
     }
@@ -528,9 +528,9 @@ mod tests {
     #[test]
     fn test_subscribe_and_poll_empty() {
         let mut client = EventClient::new(1000);
-        let handle = client.subscribe(
-            SubscriptionRequest::realtime(EventFilter::default())
-        ).unwrap();
+        let handle = client
+            .subscribe(SubscriptionRequest::realtime(EventFilter::default()))
+            .unwrap();
         let events = client.poll(handle, 10).unwrap();
         assert!(events.is_empty());
     }
@@ -539,8 +539,13 @@ mod tests {
     fn test_realtime_event_dispatch() {
         let mut client = EventClient::new(1000);
         let addr = test_addr(1);
-        let filter = EventFilter { address: Some(addr), ..Default::default() };
-        let handle = client.subscribe(SubscriptionRequest::realtime(filter)).unwrap();
+        let filter = EventFilter {
+            address: Some(addr),
+            ..Default::default()
+        };
+        let handle = client
+            .subscribe(SubscriptionRequest::realtime(filter))
+            .unwrap();
 
         // Inject matching event.
         client.inject_event(test_event(addr, transfer_topic(), 100));
@@ -559,7 +564,9 @@ mod tests {
             topics: [Some(transfer_topic()), None, None, None],
             ..Default::default()
         };
-        let handle = client.subscribe(SubscriptionRequest::realtime(filter)).unwrap();
+        let handle = client
+            .subscribe(SubscriptionRequest::realtime(filter))
+            .unwrap();
 
         client.inject_event(test_event(test_addr(1), transfer_topic(), 10));
         client.inject_event(test_event(test_addr(1), stake_topic(), 10));
@@ -572,12 +579,18 @@ mod tests {
     #[test]
     fn test_multiple_subscriptions() {
         let mut client = EventClient::new(1000);
-        let h1 = client.subscribe(
-            SubscriptionRequest::realtime(EventFilter { address: Some(test_addr(1)), ..Default::default() })
-        ).unwrap();
-        let h2 = client.subscribe(
-            SubscriptionRequest::realtime(EventFilter { address: Some(test_addr(2)), ..Default::default() })
-        ).unwrap();
+        let h1 = client
+            .subscribe(SubscriptionRequest::realtime(EventFilter {
+                address: Some(test_addr(1)),
+                ..Default::default()
+            }))
+            .unwrap();
+        let h2 = client
+            .subscribe(SubscriptionRequest::realtime(EventFilter {
+                address: Some(test_addr(2)),
+                ..Default::default()
+            }))
+            .unwrap();
 
         client.inject_event(test_event(test_addr(1), transfer_topic(), 1));
         client.inject_event(test_event(test_addr(2), transfer_topic(), 1));
@@ -589,9 +602,9 @@ mod tests {
     #[test]
     fn test_unsubscribe() {
         let mut client = EventClient::new(1000);
-        let handle = client.subscribe(
-            SubscriptionRequest::realtime(EventFilter::default())
-        ).unwrap();
+        let handle = client
+            .subscribe(SubscriptionRequest::realtime(EventFilter::default()))
+            .unwrap();
         assert_eq!(client.active_count(), 1);
 
         client.unsubscribe(handle).unwrap();
@@ -633,9 +646,9 @@ mod tests {
             topics: [Some(transfer_topic()), None, None, None],
             ..Default::default()
         };
-        let handle = client.subscribe(
-            SubscriptionRequest::historical(filter, 5, 25)
-        ).unwrap();
+        let handle = client
+            .subscribe(SubscriptionRequest::historical(filter, 5, 25))
+            .unwrap();
 
         client.process_replay();
 
@@ -650,13 +663,14 @@ mod tests {
         let mut client = EventClient::new(1000);
 
         // Historical events.
-        client.add_historical_events(vec![
-            test_event(test_addr(1), transfer_topic(), 10),
-        ]);
+        client.add_historical_events(vec![test_event(test_addr(1), transfer_topic(), 10)]);
 
-        let handle = client.subscribe(
-            SubscriptionRequest::replay_then_realtime(EventFilter::default(), 1)
-        ).unwrap();
+        let handle = client
+            .subscribe(SubscriptionRequest::replay_then_realtime(
+                EventFilter::default(),
+                1,
+            ))
+            .unwrap();
 
         assert_eq!(client.sub_stats(handle).unwrap().state, SubState::Replaying);
         client.process_replay();
@@ -680,7 +694,10 @@ mod tests {
         client.inject_event(test_event(test_addr(1), transfer_topic(), 10));
         client.inject_event(test_event(test_addr(2), stake_topic(), 20));
 
-        let filter = EventFilter { address: Some(test_addr(1)), ..Default::default() };
+        let filter = EventFilter {
+            address: Some(test_addr(1)),
+            ..Default::default()
+        };
         let results = client.query_cache(1, 30, &filter);
         assert_eq!(results.len(), 1);
     }
@@ -698,16 +715,20 @@ mod tests {
     #[test]
     fn test_disconnect_errors_subscriptions() {
         let mut client = EventClient::new(1000);
-        let handle = client.subscribe(
-            SubscriptionRequest::realtime(EventFilter::default())
-        ).unwrap();
+        let handle = client
+            .subscribe(SubscriptionRequest::realtime(EventFilter::default()))
+            .unwrap();
 
         client.disconnect();
         assert_eq!(client.sub_stats(handle).unwrap().state, SubState::Errored);
-        assert!(client.subscribe(SubscriptionRequest::realtime(EventFilter::default())).is_err());
+        assert!(client
+            .subscribe(SubscriptionRequest::realtime(EventFilter::default()))
+            .is_err());
 
         client.reconnect();
-        assert!(client.subscribe(SubscriptionRequest::realtime(EventFilter::default())).is_ok());
+        assert!(client
+            .subscribe(SubscriptionRequest::realtime(EventFilter::default()))
+            .is_ok());
     }
 
     #[test]
@@ -727,7 +748,9 @@ mod tests {
     #[test]
     fn test_reset_clears_everything() {
         let mut client = EventClient::new(1000);
-        client.subscribe(SubscriptionRequest::realtime(EventFilter::default())).unwrap();
+        client
+            .subscribe(SubscriptionRequest::realtime(EventFilter::default()))
+            .unwrap();
         client.inject_event(test_event(test_addr(1), transfer_topic(), 1));
         assert!(client.active_count() > 0);
         assert!(client.cache_size() > 0);
@@ -740,9 +763,9 @@ mod tests {
     #[test]
     fn test_sub_stats() {
         let mut client = EventClient::new(1000);
-        let handle = client.subscribe(
-            SubscriptionRequest::realtime(EventFilter::default())
-        ).unwrap();
+        let handle = client
+            .subscribe(SubscriptionRequest::realtime(EventFilter::default()))
+            .unwrap();
 
         client.inject_event(test_event(test_addr(1), transfer_topic(), 1));
         client.inject_event(test_event(test_addr(1), transfer_topic(), 2));

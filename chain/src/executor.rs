@@ -192,12 +192,7 @@ impl Executor {
 
     /// Execute a single transaction against the state trie.
     /// Returns a receipt. State is only modified on success (atomic).
-    pub fn execute(
-        &mut self,
-        state: &mut StateTrie,
-        tx: &Transaction,
-        tx_index: usize,
-    ) -> Receipt {
+    pub fn execute(&mut self, state: &mut StateTrie, tx: &Transaction, tx_index: usize) -> Receipt {
         // Take snapshot for rollback on failure.
         let snapshot = state.snapshot();
         let models_snap = self.registered_models.clone();
@@ -232,11 +227,7 @@ impl Executor {
         }
     }
 
-    fn execute_inner(
-        &mut self,
-        state: &mut StateTrie,
-        tx: &Transaction,
-    ) -> Result<u64, ExecError> {
+    fn execute_inner(&mut self, state: &mut StateTrie, tx: &Transaction) -> Result<u64, ExecError> {
         // 1. Gas check.
         let gas_cost = tx.gas_cost();
         if tx.gas_limit < gas_cost {
@@ -258,12 +249,13 @@ impl Executor {
 
         // 3. Ensure sender can pay gas.
         let sender_bal = state.get(&tx.sender).balance;
-        let total_needed = gas_fee + match &tx.kind {
-            TxKind::Transfer { amount, .. } => *amount,
-            TxKind::Stake { amount } => *amount,
-            TxKind::PayInferenceFee { amount, .. } => *amount,
-            _ => 0,
-        };
+        let total_needed = gas_fee
+            + match &tx.kind {
+                TxKind::Transfer { amount, .. } => *amount,
+                TxKind::Stake { amount } => *amount,
+                TxKind::PayInferenceFee { amount, .. } => *amount,
+                _ => 0,
+            };
         if sender_bal < total_needed {
             return Err(ExecError::InsufficientBalance {
                 have: sender_bal,
@@ -337,11 +329,7 @@ impl Executor {
     }
 
     /// Execute a batch of transactions sequentially. Returns receipts for each.
-    pub fn execute_batch(
-        &mut self,
-        state: &mut StateTrie,
-        txs: &[Transaction],
-    ) -> Vec<Receipt> {
+    pub fn execute_batch(&mut self, state: &mut StateTrie, txs: &[Transaction]) -> Vec<Receipt> {
         txs.iter()
             .enumerate()
             .map(|(i, tx)| self.execute(state, tx, i))
@@ -372,7 +360,14 @@ mod tests {
     }
 
     fn transfer_tx(sender: u8, to: u8, amount: u128, nonce: u64) -> Transaction {
-        Transaction::new(addr(sender), nonce, TxKind::Transfer { to: addr(to), amount })
+        Transaction::new(
+            addr(sender),
+            nonce,
+            TxKind::Transfer {
+                to: addr(to),
+                amount,
+            },
+        )
     }
 
     #[test]
@@ -394,7 +389,13 @@ mod tests {
         let tx = transfer_tx(1, 2, 1000, 5);
         let receipt = exec.execute(&mut state, &tx, 0);
         assert!(!receipt.success);
-        assert_eq!(receipt.error, Some(ExecError::NonceMismatch { expected: 0, provided: 5 }));
+        assert_eq!(
+            receipt.error,
+            Some(ExecError::NonceMismatch {
+                expected: 0,
+                provided: 5
+            })
+        );
         // Balance unchanged.
         assert_eq!(state.get(&addr(1)).balance, 1_000_000);
     }
@@ -417,7 +418,10 @@ mod tests {
         let tx = transfer_tx(1, 2, 1_000_000, 0);
         let receipt = exec.execute(&mut state, &tx, 0);
         assert!(!receipt.success);
-        assert!(matches!(receipt.error, Some(ExecError::InsufficientBalance { .. })));
+        assert!(matches!(
+            receipt.error,
+            Some(ExecError::InsufficientBalance { .. })
+        ));
         // Atomic rollback.
         assert_eq!(state.get(&addr(1)).balance, 1_000_000);
         assert_eq!(state.expected_nonce(&addr(1)), 0);
@@ -426,17 +430,37 @@ mod tests {
     #[test]
     fn test_out_of_gas() {
         let (mut exec, mut state) = setup();
-        let tx = Transaction::new(addr(1), 0, TxKind::Transfer { to: addr(2), amount: 1000 })
-            .with_gas(100, 1); // Gas limit too low.
+        let tx = Transaction::new(
+            addr(1),
+            0,
+            TxKind::Transfer {
+                to: addr(2),
+                amount: 1000,
+            },
+        )
+        .with_gas(100, 1); // Gas limit too low.
         let receipt = exec.execute(&mut state, &tx, 0);
         assert!(!receipt.success);
-        assert_eq!(receipt.error, Some(ExecError::OutOfGas { required: 21_000, limit: 100 }));
+        assert_eq!(
+            receipt.error,
+            Some(ExecError::OutOfGas {
+                required: 21_000,
+                limit: 100
+            })
+        );
     }
 
     #[test]
     fn test_zero_amount_transfer() {
         let (mut exec, mut state) = setup();
-        let tx = Transaction::new(addr(1), 0, TxKind::Transfer { to: addr(2), amount: 0 });
+        let tx = Transaction::new(
+            addr(1),
+            0,
+            TxKind::Transfer {
+                to: addr(2),
+                amount: 0,
+            },
+        );
         let receipt = exec.execute(&mut state, &tx, 0);
         assert!(!receipt.success);
         assert_eq!(receipt.error, Some(ExecError::ZeroAmount));
@@ -456,27 +480,38 @@ mod tests {
         let tx = Transaction::new(addr(1), 1, TxKind::Unstake { amount: 100_000 });
         let receipt = exec.execute(&mut state, &tx, 1);
         assert!(receipt.success);
-        assert_eq!(state.get(&addr(1)).balance, 1_000_000 - 200_000 - gas_fee + 100_000 - gas_fee);
+        assert_eq!(
+            state.get(&addr(1)).balance,
+            1_000_000 - 200_000 - gas_fee + 100_000 - gas_fee
+        );
     }
 
     #[test]
     fn test_register_model() {
         let (mut exec, mut state) = setup();
         let model_id = ModelId([42u8; 32]);
-        let tx = Transaction::new(addr(1), 0, TxKind::RegisterModel {
-            model_id,
-            weight_hash: [1u8; 32],
-            arch_group: "nvidia-sm89-int8".to_string(),
-        });
+        let tx = Transaction::new(
+            addr(1),
+            0,
+            TxKind::RegisterModel {
+                model_id,
+                weight_hash: [1u8; 32],
+                arch_group: "nvidia-sm89-int8".to_string(),
+            },
+        );
         let receipt = exec.execute(&mut state, &tx, 0);
         assert!(receipt.success);
 
         // Duplicate registration fails.
-        let tx2 = Transaction::new(addr(1), 1, TxKind::RegisterModel {
-            model_id,
-            weight_hash: [1u8; 32],
-            arch_group: "nvidia-sm89-int8".to_string(),
-        });
+        let tx2 = Transaction::new(
+            addr(1),
+            1,
+            TxKind::RegisterModel {
+                model_id,
+                weight_hash: [1u8; 32],
+                arch_group: "nvidia-sm89-int8".to_string(),
+            },
+        );
         let receipt2 = exec.execute(&mut state, &tx2, 1);
         assert!(!receipt2.success);
         assert_eq!(receipt2.error, Some(ExecError::ModelAlreadyRegistered));
@@ -506,10 +541,14 @@ mod tests {
     fn test_pay_inference_fee() {
         let (mut exec, mut state) = setup();
         let provider = addr(3);
-        let tx = Transaction::new(addr(1), 0, TxKind::PayInferenceFee {
-            provider,
-            amount: 10_000,
-        });
+        let tx = Transaction::new(
+            addr(1),
+            0,
+            TxKind::PayInferenceFee {
+                provider,
+                amount: 10_000,
+            },
+        );
         let receipt = exec.execute(&mut state, &tx, 0);
         assert!(receipt.success);
         // Provider gets 90%.
@@ -539,9 +578,9 @@ mod tests {
     fn test_batch_partial_failure() {
         let (mut exec, mut state) = setup();
         let txs = vec![
-            transfer_tx(1, 2, 10_000, 0),  // OK
-            transfer_tx(1, 2, 10_000, 5),  // Bad nonce — fails
-            transfer_tx(1, 2, 10_000, 1),  // OK (nonce 1 still valid)
+            transfer_tx(1, 2, 10_000, 0), // OK
+            transfer_tx(1, 2, 10_000, 5), // Bad nonce — fails
+            transfer_tx(1, 2, 10_000, 1), // OK (nonce 1 still valid)
         ];
         let receipts = exec.execute_batch(&mut state, &txs);
         assert!(receipts[0].success);
@@ -553,10 +592,7 @@ mod tests {
     #[test]
     fn test_gas_fees_accumulate() {
         let (mut exec, mut state) = setup();
-        let txs = vec![
-            transfer_tx(1, 2, 1000, 0),
-            transfer_tx(1, 2, 1000, 1),
-        ];
+        let txs = vec![transfer_tx(1, 2, 1000, 0), transfer_tx(1, 2, 1000, 1)];
         exec.execute_batch(&mut state, &txs);
         assert_eq!(exec.total_gas_fees, 21_000 * 2);
         assert_eq!(state.get(&treasury()).balance, 21_000 * 2);
@@ -590,10 +626,14 @@ mod tests {
     #[test]
     fn test_inference_commit() {
         let (mut exec, mut state) = setup();
-        let tx = Transaction::new(addr(1), 0, TxKind::InferenceCommit {
-            model_id: ModelId([1u8; 32]),
-            activation_root: [2u8; 32],
-        });
+        let tx = Transaction::new(
+            addr(1),
+            0,
+            TxKind::InferenceCommit {
+                model_id: ModelId([1u8; 32]),
+                activation_root: [2u8; 32],
+            },
+        );
         let receipt = exec.execute(&mut state, &tx, 0);
         assert!(receipt.success);
         assert_eq!(receipt.gas_used, 50_000);

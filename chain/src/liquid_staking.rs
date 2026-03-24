@@ -101,8 +101,8 @@ impl StakingPool {
         if self.total_staked == 0 || self.total_st_supply == 0 {
             prova_amount // 1:1 initial rate
         } else {
-            ((prova_amount as u128) * (self.total_st_supply as u128)
-                / (self.total_staked as u128)) as Amount
+            ((prova_amount as u128) * (self.total_st_supply as u128) / (self.total_staked as u128))
+                as Amount
         }
     }
 
@@ -111,8 +111,8 @@ impl StakingPool {
         if self.total_st_supply == 0 {
             return 0;
         }
-        ((st_amount as u128) * (self.total_staked as u128)
-            / (self.total_st_supply as u128)) as Amount
+        ((st_amount as u128) * (self.total_staked as u128) / (self.total_st_supply as u128))
+            as Amount
     }
 }
 
@@ -160,7 +160,8 @@ impl LiquidStakingRegistry {
         if self.pools.contains_key(&provider) {
             return Err(LiquidStakingError::PoolAlreadyExists);
         }
-        self.pools.insert(provider, StakingPool::new(provider, self.current_epoch));
+        self.pools
+            .insert(provider, StakingPool::new(provider, self.current_epoch));
         Ok(())
     }
 
@@ -176,7 +177,9 @@ impl LiquidStakingRegistry {
             return Err(LiquidStakingError::ZeroAmount);
         }
 
-        let pool = self.pools.get_mut(&provider)
+        let pool = self
+            .pools
+            .get_mut(&provider)
             .ok_or(LiquidStakingError::PoolNotFound)?;
 
         let st_amount = pool.prova_to_st(prova_amount);
@@ -185,7 +188,9 @@ impl LiquidStakingRegistry {
         }
 
         // Check overflow
-        let new_supply = pool.total_st_supply.checked_add(st_amount)
+        let new_supply = pool
+            .total_st_supply
+            .checked_add(st_amount)
             .ok_or(LiquidStakingError::MintOverflow)?;
 
         pool.total_staked += prova_amount;
@@ -216,7 +221,9 @@ impl LiquidStakingRegistry {
             return Err(LiquidStakingError::ZeroAmount);
         }
 
-        let pool = self.pools.get_mut(&provider)
+        let pool = self
+            .pools
+            .get_mut(&provider)
             .ok_or(LiquidStakingError::PoolNotFound)?;
 
         let balance = pool.balances.get(&holder).copied().unwrap_or(0);
@@ -266,7 +273,9 @@ impl LiquidStakingRegistry {
             return Err(LiquidStakingError::TransferToSelf);
         }
 
-        let pool = self.pools.get_mut(&provider)
+        let pool = self
+            .pools
+            .get_mut(&provider)
             .ok_or(LiquidStakingError::PoolNotFound)?;
 
         let from_bal = pool.balances.get(&from).copied().unwrap_or(0);
@@ -304,7 +313,9 @@ impl LiquidStakingRegistry {
         if reward_amount == 0 {
             return Ok(());
         }
-        let pool = self.pools.get_mut(&provider)
+        let pool = self
+            .pools
+            .get_mut(&provider)
             .ok_or(LiquidStakingError::PoolNotFound)?;
 
         pool.total_staked += reward_amount;
@@ -332,7 +343,9 @@ impl LiquidStakingRegistry {
         if slash_amount == 0 {
             return Ok(());
         }
-        let pool = self.pools.get_mut(&provider)
+        let pool = self
+            .pools
+            .get_mut(&provider)
             .ok_or(LiquidStakingError::PoolNotFound)?;
 
         if slash_amount > pool.total_staked {
@@ -361,7 +374,9 @@ impl LiquidStakingRegistry {
         provider: &Address,
         holder: &Address,
     ) -> Result<(Amount, Amount), LiquidStakingError> {
-        let pool = self.pools.get(provider)
+        let pool = self
+            .pools
+            .get(provider)
             .ok_or(LiquidStakingError::PoolNotFound)?;
         let st_bal = pool.balances.get(holder).copied().unwrap_or(0);
         let prova_val = pool.st_to_prova(st_bal);
@@ -377,13 +392,20 @@ impl LiquidStakingRegistry {
 mod tests {
     use super::*;
 
-    fn addr(b: u8) -> Address { let mut a = [0u8; 32]; a[0] = b; a }
+    fn addr(b: u8) -> Address {
+        let mut a = [0u8; 32];
+        a[0] = b;
+        a
+    }
 
     #[test]
     fn test_create_pool() {
         let mut reg = LiquidStakingRegistry::new();
         assert!(reg.create_pool(addr(1)).is_ok());
-        assert_eq!(reg.create_pool(addr(1)), Err(LiquidStakingError::PoolAlreadyExists));
+        assert_eq!(
+            reg.create_pool(addr(1)),
+            Err(LiquidStakingError::PoolAlreadyExists)
+        );
     }
 
     #[test]
@@ -401,13 +423,19 @@ mod tests {
     fn test_mint_zero_rejected() {
         let mut reg = LiquidStakingRegistry::new();
         reg.create_pool(addr(1)).unwrap();
-        assert_eq!(reg.mint(addr(1), addr(10), 0), Err(LiquidStakingError::ZeroAmount));
+        assert_eq!(
+            reg.mint(addr(1), addr(10), 0),
+            Err(LiquidStakingError::ZeroAmount)
+        );
     }
 
     #[test]
     fn test_mint_nonexistent_pool() {
         let mut reg = LiquidStakingRegistry::new();
-        assert_eq!(reg.mint(addr(99), addr(10), 1000), Err(LiquidStakingError::PoolNotFound));
+        assert_eq!(
+            reg.mint(addr(99), addr(10), 1000),
+            Err(LiquidStakingError::PoolNotFound)
+        );
     }
 
     #[test]
@@ -543,7 +571,8 @@ mod tests {
         // Pool: 24M PROVA, 20M stPROVA, rate = 1.2
 
         // Alice sells half her position to Charlie
-        reg.transfer(addr(1), addr(10), addr(30), 5_000_000).unwrap();
+        reg.transfer(addr(1), addr(10), addr(30), 5_000_000)
+            .unwrap();
 
         // Charlie redeems
         let prova_charlie = reg.burn(addr(1), addr(30), 5_000_000).unwrap();

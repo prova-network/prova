@@ -8,10 +8,10 @@
 
 use std::collections::BTreeMap;
 
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 
-use crate::types::{Address, Epoch, Hash};
 use crate::events::Event;
+use crate::types::{Address, Epoch, Hash};
 
 // ── Receipt types ──────────────────────────────────────────────────
 
@@ -155,7 +155,11 @@ fn merkle_proof(layers: &[Vec<Hash>], index: usize, leaf_count: usize) -> Option
 
     for layer in &layers[..layers.len().saturating_sub(1)] {
         let sibling_idx = if idx % 2 == 0 {
-            if idx + 1 < layer.len() { idx + 1 } else { idx }
+            if idx + 1 < layer.len() {
+                idx + 1
+            } else {
+                idx
+            }
         } else {
             idx - 1
         };
@@ -223,17 +227,21 @@ impl ReceiptStore {
 
         // Index tx hashes
         for receipt in &tx_receipts {
-            self.tx_index.insert(receipt.tx_hash, (block_number, receipt.tx_index));
+            self.tx_index
+                .insert(receipt.tx_hash, (block_number, receipt.tx_index));
         }
 
         self.merkle_trees.insert(block_number, layers);
-        self.blocks.insert(block_number, BlockReceiptRecord {
+        self.blocks.insert(
             block_number,
-            tx_receipts,
-            receipts_root: root,
-            total_gas,
-            total_events,
-        });
+            BlockReceiptRecord {
+                block_number,
+                tx_receipts,
+                receipts_root: root,
+                total_gas,
+                total_events,
+            },
+        );
 
         Ok(root)
     }
@@ -252,7 +260,9 @@ impl ReceiptStore {
 
     /// Get all receipts for a block.
     pub fn block_receipts(&self, block_number: Epoch) -> Option<&[TxReceipt]> {
-        self.blocks.get(&block_number).map(|b| b.tx_receipts.as_slice())
+        self.blocks
+            .get(&block_number)
+            .map(|b| b.tx_receipts.as_slice())
     }
 
     /// Generate a Merkle inclusion proof for a transaction receipt.
@@ -436,7 +446,9 @@ mod tests {
 
         let (receipt, proof, _root) = store.prove_receipt(&tx_hash(1)).unwrap();
         let fake_root = [0xFFu8; 32];
-        assert!(!ReceiptStore::verify_receipt_proof(&receipt, &proof, &fake_root));
+        assert!(!ReceiptStore::verify_receipt_proof(
+            &receipt, &proof, &fake_root
+        ));
     }
 
     #[test]
@@ -495,7 +507,9 @@ mod tests {
     fn test_prune_before() {
         let mut store = ReceiptStore::new();
         for b in 0..5u64 {
-            store.store_block_receipts(b, vec![make_receipt(b as u8, b, 0, 10000, 10000)]).unwrap();
+            store
+                .store_block_receipts(b, vec![make_receipt(b as u8, b, 0, 10000, 10000)])
+                .unwrap();
         }
         assert_eq!(store.block_count(), 5);
         assert_eq!(store.receipt_count(), 5);

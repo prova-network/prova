@@ -68,8 +68,7 @@ impl Subscription {
     }
 
     pub fn needs_keepalive(&self, now: Instant) -> bool {
-        now.duration_since(self.last_activity)
-            > Duration::from_secs(KEEPALIVE_INTERVAL_SECS)
+        now.duration_since(self.last_activity) > Duration::from_secs(KEEPALIVE_INTERVAL_SECS)
     }
 }
 
@@ -186,10 +185,7 @@ impl SubscriptionEngine {
     }
 
     /// Cancel a subscription.
-    pub fn unsubscribe(
-        &mut self,
-        sub_id: SubscriptionId,
-    ) -> Result<(), SubscribeError> {
+    pub fn unsubscribe(&mut self, sub_id: SubscriptionId) -> Result<(), SubscribeError> {
         let sub = self
             .subscriptions
             .remove(&sub_id)
@@ -207,8 +203,7 @@ impl SubscriptionEngine {
     /// Returns the number of subscriptions that received the event.
     pub fn notify(&mut self, event: &Event) -> usize {
         let mut count = 0;
-        let sub_ids: Vec<SubscriptionId> =
-            self.subscriptions.keys().copied().collect();
+        let sub_ids: Vec<SubscriptionId> = self.subscriptions.keys().copied().collect();
 
         for sub_id in sub_ids {
             let matches = {
@@ -256,11 +251,7 @@ impl SubscriptionEngine {
     }
 
     /// Drain up to `max` notifications.
-    pub fn drain_batch(
-        &mut self,
-        sub_id: SubscriptionId,
-        max: usize,
-    ) -> Vec<Notification> {
+    pub fn drain_batch(&mut self, sub_id: SubscriptionId, max: usize) -> Vec<Notification> {
         self.queues
             .get_mut(&sub_id)
             .map(|q| {
@@ -324,20 +315,13 @@ impl SubscriptionEngine {
     }
 
     /// Get subscription info.
-    pub fn get_subscription(
-        &self,
-        sub_id: SubscriptionId,
-    ) -> Option<&Subscription> {
+    pub fn get_subscription(&self, sub_id: SubscriptionId) -> Option<&Subscription> {
         self.subscriptions.get(&sub_id)
     }
 
     /// Replay historical events into a subscription's queue.
     /// Caller provides the events (e.g., from EventStore query).
-    pub fn replay(
-        &mut self,
-        sub_id: SubscriptionId,
-        events: &[Event],
-    ) -> usize {
+    pub fn replay(&mut self, sub_id: SubscriptionId, events: &[Event]) -> usize {
         let sub = match self.subscriptions.get(&sub_id) {
             Some(s) => s.clone(),
             None => return 0,
@@ -527,9 +511,7 @@ mod tests {
     fn test_unsubscribe() {
         let mut engine = SubscriptionEngine::new();
         let client = engine.connect();
-        let sub = engine
-            .subscribe(client, EventFilter::new(), None)
-            .unwrap();
+        let sub = engine.subscribe(client, EventFilter::new(), None).unwrap();
         assert_eq!(engine.active_count(), 1);
         engine.unsubscribe(sub).unwrap();
         assert_eq!(engine.active_count(), 0);
@@ -538,10 +520,7 @@ mod tests {
     #[test]
     fn test_unsubscribe_not_found() {
         let mut engine = SubscriptionEngine::new();
-        assert_eq!(
-            engine.unsubscribe(999),
-            Err(SubscribeError::NotFound)
-        );
+        assert_eq!(engine.unsubscribe(999), Err(SubscribeError::NotFound));
     }
 
     #[test]
@@ -549,9 +528,7 @@ mod tests {
         let mut engine = SubscriptionEngine::new();
         let client = engine.connect();
         for _ in 0..MAX_SUBS_PER_CLIENT {
-            engine
-                .subscribe(client, EventFilter::new(), None)
-                .unwrap();
+            engine.subscribe(client, EventFilter::new(), None).unwrap();
         }
         assert_eq!(
             engine.subscribe(client, EventFilter::new(), None),
@@ -563,9 +540,7 @@ mod tests {
     fn test_backpressure_drops_oldest() {
         let mut engine = SubscriptionEngine::new();
         let client = engine.connect();
-        let sub = engine
-            .subscribe(client, EventFilter::new(), None)
-            .unwrap();
+        let sub = engine.subscribe(client, EventFilter::new(), None).unwrap();
 
         // Fill to max
         for i in 0..MAX_PENDING_NOTIFICATIONS {
@@ -594,9 +569,7 @@ mod tests {
     fn test_drain_batch() {
         let mut engine = SubscriptionEngine::new();
         let client = engine.connect();
-        let sub = engine
-            .subscribe(client, EventFilter::new(), None)
-            .unwrap();
+        let sub = engine.subscribe(client, EventFilter::new(), None).unwrap();
 
         for i in 1..=10 {
             let ev = make_event(addr(1), i, event_types::TRANSFER());
@@ -612,12 +585,8 @@ mod tests {
     fn test_disconnect_cleans_subs() {
         let mut engine = SubscriptionEngine::new();
         let client = engine.connect();
-        engine
-            .subscribe(client, EventFilter::new(), None)
-            .unwrap();
-        engine
-            .subscribe(client, EventFilter::new(), None)
-            .unwrap();
+        engine.subscribe(client, EventFilter::new(), None).unwrap();
+        engine.subscribe(client, EventFilter::new(), None).unwrap();
         assert_eq!(engine.active_count(), 2);
 
         let removed = engine.disconnect(client);
@@ -647,9 +616,7 @@ mod tests {
     fn test_notify_batch() {
         let mut engine = SubscriptionEngine::new();
         let client = engine.connect();
-        let sub = engine
-            .subscribe(client, EventFilter::new(), None)
-            .unwrap();
+        let sub = engine.subscribe(client, EventFilter::new(), None).unwrap();
 
         let events = vec![
             make_event(addr(1), 1, event_types::TRANSFER()),
@@ -671,9 +638,7 @@ mod tests {
         let s1 = engine
             .subscribe(c1, EventFilter::new().address(addr(1)), None)
             .unwrap();
-        let s2 = engine
-            .subscribe(c2, EventFilter::new(), None)
-            .unwrap(); // wildcard
+        let s2 = engine.subscribe(c2, EventFilter::new(), None).unwrap(); // wildcard
 
         let ev = make_event(addr(1), 10, event_types::TRANSFER());
         let delivered = engine.notify(&ev);

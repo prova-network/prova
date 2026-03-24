@@ -2,7 +2,6 @@
 ///
 /// Subcommands: run, status, account, tx
 /// Uses a simple hand-rolled parser (no external deps).
-
 use std::fmt;
 
 // ── Subcommand definitions ──────────────────────────────────────────
@@ -178,7 +177,10 @@ fn parse_account(args: &[String]) -> Result<Command, ParseError> {
             }))
         }
         "list" => Ok(Command::Account(AccountCmd::List)),
-        other => Err(ParseError::UnknownSubcommand("account".into(), other.into())),
+        other => Err(ParseError::UnknownSubcommand(
+            "account".into(),
+            other.into(),
+        )),
     }
 }
 
@@ -234,10 +236,7 @@ fn parse_tx(args: &[String]) -> Result<Command, ParseError> {
             let addr = args
                 .get(1)
                 .ok_or_else(|| ParseError::MissingArg("address".into()))?;
-            let limit = args
-                .get(2)
-                .and_then(|v| v.parse().ok())
-                .unwrap_or(20);
+            let limit = args.get(2).and_then(|v| v.parse().ok()).unwrap_or(20);
             Ok(Command::Tx(TxCmd::List {
                 address: addr.clone(),
                 limit,

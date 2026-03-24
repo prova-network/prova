@@ -163,15 +163,18 @@ impl DelegationLedger {
         if commission_bps > MAX_COMMISSION_BPS {
             return Err(DelegationError::CommissionTooHigh);
         }
-        self.providers.insert(address, ProviderInfo {
+        self.providers.insert(
             address,
-            commission_bps,
-            commission_last_changed: self.current_epoch,
-            total_delegated: 0,
-            accepting_delegations: true,
-            pending_rewards: 0,
-            auto_compound_delegators: Vec::new(),
-        });
+            ProviderInfo {
+                address,
+                commission_bps,
+                commission_last_changed: self.current_epoch,
+                total_delegated: 0,
+                accepting_delegations: true,
+                pending_rewards: 0,
+                auto_compound_delegators: Vec::new(),
+            },
+        );
         Ok(())
     }
 
@@ -181,7 +184,9 @@ impl DelegationLedger {
         provider: Address,
         new_commission_bps: u16,
     ) -> Result<(), DelegationError> {
-        let info = self.providers.get_mut(&provider)
+        let info = self
+            .providers
+            .get_mut(&provider)
             .ok_or(DelegationError::ProviderNotRegistered)?;
         if new_commission_bps > MAX_COMMISSION_BPS {
             return Err(DelegationError::CommissionTooHigh);
@@ -215,7 +220,9 @@ impl DelegationLedger {
         if delegator == provider {
             return Err(DelegationError::SelfDelegationNotAllowed);
         }
-        let info = self.providers.get_mut(&provider)
+        let info = self
+            .providers
+            .get_mut(&provider)
             .ok_or(DelegationError::ProviderNotRegistered)?;
         if !info.accepting_delegations {
             return Err(DelegationError::ProviderNotRegistered);
@@ -229,14 +236,17 @@ impl DelegationLedger {
             if amount < MIN_DELEGATION {
                 return Err(DelegationError::BelowMinimum);
             }
-            self.delegations.insert(key, Delegation {
-                delegator,
-                provider,
-                amount,
-                created_epoch: self.current_epoch,
-                pending_rewards: 0,
-                auto_compound,
-            });
+            self.delegations.insert(
+                key,
+                Delegation {
+                    delegator,
+                    provider,
+                    amount,
+                    created_epoch: self.current_epoch,
+                    pending_rewards: 0,
+                    auto_compound,
+                },
+            );
         }
 
         info.total_delegated += amount;
@@ -257,7 +267,9 @@ impl DelegationLedger {
             return Err(DelegationError::ZeroAmount);
         }
         let key = (delegator, provider);
-        let delegation = self.delegations.get_mut(&key)
+        let delegation = self
+            .delegations
+            .get_mut(&key)
             .ok_or(DelegationError::NoDelegationFound)?;
         if delegation.amount < amount {
             return Err(DelegationError::InsufficientDelegation);
@@ -274,7 +286,9 @@ impl DelegationLedger {
             self.delegations.remove(&key);
         }
 
-        let info = self.providers.get_mut(&provider)
+        let info = self
+            .providers
+            .get_mut(&provider)
             .ok_or(DelegationError::ProviderNotRegistered)?;
         info.total_delegated = info.total_delegated.saturating_sub(amount);
 
@@ -307,7 +321,9 @@ impl DelegationLedger {
 
         // Remove from source
         let key = (delegator, from_provider);
-        let delegation = self.delegations.get_mut(&key)
+        let delegation = self
+            .delegations
+            .get_mut(&key)
             .ok_or(DelegationError::NoDelegationFound)?;
         if delegation.amount < amount {
             return Err(DelegationError::InsufficientDelegation);
@@ -326,14 +342,17 @@ impl DelegationLedger {
         if let Some(existing) = self.delegations.get_mut(&dest_key) {
             existing.amount += amount;
         } else {
-            self.delegations.insert(dest_key, Delegation {
-                delegator,
-                provider: to_provider,
-                amount,
-                created_epoch: self.current_epoch,
-                pending_rewards: 0,
-                auto_compound: false,
-            });
+            self.delegations.insert(
+                dest_key,
+                Delegation {
+                    delegator,
+                    provider: to_provider,
+                    amount,
+                    created_epoch: self.current_epoch,
+                    pending_rewards: 0,
+                    auto_compound: false,
+                },
+            );
         }
         if let Some(info) = self.providers.get_mut(&to_provider) {
             info.total_delegated += amount;
@@ -355,7 +374,9 @@ impl DelegationLedger {
         provider: Address,
         total_reward: Amount,
     ) -> Result<RewardDistribution, DelegationError> {
-        let info = self.providers.get(&provider)
+        let info = self
+            .providers
+            .get(&provider)
             .ok_or(DelegationError::ProviderNotRegistered)?;
         let commission_bps = info.commission_bps;
         let total_delegated = info.total_delegated;
@@ -367,7 +388,9 @@ impl DelegationLedger {
 
         if total_delegated > 0 {
             // Collect delegator keys for this provider
-            let delegator_keys: Vec<(Address, Address)> = self.delegations.keys()
+            let delegator_keys: Vec<(Address, Address)> = self
+                .delegations
+                .keys()
                 .filter(|(_, p)| *p == provider)
                 .cloned()
                 .collect();
@@ -420,21 +443,26 @@ impl DelegationLedger {
         provider: Address,
         slash_bps: u16,
     ) -> Result<Amount, DelegationError> {
-        let info = self.providers.get(&provider)
+        let info = self
+            .providers
+            .get(&provider)
             .ok_or(DelegationError::ProviderNotRegistered)?;
         let total = info.total_delegated;
 
         let slash_amount = (total as u128 * slash_bps as u128 / 10000) as Amount;
 
         // Slash each delegator proportionally
-        let delegator_keys: Vec<(Address, Address)> = self.delegations.keys()
+        let delegator_keys: Vec<(Address, Address)> = self
+            .delegations
+            .keys()
             .filter(|(_, p)| *p == provider)
             .cloned()
             .collect();
 
         for key in delegator_keys {
             if let Some(delegation) = self.delegations.get_mut(&key) {
-                let delegator_slash = (delegation.amount as u128 * slash_bps as u128 / 10000) as Amount;
+                let delegator_slash =
+                    (delegation.amount as u128 * slash_bps as u128 / 10000) as Amount;
                 delegation.amount = delegation.amount.saturating_sub(delegator_slash);
             }
         }
@@ -456,11 +484,15 @@ impl DelegationLedger {
 
     /// Process completed unbondings. Returns list of (delegator, amount) now liquid.
     pub fn process_unbondings(&mut self) -> Vec<(Address, Amount)> {
-        let (completed, remaining): (Vec<_>, Vec<_>) = self.unbondings
+        let (completed, remaining): (Vec<_>, Vec<_>) = self
+            .unbondings
             .drain(..)
             .partition(|u| u.completion_epoch <= self.current_epoch);
         self.unbondings = remaining;
-        completed.into_iter().map(|u| (u.delegator, u.amount)).collect()
+        completed
+            .into_iter()
+            .map(|u| (u.delegator, u.amount))
+            .collect()
     }
 
     /// Advance epoch.
@@ -470,7 +502,9 @@ impl DelegationLedger {
 
     /// Get total stake for a provider (own + delegated).
     pub fn total_provider_stake(&self, provider: &Address) -> Amount {
-        self.providers.get(provider).map_or(0, |p| p.total_delegated)
+        self.providers
+            .get(provider)
+            .map_or(0, |p| p.total_delegated)
     }
 
     /// Get delegation info.
@@ -545,7 +579,10 @@ mod tests {
 
         assert!(ledger.get_delegation(&addr(2), &addr(1)).is_none());
         assert_eq!(ledger.unbondings.len(), 1);
-        assert_eq!(ledger.unbondings[0].completion_epoch, 100 + UNBONDING_PERIOD);
+        assert_eq!(
+            ledger.unbondings[0].completion_epoch,
+            100 + UNBONDING_PERIOD
+        );
 
         // Not yet completed
         assert!(ledger.process_unbondings().is_empty());
@@ -608,7 +645,9 @@ mod tests {
     fn test_slash_unbonding_entries() {
         let mut ledger = DelegationLedger::new(0);
         ledger.register_provider(addr(1), 1000).unwrap();
-        ledger.delegate(addr(2), addr(1), 10_000_000, false).unwrap();
+        ledger
+            .delegate(addr(2), addr(1), 10_000_000, false)
+            .unwrap();
         ledger.undelegate(addr(2), addr(1), 5_000_000).unwrap();
 
         // Slash 20% — affects both active and unbonding
@@ -624,9 +663,13 @@ mod tests {
         let mut ledger = DelegationLedger::new(0);
         ledger.register_provider(addr(1), 1000).unwrap();
         ledger.register_provider(addr(3), 500).unwrap();
-        ledger.delegate(addr(2), addr(1), 10_000_000, false).unwrap();
+        ledger
+            .delegate(addr(2), addr(1), 10_000_000, false)
+            .unwrap();
 
-        ledger.redelegate(addr(2), addr(1), addr(3), 4_000_000).unwrap();
+        ledger
+            .redelegate(addr(2), addr(1), addr(3), 4_000_000)
+            .unwrap();
 
         let d1 = ledger.get_delegation(&addr(2), &addr(1)).unwrap();
         assert_eq!(d1.amount, 6_000_000);
@@ -639,7 +682,9 @@ mod tests {
     fn test_redelegate_to_same_provider_blocked() {
         let mut ledger = DelegationLedger::new(0);
         ledger.register_provider(addr(1), 1000).unwrap();
-        ledger.delegate(addr(2), addr(1), 10_000_000, false).unwrap();
+        ledger
+            .delegate(addr(2), addr(1), 10_000_000, false)
+            .unwrap();
         assert_eq!(
             ledger.redelegate(addr(2), addr(1), addr(1), 5_000_000),
             Err(DelegationError::RedelegationToSameProvider)
@@ -682,9 +727,18 @@ mod tests {
     fn test_zero_amount_errors() {
         let mut ledger = DelegationLedger::new(0);
         ledger.register_provider(addr(1), 1000).unwrap();
-        assert_eq!(ledger.delegate(addr(2), addr(1), 0, false), Err(DelegationError::ZeroAmount));
-        assert_eq!(ledger.undelegate(addr(2), addr(1), 0), Err(DelegationError::ZeroAmount));
-        assert_eq!(ledger.redelegate(addr(2), addr(1), addr(3), 0), Err(DelegationError::ZeroAmount));
+        assert_eq!(
+            ledger.delegate(addr(2), addr(1), 0, false),
+            Err(DelegationError::ZeroAmount)
+        );
+        assert_eq!(
+            ledger.undelegate(addr(2), addr(1), 0),
+            Err(DelegationError::ZeroAmount)
+        );
+        assert_eq!(
+            ledger.redelegate(addr(2), addr(1), addr(3), 0),
+            Err(DelegationError::ZeroAmount)
+        );
     }
 
     #[test]
@@ -714,7 +768,13 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        assert_eq!(format!("{}", DelegationError::ZeroAmount), "amount must be non-zero");
-        assert_eq!(format!("{}", DelegationError::CommissionCooldown), "commission change in cooldown");
+        assert_eq!(
+            format!("{}", DelegationError::ZeroAmount),
+            "amount must be non-zero"
+        );
+        assert_eq!(
+            format!("{}", DelegationError::CommissionCooldown),
+            "commission change in cooldown"
+        );
     }
 }

@@ -36,10 +36,10 @@ pub struct MultisigWallet {
     pub proposals: HashMap<ProposalId, Proposal>,
     pub next_proposal_id: ProposalId,
     pub nonce: u64,
-    pub daily_limit: Option<u64>,     // optional daily spend limit
+    pub daily_limit: Option<u64>, // optional daily spend limit
     pub daily_spent: u64,
     pub daily_reset_epoch: u64,
-    pub proposal_ttl: u64,            // epochs before proposal expires
+    pub proposal_ttl: u64, // epochs before proposal expires
 }
 
 /// Errors from multi-sig operations.
@@ -132,18 +132,21 @@ impl MultisigWallet {
         self.next_proposal_id += 1;
         let mut approvals = HashSet::new();
         approvals.insert(proposer); // proposer auto-approves
-        self.proposals.insert(id, Proposal {
+        self.proposals.insert(
             id,
-            proposer,
-            target,
-            value,
-            calldata,
-            approvals,
-            rejections: HashSet::new(),
-            created_at: epoch,
-            executed: false,
-            cancelled: false,
-        });
+            Proposal {
+                id,
+                proposer,
+                target,
+                value,
+                calldata,
+                approvals,
+                rejections: HashSet::new(),
+                created_at: epoch,
+                executed: false,
+                cancelled: false,
+            },
+        );
         Ok(id)
     }
 
@@ -157,10 +160,16 @@ impl MultisigWallet {
         if !self.is_owner(&signer) {
             return Err(MultisigError::NotOwner);
         }
-        let p = self.proposals.get_mut(&proposal_id)
+        let p = self
+            .proposals
+            .get_mut(&proposal_id)
             .ok_or(MultisigError::ProposalNotFound)?;
-        if p.executed { return Err(MultisigError::AlreadyExecuted); }
-        if p.cancelled { return Err(MultisigError::ProposalCancelled); }
+        if p.executed {
+            return Err(MultisigError::AlreadyExecuted);
+        }
+        if p.cancelled {
+            return Err(MultisigError::ProposalCancelled);
+        }
         if epoch > p.created_at + self.proposal_ttl {
             return Err(MultisigError::ProposalExpired);
         }
@@ -184,10 +193,16 @@ impl MultisigWallet {
         if !self.is_owner(&signer) {
             return Err(MultisigError::NotOwner);
         }
-        let p = self.proposals.get_mut(&proposal_id)
+        let p = self
+            .proposals
+            .get_mut(&proposal_id)
             .ok_or(MultisigError::ProposalNotFound)?;
-        if p.executed { return Err(MultisigError::AlreadyExecuted); }
-        if p.cancelled { return Err(MultisigError::ProposalCancelled); }
+        if p.executed {
+            return Err(MultisigError::AlreadyExecuted);
+        }
+        if p.cancelled {
+            return Err(MultisigError::ProposalCancelled);
+        }
         if epoch > p.created_at + self.proposal_ttl {
             return Err(MultisigError::ProposalExpired);
         }
@@ -207,9 +222,13 @@ impl MultisigWallet {
         signer: Address,
         proposal_id: ProposalId,
     ) -> Result<(), MultisigError> {
-        let p = self.proposals.get_mut(&proposal_id)
+        let p = self
+            .proposals
+            .get_mut(&proposal_id)
             .ok_or(MultisigError::ProposalNotFound)?;
-        if p.executed { return Err(MultisigError::AlreadyExecuted); }
+        if p.executed {
+            return Err(MultisigError::AlreadyExecuted);
+        }
         if p.proposer != signer {
             return Err(MultisigError::OnlyProposerCanCancel);
         }
@@ -224,10 +243,16 @@ impl MultisigWallet {
         epoch: u64,
     ) -> Result<(Address, u64, Vec<u8>), MultisigError> {
         self.reset_daily_if_needed(epoch);
-        let p = self.proposals.get(&proposal_id)
+        let p = self
+            .proposals
+            .get(&proposal_id)
             .ok_or(MultisigError::ProposalNotFound)?;
-        if p.executed { return Err(MultisigError::AlreadyExecuted); }
-        if p.cancelled { return Err(MultisigError::ProposalCancelled); }
+        if p.executed {
+            return Err(MultisigError::AlreadyExecuted);
+        }
+        if p.cancelled {
+            return Err(MultisigError::ProposalCancelled);
+        }
         if epoch > p.created_at + self.proposal_ttl {
             return Err(MultisigError::ProposalExpired);
         }
@@ -260,7 +285,10 @@ impl MultisigWallet {
 
     /// Remove an owner (threshold must still be satisfiable).
     pub fn remove_owner(&mut self, owner: Address) -> Result<(), MultisigError> {
-        let idx = self.owners.iter().position(|o| *o == owner)
+        let idx = self
+            .owners
+            .iter()
+            .position(|o| *o == owner)
             .ok_or(MultisigError::OwnerNotFound)?;
         if self.owners.len() - 1 < self.threshold as usize {
             return Err(MultisigError::ThresholdWouldExceedOwners);
@@ -309,8 +337,14 @@ impl MultisigRegistry {
 mod tests {
     use super::*;
 
-    fn addr(n: u8) -> Address { let mut a = [0u8; 32]; a[0] = n; a }
-    fn wid() -> WalletId { [1u8; 32] }
+    fn addr(n: u8) -> Address {
+        let mut a = [0u8; 32];
+        a[0] = n;
+        a
+    }
+    fn wid() -> WalletId {
+        [1u8; 32]
+    }
 
     #[test]
     fn create_2_of_3_wallet() {
@@ -349,10 +383,14 @@ mod tests {
 
     #[test]
     fn propose_and_execute_2_of_3() {
-        let mut w = MultisigWallet::new(wid(), vec![addr(1), addr(2), addr(3)], 2, 100, None).unwrap();
+        let mut w =
+            MultisigWallet::new(wid(), vec![addr(1), addr(2), addr(3)], 2, 100, None).unwrap();
         let pid = w.propose(addr(1), addr(99), 500, vec![0xAB], 10).unwrap();
         // proposer auto-approves, need one more
-        assert_eq!(w.execute(pid, 10).unwrap_err(), MultisigError::InsufficientApprovals);
+        assert_eq!(
+            w.execute(pid, 10).unwrap_err(),
+            MultisigError::InsufficientApprovals
+        );
         w.approve(addr(2), pid, 10).unwrap();
         let (target, value, data) = w.execute(pid, 10).unwrap();
         assert_eq!(target, addr(99));
@@ -365,20 +403,29 @@ mod tests {
     fn double_approve_rejected() {
         let mut w = MultisigWallet::new(wid(), vec![addr(1), addr(2)], 2, 100, None).unwrap();
         let pid = w.propose(addr(1), addr(99), 0, vec![], 10).unwrap();
-        assert_eq!(w.approve(addr(1), pid, 10).unwrap_err(), MultisigError::AlreadyApproved);
+        assert_eq!(
+            w.approve(addr(1), pid, 10).unwrap_err(),
+            MultisigError::AlreadyApproved
+        );
     }
 
     #[test]
     fn non_owner_cannot_propose() {
         let mut w = MultisigWallet::new(wid(), vec![addr(1), addr(2)], 1, 100, None).unwrap();
-        assert_eq!(w.propose(addr(99), addr(1), 0, vec![], 10).unwrap_err(), MultisigError::NotOwner);
+        assert_eq!(
+            w.propose(addr(99), addr(1), 0, vec![], 10).unwrap_err(),
+            MultisigError::NotOwner
+        );
     }
 
     #[test]
     fn proposal_expires() {
         let mut w = MultisigWallet::new(wid(), vec![addr(1), addr(2)], 2, 50, None).unwrap();
         let pid = w.propose(addr(1), addr(99), 0, vec![], 10).unwrap();
-        assert_eq!(w.approve(addr(2), pid, 61).unwrap_err(), MultisigError::ProposalExpired);
+        assert_eq!(
+            w.approve(addr(2), pid, 61).unwrap_err(),
+            MultisigError::ProposalExpired
+        );
     }
 
     #[test]
@@ -386,57 +433,83 @@ mod tests {
         let mut w = MultisigWallet::new(wid(), vec![addr(1), addr(2)], 1, 100, None).unwrap();
         let pid = w.propose(addr(1), addr(99), 0, vec![], 10).unwrap();
         // non-proposer cannot cancel
-        assert_eq!(w.cancel(addr(2), pid).unwrap_err(), MultisigError::OnlyProposerCanCancel);
+        assert_eq!(
+            w.cancel(addr(2), pid).unwrap_err(),
+            MultisigError::OnlyProposerCanCancel
+        );
         w.cancel(addr(1), pid).unwrap();
-        assert_eq!(w.execute(pid, 10).unwrap_err(), MultisigError::ProposalCancelled);
+        assert_eq!(
+            w.execute(pid, 10).unwrap_err(),
+            MultisigError::ProposalCancelled
+        );
     }
 
     #[test]
     fn reject_vote() {
-        let mut w = MultisigWallet::new(wid(), vec![addr(1), addr(2), addr(3)], 2, 100, None).unwrap();
+        let mut w =
+            MultisigWallet::new(wid(), vec![addr(1), addr(2), addr(3)], 2, 100, None).unwrap();
         let pid = w.propose(addr(1), addr(99), 0, vec![], 10).unwrap();
         w.reject(addr(2), pid, 10).unwrap();
         // addr(2) already rejected, can't approve
-        assert_eq!(w.approve(addr(2), pid, 10).unwrap_err(), MultisigError::AlreadyRejected);
+        assert_eq!(
+            w.approve(addr(2), pid, 10).unwrap_err(),
+            MultisigError::AlreadyRejected
+        );
     }
 
     #[test]
     fn daily_limit_enforced() {
-        let mut w = MultisigWallet::new(wid(), vec![addr(1), addr(2)], 1, 5000, Some(1000)).unwrap();
+        let mut w =
+            MultisigWallet::new(wid(), vec![addr(1), addr(2)], 1, 5000, Some(1000)).unwrap();
         let p1 = w.propose(addr(1), addr(99), 600, vec![], 10).unwrap();
         w.execute(p1, 10).unwrap();
         let p2 = w.propose(addr(1), addr(99), 500, vec![], 10).unwrap();
-        assert_eq!(w.execute(p2, 10).unwrap_err(), MultisigError::DailyLimitExceeded);
+        assert_eq!(
+            w.execute(p2, 10).unwrap_err(),
+            MultisigError::DailyLimitExceeded
+        );
         // After day reset (2880 epochs), limit resets
         w.execute(p2, 2880).unwrap();
     }
 
     #[test]
     fn add_and_remove_owner() {
-        let mut w = MultisigWallet::new(wid(), vec![addr(1), addr(2), addr(3)], 2, 100, None).unwrap();
+        let mut w =
+            MultisigWallet::new(wid(), vec![addr(1), addr(2), addr(3)], 2, 100, None).unwrap();
         w.add_owner(addr(4)).unwrap();
         assert_eq!(w.owners.len(), 4);
-        assert_eq!(w.add_owner(addr(4)).unwrap_err(), MultisigError::OwnerAlreadyExists);
+        assert_eq!(
+            w.add_owner(addr(4)).unwrap_err(),
+            MultisigError::OwnerAlreadyExists
+        );
         w.remove_owner(addr(4)).unwrap();
         assert_eq!(w.owners.len(), 3);
         // Can't remove to below 2 owners
         w.remove_owner(addr(3)).unwrap();
         assert_eq!(w.owners.len(), 2);
-        assert_eq!(w.remove_owner(addr(2)).unwrap_err(), MultisigError::ThresholdWouldExceedOwners);
+        assert_eq!(
+            w.remove_owner(addr(2)).unwrap_err(),
+            MultisigError::ThresholdWouldExceedOwners
+        );
     }
 
     #[test]
     fn change_threshold() {
-        let mut w = MultisigWallet::new(wid(), vec![addr(1), addr(2), addr(3)], 2, 100, None).unwrap();
+        let mut w =
+            MultisigWallet::new(wid(), vec![addr(1), addr(2), addr(3)], 2, 100, None).unwrap();
         w.change_threshold(3).unwrap();
         assert_eq!(w.threshold, 3);
-        assert_eq!(w.change_threshold(4).unwrap_err(), MultisigError::InvalidThreshold);
+        assert_eq!(
+            w.change_threshold(4).unwrap_err(),
+            MultisigError::InvalidThreshold
+        );
     }
 
     #[test]
     fn registry_create_and_lookup() {
         let mut r = MultisigRegistry::default();
-        r.create_wallet(wid(), vec![addr(1), addr(2)], 2, 100, None).unwrap();
+        r.create_wallet(wid(), vec![addr(1), addr(2)], 2, 100, None)
+            .unwrap();
         assert!(r.get(&wid()).is_some());
         let w = r.get_mut(&wid()).unwrap();
         let pid = w.propose(addr(1), addr(99), 0, vec![], 0).unwrap();
@@ -450,6 +523,9 @@ mod tests {
         let mut w = MultisigWallet::new(wid(), vec![addr(1), addr(2)], 1, 100, None).unwrap();
         let pid = w.propose(addr(1), addr(99), 0, vec![], 10).unwrap();
         w.execute(pid, 10).unwrap();
-        assert_eq!(w.execute(pid, 10).unwrap_err(), MultisigError::AlreadyExecuted);
+        assert_eq!(
+            w.execute(pid, 10).unwrap_err(),
+            MultisigError::AlreadyExecuted
+        );
     }
 }

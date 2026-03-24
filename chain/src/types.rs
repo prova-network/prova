@@ -28,8 +28,8 @@ impl<'de> serde::Deserialize<'de> for Address {
         }
         let mut bytes = [0u8; 20];
         for i in 0..20 {
-            bytes[i] = u8::from_str_radix(&s[i*2..i*2+2], 16)
-                .map_err(serde::de::Error::custom)?;
+            bytes[i] =
+                u8::from_str_radix(&s[i * 2..i * 2 + 2], 16).map_err(serde::de::Error::custom)?;
         }
         Ok(Address(bytes))
     }

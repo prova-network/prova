@@ -235,7 +235,11 @@ pub struct StateSnapshot {
 impl StateSnapshot {
     /// Create a snapshot from a state trie at a given height.
     pub fn create(trie: &mut StateTrie, height: u64, chunk_size: usize) -> Self {
-        let chunk_size = if chunk_size == 0 { DEFAULT_CHUNK_SIZE } else { chunk_size };
+        let chunk_size = if chunk_size == 0 {
+            DEFAULT_CHUNK_SIZE
+        } else {
+            chunk_size
+        };
         let state_root = trie.root();
         let accounts: Vec<SnapshotAccount> = trie
             .iter()
@@ -476,7 +480,10 @@ impl std::fmt::Display for SnapshotError {
             Self::ChunkHashMismatch(i) => write!(f, "chunk {i} hash mismatch"),
             Self::ManifestMismatch => write!(f, "manifest root mismatch"),
             Self::AccountCountMismatch { expected, actual } => {
-                write!(f, "account count mismatch: expected {expected}, got {actual}")
+                write!(
+                    f,
+                    "account count mismatch: expected {expected}, got {actual}"
+                )
             }
             Self::ChunkOrderMismatch { expected, actual } => {
                 write!(f, "chunk order mismatch: expected {expected}, got {actual}")
@@ -580,7 +587,10 @@ mod tests {
         // Tamper with manifest root.
         snap.header.manifest_root = [0xAA; 32];
         // Chunks are fine, but manifest won't match.
-        assert!(matches!(snap.verify(), Err(SnapshotError::ManifestMismatch)));
+        assert!(matches!(
+            snap.verify(),
+            Err(SnapshotError::ManifestMismatch)
+        ));
     }
 
     #[test]
@@ -695,7 +705,10 @@ mod tests {
         importer.add_chunk(snap.chunks[0].clone()).unwrap();
         assert!(matches!(
             importer.finalize(),
-            Err(SnapshotError::IncompleteImport { received: 1, expected: 4 })
+            Err(SnapshotError::IncompleteImport {
+                received: 1,
+                expected: 4
+            })
         ));
     }
 

@@ -53,8 +53,9 @@ impl fmt::Display for KeyError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::NotInitialized => write!(f, "master secret not initialized"),
-            Self::PassphraseTooShort { min, got } =>
-                write!(f, "passphrase too short: need {min}, got {got}"),
+            Self::PassphraseTooShort { min, got } => {
+                write!(f, "passphrase too short: need {min}, got {got}")
+            }
             Self::DecryptionFailed => write!(f, "decryption failed"),
             Self::KeyNotFound(id) => write!(f, "ephemeral key not found: {id:?}"),
             Self::CacheFull => write!(f, "ephemeral key cache full"),
@@ -309,7 +310,9 @@ impl KeyManager {
 
     /// Unlock the master secret using a passphrase.
     pub fn unlock(&mut self, passphrase: &str) -> Result<(), KeyError> {
-        let encrypted = self.encrypted_master.as_ref()
+        let encrypted = self
+            .encrypted_master
+            .as_ref()
             .ok_or(KeyError::NotInitialized)?;
 
         let kek = derive_kek(passphrase, &encrypted.salt);
@@ -356,7 +359,9 @@ impl KeyManager {
 
         if self.cache.len() >= MAX_CACHED_KEYS && !self.cache.contains_key(&inference_id) {
             // Evict consumed keys first
-            let consumed: Vec<InferenceId> = self.cache.iter()
+            let consumed: Vec<InferenceId> = self
+                .cache
+                .iter()
                 .filter(|(_, k)| k.consumed)
                 .map(|(id, _)| *id)
                 .collect();
@@ -390,12 +395,15 @@ impl KeyManager {
 
             self.derivation_counter += 1;
 
-            self.cache.insert(inference_id, EphemeralKey {
-                encrypt_key,
-                blinding_factor,
+            self.cache.insert(
                 inference_id,
-                consumed: false,
-            });
+                EphemeralKey {
+                    encrypt_key,
+                    blinding_factor,
+                    inference_id,
+                    consumed: false,
+                },
+            );
         }
 
         Ok(self.cache.get(&inference_id).unwrap())
@@ -403,13 +411,16 @@ impl KeyManager {
 
     /// Get a cached ephemeral key (does not derive).
     pub fn get_ephemeral(&self, inference_id: &InferenceId) -> Result<&EphemeralKey, KeyError> {
-        self.cache.get(inference_id)
+        self.cache
+            .get(inference_id)
             .ok_or(KeyError::KeyNotFound(*inference_id))
     }
 
     /// Mark an ephemeral key as consumed (after reveal or finalization).
     pub fn consume_key(&mut self, inference_id: &InferenceId) -> Result<(), KeyError> {
-        let key = self.cache.get_mut(inference_id)
+        let key = self
+            .cache
+            .get_mut(inference_id)
             .ok_or(KeyError::KeyNotFound(*inference_id))?;
         key.consumed = true;
         Ok(())
@@ -417,7 +428,8 @@ impl KeyManager {
 
     /// Remove a specific ephemeral key from cache (zeroized on drop).
     pub fn evict_key(&mut self, inference_id: &InferenceId) -> Result<(), KeyError> {
-        self.cache.remove(inference_id)
+        self.cache
+            .remove(inference_id)
             .map(|_| ())
             .ok_or(KeyError::KeyNotFound(*inference_id))
     }
@@ -605,7 +617,9 @@ mod tests {
         let mut km = KeyManager::new();
         km.encrypted_master = km_init.encrypted_master.clone();
         // Not unlocked
-        let err = km.derive_ephemeral(InferenceId(1), &ModelId("x".into()), 0).unwrap_err();
+        let err = km
+            .derive_ephemeral(InferenceId(1), &ModelId("x".into()), 0)
+            .unwrap_err();
         assert_eq!(err, KeyError::NotInitialized);
     }
 

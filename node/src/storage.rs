@@ -284,8 +284,7 @@ impl Storage {
 
     /// Set the chain height.
     pub fn set_chain_height(&self, height: u64) -> Result<()> {
-        self.meta
-            .insert(META_CHAIN_HEIGHT, &height.to_be_bytes())?;
+        self.meta.insert(META_CHAIN_HEIGHT, &height.to_be_bytes())?;
         Ok(())
     }
 

@@ -28,10 +28,7 @@ pub enum DelegationCmd {
         auto_compound: bool,
     },
     /// Undelegate (begin unbonding) from a provider.
-    Undelegate {
-        provider: String,
-        amount: Amount,
-    },
+    Undelegate { provider: String, amount: Amount },
     /// Redelegate from one provider to another without full unbonding.
     Redelegate {
         from_provider: String,
@@ -49,9 +46,7 @@ pub enum DelegationCmd {
         unbonding: bool,
     },
     /// List available providers accepting delegations.
-    Providers {
-        active_only: bool,
-    },
+    Providers { active_only: bool },
     /// Show help for delegation subcommands.
     Help,
 }
@@ -322,7 +317,9 @@ pub fn execute_delegation(
         }
         DelegationCmd::Undelegate { provider, amount } => {
             {
-                let entry = state.delegations.get(provider)
+                let entry = state
+                    .delegations
+                    .get(provider)
                     .ok_or_else(|| format!("no delegation to provider {}", provider))?;
                 if *amount > entry.delegated {
                     return Err("insufficient delegation balance".into());
@@ -353,7 +350,9 @@ pub fn execute_delegation(
             }
             // Validate
             {
-                let from = state.delegations.get(from_provider)
+                let from = state
+                    .delegations
+                    .get(from_provider)
                     .ok_or_else(|| format!("no delegation to provider {}", from_provider))?;
                 if *amount > from.delegated {
                     return Err("insufficient delegation balance".into());
@@ -417,22 +416,26 @@ pub fn execute_delegation(
             } else {
                 Ok(DelegationResult {
                     success: true,
-                    message: format!(
-                        "pending rewards: {} PROVA",
-                        format_amount(total_rewards)
-                    ),
+                    message: format!("pending rewards: {} PROVA", format_amount(total_rewards)),
                     details,
                 })
             }
         }
-        DelegationCmd::List { provider, unbonding } => {
+        DelegationCmd::List {
+            provider,
+            unbonding,
+        } => {
             let entries: Vec<(String, &DelegationEntry)> = match provider {
                 Some(p) => state
                     .delegations
                     .get(p)
                     .map(|e| vec![(p.clone(), e)])
                     .unwrap_or_default(),
-                None => state.delegations.iter().map(|(k, v)| (k.clone(), v)).collect(),
+                None => state
+                    .delegations
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v))
+                    .collect(),
             };
 
             let mut details: Vec<DelegationDetail> = entries
@@ -552,8 +555,7 @@ impl DelegationState {
                 accepting: true,
             },
         );
-        self.exchange_rates
-            .insert(address.to_string(), 1_000_000); // 1:1 initial rate
+        self.exchange_rates.insert(address.to_string(), 1_000_000); // 1:1 initial rate
     }
 
     pub fn add_rewards(&mut self, provider: &str, amount: Amount) {
@@ -575,7 +577,11 @@ impl DelegationState {
     }
 
     fn mint_st_tokens(&self, provider: &str, amount: Amount) -> Amount {
-        let rate = self.exchange_rates.get(provider).copied().unwrap_or(1_000_000);
+        let rate = self
+            .exchange_rates
+            .get(provider)
+            .copied()
+            .unwrap_or(1_000_000);
         if rate == 0 {
             return 0;
         }
@@ -583,7 +589,11 @@ impl DelegationState {
     }
 
     fn burn_st_tokens(&self, provider: &str, amount: Amount) -> Amount {
-        let rate = self.exchange_rates.get(provider).copied().unwrap_or(1_000_000);
+        let rate = self
+            .exchange_rates
+            .get(provider)
+            .copied()
+            .unwrap_or(1_000_000);
         (amount as u128 * 1_000_000 / rate as u128) as Amount
     }
 }
@@ -739,7 +749,10 @@ mod tests {
     #[test]
     fn test_parse_invalid_amount() {
         let result = parse_delegation(&args("delegate prov1 abc"));
-        assert!(matches!(result, Err(DelegationParseError::InvalidAmount(_))));
+        assert!(matches!(
+            result,
+            Err(DelegationParseError::InvalidAmount(_))
+        ));
     }
 
     #[test]
@@ -1017,18 +1030,14 @@ mod tests {
                 accepting: false,
             },
         );
-        let result = execute_delegation(
-            &DelegationCmd::Providers { active_only: true },
-            &mut state,
-        )
-        .unwrap();
+        let result =
+            execute_delegation(&DelegationCmd::Providers { active_only: true }, &mut state)
+                .unwrap();
         assert_eq!(result.details.len(), 1);
 
-        let result_all = execute_delegation(
-            &DelegationCmd::Providers { active_only: false },
-            &mut state,
-        )
-        .unwrap();
+        let result_all =
+            execute_delegation(&DelegationCmd::Providers { active_only: false }, &mut state)
+                .unwrap();
         assert_eq!(result_all.details.len(), 2);
     }
 

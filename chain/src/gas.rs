@@ -87,7 +87,8 @@ impl FeeParams {
         if self.max_fee_per_gas < base_fee {
             return None;
         }
-        let priority = self.max_priority_fee_per_gas
+        let priority = self
+            .max_priority_fee_per_gas
             .min(self.max_fee_per_gas - base_fee);
         Some(base_fee + priority)
     }
@@ -97,7 +98,10 @@ impl FeeParams {
         if self.max_fee_per_gas < base_fee {
             return None;
         }
-        Some(self.max_priority_fee_per_gas.min(self.max_fee_per_gas - base_fee))
+        Some(
+            self.max_priority_fee_per_gas
+                .min(self.max_fee_per_gas - base_fee),
+        )
     }
 
     /// Maximum cost this tx can incur.
@@ -182,9 +186,11 @@ impl FeeMarket {
         if !self.can_fit(gas_used) {
             return Err("block gas limit exceeded");
         }
-        let effective = params.effective_gas_price(self.base_fee)
+        let effective = params
+            .effective_gas_price(self.base_fee)
             .ok_or("max fee below base fee")?;
-        let priority = params.effective_priority_fee(self.base_fee)
+        let priority = params
+            .effective_priority_fee(self.base_fee)
             .ok_or("max fee below base fee")?;
 
         let base_fee_total = self.base_fee * gas_used as u128;
@@ -262,9 +268,9 @@ impl FeeMarket {
 
     /// Get utilization ratio of last finalized block (0.0 to 1.0 as basis points).
     pub fn last_utilization_bps(&self) -> Option<u64> {
-        self.history.last().map(|info| {
-            (info.gas_used as u128 * 10_000 / info.gas_limit as u128) as u64
-        })
+        self.history
+            .last()
+            .map(|info| (info.gas_used as u128 * 10_000 / info.gas_limit as u128) as u64)
     }
 }
 
@@ -436,7 +442,10 @@ mod tests {
         let params2 = FeeParams::new(300, 20, 30_000);
         let r2 = market.charge(&params2, 30_000).unwrap();
         assert_eq!(market.total_burned, r1.base_fee_total + r2.base_fee_total);
-        assert_eq!(market.total_priority, r1.priority_fee_total + r2.priority_fee_total);
+        assert_eq!(
+            market.total_priority,
+            r1.priority_fee_total + r2.priority_fee_total
+        );
     }
 
     #[test]

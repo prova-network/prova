@@ -154,9 +154,10 @@ impl FinalityGadget {
     /// Query the finality level of a specific Prova epoch.
     pub fn finality_of(&self, epoch: u64) -> FinalityLevel {
         // Find the checkpoint covering this epoch
-        let record = self.records.values().find(|r| {
-            epoch >= r.epoch_start && epoch <= r.epoch_end
-        });
+        let record = self
+            .records
+            .values()
+            .find(|r| epoch >= r.epoch_start && epoch <= r.epoch_end);
 
         match record {
             None => FinalityLevel::Tentative,
@@ -235,9 +236,9 @@ impl FinalityGadget {
     /// Check if a specific checkpoint is L1-final.
     pub fn is_l1_final(&self, sequence: u64) -> bool {
         self.records.get(&sequence).map_or(false, |r| {
-            r.anchor.as_ref().map_or(false, |a| {
-                self.l1_head >= a.l1_epoch + self.finality_depth
-            })
+            r.anchor
+                .as_ref()
+                .map_or(false, |a| self.l1_head >= a.l1_epoch + self.finality_depth)
         })
     }
 }
@@ -293,7 +294,13 @@ mod tests {
     fn test_non_sequential_rejected() {
         let mut fg = setup();
         let err = fg.register_checkpoint(5, 361, 480, 480).unwrap_err();
-        assert_eq!(err, FinalityError::NonSequential { expected: 3, got: 5 });
+        assert_eq!(
+            err,
+            FinalityError::NonSequential {
+                expected: 3,
+                got: 5
+            }
+        );
     }
 
     #[test]
@@ -400,7 +407,11 @@ mod tests {
             "duplicate checkpoint 5"
         );
         assert_eq!(
-            FinalityError::NonSequential { expected: 3, got: 5 }.to_string(),
+            FinalityError::NonSequential {
+                expected: 3,
+                got: 5
+            }
+            .to_string(),
             "expected sequence 3, got 5"
         );
     }

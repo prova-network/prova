@@ -5,7 +5,7 @@
 //! - `RateLimiter`: token-bucket rate limiter
 //! - `ResilientTransport`: wraps any `Transport` with retry + rate limiting
 
-use crate::rpc_client::{Transport, RpcClientError};
+use crate::rpc_client::{RpcClientError, Transport};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
@@ -98,8 +98,8 @@ impl RetryPolicy {
         if attempt == 0 {
             return Duration::ZERO;
         }
-        let delay_ms = self.base_delay.as_millis() as f64
-            * self.multiplier.powi(attempt as i32 - 1);
+        let delay_ms =
+            self.base_delay.as_millis() as f64 * self.multiplier.powi(attempt as i32 - 1);
         let capped = delay_ms.min(self.max_delay.as_millis() as f64);
         Duration::from_millis(capped as u64)
     }
@@ -111,13 +111,11 @@ impl RetryPolicy {
             RetryableErrors::TransportOnly => {
                 matches!(err, RpcClientError::Transport(_))
             }
-            RetryableErrors::WithCodes(codes) => {
-                match err {
-                    RpcClientError::Transport(_) => true,
-                    RpcClientError::Rpc(e) => codes.contains(&e.code),
-                    _ => false,
-                }
-            }
+            RetryableErrors::WithCodes(codes) => match err {
+                RpcClientError::Transport(_) => true,
+                RpcClientError::Rpc(e) => codes.contains(&e.code),
+                _ => false,
+            },
         }
     }
 }
@@ -299,9 +297,7 @@ impl<T: Transport> Transport for ResilientTransport<T> {
         let mut stats = self.stats.lock().unwrap();
         stats.total_failures += 1;
         drop(stats);
-        Err(last_err.unwrap_or_else(|| {
-            RpcClientError::Transport("max retries exhausted".into())
-        }))
+        Err(last_err.unwrap_or_else(|| RpcClientError::Transport("max retries exhausted".into())))
     }
 }
 
@@ -355,7 +351,9 @@ mod tests {
 
     impl CountingTransport {
         fn new() -> Self {
-            Self { count: AtomicU32::new(0) }
+            Self {
+                count: AtomicU32::new(0),
+            }
         }
         fn call_count(&self) -> u32 {
             self.count.load(Ordering::SeqCst)
@@ -390,8 +388,7 @@ mod tests {
 
     #[test]
     fn test_delay_capped_at_max() {
-        let p = RetryPolicy::default()
-            .with_max_delay(Duration::from_millis(300));
+        let p = RetryPolicy::default().with_max_delay(Duration::from_millis(300));
         assert_eq!(p.delay_for_attempt(1), Duration::from_millis(200));
         assert_eq!(p.delay_for_attempt(2), Duration::from_millis(300)); // capped
         assert_eq!(p.delay_for_attempt(5), Duration::from_millis(300)); // capped
@@ -419,8 +416,8 @@ mod tests {
 
     #[test]
     fn test_retryable_with_codes() {
-        let p = RetryPolicy::default()
-            .with_retryable(RetryableErrors::WithCodes(vec![-32000, -32603]));
+        let p =
+            RetryPolicy::default().with_retryable(RetryableErrors::WithCodes(vec![-32000, -32603]));
         // Transport errors always retryable
         assert!(p.is_retryable(&RpcClientError::Transport("net".into())));
         // Matching RPC code
@@ -530,8 +527,7 @@ mod tests {
         let transport = CountingTransport::new();
         let policy = RetryPolicy::none();
         let limiter = RateLimiter::new(2, 1000.0);
-        let resilient = ResilientTransport::new(transport, policy)
-            .with_rate_limiter(limiter);
+        let resilient = ResilientTransport::new(transport, policy).with_rate_limiter(limiter);
 
         // First two should be immediate
         resilient.send_raw("1").unwrap();

@@ -1,26 +1,34 @@
-#![allow(non_snake_case, dead_code, unused_imports, unused_variables, unused_assignments, unused_mut, clippy::all)]
+#![allow(
+    non_snake_case,
+    dead_code,
+    unused_imports,
+    unused_variables,
+    unused_assignments,
+    unused_mut,
+    clippy::all
+)]
 //! Prova Client SDK — build, sign, and submit inference requests.
 //!
 //! Provides a high-level `ProvaClient` that abstracts away chain
 //! interaction: constructing job requests, signing transactions,
 //! polling for results, and verifying activation proofs.
 
-pub mod rpc_client;
+pub mod api_gateway_client;
+pub mod blob_client;
 pub mod cli_wallet;
-pub mod retry;
+pub mod confidential;
+pub mod delegation;
 pub mod event_client;
 pub mod event_replay;
 pub mod marketplace;
-pub mod blob_client;
-pub mod delegation;
-pub mod confidential;
 pub mod multisig;
-pub mod api_gateway_client;
+pub mod retry;
+pub mod rpc_client;
 
-use prova_chain::types::{Address, Epoch, Hash, ModelId};
-use prova_chain::scheduler::{JobId, JobRequest};
 use prova_chain::commit::InferenceCommit;
-use sha2::{Sha256, Digest};
+use prova_chain::scheduler::{JobId, JobRequest};
+use prova_chain::types::{Address, Epoch, Hash, ModelId};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 
 // ── Signing ──────────────────────────────────────────────────
@@ -242,7 +250,9 @@ pub struct ProviderDiscovery {
 
 impl ProviderDiscovery {
     pub fn new() -> Self {
-        Self { providers: Vec::new() }
+        Self {
+            providers: Vec::new(),
+        }
     }
 
     /// Register a known provider.
@@ -253,14 +263,18 @@ impl ProviderDiscovery {
     /// Find providers that serve a given model, sorted by score.
     /// Score = reputation * stake_weight / price (higher is better).
     pub fn find_providers(&self, model: &ModelId, max_price: u128) -> Vec<&ProviderInfo> {
-        let mut candidates: Vec<&ProviderInfo> = self.providers.iter()
+        let mut candidates: Vec<&ProviderInfo> = self
+            .providers
+            .iter()
             .filter(|p| p.models.contains(model) && p.price <= max_price)
             .collect();
 
         candidates.sort_by(|a, b| {
             let score_a = a.reputation * (a.stake as f64) / (a.price.max(1) as f64);
             let score_b = b.reputation * (b.stake as f64) / (b.price.max(1) as f64);
-            score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+            score_b
+                .partial_cmp(&score_a)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         candidates
@@ -268,16 +282,22 @@ impl ProviderDiscovery {
 
     /// Get the cheapest provider for a model.
     pub fn cheapest(&self, model: &ModelId) -> Option<&ProviderInfo> {
-        self.providers.iter()
+        self.providers
+            .iter()
             .filter(|p| p.models.contains(model))
             .min_by_key(|p| p.price)
     }
 
     /// Get the highest-reputation provider for a model.
     pub fn best_reputation(&self, model: &ModelId) -> Option<&ProviderInfo> {
-        self.providers.iter()
+        self.providers
+            .iter()
             .filter(|p| p.models.contains(model))
-            .max_by(|a, b| a.reputation.partial_cmp(&b.reputation).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|a, b| {
+                a.reputation
+                    .partial_cmp(&b.reputation)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
     }
 }
 
@@ -360,10 +380,7 @@ impl ProvaClient {
 // ── Batch Operations ─────────────────────────────────────────
 
 /// Submit multiple inference requests in a batch.
-pub fn batch_submit(
-    client: &mut ProvaClient,
-    requests: Vec<SignedRequest>,
-) -> Vec<JobId> {
+pub fn batch_submit(client: &mut ProvaClient, requests: Vec<SignedRequest>) -> Vec<JobId> {
     requests.into_iter().map(|r| client.submit(r)).collect()
 }
 
@@ -545,14 +562,16 @@ mod tests {
     fn batch_submit_multiple() {
         let kp = test_keypair();
         let mut client = ProvaClient::new(kp.clone());
-        let requests: Vec<SignedRequest> = (0..5).map(|i| {
-            InferenceRequestBuilder::new()
-                .model(test_model())
-                .input(vec![i as u8; 10])
-                .max_price(100)
-                .build(&kp, 0)
-                .unwrap()
-        }).collect();
+        let requests: Vec<SignedRequest> = (0..5)
+            .map(|i| {
+                InferenceRequestBuilder::new()
+                    .model(test_model())
+                    .input(vec![i as u8; 10])
+                    .max_price(100)
+                    .build(&kp, 0)
+                    .unwrap()
+            })
+            .collect();
 
         let ids = batch_submit(&mut client, requests);
         assert_eq!(ids.len(), 5);
@@ -597,10 +616,18 @@ mod tests {
         let mut disc = ProviderDiscovery::new();
         let model = test_model();
         disc.add_provider(ProviderInfo {
-            address: Address::test(1), models: vec![model], price: 300, reputation: 0.5, stake: 1000,
+            address: Address::test(1),
+            models: vec![model],
+            price: 300,
+            reputation: 0.5,
+            stake: 1000,
         });
         disc.add_provider(ProviderInfo {
-            address: Address::test(2), models: vec![model], price: 100, reputation: 0.9, stake: 5000,
+            address: Address::test(2),
+            models: vec![model],
+            price: 100,
+            reputation: 0.9,
+            stake: 5000,
         });
 
         let cheapest = disc.cheapest(&model).unwrap();
@@ -612,10 +639,18 @@ mod tests {
         let mut disc = ProviderDiscovery::new();
         let model = test_model();
         disc.add_provider(ProviderInfo {
-            address: Address::test(1), models: vec![model], price: 100, reputation: 0.7, stake: 1000,
+            address: Address::test(1),
+            models: vec![model],
+            price: 100,
+            reputation: 0.7,
+            stake: 1000,
         });
         disc.add_provider(ProviderInfo {
-            address: Address::test(2), models: vec![model], price: 500, reputation: 0.99, stake: 1000,
+            address: Address::test(2),
+            models: vec![model],
+            price: 500,
+            reputation: 0.99,
+            stake: 1000,
         });
 
         let best = disc.best_reputation(&model).unwrap();
@@ -627,7 +662,11 @@ mod tests {
         let mut disc = ProviderDiscovery::new();
         let model = test_model();
         disc.add_provider(ProviderInfo {
-            address: Address::test(1), models: vec![model], price: 500, reputation: 0.9, stake: 5000,
+            address: Address::test(1),
+            models: vec![model],
+            price: 500,
+            reputation: 0.9,
+            stake: 5000,
         });
 
         let found = disc.find_providers(&model, 100); // too cheap
@@ -640,7 +679,9 @@ mod tests {
         disc.add_provider(ProviderInfo {
             address: Address::test(1),
             models: vec![ModelId([0xBB; 32])],
-            price: 100, reputation: 0.9, stake: 5000,
+            price: 100,
+            reputation: 0.9,
+            stake: 5000,
         });
 
         let found = disc.find_providers(&test_model(), 1000);

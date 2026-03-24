@@ -13,8 +13,8 @@
 //!
 //! All methods are designed for read-only access; no state mutations.
 
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap};
-use sha2::{Sha256, Digest};
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -116,13 +116,19 @@ pub struct Pagination {
 
 impl Default for Pagination {
     fn default() -> Self {
-        Self { offset: 0, limit: 20 }
+        Self {
+            offset: 0,
+            limit: 20,
+        }
     }
 }
 
 impl Pagination {
     pub fn new(offset: u64, limit: u64) -> Self {
-        Self { offset, limit: limit.min(100) } // cap at 100
+        Self {
+            offset,
+            limit: limit.min(100),
+        } // cap at 100
     }
 }
 
@@ -183,10 +189,16 @@ impl ExplorerStore {
         let from = tx.from.clone();
 
         // Track per-address
-        self.txs_by_address.entry(from.clone()).or_default().push(hash);
+        self.txs_by_address
+            .entry(from.clone())
+            .or_default()
+            .push(hash);
         if let Some(ref to) = tx.to {
             if *to != from {
-                self.txs_by_address.entry(to.clone()).or_default().push(hash);
+                self.txs_by_address
+                    .entry(to.clone())
+                    .or_default()
+                    .push(hash);
             }
         }
 
@@ -215,14 +227,17 @@ impl ExplorerStore {
     }
 
     fn touch_account(&mut self, addr: &Address, height: u64, timestamp: u64) {
-        let entry = self.accounts.entry(addr.clone()).or_insert_with(|| AccountSummary {
-            address: addr.clone(),
-            balance: 0,
-            nonce: 0,
-            tx_count: 0,
-            first_seen: None,
-            last_active: None,
-        });
+        let entry = self
+            .accounts
+            .entry(addr.clone())
+            .or_insert_with(|| AccountSummary {
+                address: addr.clone(),
+                balance: 0,
+                nonce: 0,
+                tx_count: 0,
+                first_seen: None,
+                last_active: None,
+            });
         entry.tx_count += 1;
         if entry.first_seen.is_none() || height < entry.first_seen.unwrap() {
             entry.first_seen = Some(height);
@@ -234,14 +249,17 @@ impl ExplorerStore {
 
     /// Update an account's balance and nonce (called during state sync).
     pub fn set_account_state(&mut self, addr: &Address, balance: u128, nonce: u64) {
-        let entry = self.accounts.entry(addr.clone()).or_insert_with(|| AccountSummary {
-            address: addr.clone(),
-            balance: 0,
-            nonce: 0,
-            tx_count: 0,
-            first_seen: None,
-            last_active: None,
-        });
+        let entry = self
+            .accounts
+            .entry(addr.clone())
+            .or_insert_with(|| AccountSummary {
+                address: addr.clone(),
+                balance: 0,
+                nonce: 0,
+                tx_count: 0,
+                first_seen: None,
+                last_active: None,
+            });
         entry.balance = balance;
         entry.nonce = nonce;
     }
@@ -261,13 +279,20 @@ impl ExplorerStore {
     /// List blocks in descending order (most recent first).
     pub fn get_block_range(&self, page: &Pagination) -> PaginatedResult<ExplorerBlock> {
         let total = self.blocks.len() as u64;
-        let items: Vec<_> = self.blocks.values()
+        let items: Vec<_> = self
+            .blocks
+            .values()
             .rev()
             .skip(page.offset as usize)
             .take(page.limit as usize)
             .cloned()
             .collect();
-        PaginatedResult { items, total, offset: page.offset, limit: page.limit }
+        PaginatedResult {
+            items,
+            total,
+            offset: page.offset,
+            limit: page.limit,
+        }
     }
 
     /// Get transaction by hash.
@@ -277,9 +302,11 @@ impl ExplorerStore {
 
     /// List transactions in a block.
     pub fn get_block_txs(&self, height: u64) -> Vec<ExplorerTx> {
-        self.txs_by_block.get(&height)
+        self.txs_by_block
+            .get(&height)
             .map(|hashes| {
-                hashes.iter()
+                hashes
+                    .iter()
                     .filter_map(|h| self.txs_by_hash.get(h).cloned())
                     .collect()
             })
@@ -287,7 +314,11 @@ impl ExplorerStore {
     }
 
     /// Search transactions by address (sender or receiver).
-    pub fn search_txs_by_address(&self, addr: &Address, page: &Pagination) -> PaginatedResult<ExplorerTx> {
+    pub fn search_txs_by_address(
+        &self,
+        addr: &Address,
+        page: &Pagination,
+    ) -> PaginatedResult<ExplorerTx> {
         let all = self.txs_by_address.get(addr);
         let total = all.map(|v| v.len() as u64).unwrap_or(0);
         let items: Vec<_> = all
@@ -297,7 +328,12 @@ impl ExplorerStore {
             .take(page.limit as usize)
             .filter_map(|h| self.txs_by_hash.get(h).cloned())
             .collect();
-        PaginatedResult { items, total, offset: page.offset, limit: page.limit }
+        PaginatedResult {
+            items,
+            total,
+            offset: page.offset,
+            limit: page.limit,
+        }
     }
 
     /// Get account summary.
@@ -326,7 +362,12 @@ impl ExplorerStore {
                             let intersection = sorted_intersect(&es_sorted, &ts_sorted);
                             // Need to return owned data — collect to vec
                             let v: Vec<usize> = intersection;
-                            Box::new(v.into_iter().collect::<Vec<_>>().into_iter().map(|_| unreachable!()))
+                            Box::new(
+                                v.into_iter()
+                                    .collect::<Vec<_>>()
+                                    .into_iter()
+                                    .map(|_| unreachable!()),
+                            )
                             // Actually let's just use a simpler approach
                         }
                         _ => return Vec::new(),
@@ -372,18 +413,25 @@ impl ExplorerStore {
             (0..self.events.len()).collect()
         };
 
-        indices.into_iter()
+        indices
+            .into_iter()
             .filter_map(|i| self.events.get(i))
             .filter(|e| e.block_height >= from && e.block_height <= to)
             .filter(|e| {
                 if let Some(ref emitter) = filter.emitter {
-                    if e.emitter != *emitter { return false; }
+                    if e.emitter != *emitter {
+                        return false;
+                    }
                 }
                 if let Some(ref t0) = filter.topic0 {
-                    if e.topics.first() != Some(t0) { return false; }
+                    if e.topics.first() != Some(t0) {
+                        return false;
+                    }
                 }
                 if let Some(ref t1) = filter.topic1 {
-                    if e.topics.get(1) != Some(t1) { return false; }
+                    if e.topics.get(1) != Some(t1) {
+                        return false;
+                    }
                 }
                 true
             })
@@ -399,8 +447,18 @@ impl ExplorerStore {
         let total_accounts = self.accounts.len() as u64;
 
         let avg_block_time_ms = if total_blocks > 1 {
-            let first = self.blocks.values().next().map(|b| b.timestamp).unwrap_or(0);
-            let last = self.blocks.values().last().map(|b| b.timestamp).unwrap_or(0);
+            let first = self
+                .blocks
+                .values()
+                .next()
+                .map(|b| b.timestamp)
+                .unwrap_or(0);
+            let last = self
+                .blocks
+                .values()
+                .last()
+                .map(|b| b.timestamp)
+                .unwrap_or(0);
             if last > first {
                 ((last - first) * 1000) / (total_blocks - 1)
             } else {

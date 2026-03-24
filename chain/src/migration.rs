@@ -12,8 +12,8 @@
 //! - Progress tracking for long-running migrations
 //! - Deterministic execution (same input → same output across all nodes)
 
-use std::collections::{BTreeMap, HashMap, HashSet};
 use crate::types::{Address, Hash};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -26,7 +26,10 @@ pub struct MigrationId {
 
 impl MigrationId {
     pub fn new(upgrade: &str, sequence: u32) -> Self {
-        Self { upgrade: upgrade.to_string(), sequence }
+        Self {
+            upgrade: upgrade.to_string(),
+            sequence,
+        }
     }
 
     pub fn canonical(&self) -> String {
@@ -39,8 +42,12 @@ impl MigrationId {
 pub struct StateVersion(pub u64);
 
 impl StateVersion {
-    pub fn genesis() -> Self { Self(0) }
-    pub fn next(&self) -> Self { Self(self.0 + 1) }
+    pub fn genesis() -> Self {
+        Self(0)
+    }
+    pub fn next(&self) -> Self {
+        Self(self.0 + 1)
+    }
 }
 
 /// Simplified account state for migration purposes.
@@ -54,7 +61,12 @@ pub struct MigrationAccountState {
 
 impl MigrationAccountState {
     pub fn new(balance: u128) -> Self {
-        Self { balance, nonce: 0, storage: BTreeMap::new(), metadata: BTreeMap::new() }
+        Self {
+            balance,
+            nonce: 0,
+            storage: BTreeMap::new(),
+            metadata: BTreeMap::new(),
+        }
     }
 }
 
@@ -119,9 +131,13 @@ pub trait Migration {
     /// Human-readable description.
     fn description(&self) -> &str;
     /// Migrations that must run before this one.
-    fn depends_on(&self) -> Vec<MigrationId> { vec![] }
+    fn depends_on(&self) -> Vec<MigrationId> {
+        vec![]
+    }
     /// Minimum state version required.
-    fn requires_version(&self) -> StateVersion { StateVersion::genesis() }
+    fn requires_version(&self) -> StateVersion {
+        StateVersion::genesis()
+    }
     /// Target state version after this migration.
     fn target_version(&self) -> StateVersion;
 
@@ -175,7 +191,9 @@ pub struct PlanResult {
 }
 
 impl PlanResult {
-    pub fn success(&self) -> bool { self.errors.is_empty() }
+    pub fn success(&self) -> bool {
+        self.errors.is_empty()
+    }
 }
 
 /// The migration runner: registers migrations and executes them in order.
@@ -186,7 +204,10 @@ pub struct MigrationRunner {
 
 impl MigrationRunner {
     pub fn new() -> Self {
-        Self { migrations: Vec::new(), progress_log: Vec::new() }
+        Self {
+            migrations: Vec::new(),
+            progress_log: Vec::new(),
+        }
     }
 
     pub fn register(&mut self, m: Box<dyn Migration>) {
@@ -203,7 +224,9 @@ impl MigrationRunner {
 
     /// Topologically sort migrations respecting dependencies.
     fn resolve_order(&self) -> Result<Vec<usize>, String> {
-        let id_to_idx: HashMap<MigrationId, usize> = self.migrations.iter()
+        let id_to_idx: HashMap<MigrationId, usize> = self
+            .migrations
+            .iter()
             .enumerate()
             .map(|(i, m)| (m.id(), i))
             .collect();
@@ -219,7 +242,11 @@ impl MigrationRunner {
                     adj[j].push(i);
                     in_degree[i] += 1;
                 } else {
-                    return Err(format!("Migration {} depends on unknown {}", m.id().canonical(), dep.canonical()));
+                    return Err(format!(
+                        "Migration {} depends on unknown {}",
+                        m.id().canonical(),
+                        dep.canonical()
+                    ));
                 }
             }
         }
@@ -255,14 +282,19 @@ impl MigrationRunner {
     pub fn run(&mut self, state: &mut MigrationState, mode: RunMode) -> PlanResult {
         let order = match self.resolve_order() {
             Ok(o) => o,
-            Err(e) => return PlanResult {
-                mode, migrations_run: 0, final_version: state.version,
-                effects: vec![], errors: vec![(MigrationId::new("__resolve__", 0), e)],
-            },
+            Err(e) => {
+                return PlanResult {
+                    mode,
+                    migrations_run: 0,
+                    final_version: state.version,
+                    effects: vec![],
+                    errors: vec![(MigrationId::new("__resolve__", 0), e)],
+                }
+            }
         };
 
-        let already_applied: HashSet<MigrationId> = state.applied.iter()
-            .map(|r| r.id.clone()).collect();
+        let already_applied: HashSet<MigrationId> =
+            state.applied.iter().map(|r| r.id.clone()).collect();
 
         let mut effects = Vec::new();
         let mut errors = Vec::new();
@@ -303,7 +335,8 @@ impl MigrationRunner {
 
             // Pre-validate
             self.progress_log.push(MigrationProgress {
-                migration_id: mid.clone(), step: "pre_validate",
+                migration_id: mid.clone(),
+                step: "pre_validate",
                 detail: m.description().to_string(),
             });
 
@@ -317,7 +350,8 @@ impl MigrationRunner {
 
             // Apply
             self.progress_log.push(MigrationProgress {
-                migration_id: mid.clone(), step: "apply",
+                migration_id: mid.clone(),
+                step: "apply",
                 detail: format!("applying from v{}", from_ver.0),
             });
 
@@ -346,7 +380,8 @@ impl MigrationRunner {
                     count += 1;
 
                     self.progress_log.push(MigrationProgress {
-                        migration_id: mid, step: "complete",
+                        migration_id: mid,
+                        step: "complete",
                         detail: format!("v{} → v{}", from_ver.0, target.version.0),
                     });
                 }
@@ -359,23 +394,36 @@ impl MigrationRunner {
 
         let final_version = target.version;
 
-        PlanResult { mode, migrations_run: count, final_version, effects, errors }
+        PlanResult {
+            mode,
+            migrations_run: count,
+            final_version,
+            effects,
+            errors,
+        }
     }
 
     /// Rollback the last N applied migrations.
-    pub fn rollback_last(&mut self, state: &mut MigrationState, count: usize) -> Result<usize, String> {
-        let id_map: HashMap<MigrationId, usize> = self.migrations.iter()
+    pub fn rollback_last(
+        &mut self,
+        state: &mut MigrationState,
+        count: usize,
+    ) -> Result<usize, String> {
+        let id_map: HashMap<MigrationId, usize> = self
+            .migrations
+            .iter()
             .enumerate()
             .map(|(i, m)| (m.id(), i))
             .collect();
 
-        let to_rollback: Vec<MigrationRecord> = state.applied.iter().rev()
-            .take(count).cloned().collect();
+        let to_rollback: Vec<MigrationRecord> =
+            state.applied.iter().rev().take(count).cloned().collect();
 
         let mut rolled = 0;
         for record in &to_rollback {
-            let idx = id_map.get(&record.id)
-                .ok_or_else(|| format!("Migration {} not found in registry", record.id.canonical()))?;
+            let idx = id_map.get(&record.id).ok_or_else(|| {
+                format!("Migration {} not found in registry", record.id.canonical())
+            })?;
 
             self.migrations[*idx].rollback(state)?;
             state.version = record.from_version;
@@ -388,9 +436,9 @@ impl MigrationRunner {
 
     /// Check which migrations are pending for the current state.
     pub fn pending(&self, state: &MigrationState) -> Vec<MigrationId> {
-        let applied: HashSet<MigrationId> = state.applied.iter()
-            .map(|r| r.id.clone()).collect();
-        self.migrations.iter()
+        let applied: HashSet<MigrationId> = state.applied.iter().map(|r| r.id.clone()).collect();
+        self.migrations
+            .iter()
             .filter(|m| !applied.contains(&m.id()))
             .map(|m| m.id())
             .collect()
@@ -406,9 +454,15 @@ pub struct AddAccountMetadata {
 }
 
 impl Migration for AddAccountMetadata {
-    fn id(&self) -> MigrationId { MigrationId::new("v1_metadata", 1) }
-    fn description(&self) -> &str { "Add metadata field to all accounts" }
-    fn target_version(&self) -> StateVersion { StateVersion(1) }
+    fn id(&self) -> MigrationId {
+        MigrationId::new("v1_metadata", 1)
+    }
+    fn description(&self) -> &str {
+        "Add metadata field to all accounts"
+    }
+    fn target_version(&self) -> StateVersion {
+        StateVersion(1)
+    }
 
     fn validate_pre(&self, state: &MigrationState) -> Result<(), String> {
         if state.version != StateVersion::genesis() {
@@ -420,12 +474,16 @@ impl Migration for AddAccountMetadata {
     fn apply(&self, state: &mut MigrationState) -> Result<MigrationEffect, String> {
         let mut modified = 0u64;
         for (_addr, acct) in state.accounts.iter_mut() {
-            acct.metadata.insert(self.field_name.clone(), self.default_value.clone());
+            acct.metadata
+                .insert(self.field_name.clone(), self.default_value.clone());
             modified += 1;
         }
         Ok(MigrationEffect {
             accounts_modified: modified,
-            description: format!("Added '{}' metadata to {} accounts", self.field_name, modified),
+            description: format!(
+                "Added '{}' metadata to {} accounts",
+                self.field_name, modified
+            ),
             ..Default::default()
         })
     }
@@ -433,7 +491,11 @@ impl Migration for AddAccountMetadata {
     fn validate_post(&self, state: &MigrationState) -> Result<(), String> {
         for (addr, acct) in &state.accounts {
             if !acct.metadata.contains_key(&self.field_name) {
-                return Err(format!("Account {} missing metadata '{}'", hex::encode(&addr.0), self.field_name));
+                return Err(format!(
+                    "Account {} missing metadata '{}'",
+                    hex::encode(&addr.0),
+                    self.field_name
+                ));
             }
         }
         Ok(())
@@ -457,16 +519,30 @@ pub struct RebalanceSupply {
 
 impl RebalanceSupply {
     pub fn new(numerator: u128, denominator: u128) -> Self {
-        Self { numerator, denominator, original_balances: std::cell::RefCell::new(BTreeMap::new()) }
+        Self {
+            numerator,
+            denominator,
+            original_balances: std::cell::RefCell::new(BTreeMap::new()),
+        }
     }
 }
 
 impl Migration for RebalanceSupply {
-    fn id(&self) -> MigrationId { MigrationId::new("v2_rebalance", 1) }
-    fn description(&self) -> &str { "Rebalance token supply by scaling all balances" }
-    fn depends_on(&self) -> Vec<MigrationId> { vec![MigrationId::new("v1_metadata", 1)] }
-    fn requires_version(&self) -> StateVersion { StateVersion(1) }
-    fn target_version(&self) -> StateVersion { StateVersion(2) }
+    fn id(&self) -> MigrationId {
+        MigrationId::new("v2_rebalance", 1)
+    }
+    fn description(&self) -> &str {
+        "Rebalance token supply by scaling all balances"
+    }
+    fn depends_on(&self) -> Vec<MigrationId> {
+        vec![MigrationId::new("v1_metadata", 1)]
+    }
+    fn requires_version(&self) -> StateVersion {
+        StateVersion(1)
+    }
+    fn target_version(&self) -> StateVersion {
+        StateVersion(2)
+    }
 
     fn validate_pre(&self, state: &MigrationState) -> Result<(), String> {
         if state.version.0 < 1 {
@@ -488,7 +564,9 @@ impl Migration for RebalanceSupply {
         for (addr, acct) in state.accounts.iter_mut() {
             originals.insert(*addr, acct.balance);
             total_before += acct.balance;
-            acct.balance = acct.balance.checked_mul(self.numerator)
+            acct.balance = acct
+                .balance
+                .checked_mul(self.numerator)
                 .and_then(|v| v.checked_div(self.denominator))
                 .ok_or_else(|| "Overflow during rebalance".to_string())?;
             total_after += acct.balance;
@@ -496,13 +574,20 @@ impl Migration for RebalanceSupply {
         }
 
         // Store total supply delta in params
-        state.params.insert("supply_delta".to_string(),
-            (total_after as i128 - total_before as i128).to_be_bytes().to_vec());
+        state.params.insert(
+            "supply_delta".to_string(),
+            (total_after as i128 - total_before as i128)
+                .to_be_bytes()
+                .to_vec(),
+        );
 
         Ok(MigrationEffect {
             accounts_modified: modified,
             params_modified: 1,
-            description: format!("Rebalanced {} accounts: {}×/{}", modified, self.numerator, self.denominator),
+            description: format!(
+                "Rebalanced {} accounts: {}×/{}",
+                modified, self.numerator, self.denominator
+            ),
             ..Default::default()
         })
     }
@@ -511,7 +596,10 @@ impl Migration for RebalanceSupply {
         // Verify no account has impossibly high balance
         for (addr, acct) in &state.accounts {
             if acct.balance > u128::MAX / 2 {
-                return Err(format!("Account {} has suspiciously high balance", hex::encode(&addr.0)));
+                return Err(format!(
+                    "Account {} has suspiciously high balance",
+                    hex::encode(&addr.0)
+                ));
             }
         }
         Ok(())
@@ -538,10 +626,18 @@ pub struct AddGlobalParam {
 }
 
 impl Migration for AddGlobalParam {
-    fn id(&self) -> MigrationId { MigrationId::new("add_param", self.new_version.0 as u32) }
-    fn description(&self) -> &str { "Add global parameter" }
-    fn requires_version(&self) -> StateVersion { self.required_version }
-    fn target_version(&self) -> StateVersion { self.new_version }
+    fn id(&self) -> MigrationId {
+        MigrationId::new("add_param", self.new_version.0 as u32)
+    }
+    fn description(&self) -> &str {
+        "Add global parameter"
+    }
+    fn requires_version(&self) -> StateVersion {
+        self.required_version
+    }
+    fn target_version(&self) -> StateVersion {
+        self.new_version
+    }
 
     fn validate_pre(&self, state: &MigrationState) -> Result<(), String> {
         if state.params.contains_key(&self.key) {
@@ -561,7 +657,10 @@ impl Migration for AddGlobalParam {
 
     fn validate_post(&self, state: &MigrationState) -> Result<(), String> {
         if !state.params.contains_key(&self.key) {
-            return Err(format!("Parameter '{}' not found after migration", self.key));
+            return Err(format!(
+                "Parameter '{}' not found after migration",
+                self.key
+            ));
         }
         Ok(())
     }
@@ -586,12 +685,16 @@ mod hex {
 mod tests {
     use super::*;
 
-    fn addr(n: u8) -> Address { Address::test(n) }
+    fn addr(n: u8) -> Address {
+        Address::test(n)
+    }
 
     fn sample_state(n_accounts: u8) -> MigrationState {
         let mut state = MigrationState::new();
         for i in 1..=n_accounts {
-            state.accounts.insert(addr(i), MigrationAccountState::new(1000 * i as u128));
+            state
+                .accounts
+                .insert(addr(i), MigrationAccountState::new(1000 * i as u128));
         }
         state
     }
@@ -626,7 +729,10 @@ mod tests {
     #[test]
     fn test_add_metadata_migration() {
         let mut state = sample_state(3);
-        let m = AddAccountMetadata { field_name: "tier".to_string(), default_value: "basic".to_string() };
+        let m = AddAccountMetadata {
+            field_name: "tier".to_string(),
+            default_value: "basic".to_string(),
+        };
 
         assert!(m.validate_pre(&state).is_ok());
         let effect = m.apply(&mut state).unwrap();
@@ -641,12 +747,21 @@ mod tests {
     #[test]
     fn test_add_metadata_rollback() {
         let mut state = sample_state(2);
-        let m = AddAccountMetadata { field_name: "tier".to_string(), default_value: "basic".to_string() };
+        let m = AddAccountMetadata {
+            field_name: "tier".to_string(),
+            default_value: "basic".to_string(),
+        };
         m.apply(&mut state).unwrap();
-        assert!(state.accounts.values().all(|a| a.metadata.contains_key("tier")));
+        assert!(state
+            .accounts
+            .values()
+            .all(|a| a.metadata.contains_key("tier")));
 
         m.rollback(&mut state).unwrap();
-        assert!(state.accounts.values().all(|a| !a.metadata.contains_key("tier")));
+        assert!(state
+            .accounts
+            .values()
+            .all(|a| !a.metadata.contains_key("tier")));
     }
 
     #[test]
@@ -772,7 +887,8 @@ mod tests {
         let state = sample_state(2);
         let mut runner = MigrationRunner::new();
         runner.register(Box::new(AddAccountMetadata {
-            field_name: "a".to_string(), default_value: "b".to_string(),
+            field_name: "a".to_string(),
+            default_value: "b".to_string(),
         }));
         runner.register(Box::new(RebalanceSupply::new(2, 1)));
 
@@ -803,13 +919,19 @@ mod tests {
     fn test_pre_validation_failure() {
         let mut state = sample_state(2);
         state.version = StateVersion(5); // Wrong version
-        let m = AddAccountMetadata { field_name: "x".to_string(), default_value: "y".to_string() };
+        let m = AddAccountMetadata {
+            field_name: "x".to_string(),
+            default_value: "y".to_string(),
+        };
         assert!(m.validate_pre(&state).is_err());
     }
 
     #[test]
     fn test_rebalance_zero_denominator() {
-        let state = MigrationState { version: StateVersion(1), ..MigrationState::new() };
+        let state = MigrationState {
+            version: StateVersion(1),
+            ..MigrationState::new()
+        };
         let m = RebalanceSupply::new(1, 0);
         assert!(m.validate_pre(&state).is_err());
     }
@@ -819,7 +941,8 @@ mod tests {
         let mut state = sample_state(2);
         let mut runner = MigrationRunner::new();
         runner.register(Box::new(AddAccountMetadata {
-            field_name: "x".to_string(), default_value: "y".to_string(),
+            field_name: "x".to_string(),
+            default_value: "y".to_string(),
         }));
 
         runner.run(&mut state, RunMode::Live);
@@ -835,7 +958,8 @@ mod tests {
 
         let mut runner = MigrationRunner::new();
         runner.register(Box::new(AddAccountMetadata {
-            field_name: "v".to_string(), default_value: "1".to_string(),
+            field_name: "v".to_string(),
+            default_value: "1".to_string(),
         }));
 
         runner.run(&mut state, RunMode::Live);

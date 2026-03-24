@@ -25,7 +25,7 @@ pub mod event_types {
     use super::*;
 
     pub fn hash_signature(sig: &str) -> Hash {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(sig.as_bytes());
         let result = hasher.finalize();
@@ -159,7 +159,7 @@ pub struct BlockReceipt {
 impl BlockReceipt {
     /// Compute Merkle root of events in this block.
     pub fn compute_root(events: &[Event]) -> Hash {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
 
         if events.is_empty() {
             return [0u8; 32];
@@ -230,7 +230,14 @@ impl EventStore {
     }
 
     /// Emit an event. Returns the log index.
-    pub fn emit(&mut self, emitter: Address, topics: Vec<Hash>, data: Vec<u8>, block_number: Epoch, tx_index: u32) -> Result<u32, EventError> {
+    pub fn emit(
+        &mut self,
+        emitter: Address,
+        topics: Vec<Hash>,
+        data: Vec<u8>,
+        block_number: Epoch,
+        tx_index: u32,
+    ) -> Result<u32, EventError> {
         if topics.len() > MAX_TOPICS {
             return Err(EventError::TooManyTopics(topics.len()));
         }
@@ -255,15 +262,24 @@ impl EventStore {
         self.events.push(event);
 
         // Update block index
-        let entry = self.block_index.entry(block_number).or_insert((store_idx, store_idx));
+        let entry = self
+            .block_index
+            .entry(block_number)
+            .or_insert((store_idx, store_idx));
         entry.1 = store_idx + 1;
 
         // Update address index
-        self.address_index.entry(emitter).or_default().push(store_idx);
+        self.address_index
+            .entry(emitter)
+            .or_default()
+            .push(store_idx);
 
         // Update type index (topic[0])
         if let Some(&type_hash) = topics.first() {
-            self.type_index.entry(type_hash).or_default().push(store_idx);
+            self.type_index
+                .entry(type_hash)
+                .or_default()
+                .push(store_idx);
         }
 
         Ok(idx)
@@ -306,7 +322,12 @@ impl EventStore {
             }
         } else {
             // Full scan
-            let range_start = self.block_index.range(from..).next().map(|(_, &(s, _))| s).unwrap_or(self.events.len());
+            let range_start = self
+                .block_index
+                .range(from..)
+                .next()
+                .map(|(_, &(s, _))| s)
+                .unwrap_or(self.events.len());
             Box::new(range_start..self.events.len())
         };
 
@@ -410,9 +431,15 @@ mod tests {
         let mut store = EventStore::new();
         let t1 = event_types::TRANSFER();
         let t2 = event_types::SLASH();
-        store.emit(addr(1), vec![t1, topic(0xAA)], vec![], 1, 0).unwrap();
-        store.emit(addr(1), vec![t2, topic(0xBB)], vec![], 1, 1).unwrap();
-        store.emit(addr(1), vec![t1, topic(0xCC)], vec![], 1, 2).unwrap();
+        store
+            .emit(addr(1), vec![t1, topic(0xAA)], vec![], 1, 0)
+            .unwrap();
+        store
+            .emit(addr(1), vec![t2, topic(0xBB)], vec![], 1, 1)
+            .unwrap();
+        store
+            .emit(addr(1), vec![t1, topic(0xCC)], vec![], 1, 2)
+            .unwrap();
 
         // Filter by event type
         let transfers = store.query(&EventFilter::new().topic(0, t1));
@@ -427,8 +454,12 @@ mod tests {
     fn test_block_receipt_merkle_root() {
         let mut store = EventStore::new();
         let t = event_types::STAKE_DEPOSITED();
-        store.emit(addr(1), vec![t], 100u128.to_be_bytes().to_vec(), 1, 0).unwrap();
-        store.emit(addr(2), vec![t], 200u128.to_be_bytes().to_vec(), 1, 1).unwrap();
+        store
+            .emit(addr(1), vec![t], 100u128.to_be_bytes().to_vec(), 1, 0)
+            .unwrap();
+        store
+            .emit(addr(2), vec![t], 200u128.to_be_bytes().to_vec(), 1, 1)
+            .unwrap();
 
         let root = store.finalize_block(1);
         assert_ne!(root, [0u8; 32]);
@@ -452,12 +483,20 @@ mod tests {
     fn test_merkle_root_different_for_different_events() {
         let t = event_types::TRANSFER();
         let e1 = Event {
-            emitter: addr(1), topics: vec![t], data: vec![1],
-            block_number: 1, log_index: 0, tx_index: 0,
+            emitter: addr(1),
+            topics: vec![t],
+            data: vec![1],
+            block_number: 1,
+            log_index: 0,
+            tx_index: 0,
         };
         let e2 = Event {
-            emitter: addr(2), topics: vec![t], data: vec![2],
-            block_number: 1, log_index: 1, tx_index: 1,
+            emitter: addr(2),
+            topics: vec![t],
+            data: vec![2],
+            block_number: 1,
+            log_index: 1,
+            tx_index: 1,
         };
 
         let root_a = BlockReceipt::compute_root(&[e1.clone()]);
@@ -534,7 +573,9 @@ mod tests {
         let t = event_types::TRANSFER();
 
         for block in 0..5 {
-            store.emit(addr(1), vec![t], vec![block as u8], block, 0).unwrap();
+            store
+                .emit(addr(1), vec![t], vec![block as u8], block, 0)
+                .unwrap();
             store.finalize_block(block);
         }
 

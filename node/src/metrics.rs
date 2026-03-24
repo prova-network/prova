@@ -194,7 +194,9 @@ impl Histogram {
         Self::new(
             name,
             help,
-            vec![0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+            vec![
+                0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
+            ],
         )
     }
 
@@ -218,9 +220,7 @@ impl Histogram {
         // Insert new entry
         let mut vals = self.values.write().unwrap();
         let data = vals.entry(key).or_insert_with(|| HistogramData {
-            bucket_counts: (0..self.buckets.len())
-                .map(|_| AtomicU64::new(0))
-                .collect(),
+            bucket_counts: (0..self.buckets.len()).map(|_| AtomicU64::new(0)).collect(),
             sum_milli: AtomicI64::new(0),
             count: AtomicU64::new(0),
         });
@@ -485,14 +485,8 @@ impl NodeMetrics {
             "prova_peers_connected",
             "Number of connected peers",
         ));
-        let chain_height = Arc::new(Gauge::new(
-            "prova_chain_height",
-            "Current chain height",
-        ));
-        let mempool_size = Arc::new(Gauge::new(
-            "prova_mempool_size",
-            "Transactions in mempool",
-        ));
+        let chain_height = Arc::new(Gauge::new("prova_chain_height", "Current chain height"));
+        let mempool_size = Arc::new(Gauge::new("prova_mempool_size", "Transactions in mempool"));
         let disputes_opened = Arc::new(Counter::new(
             "prova_disputes_opened_total",
             "Total disputes opened",
@@ -624,34 +618,34 @@ mod tests {
     #[test]
     fn test_histogram_bucket_distribution() {
         let h = Histogram::new("lat", "latency", vec![1.0, 5.0, 10.0]);
-        h.observe(0.5);  // bucket 1.0
-        h.observe(3.0);  // bucket 5.0
-        h.observe(7.0);  // bucket 10.0
+        h.observe(0.5); // bucket 1.0
+        h.observe(3.0); // bucket 5.0
+        h.observe(7.0); // bucket 10.0
         h.observe(15.0); // +Inf only
 
         let samples = h.collect();
         // Find bucket samples
-        let bucket_samples: Vec<_> = samples
-            .iter()
-            .filter(|s| s.name == "lat_bucket")
-            .collect();
+        let bucket_samples: Vec<_> = samples.iter().filter(|s| s.name == "lat_bucket").collect();
 
         // le=1.0 → cumulative 1 (0.5)
-        let le1 = bucket_samples.iter().find(|s| {
-            s.labels.iter().any(|(k, v)| k == "le" && v == "1")
-        }).unwrap();
+        let le1 = bucket_samples
+            .iter()
+            .find(|s| s.labels.iter().any(|(k, v)| k == "le" && v == "1"))
+            .unwrap();
         assert_eq!(le1.value, 1.0);
 
         // le=5.0 → cumulative 2 (0.5 + 3.0)
-        let le5 = bucket_samples.iter().find(|s| {
-            s.labels.iter().any(|(k, v)| k == "le" && v == "5")
-        }).unwrap();
+        let le5 = bucket_samples
+            .iter()
+            .find(|s| s.labels.iter().any(|(k, v)| k == "le" && v == "5"))
+            .unwrap();
         assert_eq!(le5.value, 2.0);
 
         // le=+Inf → 4 (all)
-        let le_inf = bucket_samples.iter().find(|s| {
-            s.labels.iter().any(|(k, v)| k == "le" && v == "+Inf")
-        }).unwrap();
+        let le_inf = bucket_samples
+            .iter()
+            .find(|s| s.labels.iter().any(|(k, v)| k == "le" && v == "+Inf"))
+            .unwrap();
         assert_eq!(le_inf.value, 4.0);
     }
 

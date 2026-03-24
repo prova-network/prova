@@ -26,7 +26,9 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, _) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
         let randomness = test_randomness(0);
         let challenge = engine.generate_challenge(blob_id, &randomness).unwrap();
 
@@ -34,7 +36,10 @@ mod tests {
         engine.set_epoch(challenge.deadline + 1);
         engine.process_expired();
 
-        assert_eq!(engine.get_commitment(&blob_id).unwrap().status, DasStatus::Failed);
+        assert_eq!(
+            engine.get_commitment(&blob_id).unwrap().status,
+            DasStatus::Failed
+        );
         assert_eq!(engine.get_penalty(&Address::test(1)), DAS_PENALTY);
     }
 
@@ -45,13 +50,17 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, layers) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
 
         // Round 0: respond honestly
         let r0 = test_randomness(0);
         let ch0 = engine.generate_challenge(blob_id, &r0).unwrap();
         let proofs0 = build_chunk_proofs(&ch0.indices, &all_chunks, &layers);
-        engine.respond_to_challenge(blob_id, ch0.round, &proofs0).unwrap();
+        engine
+            .respond_to_challenge(blob_id, ch0.round, &proofs0)
+            .unwrap();
         assert_eq!(engine.get_commitment(&blob_id).unwrap().rounds_completed, 1);
 
         // Round 1: withhold
@@ -60,7 +69,10 @@ mod tests {
         engine.set_epoch(ch1.deadline + 1);
         engine.process_expired();
 
-        assert_eq!(engine.get_commitment(&blob_id).unwrap().status, DasStatus::Failed);
+        assert_eq!(
+            engine.get_commitment(&blob_id).unwrap().status,
+            DasStatus::Failed
+        );
         assert_eq!(engine.get_penalty(&Address::test(1)), DAS_PENALTY);
     }
 
@@ -73,7 +85,9 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, layers) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
         let randomness = test_randomness(0);
         let challenge = engine.generate_challenge(blob_id, &randomness).unwrap();
 
@@ -82,7 +96,9 @@ mod tests {
         for p in proofs.iter_mut() {
             p.data = p.data.iter().map(|b| !b).collect();
         }
-        let err = engine.respond_to_challenge(blob_id, challenge.round, &proofs).unwrap_err();
+        let err = engine
+            .respond_to_challenge(blob_id, challenge.round, &proofs)
+            .unwrap_err();
         assert_eq!(err, "invalid merkle proof");
     }
 
@@ -93,7 +109,9 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, layers) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
         let randomness = test_randomness(0);
         let challenge = engine.generate_challenge(blob_id, &randomness).unwrap();
 
@@ -104,7 +122,9 @@ mod tests {
             proofs[0].data = proofs[1].data.clone();
             proofs[1].data = d0;
         }
-        let err = engine.respond_to_challenge(blob_id, challenge.round, &proofs).unwrap_err();
+        let err = engine
+            .respond_to_challenge(blob_id, challenge.round, &proofs)
+            .unwrap_err();
         assert_eq!(err, "invalid merkle proof");
     }
 
@@ -115,7 +135,9 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, layers) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
         let randomness = test_randomness(0);
         let challenge = engine.generate_challenge(blob_id, &randomness).unwrap();
 
@@ -126,7 +148,9 @@ mod tests {
             proofs[0].proof = proofs[1].proof.clone();
             proofs[1].proof = p0;
         }
-        let err = engine.respond_to_challenge(blob_id, challenge.round, &proofs).unwrap_err();
+        let err = engine
+            .respond_to_challenge(blob_id, challenge.round, &proofs)
+            .unwrap_err();
         assert_eq!(err, "invalid merkle proof");
     }
 
@@ -138,13 +162,17 @@ mod tests {
         let (blob_id, _, all_chunks, layers) = prepare_blob(&original);
         let fake_root: Hash = [0xAB; 32];
 
-        engine.submit_commitment(blob_id, Address::test(1), fake_root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), fake_root, all_chunks.len())
+            .unwrap();
         let randomness = test_randomness(0);
         let challenge = engine.generate_challenge(blob_id, &randomness).unwrap();
 
         // Proofs are valid against real root but not against fake_root
         let proofs = build_chunk_proofs(&challenge.indices, &all_chunks, &layers);
-        let err = engine.respond_to_challenge(blob_id, challenge.round, &proofs).unwrap_err();
+        let err = engine
+            .respond_to_challenge(blob_id, challenge.round, &proofs)
+            .unwrap_err();
         assert_eq!(err, "invalid merkle proof");
     }
 
@@ -157,13 +185,17 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, layers) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
 
         // Complete round 0
         let r0 = test_randomness(0);
         let ch0 = engine.generate_challenge(blob_id, &r0).unwrap();
         let proofs0 = build_chunk_proofs(&ch0.indices, &all_chunks, &layers);
-        engine.respond_to_challenge(blob_id, ch0.round, &proofs0).unwrap();
+        engine
+            .respond_to_challenge(blob_id, ch0.round, &proofs0)
+            .unwrap();
 
         // Generate round 1 challenge
         let r1 = test_randomness(1);
@@ -182,15 +214,21 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, layers) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
         let randomness = test_randomness(0);
         let challenge = engine.generate_challenge(blob_id, &randomness).unwrap();
         let proofs = build_chunk_proofs(&challenge.indices, &all_chunks, &layers);
 
         // First response succeeds
-        engine.respond_to_challenge(blob_id, challenge.round, &proofs).unwrap();
+        engine
+            .respond_to_challenge(blob_id, challenge.round, &proofs)
+            .unwrap();
         // Second response should fail (challenge already responded)
-        let err = engine.respond_to_challenge(blob_id, challenge.round, &proofs).unwrap_err();
+        let err = engine
+            .respond_to_challenge(blob_id, challenge.round, &proofs)
+            .unwrap_err();
         assert_eq!(err, "challenge not found");
     }
 
@@ -201,16 +239,23 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, _) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
         let randomness = test_randomness(0);
         let challenge = engine.generate_challenge(blob_id, &randomness).unwrap();
         engine.set_epoch(challenge.deadline + 1);
         engine.process_expired();
 
-        assert_eq!(engine.get_commitment(&blob_id).unwrap().status, DasStatus::Failed);
+        assert_eq!(
+            engine.get_commitment(&blob_id).unwrap().status,
+            DasStatus::Failed
+        );
 
         // Try resubmitting
-        let err = engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap_err();
+        let err = engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap_err();
         assert_eq!(err, "blob already committed");
     }
 
@@ -225,8 +270,12 @@ mod tests {
         let (id1, root1, chunks1, _) = prepare_blob(&orig1);
         let (id2, root2, chunks2, _) = prepare_blob(&orig2);
 
-        engine.submit_commitment(id1, Address::test(1), root1, chunks1.len()).unwrap();
-        engine.submit_commitment(id2, Address::test(2), root2, chunks2.len()).unwrap();
+        engine
+            .submit_commitment(id1, Address::test(1), root1, chunks1.len())
+            .unwrap();
+        engine
+            .submit_commitment(id2, Address::test(2), root2, chunks2.len())
+            .unwrap();
 
         // Both get challenged
         let r1 = test_randomness(0);
@@ -252,7 +301,9 @@ mod tests {
         let (id1, root1, chunks1, _) = prepare_blob(&orig1);
         let (id2, root2, chunks2, _) = prepare_blob(&orig2);
 
-        engine.submit_commitment(id1, Address::test(1), root1, chunks1.len()).unwrap();
+        engine
+            .submit_commitment(id1, Address::test(1), root1, chunks1.len())
+            .unwrap();
         let r1 = test_randomness(0);
         let ch1 = engine.generate_challenge(id1, &r1).unwrap();
         engine.set_epoch(ch1.deadline + 1);
@@ -261,7 +312,9 @@ mod tests {
         assert_eq!(engine.get_penalty(&Address::test(1)), DAS_PENALTY);
 
         // Second blob, same provider
-        engine.submit_commitment(id2, Address::test(1), root2, chunks2.len()).unwrap();
+        engine
+            .submit_commitment(id2, Address::test(1), root2, chunks2.len())
+            .unwrap();
         let r2 = test_randomness(10);
         let ch2 = engine.generate_challenge(id2, &r2).unwrap();
         engine.set_epoch(ch2.deadline + 1);
@@ -278,7 +331,9 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, _) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
         let randomness = test_randomness(0);
         let _challenge = engine.generate_challenge(blob_id, &randomness).unwrap();
 
@@ -292,14 +347,18 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, layers) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
         let randomness = test_randomness(0);
         let challenge = engine.generate_challenge(blob_id, &randomness).unwrap();
 
         let mut proofs = build_chunk_proofs(&challenge.indices, &all_chunks, &layers);
         // Add an extra proof
         proofs.push(proofs[0].clone());
-        let err = engine.respond_to_challenge(blob_id, challenge.round, &proofs).unwrap_err();
+        let err = engine
+            .respond_to_challenge(blob_id, challenge.round, &proofs)
+            .unwrap_err();
         assert_eq!(err, "wrong number of proofs");
     }
 
@@ -326,14 +385,18 @@ mod tests {
         let original = make_chunks(8, 64);
         let (blob_id, root, all_chunks, layers) = prepare_blob(&original);
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
 
         // Confirm it
         for seed in 0..REQUIRED_ROUNDS as u8 {
             let r = test_randomness(seed);
             let ch = engine.generate_challenge(blob_id, &r).unwrap();
             let proofs = build_chunk_proofs(&ch.indices, &all_chunks, &layers);
-            engine.respond_to_challenge(blob_id, ch.round, &proofs).unwrap();
+            engine
+                .respond_to_challenge(blob_id, ch.round, &proofs)
+                .unwrap();
         }
 
         // Try another challenge after confirmation
@@ -346,7 +409,9 @@ mod tests {
     fn test_invalid_chunk_count_zero() {
         let mut engine = DasEngine::new();
         let fake_id = BlobId([0x01; 32]);
-        let err = engine.submit_commitment(fake_id, Address::test(1), [0; 32], 0).unwrap_err();
+        let err = engine
+            .submit_commitment(fake_id, Address::test(1), [0; 32], 0)
+            .unwrap_err();
         assert_eq!(err, "invalid chunk count");
     }
 
@@ -354,7 +419,9 @@ mod tests {
     fn test_invalid_chunk_count_too_large() {
         let mut engine = DasEngine::new();
         let fake_id = BlobId([0x02; 32]);
-        let err = engine.submit_commitment(fake_id, Address::test(1), [0; 32], TOTAL_CHUNKS * 4 + 1).unwrap_err();
+        let err = engine
+            .submit_commitment(fake_id, Address::test(1), [0; 32], TOTAL_CHUNKS * 4 + 1)
+            .unwrap_err();
         assert_eq!(err, "invalid chunk count");
     }
 
@@ -366,17 +433,24 @@ mod tests {
         let (blob_id, root, all_chunks, layers) = prepare_blob(&original);
         assert_eq!(all_chunks.len(), TOTAL_CHUNKS); // 64 original + 64 parity
 
-        engine.submit_commitment(blob_id, Address::test(1), root, all_chunks.len()).unwrap();
+        engine
+            .submit_commitment(blob_id, Address::test(1), root, all_chunks.len())
+            .unwrap();
 
         for seed in 0..REQUIRED_ROUNDS as u8 {
             let r = test_randomness(seed);
             let ch = engine.generate_challenge(blob_id, &r).unwrap();
             assert_eq!(ch.indices.len(), SAMPLES_PER_ROUND);
             let proofs = build_chunk_proofs(&ch.indices, &all_chunks, &layers);
-            engine.respond_to_challenge(blob_id, ch.round, &proofs).unwrap();
+            engine
+                .respond_to_challenge(blob_id, ch.round, &proofs)
+                .unwrap();
         }
 
-        assert_eq!(engine.get_commitment(&blob_id).unwrap().status, DasStatus::Confirmed);
+        assert_eq!(
+            engine.get_commitment(&blob_id).unwrap().status,
+            DasStatus::Confirmed
+        );
         assert_eq!(engine.get_penalty(&Address::test(1)), 0);
     }
 }

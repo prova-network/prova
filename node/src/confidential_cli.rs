@@ -40,10 +40,7 @@ pub enum ConfidentialCmd {
         challenger: Option<String>,
     },
     /// Query status of a confidential commit.
-    Status {
-        commit_id: u64,
-        json: bool,
-    },
+    Status { commit_id: u64, json: bool },
     /// List confidential commits with optional filters.
     List {
         provider: Option<String>,
@@ -52,13 +49,9 @@ pub enum ConfidentialCmd {
         limit: usize,
     },
     /// Trigger finalization for commits past the challenge window.
-    Finalize {
-        epoch: Option<u64>,
-    },
+    Finalize { epoch: Option<u64> },
     /// Enforce defaults (slash providers who missed reveal window).
-    EnforceDefaults {
-        epoch: Option<u64>,
-    },
+    EnforceDefaults { epoch: Option<u64> },
     /// Show help for confidential subcommands.
     Help,
 }
@@ -153,7 +146,9 @@ pub fn parse_confidential_cmd(args: &[&str]) -> Result<ConfidentialCmd, ParseErr
 
 fn parse_commit(args: &[&str]) -> Result<ConfidentialCmd, ParseError> {
     if args.len() < 2 {
-        return Err(ParseError("usage: commit <model-id> <encrypted-root> --blinding-factor <hex>".into()));
+        return Err(ParseError(
+            "usage: commit <model-id> <encrypted-root> --blinding-factor <hex>".into(),
+        ));
     }
     let model_id = args[0].to_string();
     let encrypted_root = args[1].to_string();
@@ -164,67 +159,110 @@ fn parse_commit(args: &[&str]) -> Result<ConfidentialCmd, ParseError> {
         match args[i] {
             "--blinding-factor" | "-b" => {
                 i += 1;
-                blinding_factor = Some(args.get(i).ok_or_else(|| ParseError("--blinding-factor requires value".into()))?.to_string());
+                blinding_factor = Some(
+                    args.get(i)
+                        .ok_or_else(|| ParseError("--blinding-factor requires value".into()))?
+                        .to_string(),
+                );
             }
             "--provider" | "-p" => {
                 i += 1;
-                provider = Some(args.get(i).ok_or_else(|| ParseError("--provider requires value".into()))?.to_string());
+                provider = Some(
+                    args.get(i)
+                        .ok_or_else(|| ParseError("--provider requires value".into()))?
+                        .to_string(),
+                );
             }
             _ => return Err(ParseError(format!("unknown flag: {}", args[i]))),
         }
         i += 1;
     }
-    let blinding_factor = blinding_factor.ok_or_else(|| ParseError("--blinding-factor is required".into()))?;
-    Ok(ConfidentialCmd::Commit { model_id, encrypted_root, blinding_factor, provider })
+    let blinding_factor =
+        blinding_factor.ok_or_else(|| ParseError("--blinding-factor is required".into()))?;
+    Ok(ConfidentialCmd::Commit {
+        model_id,
+        encrypted_root,
+        blinding_factor,
+        provider,
+    })
 }
 
 fn parse_reveal(args: &[&str]) -> Result<ConfidentialCmd, ParseError> {
     if args.is_empty() {
-        return Err(ParseError("usage: reveal <commit-id> <plaintext-root> --blinding-factor <hex>".into()));
+        return Err(ParseError(
+            "usage: reveal <commit-id> <plaintext-root> --blinding-factor <hex>".into(),
+        ));
     }
-    let commit_id = args[0].parse::<u64>().map_err(|_| ParseError("invalid commit-id".into()))?;
-    let plaintext_root = args.get(1).ok_or_else(|| ParseError("plaintext-root required".into()))?.to_string();
+    let commit_id = args[0]
+        .parse::<u64>()
+        .map_err(|_| ParseError("invalid commit-id".into()))?;
+    let plaintext_root = args
+        .get(1)
+        .ok_or_else(|| ParseError("plaintext-root required".into()))?
+        .to_string();
     let mut blinding_factor = None;
     let mut i = 2;
     while i < args.len() {
         match args[i] {
             "--blinding-factor" | "-b" => {
                 i += 1;
-                blinding_factor = Some(args.get(i).ok_or_else(|| ParseError("--blinding-factor requires value".into()))?.to_string());
+                blinding_factor = Some(
+                    args.get(i)
+                        .ok_or_else(|| ParseError("--blinding-factor requires value".into()))?
+                        .to_string(),
+                );
             }
             _ => return Err(ParseError(format!("unknown flag: {}", args[i]))),
         }
         i += 1;
     }
-    let blinding_factor = blinding_factor.ok_or_else(|| ParseError("--blinding-factor is required".into()))?;
-    Ok(ConfidentialCmd::Reveal { commit_id, plaintext_root, blinding_factor })
+    let blinding_factor =
+        blinding_factor.ok_or_else(|| ParseError("--blinding-factor is required".into()))?;
+    Ok(ConfidentialCmd::Reveal {
+        commit_id,
+        plaintext_root,
+        blinding_factor,
+    })
 }
 
 fn parse_dispute(args: &[&str]) -> Result<ConfidentialCmd, ParseError> {
     if args.is_empty() {
-        return Err(ParseError("usage: dispute <commit-id> [--challenger <addr>]".into()));
+        return Err(ParseError(
+            "usage: dispute <commit-id> [--challenger <addr>]".into(),
+        ));
     }
-    let commit_id = args[0].parse::<u64>().map_err(|_| ParseError("invalid commit-id".into()))?;
+    let commit_id = args[0]
+        .parse::<u64>()
+        .map_err(|_| ParseError("invalid commit-id".into()))?;
     let mut challenger = None;
     let mut i = 1;
     while i < args.len() {
         match args[i] {
             "--challenger" | "-c" => {
                 i += 1;
-                challenger = Some(args.get(i).ok_or_else(|| ParseError("--challenger requires value".into()))?.to_string());
+                challenger = Some(
+                    args.get(i)
+                        .ok_or_else(|| ParseError("--challenger requires value".into()))?
+                        .to_string(),
+                );
             }
             _ => return Err(ParseError(format!("unknown flag: {}", args[i]))),
         }
         i += 1;
     }
-    Ok(ConfidentialCmd::Dispute { commit_id, challenger })
+    Ok(ConfidentialCmd::Dispute {
+        commit_id,
+        challenger,
+    })
 }
 
 fn parse_status(args: &[&str]) -> Result<ConfidentialCmd, ParseError> {
     if args.is_empty() {
         return Err(ParseError("usage: status <commit-id> [--json]".into()));
     }
-    let commit_id = args[0].parse::<u64>().map_err(|_| ParseError("invalid commit-id".into()))?;
+    let commit_id = args[0]
+        .parse::<u64>()
+        .map_err(|_| ParseError("invalid commit-id".into()))?;
     let json = args[1..].contains(&"--json");
     Ok(ConfidentialCmd::Status { commit_id, json })
 }
@@ -239,24 +277,38 @@ fn parse_list(args: &[&str]) -> Result<ConfidentialCmd, ParseError> {
         match args[i] {
             "--provider" | "-p" => {
                 i += 1;
-                provider = Some(args.get(i).ok_or_else(|| ParseError("--provider requires value".into()))?.to_string());
+                provider = Some(
+                    args.get(i)
+                        .ok_or_else(|| ParseError("--provider requires value".into()))?
+                        .to_string(),
+                );
             }
             "--status" | "-s" => {
                 i += 1;
-                let s = args.get(i).ok_or_else(|| ParseError("--status requires value".into()))?;
+                let s = args
+                    .get(i)
+                    .ok_or_else(|| ParseError("--status requires value".into()))?;
                 status_filter = Some(parse_status_filter(s)?);
             }
             "--json" => json = true,
             "--limit" | "-n" => {
                 i += 1;
-                limit = args.get(i).ok_or_else(|| ParseError("--limit requires value".into()))?
-                    .parse().map_err(|_| ParseError("invalid limit".into()))?;
+                limit = args
+                    .get(i)
+                    .ok_or_else(|| ParseError("--limit requires value".into()))?
+                    .parse()
+                    .map_err(|_| ParseError("invalid limit".into()))?;
             }
             _ => return Err(ParseError(format!("unknown flag: {}", args[i]))),
         }
         i += 1;
     }
-    Ok(ConfidentialCmd::List { provider, status_filter, json, limit })
+    Ok(ConfidentialCmd::List {
+        provider,
+        status_filter,
+        json,
+        limit,
+    })
 }
 
 fn parse_finalize(args: &[&str]) -> Result<ConfidentialCmd, ParseError> {
@@ -266,8 +318,12 @@ fn parse_finalize(args: &[&str]) -> Result<ConfidentialCmd, ParseError> {
         match args[i] {
             "--epoch" | "-e" => {
                 i += 1;
-                epoch = Some(args.get(i).ok_or_else(|| ParseError("--epoch requires value".into()))?
-                    .parse().map_err(|_| ParseError("invalid epoch".into()))?);
+                epoch = Some(
+                    args.get(i)
+                        .ok_or_else(|| ParseError("--epoch requires value".into()))?
+                        .parse()
+                        .map_err(|_| ParseError("invalid epoch".into()))?,
+                );
             }
             _ => return Err(ParseError(format!("unknown flag: {}", args[i]))),
         }
@@ -283,8 +339,12 @@ fn parse_enforce_defaults(args: &[&str]) -> Result<ConfidentialCmd, ParseError> 
         match args[i] {
             "--epoch" | "-e" => {
                 i += 1;
-                epoch = Some(args.get(i).ok_or_else(|| ParseError("--epoch requires value".into()))?
-                    .parse().map_err(|_| ParseError("invalid epoch".into()))?);
+                epoch = Some(
+                    args.get(i)
+                        .ok_or_else(|| ParseError("--epoch requires value".into()))?
+                        .parse()
+                        .map_err(|_| ParseError("invalid epoch".into()))?,
+                );
             }
             _ => return Err(ParseError(format!("unknown flag: {}", args[i]))),
         }
@@ -325,7 +385,10 @@ pub fn hex_decode(s: &str) -> Result<Vec<u8>, ParseError> {
 pub fn hex_to_hash(s: &str) -> Result<Hash, ParseError> {
     let bytes = hex_decode(s)?;
     if bytes.len() != 32 {
-        return Err(ParseError(format!("expected 32 bytes, got {}", bytes.len())));
+        return Err(ParseError(format!(
+            "expected 32 bytes, got {}",
+            bytes.len()
+        )));
     }
     let mut h = [0u8; 32];
     h.copy_from_slice(&bytes);
@@ -383,45 +446,62 @@ impl ConfidentialCli {
     /// Execute a parsed confidential CLI command.
     pub fn execute(&mut self, cmd: ConfidentialCmd) -> CmdResult {
         match cmd {
-            ConfidentialCmd::Commit { model_id, encrypted_root, blinding_factor, provider } => {
-                self.exec_commit(model_id, encrypted_root, blinding_factor, provider)
-            }
-            ConfidentialCmd::Reveal { commit_id, plaintext_root, blinding_factor } => {
-                self.exec_reveal(commit_id, plaintext_root, blinding_factor)
-            }
-            ConfidentialCmd::Dispute { commit_id, challenger } => {
-                self.exec_dispute(commit_id, challenger)
-            }
-            ConfidentialCmd::Status { commit_id, json: _ } => {
-                self.exec_status(commit_id)
-            }
-            ConfidentialCmd::List { provider, status_filter, json: _, limit } => {
-                self.exec_list(provider, status_filter, limit)
-            }
-            ConfidentialCmd::Finalize { epoch } => {
-                self.exec_finalize(epoch)
-            }
-            ConfidentialCmd::EnforceDefaults { epoch } => {
-                self.exec_enforce_defaults(epoch)
-            }
-            ConfidentialCmd::Help => {
-                CmdResult {
-                    success: true,
-                    message: HELP_TEXT.to_string(),
-                    commit_info: None,
-                    commit_list: Vec::new(),
-                }
-            }
+            ConfidentialCmd::Commit {
+                model_id,
+                encrypted_root,
+                blinding_factor,
+                provider,
+            } => self.exec_commit(model_id, encrypted_root, blinding_factor, provider),
+            ConfidentialCmd::Reveal {
+                commit_id,
+                plaintext_root,
+                blinding_factor,
+            } => self.exec_reveal(commit_id, plaintext_root, blinding_factor),
+            ConfidentialCmd::Dispute {
+                commit_id,
+                challenger,
+            } => self.exec_dispute(commit_id, challenger),
+            ConfidentialCmd::Status { commit_id, json: _ } => self.exec_status(commit_id),
+            ConfidentialCmd::List {
+                provider,
+                status_filter,
+                json: _,
+                limit,
+            } => self.exec_list(provider, status_filter, limit),
+            ConfidentialCmd::Finalize { epoch } => self.exec_finalize(epoch),
+            ConfidentialCmd::EnforceDefaults { epoch } => self.exec_enforce_defaults(epoch),
+            ConfidentialCmd::Help => CmdResult {
+                success: true,
+                message: HELP_TEXT.to_string(),
+                commit_info: None,
+                commit_list: Vec::new(),
+            },
         }
     }
 
-    fn exec_commit(&mut self, model_id: String, encrypted_root: String, blinding_factor: String, provider: Option<String>) -> CmdResult {
+    fn exec_commit(
+        &mut self,
+        model_id: String,
+        encrypted_root: String,
+        blinding_factor: String,
+        provider: Option<String>,
+    ) -> CmdResult {
         // Validate hex inputs
         if hex_decode(&encrypted_root).is_err() {
-            return CmdResult { success: false, message: "invalid hex for encrypted-root".into(), commit_info: None, commit_list: Vec::new() };
+            return CmdResult {
+                success: false,
+                message: "invalid hex for encrypted-root".into(),
+                commit_info: None,
+                commit_list: Vec::new(),
+            };
         }
         if hex_decode(&blinding_factor).is_err() {
-            return CmdResult { success: false, message: "invalid hex for blinding-factor".into(), commit_info: None, commit_list: Vec::new() };
+            return CmdResult {
+                success: false,
+                message: "invalid hex for blinding-factor".into(),
+                commit_info: None,
+                commit_list: Vec::new(),
+            };
         }
 
         let id = self.next_id;
@@ -443,38 +523,77 @@ impl ConfidentialCli {
 
         CmdResult {
             success: true,
-            message: format!("✓ Confidential commit #{} submitted at epoch {}", id, self.current_epoch),
+            message: format!(
+                "✓ Confidential commit #{} submitted at epoch {}",
+                id, self.current_epoch
+            ),
             commit_info: Some(info),
             commit_list: Vec::new(),
         }
     }
 
-    fn exec_reveal(&mut self, commit_id: u64, plaintext_root: String, blinding_factor: String) -> CmdResult {
+    fn exec_reveal(
+        &mut self,
+        commit_id: u64,
+        plaintext_root: String,
+        blinding_factor: String,
+    ) -> CmdResult {
         if hex_decode(&plaintext_root).is_err() {
-            return CmdResult { success: false, message: "invalid hex for plaintext-root".into(), commit_info: None, commit_list: Vec::new() };
+            return CmdResult {
+                success: false,
+                message: "invalid hex for plaintext-root".into(),
+                commit_info: None,
+                commit_list: Vec::new(),
+            };
         }
         if hex_decode(&blinding_factor).is_err() {
-            return CmdResult { success: false, message: "invalid hex for blinding-factor".into(), commit_info: None, commit_list: Vec::new() };
+            return CmdResult {
+                success: false,
+                message: "invalid hex for blinding-factor".into(),
+                commit_info: None,
+                commit_list: Vec::new(),
+            };
         }
 
         let commit = self.commits.iter_mut().find(|c| c.id == commit_id);
         match commit {
-            None => CmdResult { success: false, message: format!("commit #{} not found", commit_id), commit_info: None, commit_list: Vec::new() },
+            None => CmdResult {
+                success: false,
+                message: format!("commit #{} not found", commit_id),
+                commit_info: None,
+                commit_list: Vec::new(),
+            },
             Some(c) => {
                 if c.status != "disputed" {
-                    return CmdResult { success: false, message: format!("commit #{} is not disputed (status: {})", commit_id, c.status), commit_info: None, commit_list: Vec::new() };
+                    return CmdResult {
+                        success: false,
+                        message: format!(
+                            "commit #{} is not disputed (status: {})",
+                            commit_id, c.status
+                        ),
+                        commit_info: None,
+                        commit_list: Vec::new(),
+                    };
                 }
                 // Check reveal window (5 epochs from dispute)
                 if let Some(de) = c.dispute_epoch {
                     if self.current_epoch > de + 5 {
-                        return CmdResult { success: false, message: format!("reveal window expired for commit #{}", commit_id), commit_info: None, commit_list: Vec::new() };
+                        return CmdResult {
+                            success: false,
+                            message: format!("reveal window expired for commit #{}", commit_id),
+                            commit_info: None,
+                            commit_list: Vec::new(),
+                        };
                     }
                 }
                 c.status = "revealed".into();
                 c.plaintext_root = Some(plaintext_root);
                 CmdResult {
                     success: true,
-                    message: format!("✓ Commit #{} revealed at epoch {}", commit_id, self.current_epoch),
+                    message: format!(
+                        "✓ Commit #{} revealed at epoch {}",
+                        commit_id, self.current_epoch
+                    ),
                     commit_info: Some(c.clone()),
                     commit_list: Vec::new(),
                 }
@@ -485,14 +604,32 @@ impl ConfidentialCli {
     fn exec_dispute(&mut self, commit_id: u64, challenger: Option<String>) -> CmdResult {
         let commit = self.commits.iter_mut().find(|c| c.id == commit_id);
         match commit {
-            None => CmdResult { success: false, message: format!("commit #{} not found", commit_id), commit_info: None, commit_list: Vec::new() },
+            None => CmdResult {
+                success: false,
+                message: format!("commit #{} not found", commit_id),
+                commit_info: None,
+                commit_list: Vec::new(),
+            },
             Some(c) => {
                 if c.status != "committed" {
-                    return CmdResult { success: false, message: format!("commit #{} cannot be disputed (status: {})", commit_id, c.status), commit_info: None, commit_list: Vec::new() };
+                    return CmdResult {
+                        success: false,
+                        message: format!(
+                            "commit #{} cannot be disputed (status: {})",
+                            commit_id, c.status
+                        ),
+                        commit_info: None,
+                        commit_list: Vec::new(),
+                    };
                 }
                 // Check challenge window (10 epochs)
                 if self.current_epoch > c.epoch + 10 {
-                    return CmdResult { success: false, message: format!("challenge window expired for commit #{}", commit_id), commit_info: None, commit_list: Vec::new() };
+                    return CmdResult {
+                        success: false,
+                        message: format!("challenge window expired for commit #{}", commit_id),
+                        commit_info: None,
+                        commit_list: Vec::new(),
+                    };
                 }
                 let challenger_str = challenger.unwrap_or_else(|| "local-challenger".into());
                 c.status = "disputed".into();
@@ -500,7 +637,10 @@ impl ConfidentialCli {
                 c.challenger = Some(challenger_str);
                 CmdResult {
                     success: true,
-                    message: format!("✓ Dispute opened on commit #{} at epoch {}", commit_id, self.current_epoch),
+                    message: format!(
+                        "✓ Dispute opened on commit #{} at epoch {}",
+                        commit_id, self.current_epoch
+                    ),
                     commit_info: Some(c.clone()),
                     commit_list: Vec::new(),
                 }
@@ -510,12 +650,27 @@ impl ConfidentialCli {
 
     fn exec_status(&self, commit_id: u64) -> CmdResult {
         match self.commits.iter().find(|c| c.id == commit_id) {
-            None => CmdResult { success: false, message: format!("commit #{} not found", commit_id), commit_info: None, commit_list: Vec::new() },
-            Some(c) => CmdResult { success: true, message: format!("Commit #{} status: {}", commit_id, c.status), commit_info: Some(c.clone()), commit_list: Vec::new() },
+            None => CmdResult {
+                success: false,
+                message: format!("commit #{} not found", commit_id),
+                commit_info: None,
+                commit_list: Vec::new(),
+            },
+            Some(c) => CmdResult {
+                success: true,
+                message: format!("Commit #{} status: {}", commit_id, c.status),
+                commit_info: Some(c.clone()),
+                commit_list: Vec::new(),
+            },
         }
     }
 
-    fn exec_list(&self, provider: Option<String>, status_filter: Option<StatusFilter>, limit: usize) -> CmdResult {
+    fn exec_list(
+        &self,
+        provider: Option<String>,
+        status_filter: Option<StatusFilter>,
+        limit: usize,
+    ) -> CmdResult {
         let mut results: Vec<&CommitInfo> = self.commits.iter().collect();
 
         if let Some(ref p) = provider {
@@ -624,24 +779,38 @@ mod tests {
     fn test_parse_commit() {
         let args = vec!["commit", "llama-7b", "0xaa", "--blinding-factor", "0xbb"];
         let cmd = parse_confidential_cmd(&args).unwrap();
-        assert_eq!(cmd, ConfidentialCmd::Commit {
-            model_id: "llama-7b".into(),
-            encrypted_root: "0xaa".into(),
-            blinding_factor: "0xbb".into(),
-            provider: None,
-        });
+        assert_eq!(
+            cmd,
+            ConfidentialCmd::Commit {
+                model_id: "llama-7b".into(),
+                encrypted_root: "0xaa".into(),
+                blinding_factor: "0xbb".into(),
+                provider: None,
+            }
+        );
     }
 
     #[test]
     fn test_parse_commit_with_provider() {
-        let args = vec!["commit", "llama-7b", "0xaa", "--blinding-factor", "0xbb", "--provider", "0xcc"];
+        let args = vec![
+            "commit",
+            "llama-7b",
+            "0xaa",
+            "--blinding-factor",
+            "0xbb",
+            "--provider",
+            "0xcc",
+        ];
         let cmd = parse_confidential_cmd(&args).unwrap();
-        assert_eq!(cmd, ConfidentialCmd::Commit {
-            model_id: "llama-7b".into(),
-            encrypted_root: "0xaa".into(),
-            blinding_factor: "0xbb".into(),
-            provider: Some("0xcc".into()),
-        });
+        assert_eq!(
+            cmd,
+            ConfidentialCmd::Commit {
+                model_id: "llama-7b".into(),
+                encrypted_root: "0xaa".into(),
+                blinding_factor: "0xbb".into(),
+                provider: Some("0xcc".into()),
+            }
+        );
     }
 
     #[test]
@@ -654,58 +823,105 @@ mod tests {
     fn test_parse_reveal() {
         let args = vec!["reveal", "42", "0xdd", "--blinding-factor", "0xee"];
         let cmd = parse_confidential_cmd(&args).unwrap();
-        assert_eq!(cmd, ConfidentialCmd::Reveal {
-            commit_id: 42,
-            plaintext_root: "0xdd".into(),
-            blinding_factor: "0xee".into(),
-        });
+        assert_eq!(
+            cmd,
+            ConfidentialCmd::Reveal {
+                commit_id: 42,
+                plaintext_root: "0xdd".into(),
+                blinding_factor: "0xee".into(),
+            }
+        );
     }
 
     #[test]
     fn test_parse_dispute() {
         let args = vec!["dispute", "7"];
         let cmd = parse_confidential_cmd(&args).unwrap();
-        assert_eq!(cmd, ConfidentialCmd::Dispute { commit_id: 7, challenger: None });
+        assert_eq!(
+            cmd,
+            ConfidentialCmd::Dispute {
+                commit_id: 7,
+                challenger: None
+            }
+        );
     }
 
     #[test]
     fn test_parse_dispute_with_challenger() {
         let args = vec!["dispute", "7", "--challenger", "0xff"];
         let cmd = parse_confidential_cmd(&args).unwrap();
-        assert_eq!(cmd, ConfidentialCmd::Dispute { commit_id: 7, challenger: Some("0xff".into()) });
+        assert_eq!(
+            cmd,
+            ConfidentialCmd::Dispute {
+                commit_id: 7,
+                challenger: Some("0xff".into())
+            }
+        );
     }
 
     #[test]
     fn test_parse_status() {
         let args = vec!["status", "3"];
         let cmd = parse_confidential_cmd(&args).unwrap();
-        assert_eq!(cmd, ConfidentialCmd::Status { commit_id: 3, json: false });
+        assert_eq!(
+            cmd,
+            ConfidentialCmd::Status {
+                commit_id: 3,
+                json: false
+            }
+        );
     }
 
     #[test]
     fn test_parse_status_json() {
         let args = vec!["status", "3", "--json"];
         let cmd = parse_confidential_cmd(&args).unwrap();
-        assert_eq!(cmd, ConfidentialCmd::Status { commit_id: 3, json: true });
+        assert_eq!(
+            cmd,
+            ConfidentialCmd::Status {
+                commit_id: 3,
+                json: true
+            }
+        );
     }
 
     #[test]
     fn test_parse_list_defaults() {
         let args = vec!["list"];
         let cmd = parse_confidential_cmd(&args).unwrap();
-        assert_eq!(cmd, ConfidentialCmd::List { provider: None, status_filter: None, json: false, limit: 50 });
+        assert_eq!(
+            cmd,
+            ConfidentialCmd::List {
+                provider: None,
+                status_filter: None,
+                json: false,
+                limit: 50
+            }
+        );
     }
 
     #[test]
     fn test_parse_list_filtered() {
-        let args = vec!["list", "--provider", "0xaa", "--status", "disputed", "--limit", "10", "--json"];
+        let args = vec![
+            "list",
+            "--provider",
+            "0xaa",
+            "--status",
+            "disputed",
+            "--limit",
+            "10",
+            "--json",
+        ];
         let cmd = parse_confidential_cmd(&args).unwrap();
-        assert_eq!(cmd, ConfidentialCmd::List {
-            provider: Some("0xaa".into()),
-            status_filter: Some(StatusFilter::Disputed),
-            json: true,
-            limit: 10,
-        });
+        assert_eq!(
+            cmd,
+            ConfidentialCmd::List {
+                provider: Some("0xaa".into()),
+                status_filter: Some(StatusFilter::Disputed),
+                json: true,
+                limit: 10,
+            }
+        );
     }
 
     #[test]
@@ -751,8 +967,14 @@ mod tests {
 
     #[test]
     fn test_hex_decode() {
-        assert_eq!(hex_decode("deadbeef").unwrap(), vec![0xde, 0xad, 0xbe, 0xef]);
-        assert_eq!(hex_decode("0xdeadbeef").unwrap(), vec![0xde, 0xad, 0xbe, 0xef]);
+        assert_eq!(
+            hex_decode("deadbeef").unwrap(),
+            vec![0xde, 0xad, 0xbe, 0xef]
+        );
+        assert_eq!(
+            hex_decode("0xdeadbeef").unwrap(),
+            vec![0xde, 0xad, 0xbe, 0xef]
+        );
     }
 
     #[test]
@@ -818,7 +1040,10 @@ mod tests {
 
         // Dispute within window
         cli.set_epoch(105);
-        let dispute_cmd = ConfidentialCmd::Dispute { commit_id: 1, challenger: Some("challenger-1".into()) };
+        let dispute_cmd = ConfidentialCmd::Dispute {
+            commit_id: 1,
+            challenger: Some("challenger-1".into()),
+        };
         let r = cli.execute(dispute_cmd);
         assert!(r.success);
         assert!(r.message.contains("Dispute opened"));
@@ -839,12 +1064,17 @@ mod tests {
     fn test_exec_dispute_expired() {
         let mut cli = ConfidentialCli::new(100);
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "aa".into(),
-            blinding_factor: "bb".into(), provider: None,
+            model_id: "m".into(),
+            encrypted_root: "aa".into(),
+            blinding_factor: "bb".into(),
+            provider: None,
         });
 
         cli.set_epoch(111); // Past challenge window
-        let r = cli.execute(ConfidentialCmd::Dispute { commit_id: 1, challenger: None });
+        let r = cli.execute(ConfidentialCmd::Dispute {
+            commit_id: 1,
+            challenger: None,
+        });
         assert!(!r.success);
         assert!(r.message.contains("challenge window expired"));
     }
@@ -853,15 +1083,22 @@ mod tests {
     fn test_exec_reveal_window_expired() {
         let mut cli = ConfidentialCli::new(100);
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "aa".into(),
-            blinding_factor: "bb".into(), provider: None,
+            model_id: "m".into(),
+            encrypted_root: "aa".into(),
+            blinding_factor: "bb".into(),
+            provider: None,
         });
         cli.set_epoch(105);
-        cli.execute(ConfidentialCmd::Dispute { commit_id: 1, challenger: None });
+        cli.execute(ConfidentialCmd::Dispute {
+            commit_id: 1,
+            challenger: None,
+        });
 
         cli.set_epoch(111); // Past reveal window (105 + 5)
         let r = cli.execute(ConfidentialCmd::Reveal {
-            commit_id: 1, plaintext_root: "cc".into(), blinding_factor: "dd".into(),
+            commit_id: 1,
+            plaintext_root: "cc".into(),
+            blinding_factor: "dd".into(),
         });
         assert!(!r.success);
         assert!(r.message.contains("reveal window expired"));
@@ -871,11 +1108,15 @@ mod tests {
     fn test_exec_reveal_not_disputed() {
         let mut cli = ConfidentialCli::new(100);
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "aa".into(),
-            blinding_factor: "bb".into(), provider: None,
+            model_id: "m".into(),
+            encrypted_root: "aa".into(),
+            blinding_factor: "bb".into(),
+            provider: None,
         });
         let r = cli.execute(ConfidentialCmd::Reveal {
-            commit_id: 1, plaintext_root: "cc".into(), blinding_factor: "dd".into(),
+            commit_id: 1,
+            plaintext_root: "cc".into(),
+            blinding_factor: "dd".into(),
         });
         assert!(!r.success);
         assert!(r.message.contains("not disputed"));
@@ -885,10 +1126,15 @@ mod tests {
     fn test_exec_status() {
         let mut cli = ConfidentialCli::new(100);
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "aa".into(),
-            blinding_factor: "bb".into(), provider: None,
+            model_id: "m".into(),
+            encrypted_root: "aa".into(),
+            blinding_factor: "bb".into(),
+            provider: None,
         });
-        let r = cli.execute(ConfidentialCmd::Status { commit_id: 1, json: false });
+        let r = cli.execute(ConfidentialCmd::Status {
+            commit_id: 1,
+            json: false,
+        });
         assert!(r.success);
         assert!(r.commit_info.is_some());
     }
@@ -898,14 +1144,22 @@ mod tests {
         let cli = ConfidentialCli::new(100);
         // Need mut for execute but status doesn't mutate — that's fine, Rust just needs mut ref
         let mut cli = cli;
-        let r = cli.execute(ConfidentialCmd::Status { commit_id: 999, json: false });
+        let r = cli.execute(ConfidentialCmd::Status {
+            commit_id: 999,
+            json: false,
+        });
         assert!(!r.success);
     }
 
     #[test]
     fn test_exec_list_empty() {
         let mut cli = ConfidentialCli::new(100);
-        let r = cli.execute(ConfidentialCmd::List { provider: None, status_filter: None, json: false, limit: 50 });
+        let r = cli.execute(ConfidentialCmd::List {
+            provider: None,
+            status_filter: None,
+            json: false,
+            limit: 50,
+        });
         assert!(r.success);
         assert_eq!(r.commit_list.len(), 0);
     }
@@ -914,15 +1168,22 @@ mod tests {
     fn test_exec_list_filtered() {
         let mut cli = ConfidentialCli::new(100);
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "aa".into(),
-            blinding_factor: "bb".into(), provider: Some("p1".into()),
+            model_id: "m".into(),
+            encrypted_root: "aa".into(),
+            blinding_factor: "bb".into(),
+            provider: Some("p1".into()),
         });
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "cc".into(),
-            blinding_factor: "dd".into(), provider: Some("p2".into()),
+            model_id: "m".into(),
+            encrypted_root: "cc".into(),
+            blinding_factor: "dd".into(),
+            provider: Some("p2".into()),
         });
         let r = cli.execute(ConfidentialCmd::List {
-            provider: Some("p1".into()), status_filter: None, json: false, limit: 50,
+            provider: Some("p1".into()),
+            status_filter: None,
+            json: false,
+            limit: 50,
         });
         assert_eq!(r.commit_list.len(), 1);
     }
@@ -931,8 +1192,10 @@ mod tests {
     fn test_exec_finalize() {
         let mut cli = ConfidentialCli::new(100);
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "aa".into(),
-            blinding_factor: "bb".into(), provider: None,
+            model_id: "m".into(),
+            encrypted_root: "aa".into(),
+            blinding_factor: "bb".into(),
+            provider: None,
         });
         cli.set_epoch(111);
         let r = cli.execute(ConfidentialCmd::Finalize { epoch: None });
@@ -944,11 +1207,16 @@ mod tests {
     fn test_exec_enforce_defaults() {
         let mut cli = ConfidentialCli::new(100);
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "aa".into(),
-            blinding_factor: "bb".into(), provider: None,
+            model_id: "m".into(),
+            encrypted_root: "aa".into(),
+            blinding_factor: "bb".into(),
+            provider: None,
         });
         cli.set_epoch(105);
-        cli.execute(ConfidentialCmd::Dispute { commit_id: 1, challenger: None });
+        cli.execute(ConfidentialCmd::Dispute {
+            commit_id: 1,
+            challenger: None,
+        });
         cli.set_epoch(111);
         let r = cli.execute(ConfidentialCmd::EnforceDefaults { epoch: None });
         assert!(r.success);
@@ -968,14 +1236,19 @@ mod tests {
         let mut cli = ConfidentialCli::new(100);
         // Commit
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "llama-7b".into(), encrypted_root: "aabb".into(),
-            blinding_factor: "ccdd".into(), provider: Some("provider-1".into()),
+            model_id: "llama-7b".into(),
+            encrypted_root: "aabb".into(),
+            blinding_factor: "ccdd".into(),
+            provider: Some("provider-1".into()),
         });
         // Advance past challenge window and finalize
         cli.set_epoch(111);
         cli.execute(ConfidentialCmd::Finalize { epoch: None });
         // Verify
-        let r = cli.execute(ConfidentialCmd::Status { commit_id: 1, json: false });
+        let r = cli.execute(ConfidentialCmd::Status {
+            commit_id: 1,
+            json: false,
+        });
         assert_eq!(r.commit_info.unwrap().status, "finalized");
     }
 
@@ -983,15 +1256,23 @@ mod tests {
     fn test_full_lifecycle_dispute_default() {
         let mut cli = ConfidentialCli::new(100);
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "aa".into(),
-            blinding_factor: "bb".into(), provider: Some("lazy-provider".into()),
+            model_id: "m".into(),
+            encrypted_root: "aa".into(),
+            blinding_factor: "bb".into(),
+            provider: Some("lazy-provider".into()),
         });
         cli.set_epoch(105);
-        cli.execute(ConfidentialCmd::Dispute { commit_id: 1, challenger: Some("vigilant-challenger".into()) });
+        cli.execute(ConfidentialCmd::Dispute {
+            commit_id: 1,
+            challenger: Some("vigilant-challenger".into()),
+        });
         // Provider doesn't reveal → enforce defaults
         cli.set_epoch(111);
         cli.execute(ConfidentialCmd::EnforceDefaults { epoch: None });
-        let r = cli.execute(ConfidentialCmd::Status { commit_id: 1, json: false });
+        let r = cli.execute(ConfidentialCmd::Status {
+            commit_id: 1,
+            json: false,
+        });
         assert_eq!(r.commit_info.unwrap().status, "defaulted");
     }
 
@@ -999,12 +1280,16 @@ mod tests {
     fn test_list_by_status_filter() {
         let mut cli = ConfidentialCli::new(100);
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "aa".into(),
-            blinding_factor: "bb".into(), provider: None,
+            model_id: "m".into(),
+            encrypted_root: "aa".into(),
+            blinding_factor: "bb".into(),
+            provider: None,
         });
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "cc".into(),
-            blinding_factor: "dd".into(), provider: None,
+            model_id: "m".into(),
+            encrypted_root: "cc".into(),
+            blinding_factor: "dd".into(),
+            provider: None,
         });
         // Finalize first
         cli.set_epoch(111);
@@ -1012,17 +1297,25 @@ mod tests {
 
         // Add a new committed one
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "ee".into(),
-            blinding_factor: "ff".into(), provider: None,
+            model_id: "m".into(),
+            encrypted_root: "ee".into(),
+            blinding_factor: "ff".into(),
+            provider: None,
         });
 
         let r = cli.execute(ConfidentialCmd::List {
-            provider: None, status_filter: Some(StatusFilter::Finalized), json: false, limit: 50,
+            provider: None,
+            status_filter: Some(StatusFilter::Finalized),
+            json: false,
+            limit: 50,
         });
         assert_eq!(r.commit_list.len(), 2);
 
         let r = cli.execute(ConfidentialCmd::List {
-            provider: None, status_filter: Some(StatusFilter::Committed), json: false, limit: 50,
+            provider: None,
+            status_filter: Some(StatusFilter::Committed),
+            json: false,
+            limit: 50,
         });
         assert_eq!(r.commit_list.len(), 1);
     }
@@ -1032,12 +1325,17 @@ mod tests {
         let mut cli = ConfidentialCli::new(100);
         for i in 0..10 {
             cli.execute(ConfidentialCmd::Commit {
-                model_id: format!("m{}", i), encrypted_root: "aa".into(),
-                blinding_factor: "bb".into(), provider: None,
+                model_id: format!("m{}", i),
+                encrypted_root: "aa".into(),
+                blinding_factor: "bb".into(),
+                provider: None,
             });
         }
         let r = cli.execute(ConfidentialCmd::List {
-            provider: None, status_filter: None, json: false, limit: 3,
+            provider: None,
+            status_filter: None,
+            json: false,
+            limit: 3,
         });
         assert_eq!(r.commit_list.len(), 3);
         assert!(r.message.contains("Found 10"));
@@ -1046,7 +1344,10 @@ mod tests {
     #[test]
     fn test_dispute_not_found() {
         let mut cli = ConfidentialCli::new(100);
-        let r = cli.execute(ConfidentialCmd::Dispute { commit_id: 999, challenger: None });
+        let r = cli.execute(ConfidentialCmd::Dispute {
+            commit_id: 999,
+            challenger: None,
+        });
         assert!(!r.success);
         assert!(r.message.contains("not found"));
     }
@@ -1055,7 +1356,9 @@ mod tests {
     fn test_reveal_not_found() {
         let mut cli = ConfidentialCli::new(100);
         let r = cli.execute(ConfidentialCmd::Reveal {
-            commit_id: 999, plaintext_root: "aa".into(), blinding_factor: "bb".into(),
+            commit_id: 999,
+            plaintext_root: "aa".into(),
+            blinding_factor: "bb".into(),
         });
         assert!(!r.success);
     }
@@ -1064,12 +1367,20 @@ mod tests {
     fn test_dispute_already_disputed() {
         let mut cli = ConfidentialCli::new(100);
         cli.execute(ConfidentialCmd::Commit {
-            model_id: "m".into(), encrypted_root: "aa".into(),
-            blinding_factor: "bb".into(), provider: None,
+            model_id: "m".into(),
+            encrypted_root: "aa".into(),
+            blinding_factor: "bb".into(),
+            provider: None,
         });
         cli.set_epoch(105);
-        cli.execute(ConfidentialCmd::Dispute { commit_id: 1, challenger: None });
-        let r = cli.execute(ConfidentialCmd::Dispute { commit_id: 1, challenger: None });
+        cli.execute(ConfidentialCmd::Dispute {
+            commit_id: 1,
+            challenger: None,
+        });
+        let r = cli.execute(ConfidentialCmd::Dispute {
+            commit_id: 1,
+            challenger: None,
+        });
         assert!(!r.success);
         assert!(r.message.contains("cannot be disputed"));
     }
@@ -1106,7 +1417,13 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_commit_id() {
-        let args = vec!["reveal", "not-a-number", "0xaa", "--blinding-factor", "0xbb"];
+        let args = vec![
+            "reveal",
+            "not-a-number",
+            "0xaa",
+            "--blinding-factor",
+            "0xbb",
+        ];
         assert!(parse_confidential_cmd(&args).is_err());
     }
 
@@ -1122,9 +1439,18 @@ mod tests {
 
     #[test]
     fn test_parse_status_filter_all_variants() {
-        assert_eq!(parse_status_filter("committed").unwrap(), StatusFilter::Committed);
-        assert_eq!(parse_status_filter("DISPUTED").unwrap(), StatusFilter::Disputed);
-        assert_eq!(parse_status_filter("Revealed").unwrap(), StatusFilter::Revealed);
+        assert_eq!(
+            parse_status_filter("committed").unwrap(),
+            StatusFilter::Committed
+        );
+        assert_eq!(
+            parse_status_filter("DISPUTED").unwrap(),
+            StatusFilter::Disputed
+        );
+        assert_eq!(
+            parse_status_filter("Revealed").unwrap(),
+            StatusFilter::Revealed
+        );
         assert!(parse_status_filter("unknown").is_err());
     }
 }

@@ -56,10 +56,7 @@ pub struct BlobTransaction {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BlobTxResult {
     /// Successfully committed.
-    Success {
-        blob_id: BlobId,
-        fee_charged: u128,
-    },
+    Success { blob_id: BlobId, fee_charged: u128 },
     /// Rejected with reason.
     Rejected(String),
 }
@@ -293,20 +290,11 @@ impl BlobTxEngine {
     }
 
     /// Execute a blob transaction and also create a DAS commitment.
-    pub fn execute_with_das(
-        &mut self,
-        tx: &BlobTransaction,
-        das: &mut DasEngine,
-    ) -> BlobTxResult {
+    pub fn execute_with_das(&mut self, tx: &BlobTransaction, das: &mut DasEngine) -> BlobTxResult {
         let result = self.execute(tx);
         if let BlobTxResult::Success { blob_id, .. } = &result {
             // Create DAS commitment — ignore error if already exists (shouldn't happen)
-            let _ = das.submit_commitment(
-                *blob_id,
-                tx.sender,
-                tx.data_root,
-                tx.chunk_count,
-            );
+            let _ = das.submit_commitment(*blob_id, tx.sender, tx.data_root, tx.chunk_count);
         }
         result
     }
@@ -494,7 +482,10 @@ mod tests {
                 max_fee: 100_000,
             };
             let result = engine.execute(&tx);
-            assert!(matches!(result, BlobTxResult::Success { .. }), "blob {i} should succeed");
+            assert!(
+                matches!(result, BlobTxResult::Success { .. }),
+                "blob {i} should succeed"
+            );
         }
 
         // 9th blob should be rejected
@@ -609,8 +600,8 @@ mod tests {
     #[test]
     fn test_fee_scales_with_chunks() {
         let market = BlobFeeMarket::new();
-        let fee_small = market.calculate_fee(2);   // 1 KiB blob
-        let fee_large = market.calculate_fee(128);  // 16 MiB blob
+        let fee_small = market.calculate_fee(2); // 1 KiB blob
+        let fee_large = market.calculate_fee(128); // 16 MiB blob
         assert!(fee_large > fee_small);
         assert_eq!(fee_small, BASE_BLOB_FEE + 2 * FEE_PER_CHUNK);
         assert_eq!(fee_large, BASE_BLOB_FEE + 128 * FEE_PER_CHUNK);

@@ -22,11 +22,11 @@ use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 use sha2::{Digest, Sha256};
 
+use crate::network::PeerId;
+use crate::snapshot_serve::{ChunkRequest, ChunkResponse, SnapshotAdvertisement};
 use prova_chain::snapshot::{SnapshotChunk, SnapshotHeader, SnapshotImporter, StateSnapshot};
 use prova_chain::state::StateTrie;
 use prova_chain::types::Hash;
-use crate::network::PeerId;
-use crate::snapshot_serve::{ChunkRequest, ChunkResponse, SnapshotAdvertisement};
 
 // ── Fast sync state machine ───────────────────────────────────────
 
@@ -87,7 +87,13 @@ struct PeerOffer {
 
 impl PeerOffer {
     fn new(peer: PeerId, ad: SnapshotAdvertisement) -> Self {
-        Self { peer, ad, score: 1.0, chunks_ok: 0, chunks_failed: 0 }
+        Self {
+            peer,
+            ad,
+            score: 1.0,
+            chunks_ok: 0,
+            chunks_failed: 0,
+        }
     }
 
     fn record_success(&mut self) {
@@ -155,7 +161,9 @@ pub struct FastSyncProgress {
 
 impl FastSyncProgress {
     pub fn percent(&self) -> f64 {
-        if self.total_chunks == 0 { return 100.0; }
+        if self.total_chunks == 0 {
+            return 100.0;
+        }
         self.downloaded_chunks as f64 / self.total_chunks as f64 * 100.0
     }
 }
@@ -201,18 +209,37 @@ impl FastSync {
         }
     }
 
-    pub fn state(&self) -> FastSyncState { self.state }
+    pub fn state(&self) -> FastSyncState {
+        self.state
+    }
 
     pub fn progress(&self) -> FastSyncProgress {
         let total = self.chunk_status.len() as u32;
-        let downloaded = self.chunk_status.iter().filter(|s| **s == ChunkStatus::Complete).count() as u32;
-        let failed = self.chunk_status.iter().filter(|s| matches!(s, ChunkStatus::Failed { .. })).count() as u32;
-        let in_flight = self.chunk_status.iter().filter(|s| matches!(s, ChunkStatus::InFlight { .. })).count() as u32;
+        let downloaded = self
+            .chunk_status
+            .iter()
+            .filter(|s| **s == ChunkStatus::Complete)
+            .count() as u32;
+        let failed = self
+            .chunk_status
+            .iter()
+            .filter(|s| matches!(s, ChunkStatus::Failed { .. }))
+            .count() as u32;
+        let in_flight = self
+            .chunk_status
+            .iter()
+            .filter(|s| matches!(s, ChunkStatus::InFlight { .. }))
+            .count() as u32;
         let peer_count: usize = self.advertisements.values().map(|v| v.len()).sum();
         let height = self.selected.as_ref().map(|s| s.height).unwrap_or(0);
         FastSyncProgress {
-            state: self.state, total_chunks: total, downloaded_chunks: downloaded,
-            failed_chunks: failed, in_flight, peer_count, snapshot_height: height,
+            state: self.state,
+            total_chunks: total,
+            downloaded_chunks: downloaded,
+            failed_chunks: failed,
+            in_flight,
+            peer_count,
+            snapshot_height: height,
         }
     }
 
@@ -224,8 +251,12 @@ impl FastSync {
 
     /// Receive a snapshot advertisement from a peer.
     pub fn receive_advertisement(&mut self, ad: SnapshotAdvertisement) {
-        if self.state != FastSyncState::Discovering { return; }
-        if ad.height < self.config.min_snapshot_height { return; }
+        if self.state != FastSyncState::Discovering {
+            return;
+        }
+        if ad.height < self.config.min_snapshot_height {
+            return;
+        }
         let offers = self.advertisements.entry(ad.manifest_root).or_default();
         // Deduplicate by peer.
         if !offers.iter().any(|o| o.peer == ad.seeder) {
@@ -235,14 +266,19 @@ impl FastSync {
 
     /// Finish discovery: select the best snapshot (highest height, most seeders).
     /// Provide chunk_hashes from the best peer's manifest.
-    pub fn finish_discovery(&mut self, chunk_hashes_for_manifest: HashMap<Hash, Vec<Hash>>) -> Result<(), FastSyncError> {
+    pub fn finish_discovery(
+        &mut self,
+        chunk_hashes_for_manifest: HashMap<Hash, Vec<Hash>>,
+    ) -> Result<(), FastSyncError> {
         if self.advertisements.is_empty() {
             self.state = FastSyncState::Failed;
             return Err(FastSyncError::NoPeers);
         }
 
         // Pick snapshot with highest height, tiebreak by most peers.
-        let best_manifest = self.advertisements.iter()
+        let best_manifest = self
+            .advertisements
+            .iter()
             .max_by_key(|(_, offers)| {
                 let h = offers[0].ad.height;
                 let count = offers.len();
@@ -255,7 +291,8 @@ impl FastSync {
         let ad = offers[0].ad.clone();
 
         // Get chunk hashes for this manifest.
-        let hashes = chunk_hashes_for_manifest.get(&best_manifest)
+        let hashes = chunk_hashes_for_manifest
+            .get(&best_manifest)
             .ok_or(FastSyncError::NoSuitableSnapshot)?;
 
         if hashes.len() != ad.chunk_count as usize {
@@ -292,19 +329,30 @@ impl FastSync {
             None => return vec![],
         };
 
-        let in_flight = self.chunk_status.iter()
+        let in_flight = self
+            .chunk_status
+            .iter()
             .filter(|s| matches!(s, ChunkStatus::InFlight { .. }))
             .count();
-        let slots = self.config.max_concurrent_downloads.saturating_sub(in_flight);
-        if slots == 0 { return vec![]; }
+        let slots = self
+            .config
+            .max_concurrent_downloads
+            .saturating_sub(in_flight);
+        if slots == 0 {
+            return vec![];
+        }
 
         let mut requests = Vec::new();
         let peers = self.best_peers();
-        if peers.is_empty() { return vec![]; }
+        if peers.is_empty() {
+            return vec![];
+        }
 
         let mut peer_idx = 0;
         for i in 0..self.chunk_status.len() {
-            if requests.len() >= slots { break; }
+            if requests.len() >= slots {
+                break;
+            }
             match &self.chunk_status[i] {
                 ChunkStatus::Pending | ChunkStatus::Failed { .. } => {
                     let peer = peers[peer_idx % peers.len()];
@@ -330,19 +378,30 @@ impl FastSync {
             Some(ad) => ad.manifest_root,
             None => return vec![],
         };
-        let mut peers: Vec<_> = self.advertisements.get(&manifest)
-            .map(|offers| offers.iter()
-                .filter(|o| o.score >= self.config.min_peer_score)
-                .collect::<Vec<_>>())
+        let mut peers: Vec<_> = self
+            .advertisements
+            .get(&manifest)
+            .map(|offers| {
+                offers
+                    .iter()
+                    .filter(|o| o.score >= self.config.min_peer_score)
+                    .collect::<Vec<_>>()
+            })
             .unwrap_or_default();
         peers.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
         peers.into_iter().map(|o| o.peer).collect()
     }
 
     /// Handle a received chunk response.
-    pub fn receive_chunk(&mut self, resp: ChunkResponse, from_peer: PeerId) -> Result<(), FastSyncError> {
+    pub fn receive_chunk(
+        &mut self,
+        resp: ChunkResponse,
+        from_peer: PeerId,
+    ) -> Result<(), FastSyncError> {
         let idx = resp.chunk_index as usize;
-        if idx >= self.chunk_status.len() { return Ok(()); }
+        if idx >= self.chunk_status.len() {
+            return Ok(());
+        }
 
         // Verify chunk hash against manifest.
         let expected_hash = &self.chunk_hashes[idx];
@@ -362,7 +421,9 @@ impl FastSync {
             };
             if attempts >= self.config.max_chunk_retries {
                 self.state = FastSyncState::Failed;
-                return Err(FastSyncError::AllPeersFailed { chunk_index: resp.chunk_index });
+                return Err(FastSyncError::AllPeersFailed {
+                    chunk_index: resp.chunk_index,
+                });
             }
             return Err(FastSyncError::ChunkVerifyFailed {
                 chunk_index: resp.chunk_index,
@@ -376,7 +437,11 @@ impl FastSync {
         self.reward_peer(&from_peer);
 
         // Check if all done.
-        if self.chunk_status.iter().all(|s| *s == ChunkStatus::Complete) {
+        if self
+            .chunk_status
+            .iter()
+            .all(|s| *s == ChunkStatus::Complete)
+        {
             self.state = FastSyncState::Verifying;
         }
 
@@ -462,13 +527,17 @@ impl FastSync {
 
         // Feed chunks in order.
         for i in 0..ad.chunk_count {
-            let chunk = self.received_chunks.get(&i)
+            let chunk = self
+                .received_chunks
+                .get(&i)
                 .ok_or_else(|| FastSyncError::RestoreFailed(format!("missing chunk {i}")))?;
-            importer.add_chunk(chunk.clone())
+            importer
+                .add_chunk(chunk.clone())
                 .map_err(|e| FastSyncError::RestoreFailed(format!("{e}")))?;
         }
 
-        let snapshot = importer.finalize()
+        let snapshot = importer
+            .finalize()
             .map_err(|e| FastSyncError::RestoreFailed(format!("{e}")))?;
 
         self.restored_state = Some(snapshot.clone());
@@ -566,7 +635,8 @@ mod tests {
         let requests = fs.schedule_downloads();
         assert!(!requests.is_empty());
         for i in 0..snap.header.chunk_count {
-            fs.receive_chunk(make_chunk_response(&snap, i), peer_a).unwrap();
+            fs.receive_chunk(make_chunk_response(&snap, i), peer_a)
+                .unwrap();
         }
         assert_eq!(fs.state(), FastSyncState::Verifying);
 
@@ -585,7 +655,10 @@ mod tests {
         let local = PeerId::test(1);
         let mut fs = FastSync::new(local, FastSyncConfig::default());
         fs.start_discovery();
-        assert_eq!(fs.finish_discovery(HashMap::new()), Err(FastSyncError::NoPeers));
+        assert_eq!(
+            fs.finish_discovery(HashMap::new()),
+            Err(FastSyncError::NoPeers)
+        );
         assert_eq!(fs.state(), FastSyncState::Failed);
     }
 
@@ -594,13 +667,19 @@ mod tests {
         let snap = make_test_snapshot(5, 5);
         let local = PeerId::test(1);
         let peer = PeerId::test(2);
-        let mut fs = FastSync::new(local, FastSyncConfig {
-            min_snapshot_height: 200,
-            ..Default::default()
-        });
+        let mut fs = FastSync::new(
+            local,
+            FastSyncConfig {
+                min_snapshot_height: 200,
+                ..Default::default()
+            },
+        );
         fs.start_discovery();
         fs.receive_advertisement(make_ad(peer, &snap)); // height=100 < min 200
-        assert_eq!(fs.finish_discovery(chunk_hashes_map(&snap)), Err(FastSyncError::NoPeers));
+        assert_eq!(
+            fs.finish_discovery(chunk_hashes_map(&snap)),
+            Err(FastSyncError::NoPeers)
+        );
     }
 
     #[test]
@@ -656,7 +735,8 @@ mod tests {
         // Download half.
         let half = snap.header.chunk_count / 2;
         for i in 0..half {
-            fs.receive_chunk(make_chunk_response(&snap, i), peer).unwrap();
+            fs.receive_chunk(make_chunk_response(&snap, i), peer)
+                .unwrap();
         }
         let p = fs.progress();
         assert_eq!(p.downloaded_chunks, half);
@@ -721,10 +801,13 @@ mod tests {
         let snap = make_test_snapshot(10, 5);
         let local = PeerId::test(1);
         let peer = PeerId::test(2);
-        let mut fs = FastSync::new(local, FastSyncConfig {
-            max_chunk_retries: 2,
-            ..Default::default()
-        });
+        let mut fs = FastSync::new(
+            local,
+            FastSyncConfig {
+                max_chunk_retries: 2,
+                ..Default::default()
+            },
+        );
         fs.start_discovery();
         fs.receive_advertisement(make_ad(peer, &snap));
         fs.finish_discovery(chunk_hashes_map(&snap)).unwrap();
@@ -741,7 +824,10 @@ mod tests {
 
         // Second failure → max retries exceeded.
         let result = fs.receive_chunk(bad, peer);
-        assert!(matches!(result, Err(FastSyncError::AllPeersFailed { chunk_index: 0 })));
+        assert!(matches!(
+            result,
+            Err(FastSyncError::AllPeersFailed { chunk_index: 0 })
+        ));
         assert_eq!(fs.state(), FastSyncState::Failed);
     }
 
@@ -750,10 +836,13 @@ mod tests {
         let snap = make_test_snapshot(50, 5); // 10 chunks.
         let local = PeerId::test(1);
         let peer = PeerId::test(2);
-        let mut fs = FastSync::new(local, FastSyncConfig {
-            max_concurrent_downloads: 3,
-            ..Default::default()
-        });
+        let mut fs = FastSync::new(
+            local,
+            FastSyncConfig {
+                max_concurrent_downloads: 3,
+                ..Default::default()
+            },
+        );
         fs.start_discovery();
         fs.receive_advertisement(make_ad(peer, &snap));
         fs.finish_discovery(chunk_hashes_map(&snap)).unwrap();
@@ -765,7 +854,8 @@ mod tests {
         assert_eq!(second_batch.len(), 0); // All slots full.
 
         // Complete one chunk → frees a slot.
-        fs.receive_chunk(make_chunk_response(&snap, 0), peer).unwrap();
+        fs.receive_chunk(make_chunk_response(&snap, 0), peer)
+            .unwrap();
         let third_batch = fs.schedule_downloads();
         assert_eq!(third_batch.len(), 1);
     }

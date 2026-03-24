@@ -104,7 +104,9 @@ pub struct BenchSuite {
 
 impl BenchSuite {
     pub fn new() -> Self {
-        Self { results: Vec::new() }
+        Self {
+            results: Vec::new(),
+        }
     }
 
     pub fn add(&mut self, result: BenchResult) {
@@ -137,7 +139,9 @@ impl BenchSuite {
                 if r.mean_ns > *max_mean {
                     regressions.push(format!(
                         "REGRESSION: {} mean={}ns exceeds baseline={}ns (+{:.1}%)",
-                        name, r.mean_ns, max_mean,
+                        name,
+                        r.mean_ns,
+                        max_mean,
                         (r.mean_ns as f64 - *max_mean as f64) / *max_mean as f64 * 100.0
                     ));
                 }
@@ -202,7 +206,7 @@ pub fn bench_mempool(iters: u64) -> BenchResult {
 
 /// Benchmark: scheduler job submission.
 pub fn bench_scheduler(iters: u64) -> BenchResult {
-    use crate::scheduler::{Scheduler, Provider};
+    use crate::scheduler::{Provider, Scheduler};
     use crate::types::{Address, ModelId};
     use std::collections::HashSet;
 
@@ -310,8 +314,12 @@ mod tests {
             name: "test".into(),
             iterations: 100,
             total_duration: Duration::from_millis(50),
-            min_ns: 100, max_ns: 900, mean_ns: 500,
-            p50_ns: 450, p95_ns: 800, p99_ns: 880,
+            min_ns: 100,
+            max_ns: 900,
+            mean_ns: 500,
+            p50_ns: 450,
+            p95_ns: 800,
+            p99_ns: 880,
             throughput_ops_sec: 2000.0,
         };
         let s = result.display();
@@ -323,10 +331,15 @@ mod tests {
     fn test_bench_suite_report() {
         let mut suite = BenchSuite::new();
         suite.add(BenchResult {
-            name: "alpha".into(), iterations: 50,
+            name: "alpha".into(),
+            iterations: 50,
             total_duration: Duration::from_millis(25),
-            min_ns: 200, max_ns: 600, mean_ns: 400,
-            p50_ns: 380, p95_ns: 550, p99_ns: 590,
+            min_ns: 200,
+            max_ns: 600,
+            mean_ns: 400,
+            p50_ns: 380,
+            p95_ns: 550,
+            p99_ns: 590,
             throughput_ops_sec: 2000.0,
         });
         let report = suite.report();
@@ -338,10 +351,15 @@ mod tests {
     fn test_regression_check_pass() {
         let mut suite = BenchSuite::new();
         suite.add(BenchResult {
-            name: "fast_op".into(), iterations: 100,
+            name: "fast_op".into(),
+            iterations: 100,
             total_duration: Duration::from_millis(10),
-            min_ns: 50, max_ns: 200, mean_ns: 100,
-            p50_ns: 95, p95_ns: 180, p99_ns: 195,
+            min_ns: 50,
+            max_ns: 200,
+            mean_ns: 100,
+            p50_ns: 95,
+            p95_ns: 180,
+            p99_ns: 195,
             throughput_ops_sec: 10_000.0,
         });
         let regressions = suite.check_regressions(&[("fast_op", 500)]);
@@ -352,10 +370,15 @@ mod tests {
     fn test_regression_check_fail() {
         let mut suite = BenchSuite::new();
         suite.add(BenchResult {
-            name: "slow_op".into(), iterations: 100,
+            name: "slow_op".into(),
+            iterations: 100,
             total_duration: Duration::from_millis(100),
-            min_ns: 500, max_ns: 2000, mean_ns: 1000,
-            p50_ns: 950, p95_ns: 1800, p99_ns: 1950,
+            min_ns: 500,
+            max_ns: 2000,
+            mean_ns: 1000,
+            p50_ns: 950,
+            p95_ns: 1800,
+            p99_ns: 1950,
             throughput_ops_sec: 1000.0,
         });
         let regressions = suite.check_regressions(&[("slow_op", 500)]);
@@ -368,7 +391,9 @@ mod tests {
         let runner = BenchRunner::new("ordering", 0, 200);
         let result = runner.run(|| {
             let mut sum = 0u64;
-            for i in 0..100 { sum += i; }
+            for i in 0..100 {
+                sum += i;
+            }
             let _ = sum;
         });
         assert!(result.min_ns <= result.p50_ns);
@@ -382,10 +407,15 @@ mod tests {
         let mut suite = BenchSuite::new();
         for i in 0..5 {
             suite.add(BenchResult {
-                name: format!("bench_{}", i), iterations: 100,
+                name: format!("bench_{}", i),
+                iterations: 100,
                 total_duration: Duration::from_millis(10),
-                min_ns: 50, max_ns: 200, mean_ns: 100,
-                p50_ns: 95, p95_ns: 180, p99_ns: 195,
+                min_ns: 50,
+                max_ns: 200,
+                mean_ns: 100,
+                p50_ns: 95,
+                p95_ns: 180,
+                p99_ns: 195,
                 throughput_ops_sec: 10_000.0,
             });
         }
@@ -398,7 +428,9 @@ mod tests {
     fn test_bench_runner_warmup() {
         let mut count = 0u64;
         let runner = BenchRunner::new("warmup_test", 50, 100);
-        let _result = runner.run(|| { count += 1; });
+        let _result = runner.run(|| {
+            count += 1;
+        });
         assert_eq!(count, 150);
     }
 

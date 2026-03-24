@@ -174,7 +174,11 @@ pub fn handle_request(state: &NodeState, req: &RpcRequest) -> RpcResponse {
         "prova_getStake" => handle_get_stake(state, req),
         "prova_submitCommit" => handle_submit_commit(state, req),
         "prova_getPaymentChannel" => handle_get_channel(state, req),
-        _ => RpcResponse::err(req.id.clone(), METHOD_NOT_FOUND, format!("Unknown method: {}", req.method)),
+        _ => RpcResponse::err(
+            req.id.clone(),
+            METHOD_NOT_FOUND,
+            format!("Unknown method: {}", req.method),
+        ),
     }
 }
 
@@ -183,7 +187,11 @@ pub fn handle_raw(state: &NodeState, raw: &str) -> String {
     let req: RpcRequest = match serde_json::from_str(raw) {
         Ok(r) => r,
         Err(e) => {
-            let resp = RpcResponse::err(serde_json::Value::Null, PARSE_ERROR, format!("Parse error: {e}"));
+            let resp = RpcResponse::err(
+                serde_json::Value::Null,
+                PARSE_ERROR,
+                format!("Parse error: {e}"),
+            );
             return serde_json::to_string(&resp).unwrap();
         }
     };
@@ -196,12 +204,15 @@ pub fn handle_raw(state: &NodeState, raw: &str) -> String {
 // ---------------------------------------------------------------------------
 
 fn handle_node_info(state: &NodeState, req: &RpcRequest) -> RpcResponse {
-    RpcResponse::ok(req.id.clone(), serde_json::json!({
-        "version": state.node_version,
-        "epoch": state.epoch,
-        "models": state.models.len(),
-        "commits": state.commits.len(),
-    }))
+    RpcResponse::ok(
+        req.id.clone(),
+        serde_json::json!({
+            "version": state.node_version,
+            "epoch": state.epoch,
+            "models": state.models.len(),
+            "commits": state.commits.len(),
+        }),
+    )
 }
 
 fn handle_get_epoch(state: &NodeState, req: &RpcRequest) -> RpcResponse {
@@ -211,7 +222,13 @@ fn handle_get_epoch(state: &NodeState, req: &RpcRequest) -> RpcResponse {
 fn handle_get_model(state: &NodeState, req: &RpcRequest) -> RpcResponse {
     let id_hex = match param_str(&req.params, 0) {
         Some(s) => s,
-        None => return RpcResponse::err(req.id.clone(), INVALID_PARAMS, "Expected model ID hex as first param"),
+        None => {
+            return RpcResponse::err(
+                req.id.clone(),
+                INVALID_PARAMS,
+                "Expected model ID hex as first param",
+            )
+        }
     };
     match state.models.get(&id_hex) {
         Some(m) => RpcResponse::ok(req.id.clone(), serde_json::to_value(m).unwrap()),
@@ -222,7 +239,13 @@ fn handle_get_model(state: &NodeState, req: &RpcRequest) -> RpcResponse {
 fn handle_get_commit(state: &NodeState, req: &RpcRequest) -> RpcResponse {
     let id = match param_u64(&req.params, 0) {
         Some(v) => v,
-        None => return RpcResponse::err(req.id.clone(), INVALID_PARAMS, "Expected commit ID as first param"),
+        None => {
+            return RpcResponse::err(
+                req.id.clone(),
+                INVALID_PARAMS,
+                "Expected commit ID as first param",
+            )
+        }
     };
     match state.commits.get(&id) {
         Some(c) => RpcResponse::ok(req.id.clone(), serde_json::to_value(c).unwrap()),
@@ -233,11 +256,21 @@ fn handle_get_commit(state: &NodeState, req: &RpcRequest) -> RpcResponse {
 fn handle_get_stake(state: &NodeState, req: &RpcRequest) -> RpcResponse {
     let addr = match param_str(&req.params, 0) {
         Some(s) => s,
-        None => return RpcResponse::err(req.id.clone(), INVALID_PARAMS, "Expected address as first param"),
+        None => {
+            return RpcResponse::err(
+                req.id.clone(),
+                INVALID_PARAMS,
+                "Expected address as first param",
+            )
+        }
     };
     match state.stakes.get(&addr) {
         Some(s) => RpcResponse::ok(req.id.clone(), serde_json::to_value(s).unwrap()),
-        None => RpcResponse::err(req.id.clone(), -32000, format!("No stake found for: {addr}")),
+        None => RpcResponse::err(
+            req.id.clone(),
+            -32000,
+            format!("No stake found for: {addr}"),
+        ),
     }
 }
 
@@ -245,32 +278,57 @@ fn handle_submit_commit(state: &NodeState, req: &RpcRequest) -> RpcResponse {
     // In a real node, this would mutate state. Here we validate params and return a mock receipt.
     let model_id = match param_str(&req.params, 0) {
         Some(s) => s,
-        None => return RpcResponse::err(req.id.clone(), INVALID_PARAMS, "Expected model_id_hex as param[0]"),
+        None => {
+            return RpcResponse::err(
+                req.id.clone(),
+                INVALID_PARAMS,
+                "Expected model_id_hex as param[0]",
+            )
+        }
     };
     let activation_root = match param_str(&req.params, 1) {
         Some(s) => s,
-        None => return RpcResponse::err(req.id.clone(), INVALID_PARAMS, "Expected activation_root_hex as param[1]"),
+        None => {
+            return RpcResponse::err(
+                req.id.clone(),
+                INVALID_PARAMS,
+                "Expected activation_root_hex as param[1]",
+            )
+        }
     };
 
     // Validate model exists
     if !state.models.contains_key(&model_id) {
-        return RpcResponse::err(req.id.clone(), -32001, format!("Model not registered: {model_id}"));
+        return RpcResponse::err(
+            req.id.clone(),
+            -32001,
+            format!("Model not registered: {model_id}"),
+        );
     }
 
     let commit_id = state.commits.len() as u64 + 1;
-    RpcResponse::ok(req.id.clone(), serde_json::json!({
-        "commit_id": commit_id,
-        "model_id": model_id,
-        "activation_root": activation_root,
-        "epoch": state.epoch,
-        "status": "Pending",
-    }))
+    RpcResponse::ok(
+        req.id.clone(),
+        serde_json::json!({
+            "commit_id": commit_id,
+            "model_id": model_id,
+            "activation_root": activation_root,
+            "epoch": state.epoch,
+            "status": "Pending",
+        }),
+    )
 }
 
 fn handle_get_channel(state: &NodeState, req: &RpcRequest) -> RpcResponse {
     let id = match param_str(&req.params, 0) {
         Some(s) => s,
-        None => return RpcResponse::err(req.id.clone(), INVALID_PARAMS, "Expected channel ID as first param"),
+        None => {
+            return RpcResponse::err(
+                req.id.clone(),
+                INVALID_PARAMS,
+                "Expected channel ID as first param",
+            )
+        }
     };
     match state.channels.get(&id) {
         Some(ch) => RpcResponse::ok(req.id.clone(), serde_json::to_value(ch).unwrap()),
@@ -325,37 +383,49 @@ mod tests {
         let mut state = NodeState::new_test();
         state.epoch = 42;
 
-        state.models.insert("abc123".into(), ModelInfo {
-            id_hex: "abc123".into(),
-            name: "llama-7b".into(),
-            arch_group: "nvidia-sm89-int8".into(),
-            layer_count: 32,
-            registered_epoch: 10,
-        });
+        state.models.insert(
+            "abc123".into(),
+            ModelInfo {
+                id_hex: "abc123".into(),
+                name: "llama-7b".into(),
+                arch_group: "nvidia-sm89-int8".into(),
+                layer_count: 32,
+                registered_epoch: 10,
+            },
+        );
 
-        state.commits.insert(1, CommitInfo {
-            id: 1,
-            provider: "0xprovider1".into(),
-            model_id_hex: "abc123".into(),
-            activation_root_hex: "deadbeef".into(),
-            epoch: 40,
-            status: CommitStatus::Pending,
-        });
+        state.commits.insert(
+            1,
+            CommitInfo {
+                id: 1,
+                provider: "0xprovider1".into(),
+                model_id_hex: "abc123".into(),
+                activation_root_hex: "deadbeef".into(),
+                epoch: 40,
+                status: CommitStatus::Pending,
+            },
+        );
 
-        state.stakes.insert("0xprovider1".into(), StakeInfo {
-            address: "0xprovider1".into(),
-            total: 1_000_000,
-            locked: 200_000,
-            available: 800_000,
-        });
+        state.stakes.insert(
+            "0xprovider1".into(),
+            StakeInfo {
+                address: "0xprovider1".into(),
+                total: 1_000_000,
+                locked: 200_000,
+                available: 800_000,
+            },
+        );
 
-        state.channels.insert("ch-1".into(), ChannelInfo {
-            id: "ch-1".into(),
-            payer: "0xclient".into(),
-            payee: "0xprovider1".into(),
-            balance: 500_000,
-            rate_per_epoch: 100,
-        });
+        state.channels.insert(
+            "ch-1".into(),
+            ChannelInfo {
+                id: "ch-1".into(),
+                payer: "0xclient".into(),
+                payee: "0xprovider1".into(),
+                balance: 500_000,
+                rate_per_epoch: 100,
+            },
+        );
 
         state
     }
@@ -436,7 +506,11 @@ mod tests {
     #[test]
     fn test_submit_commit_success() {
         let s = test_state();
-        let resp = call(&s, "prova_submitCommit", serde_json::json!(["abc123", "cafebabe"]));
+        let resp = call(
+            &s,
+            "prova_submitCommit",
+            serde_json::json!(["abc123", "cafebabe"]),
+        );
         assert!(resp.error.is_none());
         let r = resp.result.unwrap();
         assert_eq!(r["status"], "Pending");
@@ -446,7 +520,11 @@ mod tests {
     #[test]
     fn test_submit_commit_unknown_model() {
         let s = test_state();
-        let resp = call(&s, "prova_submitCommit", serde_json::json!(["unknown", "cafebabe"]));
+        let resp = call(
+            &s,
+            "prova_submitCommit",
+            serde_json::json!(["unknown", "cafebabe"]),
+        );
         assert!(resp.error.is_some());
         assert_eq!(resp.error.unwrap().code, -32001);
     }

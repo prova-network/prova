@@ -21,9 +21,9 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use sha2::{Digest, Sha256};
 
+use crate::network::PeerId;
 use prova_chain::snapshot::{SnapshotChunk, SnapshotHeader, StateSnapshot};
 use prova_chain::types::Hash;
-use crate::network::PeerId;
 
 // ── Wire protocol messages ────────────────────────────────────────
 
@@ -210,7 +210,8 @@ impl SnapshotServer {
     pub fn register_snapshot(&mut self, snapshot: StateSnapshot) {
         let ad = SnapshotAdvertisement::from_header(self.local_id, &snapshot.header);
         let key = snapshot.header.manifest_root;
-        self.snapshots.insert(key, RegisteredSnapshot::from_state_snapshot(snapshot));
+        self.snapshots
+            .insert(key, RegisteredSnapshot::from_state_snapshot(snapshot));
         self.outbound_ads.push_back(ad);
     }
 
@@ -221,7 +222,9 @@ impl SnapshotServer {
 
     /// Get chunk hashes for a snapshot (so downloaders can verify chunks).
     pub fn chunk_hashes(&self, manifest_root: &Hash) -> Option<&[Hash]> {
-        self.snapshots.get(manifest_root).map(|s| s.chunk_hashes.as_slice())
+        self.snapshots
+            .get(manifest_root)
+            .map(|s| s.chunk_hashes.as_slice())
     }
 
     /// Handle an incoming chunk request. Returns response or error.
@@ -447,7 +450,11 @@ mod tests {
 
     fn make_chunk(index: u32, accounts: Vec<SnapshotAccount>) -> SnapshotChunk {
         let hash = SnapshotChunk::compute_hash(&accounts);
-        SnapshotChunk { index, accounts, hash }
+        SnapshotChunk {
+            index,
+            accounts,
+            hash,
+        }
     }
 
     /// Build a StateSnapshot manually for testing.
@@ -456,7 +463,12 @@ mod tests {
         let mut total_accounts = 0u64;
         for i in 0..num_chunks {
             let accounts: Vec<_> = (0..accounts_per_chunk)
-                .map(|j| test_account((i * accounts_per_chunk as u32 + j as u32) as u8, 1000 + j as u128))
+                .map(|j| {
+                    test_account(
+                        (i * accounts_per_chunk as u32 + j as u32) as u8,
+                        1000 + j as u128,
+                    )
+                })
                 .collect();
             total_accounts += accounts.len() as u64;
             chunks.push(make_chunk(i, accounts));
@@ -580,7 +592,13 @@ mod tests {
             chunk_index: 5,
         };
         let err = server.handle_request(&req, 0).unwrap_err();
-        assert_eq!(err, ServeError::ChunkOutOfRange { requested: 5, total: 2 });
+        assert_eq!(
+            err,
+            ServeError::ChunkOutOfRange {
+                requested: 5,
+                total: 2
+            }
+        );
     }
 
     #[test]
@@ -591,7 +609,10 @@ mod tests {
             manifest_root: [0xFF; 32],
             chunk_index: 0,
         };
-        assert_eq!(server.handle_request(&req, 0).unwrap_err(), ServeError::SnapshotNotFound);
+        assert_eq!(
+            server.handle_request(&req, 0).unwrap_err(),
+            ServeError::SnapshotNotFound
+        );
     }
 
     #[test]
@@ -603,7 +624,11 @@ mod tests {
         server.register_snapshot(snap);
 
         let peer = PeerId::test(2);
-        let req = |idx| ChunkRequest { requester: peer, manifest_root, chunk_index: idx };
+        let req = |idx| ChunkRequest {
+            requester: peer,
+            manifest_root,
+            chunk_index: idx,
+        };
         assert!(server.handle_request(&req(0), 0).is_ok());
         assert!(server.handle_request(&req(1), 0).is_ok());
         let err = server.handle_request(&req(0), 0).unwrap_err();
@@ -617,14 +642,29 @@ mod tests {
         let mut server = SnapshotServer::new(PeerId::test(1), 1);
         server.register_snapshot(snap);
 
-        let req1 = ChunkRequest { requester: PeerId::test(2), manifest_root, chunk_index: 0 };
+        let req1 = ChunkRequest {
+            requester: PeerId::test(2),
+            manifest_root,
+            chunk_index: 0,
+        };
         assert!(server.handle_request(&req1, 0).is_ok());
 
-        let req2 = ChunkRequest { requester: PeerId::test(3), manifest_root, chunk_index: 0 };
-        assert_eq!(server.handle_request(&req2, 100).unwrap_err(), ServeError::AtCapacity);
+        let req2 = ChunkRequest {
+            requester: PeerId::test(3),
+            manifest_root,
+            chunk_index: 0,
+        };
+        assert_eq!(
+            server.handle_request(&req2, 100).unwrap_err(),
+            ServeError::AtCapacity
+        );
 
         // Existing peer can still continue.
-        let req1b = ChunkRequest { requester: PeerId::test(2), manifest_root, chunk_index: 1 };
+        let req1b = ChunkRequest {
+            requester: PeerId::test(2),
+            manifest_root,
+            chunk_index: 1,
+        };
         assert!(server.handle_request(&req1b, 200).is_ok());
     }
 
@@ -636,12 +676,20 @@ mod tests {
         server.register_snapshot(snap);
 
         let peer = PeerId::test(2);
-        let req = ChunkRequest { requester: peer, manifest_root, chunk_index: 0 };
+        let req = ChunkRequest {
+            requester: peer,
+            manifest_root,
+            chunk_index: 0,
+        };
         server.handle_request(&req, 0).unwrap();
         server.peer_finished(&manifest_root, &peer);
 
         let peer3 = PeerId::test(3);
-        let req3 = ChunkRequest { requester: peer3, manifest_root, chunk_index: 0 };
+        let req3 = ChunkRequest {
+            requester: peer3,
+            manifest_root,
+            chunk_index: 0,
+        };
         assert!(server.handle_request(&req3, 100).is_ok());
     }
 

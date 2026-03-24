@@ -170,7 +170,14 @@ impl Transaction {
     fn tag_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
         match self {
-            Transaction::InferenceCommit { provider, model_id, input_hash, activation_root, leaf_count, .. } => {
+            Transaction::InferenceCommit {
+                provider,
+                model_id,
+                input_hash,
+                activation_root,
+                leaf_count,
+                ..
+            } => {
                 out.push(0x01);
                 out.extend_from_slice(&provider.0);
                 out.extend_from_slice(&model_id.0);
@@ -178,19 +185,31 @@ impl Transaction {
                 out.extend_from_slice(activation_root);
                 out.extend_from_slice(&leaf_count.to_le_bytes());
             }
-            Transaction::Challenge { challenger, commit_id } => {
+            Transaction::Challenge {
+                challenger,
+                commit_id,
+            } => {
                 out.push(0x02);
                 out.extend_from_slice(&challenger.0);
                 out.extend_from_slice(&commit_id.0.to_le_bytes());
             }
-            Transaction::BisectionMove { dispute_id, mover, layer, hash } => {
+            Transaction::BisectionMove {
+                dispute_id,
+                mover,
+                layer,
+                hash,
+            } => {
                 out.push(0x03);
                 out.extend_from_slice(&dispute_id.to_le_bytes());
                 out.extend_from_slice(&mover.0);
                 out.extend_from_slice(&layer.to_le_bytes());
                 out.extend_from_slice(hash);
             }
-            Transaction::PdpProof { provider, proof_set_id, challenged_roots } => {
+            Transaction::PdpProof {
+                provider,
+                proof_set_id,
+                challenged_roots,
+            } => {
                 out.push(0x04);
                 out.extend_from_slice(&provider.0);
                 out.extend_from_slice(&proof_set_id.to_le_bytes());
@@ -201,7 +220,12 @@ impl Transaction {
             Transaction::PaymentOp(op) => {
                 out.push(0x05);
                 match op {
-                    PaymentOp::Open { payer, payee, deposit, rate_per_epoch } => {
+                    PaymentOp::Open {
+                        payer,
+                        payee,
+                        deposit,
+                        rate_per_epoch,
+                    } => {
                         out.push(0x01);
                         out.extend_from_slice(&payer.0);
                         out.extend_from_slice(&payee.0);
@@ -231,14 +255,22 @@ impl Transaction {
                         out.extend_from_slice(&provider.0);
                         out.extend_from_slice(&amount.to_le_bytes());
                     }
-                    StakeOp::Lock { provider, amount, .. } => {
+                    StakeOp::Lock {
+                        provider, amount, ..
+                    } => {
                         out.push(0x03);
                         out.extend_from_slice(&provider.0);
                         out.extend_from_slice(&amount.to_le_bytes());
                     }
                 }
             }
-            Transaction::RegisterModel { owner, model_hash, name, layer_count, .. } => {
+            Transaction::RegisterModel {
+                owner,
+                model_hash,
+                name,
+                layer_count,
+                ..
+            } => {
                 out.push(0x07);
                 out.extend_from_slice(&owner.0);
                 out.extend_from_slice(model_hash);
@@ -284,10 +316,7 @@ impl ProducerSchedule {
         providers.sort_by_key(|(addr, _)| addr.0);
 
         // Filter out zero-weight providers
-        let entries: Vec<(Address, u64)> = providers
-            .into_iter()
-            .filter(|(_, w)| *w > 0)
-            .collect();
+        let entries: Vec<(Address, u64)> = providers.into_iter().filter(|(_, w)| *w > 0).collect();
 
         if entries.is_empty() {
             return None;
@@ -612,7 +641,10 @@ mod tests {
             tx_count: 2,
             timestamp: 1_700_000_030,
         };
-        let block = Block { header, transactions: txs };
+        let block = Block {
+            header,
+            transactions: txs,
+        };
         assert!(block.validate_internal().is_ok());
     }
 
@@ -627,10 +659,16 @@ mod tests {
             tx_count: 5, // wrong
             timestamp: 0,
         };
-        let block = Block { header, transactions: vec![] };
+        let block = Block {
+            header,
+            transactions: vec![],
+        };
         assert_eq!(
             block.validate_internal(),
-            Err(BlockError::TxCountMismatch { header: 5, actual: 0 })
+            Err(BlockError::TxCountMismatch {
+                header: 5,
+                actual: 0
+            })
         );
     }
 
@@ -649,7 +687,10 @@ mod tests {
             tx_count: 1,
             timestamp: 0,
         };
-        let block = Block { header, transactions: txs };
+        let block = Block {
+            header,
+            transactions: txs,
+        };
         assert_eq!(block.validate_internal(), Err(BlockError::TxRootMismatch));
     }
 
@@ -674,10 +715,7 @@ mod tests {
 
     #[test]
     fn test_producer_schedule_zero_weight_filtered() {
-        let providers = vec![
-            (Address::test(1), 0),
-            (Address::test(2), 100),
-        ];
+        let providers = vec![(Address::test(1), 0), (Address::test(2), 100)];
         let schedule = ProducerSchedule::new(providers, [0; 32]).unwrap();
         assert_eq!(schedule.entries().len(), 1);
         assert_eq!(schedule.total_weight(), 100);
@@ -686,10 +724,7 @@ mod tests {
     #[test]
     fn test_producer_schedule_weighted_distribution() {
         // Provider A has 90% weight, Provider B has 10%
-        let providers = vec![
-            (Address::test(1), 900),
-            (Address::test(2), 100),
-        ];
+        let providers = vec![(Address::test(1), 900), (Address::test(2), 100)];
         let schedule = ProducerSchedule::new(providers, [0x42; 32]).unwrap();
 
         // Run 1000 epochs and check distribution is roughly proportional
@@ -803,7 +838,10 @@ mod tests {
             tx_count: 0,
             timestamp: 1_700_000_030,
         };
-        let block = Block { header, transactions: vec![] };
+        let block = Block {
+            header,
+            transactions: vec![],
+        };
         let hash = chain.append(block).unwrap();
 
         assert_eq!(chain.height(), 1);
@@ -825,7 +863,10 @@ mod tests {
             tx_count: 0,
             timestamp: 0,
         };
-        let block = Block { header, transactions: vec![] };
+        let block = Block {
+            header,
+            transactions: vec![],
+        };
         assert_eq!(chain.append(block), Err(BlockError::ParentHashMismatch));
     }
 
@@ -844,10 +885,16 @@ mod tests {
             tx_count: 0,
             timestamp: 0,
         };
-        let block = Block { header, transactions: vec![] };
+        let block = Block {
+            header,
+            transactions: vec![],
+        };
         assert_eq!(
             chain.append(block),
-            Err(BlockError::EpochMismatch { expected: 1, got: 5 })
+            Err(BlockError::EpochMismatch {
+                expected: 1,
+                got: 5
+            })
         );
     }
 
@@ -867,7 +914,12 @@ mod tests {
                 tx_count: 0,
                 timestamp: 1_700_000_000 + i * 30,
             };
-            chain.append(Block { header, transactions: vec![] }).unwrap();
+            chain
+                .append(Block {
+                    header,
+                    transactions: vec![],
+                })
+                .unwrap();
         }
 
         assert_eq!(chain.height(), 10);
@@ -881,12 +933,7 @@ mod tests {
 
     #[test]
     fn test_block_builder() {
-        let builder = BlockBuilder::new(
-            5,
-            [0xAA; 32],
-            Address::test(1),
-            1_700_000_150,
-        );
+        let builder = BlockBuilder::new(5, [0xAA; 32], Address::test(1), 1_700_000_150);
         let block = builder.build([0xBB; 32]);
         assert_eq!(block.header.epoch, 5);
         assert_eq!(block.header.tx_count, 0);
@@ -895,12 +942,7 @@ mod tests {
 
     #[test]
     fn test_block_builder_with_txs() {
-        let mut builder = BlockBuilder::new(
-            10,
-            [0; 32],
-            Address::test(2),
-            1_700_000_300,
-        );
+        let mut builder = BlockBuilder::new(10, [0; 32], Address::test(2), 1_700_000_300);
         builder.push_tx(Transaction::StakeOp(StakeOp::Deposit {
             provider: Address::test(2),
             amount: 5_000_000,

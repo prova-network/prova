@@ -127,8 +127,13 @@ pub struct SecurityScheme {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SecuritySchemeType {
-    ApiKey { location: String, param_name: String },
-    Http { scheme: String },
+    ApiKey {
+        location: String,
+        param_name: String,
+    },
+    Http {
+        scheme: String,
+    },
 }
 
 /// Route definition used to auto-generate spec.
@@ -212,7 +217,10 @@ impl SpecGenerator {
                 request_body: route.request_body.clone(),
                 responses: route.responses.clone(),
                 security: if route.requires_auth {
-                    self.security_schemes.iter().map(|s| s.name.clone()).collect()
+                    self.security_schemes
+                        .iter()
+                        .map(|s| s.name.clone())
+                        .collect()
                 } else {
                     Vec::new()
                 },
@@ -247,16 +255,31 @@ impl SpecGenerator {
 
         // Info
         out.push_str("  \"info\": {\n");
-        out.push_str(&format!("    \"title\": \"{}\",\n", escape_json(&spec.info.title)));
-        out.push_str(&format!("    \"version\": \"{}\",\n", escape_json(&spec.info.version)));
-        out.push_str(&format!("    \"description\": \"{}\"\n", escape_json(&spec.info.description)));
+        out.push_str(&format!(
+            "    \"title\": \"{}\",\n",
+            escape_json(&spec.info.title)
+        ));
+        out.push_str(&format!(
+            "    \"version\": \"{}\",\n",
+            escape_json(&spec.info.version)
+        ));
+        out.push_str(&format!(
+            "    \"description\": \"{}\"\n",
+            escape_json(&spec.info.description)
+        ));
         out.push_str("  },\n");
 
         // Servers
         out.push_str("  \"servers\": [\n");
         for (i, s) in spec.servers.iter().enumerate() {
-            out.push_str(&format!("    {{\"url\": \"{}\", \"description\": \"{}\"}}", escape_json(&s.url), escape_json(&s.description)));
-            if i < spec.servers.len() - 1 { out.push(','); }
+            out.push_str(&format!(
+                "    {{\"url\": \"{}\", \"description\": \"{}\"}}",
+                escape_json(&s.url),
+                escape_json(&s.description)
+            ));
+            if i < spec.servers.len() - 1 {
+                out.push(',');
+            }
             out.push('\n');
         }
         out.push_str("  ],\n");
@@ -267,10 +290,22 @@ impl SpecGenerator {
             out.push_str(&format!("    \"{}\": {{\n", escape_json(&path.path)));
             for (oi, op) in path.operations.iter().enumerate() {
                 out.push_str(&format!("      \"{}\": {{\n", op.method.to_lowercase()));
-                out.push_str(&format!("        \"operationId\": \"{}\",\n", escape_json(&op.operation_id)));
-                out.push_str(&format!("        \"summary\": \"{}\",\n", escape_json(&op.summary)));
-                out.push_str(&format!("        \"tags\": [{}],\n",
-                    op.tags.iter().map(|t| format!("\"{}\"", escape_json(t))).collect::<Vec<_>>().join(", ")));
+                out.push_str(&format!(
+                    "        \"operationId\": \"{}\",\n",
+                    escape_json(&op.operation_id)
+                ));
+                out.push_str(&format!(
+                    "        \"summary\": \"{}\",\n",
+                    escape_json(&op.summary)
+                ));
+                out.push_str(&format!(
+                    "        \"tags\": [{}],\n",
+                    op.tags
+                        .iter()
+                        .map(|t| format!("\"{}\"", escape_json(t)))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ));
 
                 // Parameters
                 if !op.parameters.is_empty() {
@@ -278,7 +313,9 @@ impl SpecGenerator {
                     for (pi2, p) in op.parameters.iter().enumerate() {
                         out.push_str(&format!("          {{\"name\": \"{}\", \"in\": \"{}\", \"required\": {}, \"description\": \"{}\"}}",
                             escape_json(&p.name), p.location.as_str(), p.required, escape_json(&p.description)));
-                        if pi2 < op.parameters.len() - 1 { out.push(','); }
+                        if pi2 < op.parameters.len() - 1 {
+                            out.push(',');
+                        }
                         out.push('\n');
                     }
                     out.push_str("        ],\n");
@@ -287,19 +324,28 @@ impl SpecGenerator {
                 // Responses
                 out.push_str("        \"responses\": {\n");
                 for (ri, r) in op.responses.iter().enumerate() {
-                    out.push_str(&format!("          \"{}\": {{\"description\": \"{}\"}}",
-                        escape_json(&r.status), escape_json(&r.description)));
-                    if ri < op.responses.len() - 1 { out.push(','); }
+                    out.push_str(&format!(
+                        "          \"{}\": {{\"description\": \"{}\"}}",
+                        escape_json(&r.status),
+                        escape_json(&r.description)
+                    ));
+                    if ri < op.responses.len() - 1 {
+                        out.push(',');
+                    }
                     out.push('\n');
                 }
                 out.push_str("        }\n");
 
                 out.push_str("      }");
-                if oi < path.operations.len() - 1 { out.push(','); }
+                if oi < path.operations.len() - 1 {
+                    out.push(',');
+                }
                 out.push('\n');
             }
             out.push_str("    }");
-            if pi < spec.paths.len() - 1 { out.push(','); }
+            if pi < spec.paths.len() - 1 {
+                out.push(',');
+            }
             out.push('\n');
         }
         out.push_str("  },\n");
@@ -323,7 +369,8 @@ pub fn prova_api_routes() -> Vec<RouteDefinition> {
             path: "/v1/inference".into(),
             operation_id: "submitInference".into(),
             summary: "Submit an inference job".into(),
-            description: "Submit a new inference request to be scheduled and executed by a provider.".into(),
+            description:
+                "Submit a new inference request to be scheduled and executed by a provider.".into(),
             tags: vec!["Inference".into()],
             parameters: Vec::new(),
             request_body: Some(RequestBody {
@@ -332,10 +379,26 @@ pub fn prova_api_routes() -> Vec<RouteDefinition> {
                 required: true,
             }),
             responses: vec![
-                Response { status: "201".into(), description: "Job created".into(), schema: Some(SchemaRef::Ref("InferenceResult".into())) },
-                Response { status: "400".into(), description: "Invalid request".into(), schema: None },
-                Response { status: "401".into(), description: "Unauthorized".into(), schema: None },
-                Response { status: "429".into(), description: "Rate limit exceeded".into(), schema: None },
+                Response {
+                    status: "201".into(),
+                    description: "Job created".into(),
+                    schema: Some(SchemaRef::Ref("InferenceResult".into())),
+                },
+                Response {
+                    status: "400".into(),
+                    description: "Invalid request".into(),
+                    schema: None,
+                },
+                Response {
+                    status: "401".into(),
+                    description: "Unauthorized".into(),
+                    schema: None,
+                },
+                Response {
+                    status: "429".into(),
+                    description: "Rate limit exceeded".into(),
+                    schema: None,
+                },
             ],
             requires_auth: true,
         },
@@ -355,8 +418,16 @@ pub fn prova_api_routes() -> Vec<RouteDefinition> {
             }],
             request_body: None,
             responses: vec![
-                Response { status: "200".into(), description: "Job details".into(), schema: Some(SchemaRef::Ref("InferenceResult".into())) },
-                Response { status: "404".into(), description: "Job not found".into(), schema: None },
+                Response {
+                    status: "200".into(),
+                    description: "Job details".into(),
+                    schema: Some(SchemaRef::Ref("InferenceResult".into())),
+                },
+                Response {
+                    status: "404".into(),
+                    description: "Job not found".into(),
+                    schema: None,
+                },
             ],
             requires_auth: true,
         },
@@ -376,8 +447,16 @@ pub fn prova_api_routes() -> Vec<RouteDefinition> {
             }],
             request_body: None,
             responses: vec![
-                Response { status: "200".into(), description: "Job cancelled".into(), schema: None },
-                Response { status: "404".into(), description: "Job not found".into(), schema: None },
+                Response {
+                    status: "200".into(),
+                    description: "Job cancelled".into(),
+                    schema: None,
+                },
+                Response {
+                    status: "404".into(),
+                    description: "Job not found".into(),
+                    schema: None,
+                },
             ],
             requires_auth: true,
         },
@@ -390,9 +469,11 @@ pub fn prova_api_routes() -> Vec<RouteDefinition> {
             tags: vec!["Models".into()],
             parameters: Vec::new(),
             request_body: None,
-            responses: vec![
-                Response { status: "200".into(), description: "Model list".into(), schema: None },
-            ],
+            responses: vec![Response {
+                status: "200".into(),
+                description: "Model list".into(),
+                schema: None,
+            }],
             requires_auth: true,
         },
         RouteDefinition {
@@ -404,9 +485,11 @@ pub fn prova_api_routes() -> Vec<RouteDefinition> {
             tags: vec!["System".into()],
             parameters: Vec::new(),
             request_body: None,
-            responses: vec![
-                Response { status: "200".into(), description: "Healthy".into(), schema: None },
-            ],
+            responses: vec![Response {
+                status: "200".into(),
+                description: "Healthy".into(),
+                schema: None,
+            }],
             requires_auth: false,
         },
         RouteDefinition {
@@ -418,9 +501,11 @@ pub fn prova_api_routes() -> Vec<RouteDefinition> {
             tags: vec!["System".into()],
             parameters: Vec::new(),
             request_body: None,
-            responses: vec![
-                Response { status: "200".into(), description: "OpenAPI JSON document".into(), schema: None },
-            ],
+            responses: vec![Response {
+                status: "200".into(),
+                description: "OpenAPI JSON document".into(),
+                schema: None,
+            }],
             requires_auth: false,
         },
     ]
@@ -432,10 +517,22 @@ pub fn prova_api_schemas() -> Vec<SchemaDefinition> {
         SchemaDefinition {
             name: "InferenceRequest".into(),
             schema_type: SchemaType::Object(vec![
-                ("model_id".into(), SchemaRef::Inline(SchemaType::String), true),
+                (
+                    "model_id".into(),
+                    SchemaRef::Inline(SchemaType::String),
+                    true,
+                ),
                 ("input".into(), SchemaRef::Inline(SchemaType::String), true),
-                ("max_tokens".into(), SchemaRef::Inline(SchemaType::Integer), false),
-                ("callback_url".into(), SchemaRef::Inline(SchemaType::String), false),
+                (
+                    "max_tokens".into(),
+                    SchemaRef::Inline(SchemaType::Integer),
+                    false,
+                ),
+                (
+                    "callback_url".into(),
+                    SchemaRef::Inline(SchemaType::String),
+                    false,
+                ),
             ]),
             description: "Inference job submission request.".into(),
         },
@@ -444,15 +541,21 @@ pub fn prova_api_schemas() -> Vec<SchemaDefinition> {
             schema_type: SchemaType::Object(vec![
                 ("job_id".into(), SchemaRef::Inline(SchemaType::String), true),
                 ("status".into(), SchemaRef::Inline(SchemaType::String), true),
-                ("output".into(), SchemaRef::Inline(SchemaType::String), false),
+                (
+                    "output".into(),
+                    SchemaRef::Inline(SchemaType::String),
+                    false,
+                ),
             ]),
             description: "Inference job status and result.".into(),
         },
         SchemaDefinition {
             name: "Error".into(),
-            schema_type: SchemaType::Object(vec![
-                ("error".into(), SchemaRef::Inline(SchemaType::String), true),
-            ]),
+            schema_type: SchemaType::Object(vec![(
+                "error".into(),
+                SchemaRef::Inline(SchemaType::String),
+                true,
+            )]),
             description: "Error response.".into(),
         },
     ]
@@ -520,9 +623,16 @@ mod tests {
     fn test_add_route() {
         let mut gen = SpecGenerator::new("T", "1", "D");
         gen.add_route(RouteDefinition {
-            method: "get".into(), path: "/test".into(), operation_id: "test".into(),
-            summary: "Test".into(), description: "".into(), tags: vec![],
-            parameters: vec![], request_body: None, responses: vec![], requires_auth: false,
+            method: "get".into(),
+            path: "/test".into(),
+            operation_id: "test".into(),
+            summary: "Test".into(),
+            description: "".into(),
+            tags: vec![],
+            parameters: vec![],
+            request_body: None,
+            responses: vec![],
+            requires_auth: false,
         });
         assert_eq!(gen.route_count(), 1);
     }
@@ -571,7 +681,10 @@ mod tests {
     #[test]
     fn test_inference_endpoint_requires_auth() {
         let routes = prova_api_routes();
-        let inf = routes.iter().find(|r| r.operation_id == "submitInference").unwrap();
+        let inf = routes
+            .iter()
+            .find(|r| r.operation_id == "submitInference")
+            .unwrap();
         assert!(inf.requires_auth);
         assert!(inf.request_body.is_some());
     }
@@ -579,7 +692,10 @@ mod tests {
     #[test]
     fn test_path_parameter_on_get_job() {
         let routes = prova_api_routes();
-        let get = routes.iter().find(|r| r.operation_id == "getInferenceJob").unwrap();
+        let get = routes
+            .iter()
+            .find(|r| r.operation_id == "getInferenceJob")
+            .unwrap();
         assert_eq!(get.parameters.len(), 1);
         assert_eq!(get.parameters[0].name, "job_id");
         assert_eq!(get.parameters[0].location, ParamLocation::Path);
@@ -618,7 +734,10 @@ mod tests {
         let scheme = prova_security_scheme();
         assert_eq!(scheme.name, "ApiKeyAuth");
         match &scheme.scheme_type {
-            SecuritySchemeType::ApiKey { location, param_name } => {
+            SecuritySchemeType::ApiKey {
+                location,
+                param_name,
+            } => {
                 assert_eq!(location, "header");
                 assert_eq!(param_name, "X-API-Key");
             }
@@ -631,9 +750,17 @@ mod tests {
         let gen = prova_spec_generator();
         let spec = gen.generate();
         // /v1/inference/{job_id} should have GET and DELETE
-        let job_path = spec.paths.iter().find(|p| p.path == "/v1/inference/{job_id}").unwrap();
+        let job_path = spec
+            .paths
+            .iter()
+            .find(|p| p.path == "/v1/inference/{job_id}")
+            .unwrap();
         assert_eq!(job_path.operations.len(), 2);
-        let methods: Vec<&str> = job_path.operations.iter().map(|o| o.method.as_str()).collect();
+        let methods: Vec<&str> = job_path
+            .operations
+            .iter()
+            .map(|o| o.method.as_str())
+            .collect();
         assert!(methods.contains(&"get"));
         assert!(methods.contains(&"delete"));
     }
@@ -645,9 +772,17 @@ mod tests {
         for path in &spec.paths {
             for op in &path.operations {
                 if op.operation_id == "healthCheck" || op.operation_id == "getOpenApiSpec" {
-                    assert!(op.security.is_empty(), "{} should not require auth", op.operation_id);
+                    assert!(
+                        op.security.is_empty(),
+                        "{} should not require auth",
+                        op.operation_id
+                    );
                 } else {
-                    assert!(!op.security.is_empty(), "{} should require auth", op.operation_id);
+                    assert!(
+                        !op.security.is_empty(),
+                        "{} should require auth",
+                        op.operation_id
+                    );
                 }
             }
         }
@@ -678,10 +813,16 @@ mod tests {
     fn test_multiple_tags() {
         let mut gen = SpecGenerator::new("T", "1", "D");
         gen.add_route(RouteDefinition {
-            method: "get".into(), path: "/multi".into(), operation_id: "multi".into(),
-            summary: "Multi".into(), description: "".into(),
+            method: "get".into(),
+            path: "/multi".into(),
+            operation_id: "multi".into(),
+            summary: "Multi".into(),
+            description: "".into(),
             tags: vec!["A".into(), "B".into(), "C".into()],
-            parameters: vec![], request_body: None, responses: vec![], requires_auth: false,
+            parameters: vec![],
+            request_body: None,
+            responses: vec![],
+            requires_auth: false,
         });
         let spec = gen.generate();
         assert_eq!(spec.paths[0].operations[0].tags.len(), 3);
@@ -690,7 +831,10 @@ mod tests {
     #[test]
     fn test_openapi_spec_self_serve_route() {
         let routes = prova_api_routes();
-        let oas = routes.iter().find(|r| r.path == "/v1/openapi.json").unwrap();
+        let oas = routes
+            .iter()
+            .find(|r| r.path == "/v1/openapi.json")
+            .unwrap();
         assert!(!oas.requires_auth);
         assert_eq!(oas.method, "get");
     }

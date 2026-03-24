@@ -188,7 +188,12 @@ impl ReputationRegistry {
     }
 
     /// Get or create a reputation entry.
-    pub fn get_or_create(&mut self, provider: Address, model_id: ModelId, epoch: Epoch) -> &mut ReputationEntry {
+    pub fn get_or_create(
+        &mut self,
+        provider: Address,
+        model_id: ModelId,
+        epoch: Epoch,
+    ) -> &mut ReputationEntry {
         self.entries
             .entry((provider, model_id))
             .or_insert_with(|| ReputationEntry::new(provider, model_id, epoch))
@@ -228,7 +233,8 @@ impl ReputationRegistry {
     /// Compute a slash amount based on reputation score.
     /// Lower reputation → higher slash multiplier.
     pub fn slash_multiplier_bps(&self, provider: Address, model_id: ModelId) -> u64 {
-        let score = self.entries
+        let score = self
+            .entries
             .get(&(provider, model_id))
             .map(|e| e.score)
             .unwrap_or(NEUTRAL_SCORE);
@@ -252,9 +258,13 @@ impl ReputationRegistry {
 mod tests {
     use super::*;
 
-    fn addr(id: u8) -> Address { Address::test(id) }
+    fn addr(id: u8) -> Address {
+        Address::test(id)
+    }
     fn model(id: u8) -> ModelId {
-        let mut h = [0u8; 32]; h[0] = id; ModelId(h)
+        let mut h = [0u8; 32];
+        h[0] = id;
+        ModelId(h)
     }
 
     #[test]
@@ -268,7 +278,10 @@ mod tests {
     #[test]
     fn test_success_increases_score() {
         let mut entry = ReputationEntry::new(addr(1), model(1), 0);
-        let obs = Observation { epoch: 1, kind: ObservationKind::Success };
+        let obs = Observation {
+            epoch: 1,
+            kind: ObservationKind::Success,
+        };
         let update = entry.record(&obs);
         assert!(update.new_score > NEUTRAL_SCORE);
     }
@@ -276,7 +289,10 @@ mod tests {
     #[test]
     fn test_job_missed_decreases_score() {
         let mut entry = ReputationEntry::new(addr(1), model(1), 0);
-        let obs = Observation { epoch: 1, kind: ObservationKind::JobMissed };
+        let obs = Observation {
+            epoch: 1,
+            kind: ObservationKind::JobMissed,
+        };
         let update = entry.record(&obs);
         // Instant penalty (500) + EMA toward 0
         assert!(update.new_score < NEUTRAL_SCORE);
@@ -285,7 +301,10 @@ mod tests {
     #[test]
     fn test_dispute_lost_severe_penalty() {
         let mut entry = ReputationEntry::new(addr(1), model(1), 0);
-        let obs = Observation { epoch: 1, kind: ObservationKind::DisputeLost };
+        let obs = Observation {
+            epoch: 1,
+            kind: ObservationKind::DisputeLost,
+        };
         let update = entry.record(&obs);
         // 2000 bps instant penalty + EMA toward 0
         assert!(update.new_score < 3500);
@@ -295,7 +314,10 @@ mod tests {
     fn test_ema_converges_with_repeated_success() {
         let mut entry = ReputationEntry::new(addr(1), model(1), 0);
         for i in 1..=50 {
-            let obs = Observation { epoch: i, kind: ObservationKind::Success };
+            let obs = Observation {
+                epoch: i,
+                kind: ObservationKind::Success,
+            };
             entry.record(&obs);
         }
         // After 50 successes, score should be close to MAX_SCORE
@@ -306,7 +328,10 @@ mod tests {
     fn test_ema_converges_with_repeated_failures() {
         let mut entry = ReputationEntry::new(addr(1), model(1), 0);
         for i in 1..=30 {
-            let obs = Observation { epoch: i, kind: ObservationKind::JobMissed };
+            let obs = Observation {
+                epoch: i,
+                kind: ObservationKind::JobMissed,
+            };
             entry.record(&obs);
         }
         assert!(entry.score < 500, "score {} should be <500", entry.score);
@@ -318,14 +343,20 @@ mod tests {
         let mut entry = ReputationEntry::new(addr(1), model(1), 0);
         // Repeated disputes drive score below threshold
         for i in 1..=5 {
-            let obs = Observation { epoch: i, kind: ObservationKind::DisputeLost };
+            let obs = Observation {
+                epoch: i,
+                kind: ObservationKind::DisputeLost,
+            };
             let update = entry.record(&obs);
             if update.newly_suspended {
                 assert!(entry.score < SUSPENSION_THRESHOLD);
                 return;
             }
         }
-        assert!(entry.suspended, "should be suspended after 5 dispute losses");
+        assert!(
+            entry.suspended,
+            "should be suspended after 5 dispute losses"
+        );
     }
 
     #[test]
@@ -333,20 +364,30 @@ mod tests {
         let mut entry = ReputationEntry::new(addr(1), model(1), 0);
         // Drive below threshold
         for i in 1..=5 {
-            entry.record(&Observation { epoch: i, kind: ObservationKind::DisputeLost });
+            entry.record(&Observation {
+                epoch: i,
+                kind: ObservationKind::DisputeLost,
+            });
         }
         assert!(entry.suspended);
 
         // Recover with many successes
         for i in 6..=60 {
-            let update = entry.record(&Observation { epoch: i, kind: ObservationKind::Success });
+            let update = entry.record(&Observation {
+                epoch: i,
+                kind: ObservationKind::Success,
+            });
             if update.newly_restored {
                 assert!(!entry.suspended);
                 return;
             }
         }
         // Should have recovered by now
-        assert!(!entry.suspended, "score {} should have recovered", entry.score);
+        assert!(
+            !entry.suspended,
+            "score {} should have recovered",
+            entry.score
+        );
     }
 
     #[test]
@@ -392,7 +433,14 @@ mod tests {
         let p = addr(1);
         let m = model(1);
 
-        reg.record(p, m, Observation { epoch: 1, kind: ObservationKind::Success });
+        reg.record(
+            p,
+            m,
+            Observation {
+                epoch: 1,
+                kind: ObservationKind::Success,
+            },
+        );
         let score = reg.score(p, m, 1);
         assert!(score > NEUTRAL_SCORE);
         assert_eq!(reg.entry_count(), 1);
@@ -405,8 +453,22 @@ mod tests {
         let m1 = model(1);
         let m2 = model(2);
 
-        reg.record(p, m1, Observation { epoch: 1, kind: ObservationKind::Success });
-        reg.record(p, m2, Observation { epoch: 1, kind: ObservationKind::DisputeLost });
+        reg.record(
+            p,
+            m1,
+            Observation {
+                epoch: 1,
+                kind: ObservationKind::Success,
+            },
+        );
+        reg.record(
+            p,
+            m2,
+            Observation {
+                epoch: 1,
+                kind: ObservationKind::DisputeLost,
+            },
+        );
 
         assert!(reg.score(p, m1, 1) > reg.score(p, m2, 1));
         assert_eq!(reg.entry_count(), 2);
@@ -421,16 +483,35 @@ mod tests {
 
         // p1: high rep
         for i in 1..=20 {
-            reg.record(p1, m, Observation { epoch: i, kind: ObservationKind::Success });
+            reg.record(
+                p1,
+                m,
+                Observation {
+                    epoch: i,
+                    kind: ObservationKind::Success,
+                },
+            );
         }
         // p2: low rep
         for i in 1..=10 {
-            reg.record(p2, m, Observation { epoch: i, kind: ObservationKind::DisputeLost });
+            reg.record(
+                p2,
+                m,
+                Observation {
+                    epoch: i,
+                    kind: ObservationKind::DisputeLost,
+                },
+            );
         }
 
         let m1 = reg.slash_multiplier_bps(p1, m);
         let m2 = reg.slash_multiplier_bps(p2, m);
-        assert!(m2 > m1, "low-rep provider should have higher slash multiplier: {} vs {}", m2, m1);
+        assert!(
+            m2 > m1,
+            "low-rep provider should have higher slash multiplier: {} vs {}",
+            m2,
+            m1
+        );
     }
 
     #[test]
@@ -439,10 +520,38 @@ mod tests {
         let p = addr(1);
         let m = model(1);
 
-        reg.record(p, m, Observation { epoch: 1, kind: ObservationKind::Success });
-        reg.record(p, m, Observation { epoch: 2, kind: ObservationKind::Success });
-        reg.record(p, m, Observation { epoch: 3, kind: ObservationKind::JobMissed });
-        reg.record(p, m, Observation { epoch: 4, kind: ObservationKind::Success });
+        reg.record(
+            p,
+            m,
+            Observation {
+                epoch: 1,
+                kind: ObservationKind::Success,
+            },
+        );
+        reg.record(
+            p,
+            m,
+            Observation {
+                epoch: 2,
+                kind: ObservationKind::Success,
+            },
+        );
+        reg.record(
+            p,
+            m,
+            Observation {
+                epoch: 3,
+                kind: ObservationKind::JobMissed,
+            },
+        );
+        reg.record(
+            p,
+            m,
+            Observation {
+                epoch: 4,
+                kind: ObservationKind::Success,
+            },
+        );
 
         let entry = reg.get(p, m).unwrap();
         assert_eq!(entry.observation_count, 4);
@@ -456,7 +565,14 @@ mod tests {
         let p = addr(1);
         let m = model(1);
 
-        let update = reg.record(p, m, Observation { epoch: 1, kind: ObservationKind::DisputeWon });
+        let update = reg.record(
+            p,
+            m,
+            Observation {
+                epoch: 1,
+                kind: ObservationKind::DisputeWon,
+            },
+        );
         assert!(update.new_score > NEUTRAL_SCORE);
         assert_eq!(reg.get(p, m).unwrap().success_count, 1);
     }
@@ -464,7 +580,10 @@ mod tests {
     #[test]
     fn test_sla_violation_moderate_penalty() {
         let mut entry = ReputationEntry::new(addr(1), model(1), 0);
-        let update = entry.record(&Observation { epoch: 1, kind: ObservationKind::SlaViolation });
+        let update = entry.record(&Observation {
+            epoch: 1,
+            kind: ObservationKind::SlaViolation,
+        });
         // SLA violation: no instant penalty, signal=3000 → EMA pulls down slightly
         assert!(update.new_score < NEUTRAL_SCORE);
         assert!(update.new_score > 4000); // not as harsh as JobMissed
@@ -474,7 +593,10 @@ mod tests {
     fn test_score_clamped_at_max() {
         let mut entry = ReputationEntry::new(addr(1), model(1), 0);
         entry.score = MAX_SCORE;
-        let obs = Observation { epoch: 1, kind: ObservationKind::Success };
+        let obs = Observation {
+            epoch: 1,
+            kind: ObservationKind::Success,
+        };
         entry.record(&obs);
         assert!(entry.score <= MAX_SCORE);
     }

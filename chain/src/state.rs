@@ -117,12 +117,7 @@ impl StateTrie {
     }
 
     /// Transfer tokens between accounts. Atomic: fails if insufficient balance.
-    pub fn transfer(
-        &mut self,
-        from: Address,
-        to: Address,
-        amount: u128,
-    ) -> Result<(), StateError> {
+    pub fn transfer(&mut self, from: Address, to: Address, amount: u128) -> Result<(), StateError> {
         if from == to {
             return Ok(());
         }
@@ -155,11 +150,7 @@ impl StateTrie {
     }
 
     /// Validate and consume a nonce. Returns Err on mismatch.
-    pub fn validate_nonce(
-        &mut self,
-        addr: Address,
-        provided: u64,
-    ) -> Result<(), StateError> {
+    pub fn validate_nonce(&mut self, addr: Address, provided: u64) -> Result<(), StateError> {
         let expected = self.expected_nonce(&addr);
         if provided != expected {
             return Err(StateError::NonceMismatch {
@@ -251,7 +242,10 @@ impl StateTrie {
         self.cached_root = None;
         let before = self.accounts.len();
         self.accounts.retain(|_, acct| {
-            acct.balance > 0 || acct.nonce > 0 || acct.code_hash.is_some() || !acct.storage.is_empty()
+            acct.balance > 0
+                || acct.nonce > 0
+                || acct.code_hash.is_some()
+                || !acct.storage.is_empty()
         });
         before - self.accounts.len()
     }
@@ -282,10 +276,20 @@ impl std::fmt::Display for StateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InsufficientBalance { addr, have, need } => {
-                write!(f, "insufficient balance for {addr}: have {have}, need {need}")
+                write!(
+                    f,
+                    "insufficient balance for {addr}: have {have}, need {need}"
+                )
             }
-            Self::NonceMismatch { addr, expected, provided } => {
-                write!(f, "nonce mismatch for {addr}: expected {expected}, got {provided}")
+            Self::NonceMismatch {
+                addr,
+                expected,
+                provided,
+            } => {
+                write!(
+                    f,
+                    "nonce mismatch for {addr}: expected {expected}, got {provided}"
+                )
             }
         }
     }
@@ -378,7 +382,14 @@ mod tests {
         trie.validate_nonce(a, 0).unwrap();
         trie.validate_nonce(a, 1).unwrap();
         let err = trie.validate_nonce(a, 5).unwrap_err();
-        assert!(matches!(err, StateError::NonceMismatch { expected: 2, provided: 5, .. }));
+        assert!(matches!(
+            err,
+            StateError::NonceMismatch {
+                expected: 2,
+                provided: 5,
+                ..
+            }
+        ));
     }
 
     #[test]

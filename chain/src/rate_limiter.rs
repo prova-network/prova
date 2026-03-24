@@ -9,8 +9,8 @@
 //! - Cooldown penalties for addresses that repeatedly hit limits
 //! - Exemptions for system-critical transactions (checkpoints, dispute moves)
 
-use crate::types::{Address, Epoch};
 use crate::mempool::TxKind;
+use crate::types::{Address, Epoch};
 use std::collections::HashMap;
 
 /// Rate limiter configuration.
@@ -162,12 +162,7 @@ impl RateLimiter {
     }
 
     /// Check if a transaction is allowed without consuming quota.
-    pub fn check(
-        &mut self,
-        addr: &Address,
-        kind: TxKind,
-        current_epoch: Epoch,
-    ) -> RateLimitResult {
+    pub fn check(&mut self, addr: &Address, kind: TxKind, current_epoch: Epoch) -> RateLimitResult {
         // Exempt transaction kinds bypass all limits.
         if self.config.exempt_kinds.contains(&kind) {
             return RateLimitResult::Allowed;
@@ -201,13 +196,21 @@ impl RateLimiter {
 
         // Check burst tokens.
         if state.tokens == 0 {
-            let refill_in = if self.config.refill_rate > 0 { 1 } else { u64::MAX };
+            let refill_in = if self.config.refill_rate > 0 {
+                1
+            } else {
+                u64::MAX
+            };
             return RateLimitResult::BurstExhausted { refill_in };
         }
 
         // Check sliding window.
         let window_start = current_epoch.saturating_sub(self.config.window_size);
-        let window_count = state.window_txs.iter().filter(|&&e| e > window_start).count() as u64;
+        let window_count = state
+            .window_txs
+            .iter()
+            .filter(|&&e| e > window_start)
+            .count() as u64;
         let rate = self.effective_rate(addr);
         if window_count >= rate {
             return RateLimitResult::WindowExceeded {
@@ -245,12 +248,11 @@ impl RateLimiter {
                 // Apply cooldown penalty.
                 let state = self.states.get_mut(addr).unwrap();
                 state.violations += 1;
-                let penalty = self
-                    .config
-                    .cooldown_epochs
-                    .min(self.config.max_cooldown.saturating_sub(
-                        state.cooldown_until.saturating_sub(current_epoch),
-                    ));
+                let penalty = self.config.cooldown_epochs.min(
+                    self.config
+                        .max_cooldown
+                        .saturating_sub(state.cooldown_until.saturating_sub(current_epoch)),
+                );
                 state.cooldown_until = current_epoch + penalty;
             }
             _ => {}
@@ -265,9 +267,8 @@ impl RateLimiter {
             state.window_txs.retain(|&e| e > window_start);
         }
         // Remove states with no activity and no cooldown.
-        self.states.retain(|_, s| {
-            !s.window_txs.is_empty() || s.cooldown_until > current_epoch
-        });
+        self.states
+            .retain(|_, s| !s.window_txs.is_empty() || s.cooldown_until > current_epoch);
         // Remove old global counts.
         self.global_counts.retain(|&epoch, _| epoch >= window_start);
     }
@@ -287,7 +288,9 @@ impl RateLimiter {
     /// Get current token count for an address.
     pub fn tokens_available(&mut self, addr: &Address, current_epoch: Epoch) -> u64 {
         self.refill_tokens(addr, current_epoch);
-        self.states.get(addr).map_or(self.effective_burst(addr), |s| s.tokens)
+        self.states
+            .get(addr)
+            .map_or(self.effective_burst(addr), |s| s.tokens)
     }
 
     /// Reset an address's rate limit state (admin action).
@@ -333,7 +336,10 @@ mod tests {
         });
         let a = addr(1);
         for i in 0..3 {
-            assert_eq!(rl.record(&a, TxKind::Transfer, i + 1), RateLimitResult::Allowed);
+            assert_eq!(
+                rl.record(&a, TxKind::Transfer, i + 1),
+                RateLimitResult::Allowed
+            );
         }
         match rl.record(&a, TxKind::Transfer, 4) {
             RateLimitResult::WindowExceeded { .. } => {}
@@ -387,9 +393,12 @@ mod tests {
         let a = addr(1);
         rl.set_stake(a, 100);
         assert_eq!(rl.effective_rate(&a), 6); // 2 * 3
-        // Can do 6 txs in window
+                                              // Can do 6 txs in window
         for i in 0..6 {
-            assert_eq!(rl.record(&a, TxKind::Transfer, i + 1), RateLimitResult::Allowed);
+            assert_eq!(
+                rl.record(&a, TxKind::Transfer, i + 1),
+                RateLimitResult::Allowed
+            );
         }
         match rl.record(&a, TxKind::Transfer, 7) {
             RateLimitResult::WindowExceeded { .. } => {}
@@ -421,10 +430,7 @@ mod tests {
             RateLimitResult::Allowed
         );
         // PdpProof is exempt
-        assert_eq!(
-            rl.record(&a, TxKind::PdpProof, 1),
-            RateLimitResult::Allowed
-        );
+        assert_eq!(rl.record(&a, TxKind::PdpProof, 1), RateLimitResult::Allowed);
     }
 
     #[test]
@@ -476,8 +482,11 @@ mod tests {
         let a = addr(1);
         rl.record(&a, TxKind::Transfer, 1);
         rl.record(&a, TxKind::Transfer, 2); // violation, cooldown until epoch 5
-        // After cooldown + window expires
-        assert_eq!(rl.record(&a, TxKind::Transfer, 10), RateLimitResult::Allowed);
+                                            // After cooldown + window expires
+        assert_eq!(
+            rl.record(&a, TxKind::Transfer, 10),
+            RateLimitResult::Allowed
+        );
     }
 
     #[test]
@@ -524,7 +533,10 @@ mod tests {
             other => panic!("Expected WindowExceeded, got {:?}", other),
         }
         // Cooldown until epoch 6. At epoch 10, cooldown expired AND old txs outside window.
-        assert_eq!(rl.record(&a, TxKind::Transfer, 10), RateLimitResult::Allowed);
+        assert_eq!(
+            rl.record(&a, TxKind::Transfer, 10),
+            RateLimitResult::Allowed
+        );
     }
 
     #[test]
@@ -538,7 +550,10 @@ mod tests {
         let a2 = addr(2);
         rl.record(&a1, TxKind::Transfer, 1);
         // a1 exhausted, a2 still fine
-        assert_eq!(rl.record(&a2, TxKind::Transfer, 1), RateLimitResult::Allowed);
+        assert_eq!(
+            rl.record(&a2, TxKind::Transfer, 1),
+            RateLimitResult::Allowed
+        );
     }
 
     #[test]

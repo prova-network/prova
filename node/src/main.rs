@@ -1,43 +1,51 @@
-#![allow(non_snake_case, dead_code, unused_imports, unused_variables, unused_assignments, unused_mut, clippy::all)]
-pub mod config;
+#![allow(
+    non_snake_case,
+    dead_code,
+    unused_imports,
+    unused_variables,
+    unused_assignments,
+    unused_mut,
+    clippy::all
+)]
+pub mod api_gateway;
+pub mod blob_store;
 pub mod canonical_cpu;
 pub mod cli;
+pub mod confidential_cli;
+pub mod config;
+pub mod das_validator;
+pub mod delegation_cli;
 pub mod determinism;
 pub mod devnet;
+pub mod encryption_keys;
 pub mod executor;
-pub mod llamacpp;
-pub mod metrics;
-pub mod merkle;
-pub mod multinode;
-pub mod network;
-pub mod participant;
-pub mod pdp;
-pub mod rpc;
-pub mod runner;
-pub mod storage;
-pub mod sync;
-pub mod pricing;
-pub mod submitter;
-pub mod wallet;
-pub mod snapshot_serve;
-pub mod fast_sync;
-pub mod watcher;
-pub mod shutdown;
-pub mod subscriptions;
 pub mod explorer;
-pub mod tls;
+pub mod fast_sync;
 pub mod fuzz;
+pub mod llamacpp;
 pub mod marketplace_cli;
 pub mod marketplace_indexer;
-pub mod das_validator;
-pub mod blob_store;
-pub mod delegation_cli;
-pub mod confidential_cli;
-pub mod encryption_keys;
-pub mod validator_cli;
+pub mod merkle;
+pub mod metrics;
+pub mod multinode;
 pub mod multisig_cli;
-pub mod api_gateway;
+pub mod network;
 pub mod openapi;
+pub mod participant;
+pub mod pdp;
+pub mod pricing;
+pub mod rpc;
+pub mod runner;
+pub mod shutdown;
+pub mod snapshot_serve;
+pub mod storage;
+pub mod submitter;
+pub mod subscriptions;
+pub mod sync;
+pub mod tls;
+pub mod validator_cli;
+pub mod wallet;
+pub mod watcher;
 pub mod webhooks;
 
 use merkle::{hash_tensor, verify_proof, ActivationMerkleTree, DType};

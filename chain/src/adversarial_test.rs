@@ -45,15 +45,20 @@ mod tests {
         // Submit 5 jobs, all assigned to provider 1
         let mut jobs = Vec::new();
         for i in 0..5u8 {
-            let mut h = [0u8; 32]; h[0] = i;
+            let mut h = [0u8; 32];
+            h[0] = i;
             let jid = sched.submit_job(Address::test(10), m, h, 200, 100).unwrap();
             jobs.push(jid);
         }
         sched.assign_pending();
 
         // Provider delivers only jobs 0 and 2 (drops 1, 3, 4)
-        sched.deliver_result(jobs[0], &Address::test(1), [0xAA; 32]).unwrap();
-        sched.deliver_result(jobs[2], &Address::test(1), [0xBB; 32]).unwrap();
+        sched
+            .deliver_result(jobs[0], &Address::test(1), [0xAA; 32])
+            .unwrap();
+        sched
+            .deliver_result(jobs[2], &Address::test(1), [0xBB; 32])
+            .unwrap();
 
         // Advance past timeout
         let (_, timed_out) = sched.tick(6);
@@ -73,7 +78,8 @@ mod tests {
 
         // 10 jobs, deliver none
         for i in 0..10u8 {
-            let mut h = [0u8; 32]; h[0] = i;
+            let mut h = [0u8; 32];
+            h[0] = i;
             sched.submit_job(Address::test(10), m, h, 200, 100).unwrap();
         }
         sched.assign_pending();
@@ -94,10 +100,14 @@ mod tests {
         sched.register_provider(make_provider(1, &[m], 100, 2_000_000_000, 5));
         sched.register_provider(make_provider(2, &[m], 100, 1_000_000_000, 5));
 
-        let jid = sched.submit_job(Address::test(10), m, [1; 32], 200, 100).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 100)
+            .unwrap();
         sched.assign_pending();
         // Job assigned to provider 1 (higher score). Provider 2 tries to steal.
-        let err = sched.deliver_result(jid, &Address::test(2), [0xFF; 32]).unwrap_err();
+        let err = sched
+            .deliver_result(jid, &Address::test(2), [0xFF; 32])
+            .unwrap_err();
         assert_eq!(err, "not assigned provider");
     }
 
@@ -112,7 +122,9 @@ mod tests {
         sched.register_provider(make_provider(1, &[m], 100, 2_000_000_000, 5));
 
         // Deadline at epoch 2, submitted at epoch 0
-        let jid = sched.submit_job(Address::test(10), m, [1; 32], 200, 2).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 2)
+            .unwrap();
         sched.assign_pending(); // assigned at epoch 0
 
         // Provider delivers at epoch 1 — should still work (within timeout)
@@ -128,7 +140,9 @@ mod tests {
         let m = model(1);
         // No providers registered!
 
-        let jid = sched.submit_job(Address::test(10), m, [1; 32], 200, 3).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 3)
+            .unwrap();
         assert_eq!(sched.pending_count(), 1);
 
         // Advance past deadline
@@ -142,7 +156,9 @@ mod tests {
         let mut sched = Scheduler::new(10);
         sched.tick(50); // current epoch = 50
 
-        let err = sched.submit_job(Address::test(10), model(1), [0; 32], 200, 30).unwrap_err();
+        let err = sched
+            .submit_job(Address::test(10), model(1), [0; 32], 200, 30)
+            .unwrap_err();
         assert_eq!(err, "deadline must be in the future");
     }
 
@@ -168,7 +184,8 @@ mod tests {
         // Submit 5 jobs — all go to hoarder (higher score)
         let mut jobs = Vec::new();
         for i in 0..5u8 {
-            let mut h = [0u8; 32]; h[0] = i;
+            let mut h = [0u8; 32];
+            h[0] = i;
             let jid = sched.submit_job(Address::test(10), m, h, 200, 100).unwrap();
             jobs.push(jid);
         }
@@ -190,7 +207,8 @@ mod tests {
         // Now submit new jobs — honest provider should compete better
         // (hoarder score dropped significantly)
         for i in 10..15u8 {
-            let mut h = [0u8; 32]; h[0] = i;
+            let mut h = [0u8; 32];
+            h[0] = i;
             sched.submit_job(Address::test(10), m, h, 200, 100).unwrap();
         }
         let assigned2 = sched.assign_pending();
@@ -221,7 +239,9 @@ mod tests {
         sched.register_provider(honest);
 
         // Submit a job — honest provider should win (highest score)
-        sched.submit_job(Address::test(10), m, [1; 32], 200, 100).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 100)
+            .unwrap();
         let assigned = sched.assign_pending();
         assert_eq!(assigned.len(), 1);
         assert_eq!(assigned[0].1, Address::test(50)); // honest wins
@@ -242,7 +262,9 @@ mod tests {
         honest.reputation = 600;
         sched.register_provider(honest);
 
-        sched.submit_job(Address::test(10), m, [1; 32], 200, 100).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 100)
+            .unwrap();
         let assigned = sched.assign_pending();
         // sybil score: (10_000/1M) * 1000 = 0 (integer division)
         // honest score: (2_000_000_000/1M) * 600 = 1_200_000
@@ -260,14 +282,17 @@ mod tests {
         // Attacker submits 10 cheap jobs — only 3 get assigned
         let mut attacker_jobs = Vec::new();
         for i in 0..10u8 {
-            let mut h = [0u8; 32]; h[0] = i;
+            let mut h = [0u8; 32];
+            h[0] = i;
             let jid = sched.submit_job(Address::test(99), m, h, 200, 100).unwrap();
             attacker_jobs.push(jid);
         }
         sched.assign_pending();
 
         // Legitimate user's job stays pending
-        let legit = sched.submit_job(Address::test(10), m, [0xFF; 32], 200, 100).unwrap();
+        let legit = sched
+            .submit_job(Address::test(10), m, [0xFF; 32], 200, 100)
+            .unwrap();
         let assigned = sched.assign_pending();
         assert!(assigned.is_empty()); // capacity full
 
@@ -287,7 +312,9 @@ mod tests {
         let m = model(1);
         sched.register_provider(make_provider(1, &[m], 100, 2_000_000_000, 5));
 
-        let jid = sched.submit_job(Address::test(10), m, [1; 32], 200, 100).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 100)
+            .unwrap();
         sched.assign_pending();
 
         let err = sched.cancel_job(jid, &Address::test(10)).unwrap_err();
@@ -298,7 +325,9 @@ mod tests {
     fn test_non_requester_cannot_cancel() {
         let mut sched = Scheduler::new(10);
         let m = model(1);
-        let jid = sched.submit_job(Address::test(10), m, [1; 32], 200, 100).unwrap();
+        let jid = sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 100)
+            .unwrap();
 
         let err = sched.cancel_job(jid, &Address::test(99)).unwrap_err();
         assert_eq!(err, "only requester can cancel");
@@ -318,10 +347,18 @@ mod tests {
         // Gold tier: 32 violations → termination (32^2 = 1024 >= 1000)
         let mut last_action = PenaltyAction::None;
         for i in 1..=32u64 {
-            let v = Violation { epoch: i, kind: ViolationKind::JobMissed };
+            let v = Violation {
+                epoch: i,
+                kind: ViolationKind::JobMissed,
+            };
             last_action = sla_reg.record_violation(p, m, v, stake).unwrap();
         }
-        assert_eq!(last_action, PenaltyAction::Termination { amount: stake * 2000 / 10000 });
+        assert_eq!(
+            last_action,
+            PenaltyAction::Termination {
+                amount: stake * 2000 / 10000
+            }
+        );
         assert!(!sla_reg.is_active(p, m));
     }
 
@@ -335,22 +372,36 @@ mod tests {
 
         // Mixed violation types — all count equally toward quadratic penalty
         let kinds = vec![
-            ViolationKind::LatencyExceeded { actual_ms: 3000, limit_ms: 2000 },
+            ViolationKind::LatencyExceeded {
+                actual_ms: 3000,
+                limit_ms: 2000,
+            },
             ViolationKind::Unavailable,
-            ViolationKind::ThroughputDeficit { actual: 2, required: 5 },
+            ViolationKind::ThroughputDeficit {
+                actual: 2,
+                required: 5,
+            },
             ViolationKind::JobMissed,
         ];
 
         let mut actions = Vec::new();
         for (i, kind) in kinds.iter().cycle().take(15).enumerate() {
-            let v = Violation { epoch: i as u64 + 1, kind: kind.clone() };
+            let v = Violation {
+                epoch: i as u64 + 1,
+                kind: kind.clone(),
+            };
             actions.push(sla_reg.record_violation(p, m, v, stake).unwrap());
         }
 
         // 8th violation: 64 points → Warning
         assert_eq!(actions[7], PenaltyAction::Warning);
         // 15th violation: 225 points → MinorSlash
-        assert_eq!(actions[14], PenaltyAction::MinorSlash { amount: stake * 100 / 10000 });
+        assert_eq!(
+            actions[14],
+            PenaltyAction::MinorSlash {
+                amount: stake * 100 / 10000
+            }
+        );
     }
 
     // ─── Race Condition: Deregister During Active Jobs ───────────────────
@@ -361,7 +412,9 @@ mod tests {
         let m = model(1);
         sched.register_provider(make_provider(1, &[m], 100, 2_000_000_000, 5));
 
-        sched.submit_job(Address::test(10), m, [1; 32], 200, 100).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 100)
+            .unwrap();
         sched.assign_pending();
 
         let err = sched.deregister_provider(&Address::test(1)).unwrap_err();
@@ -381,7 +434,9 @@ mod tests {
         sched.register_provider(make_provider(2, &[m], 50, 1_000_000_000, 5));
 
         // Requester max_price = 100 — only cheap provider qualifies
-        sched.submit_job(Address::test(10), m, [1; 32], 100, 100).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [1; 32], 100, 100)
+            .unwrap();
         let assigned = sched.assign_pending();
         assert_eq!(assigned.len(), 1);
         assert_eq!(assigned[0].1, Address::test(2));
@@ -396,7 +451,9 @@ mod tests {
         sched.register_provider(make_provider(1, &[m], 100, 2_000_000_000, 5));
 
         // Drop a job → reputation goes 500→450
-        sched.submit_job(Address::test(10), m, [1; 32], 200, 100).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 100)
+            .unwrap();
         sched.assign_pending();
         sched.tick(6);
         assert_eq!(sched.provider(&Address::test(1)).unwrap().reputation, 450);
@@ -420,17 +477,26 @@ mod tests {
         sched.register_provider(make_provider(2, &[m2], 100, 1_000_000_000, 5));
 
         // Submit jobs for both models
-        let j1 = sched.submit_job(Address::test(10), m1, [1; 32], 200, 100).unwrap();
-        let j2 = sched.submit_job(Address::test(10), m2, [2; 32], 200, 100).unwrap();
+        let j1 = sched
+            .submit_job(Address::test(10), m1, [1; 32], 200, 100)
+            .unwrap();
+        let j2 = sched
+            .submit_job(Address::test(10), m2, [2; 32], 200, 100)
+            .unwrap();
         sched.assign_pending();
 
         // Provider 1 delivers m2 result, drops m1
-        sched.deliver_result(j2, &Address::test(1), [0xBB; 32]).unwrap();
+        sched
+            .deliver_result(j2, &Address::test(1), [0xBB; 32])
+            .unwrap();
         let (_, timed_out) = sched.tick(6);
         assert_eq!(timed_out.len(), 1); // only j1 timed out
 
         // m2 job completed fine despite m1 attack
-        assert!(matches!(sched.job_status(&j2).unwrap(), JobStatus::Completed { .. }));
+        assert!(matches!(
+            sched.job_status(&j2).unwrap(),
+            JobStatus::Completed { .. }
+        ));
     }
 
     // ─── Edge: Zero-Reputation Provider Still Available ──────────────────
@@ -448,7 +514,9 @@ mod tests {
         p2.reputation = 1;
         sched.register_provider(p2);
 
-        sched.submit_job(Address::test(10), m, [1; 32], 200, 100).unwrap();
+        sched
+            .submit_job(Address::test(10), m, [1; 32], 200, 100)
+            .unwrap();
         let assigned = sched.assign_pending();
         // Provider 1 score: 2000*0=0, Provider 2 score: 0*1=0 (both zero due to integer division)
         // When tied, HashMap iteration order is nondeterministic,

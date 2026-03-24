@@ -98,11 +98,7 @@ impl PeerCertificate {
     }
 
     /// Create a certificate with explicit timestamps (for testing).
-    pub fn with_times(
-        identity: &NodeIdentity,
-        not_before: u64,
-        not_after: u64,
-    ) -> Self {
+    pub fn with_times(identity: &NodeIdentity, not_before: u64, not_after: u64) -> Self {
         let serial = not_before;
         let sig = Self::compute_signature(
             &identity.secret_key,
@@ -348,7 +344,8 @@ impl TlsTransport {
 
     /// Pin a peer's public key.
     pub fn pin_peer(&mut self, peer_id: [u8; 32], public_key: [u8; 32]) {
-        self.pins.insert(peer_id, CertificatePin::new(peer_id, public_key));
+        self.pins
+            .insert(peer_id, CertificatePin::new(peer_id, public_key));
     }
 
     /// Pin a peer with an expiry.
@@ -816,7 +813,9 @@ mod tests {
         // New cert should have different serial.
         // (Both use timestamp-based serial; might be same second.)
         // At minimum, prev_certs should be populated.
-        assert!(transport.prev_certs.contains_key(&transport.local_peer_id()));
+        assert!(transport
+            .prev_certs
+            .contains_key(&transport.local_peer_id()));
         assert!(transport.certificate().is_valid_now());
     }
 

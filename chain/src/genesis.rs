@@ -112,7 +112,9 @@ impl GenesisConfig {
         }
 
         if self.epoch_duration_secs == 0 {
-            return Err(GenesisError::InvalidParam("epoch_duration_secs cannot be 0".into()));
+            return Err(GenesisError::InvalidParam(
+                "epoch_duration_secs cannot be 0".into(),
+            ));
         }
 
         if self.network_fee_bps > 10000 {
@@ -120,7 +122,9 @@ impl GenesisConfig {
         }
 
         if self.storage_reward_bps > 10000 {
-            return Err(GenesisError::InvalidParam("storage_reward_bps > 10000".into()));
+            return Err(GenesisError::InvalidParam(
+                "storage_reward_bps > 10000".into(),
+            ));
         }
 
         Ok(())
@@ -359,31 +363,33 @@ mod tests {
         let mut genesis = config.build_chain_state().unwrap();
 
         // Block 1: stake deposit
-        genesis.produce_block(vec![
-            Transaction::StakeOp(StakeOp::Deposit {
+        genesis
+            .produce_block(vec![Transaction::StakeOp(StakeOp::Deposit {
                 provider: Address::test(1),
                 amount: 5_000_000,
-            }),
-        ]).unwrap();
+            })])
+            .unwrap();
 
         // Block 2: model registration + inference commit
-        genesis.produce_block(vec![
-            Transaction::RegisterModel {
-                owner: Address::test(1),
-                model_hash: [0x42; 32],
-                name: "llama-7b-q8".into(),
-                layer_count: 32,
-                arch_group: ArchGroup::new("nvidia-sm89-int8"),
-            },
-            Transaction::InferenceCommit {
-                provider: Address::test(1),
-                model_id: ModelId([0x42; 32]),
-                arch_group: ArchGroup::new("nvidia-sm89-int8"),
-                input_hash: [0xAA; 32],
-                activation_root: [0xBB; 32],
-                leaf_count: 33,
-            },
-        ]).unwrap();
+        genesis
+            .produce_block(vec![
+                Transaction::RegisterModel {
+                    owner: Address::test(1),
+                    model_hash: [0x42; 32],
+                    name: "llama-7b-q8".into(),
+                    layer_count: 32,
+                    arch_group: ArchGroup::new("nvidia-sm89-int8"),
+                },
+                Transaction::InferenceCommit {
+                    provider: Address::test(1),
+                    model_id: ModelId([0x42; 32]),
+                    arch_group: ArchGroup::new("nvidia-sm89-int8"),
+                    input_hash: [0xAA; 32],
+                    activation_root: [0xBB; 32],
+                    leaf_count: 33,
+                },
+            ])
+            .unwrap();
 
         assert_eq!(genesis.chain.height(), 2);
 
@@ -452,6 +458,10 @@ mod tests {
 
         // With 11 providers, we should see at least 2 different producers in 20 blocks
         let unique: std::collections::HashSet<_> = producers.iter().collect();
-        assert!(unique.len() >= 2, "expected producer rotation, got {} unique in 20 blocks", unique.len());
+        assert!(
+            unique.len() >= 2,
+            "expected producer rotation, got {} unique in 20 blocks",
+            unique.len()
+        );
     }
 }

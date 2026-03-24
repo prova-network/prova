@@ -122,13 +122,20 @@ impl NetworkMessage {
         hasher.update(payload.tag_byte().to_le_bytes());
         // Include a nonce from payload content
         match payload {
-            MessagePayload::InferenceCommit { activation_root, .. } => {
+            MessagePayload::InferenceCommit {
+                activation_root, ..
+            } => {
                 hasher.update(activation_root);
             }
             MessagePayload::Challenge { commit_id, .. } => {
                 hasher.update(commit_id.0.to_le_bytes());
             }
-            MessagePayload::BisectionMove { dispute_id, layer, hash, .. } => {
+            MessagePayload::BisectionMove {
+                dispute_id,
+                layer,
+                hash,
+                ..
+            } => {
                 hasher.update(dispute_id.to_le_bytes());
                 hasher.update(layer.to_le_bytes());
                 hasher.update(hash);
@@ -140,7 +147,9 @@ impl NetworkMessage {
                 hasher.update(target.0);
                 hasher.update(epoch.to_le_bytes());
             }
-            MessagePayload::NewBlock { epoch, block_hash, .. } => {
+            MessagePayload::NewBlock {
+                epoch, block_hash, ..
+            } => {
                 hasher.update(epoch.to_le_bytes());
                 hasher.update(block_hash);
             }
@@ -403,7 +412,12 @@ impl NetworkNode {
         if self.seen_messages.len() > self.max_seen_cache {
             // Simple strategy: clear half the cache
             // Real impl would use LRU or time-based eviction
-            let to_remove: Vec<Hash> = self.seen_messages.iter().take(self.max_seen_cache / 2).copied().collect();
+            let to_remove: Vec<Hash> = self
+                .seen_messages
+                .iter()
+                .take(self.max_seen_cache / 2)
+                .copied()
+                .collect();
             for hash in to_remove {
                 self.seen_messages.remove(&hash);
             }
@@ -777,10 +791,13 @@ mod tests {
 
         // All nodes except 1 should have received it
         for i in 0..6u8 {
-            if i == 1 { continue; } // sender
+            if i == 1 {
+                continue;
+            } // sender
             let node = net.node(&PeerId::test(i)).unwrap();
             assert_eq!(
-                node.inbound_len(), 1,
+                node.inbound_len(),
+                1,
                 "node {i} should have received the audit report"
             );
         }
@@ -811,7 +828,10 @@ mod tests {
 
         // Should converge (no infinite loops)
         let total = net.propagate_until_quiet();
-        assert!(total < 20, "dedup should prevent message explosion, got {total}");
+        assert!(
+            total < 20,
+            "dedup should prevent message explosion, got {total}"
+        );
 
         // Both other nodes received exactly 1 copy
         for i in 2..=3u8 {

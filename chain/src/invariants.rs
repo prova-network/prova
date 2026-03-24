@@ -11,10 +11,10 @@
 //!
 //! Designed to run after every block in test/devnet mode, and optionally on checkpoints.
 
-use crate::stake::{StakeLedger, StakeEntry};
-use crate::state::StateTrie;
 use crate::rewards::RewardLedger;
 use crate::scheduler::Scheduler;
+use crate::stake::{StakeEntry, StakeLedger};
+use crate::state::StateTrie;
 use crate::types::*;
 
 use std::collections::HashMap;
@@ -28,7 +28,11 @@ pub struct InvariantViolation {
 
 impl std::fmt::Display for InvariantViolation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "INVARIANT VIOLATION [{}]: {}", self.invariant, self.detail)
+        write!(
+            f,
+            "INVARIANT VIOLATION [{}]: {}",
+            self.invariant, self.detail
+        )
     }
 }
 
@@ -108,13 +112,19 @@ fn check_stake_consistency(snap: &StateSnapshot, violations: &mut Vec<InvariantV
         if stake.locked > stake.deposited {
             violations.push(InvariantViolation {
                 invariant: "STAKE_LOCKED_LE_DEPOSITED",
-                detail: format!("{addr}: locked={} > deposited={}", stake.locked, stake.deposited),
+                detail: format!(
+                    "{addr}: locked={} > deposited={}",
+                    stake.locked, stake.deposited
+                ),
             });
         }
         if stake.slashed > stake.deposited {
             violations.push(InvariantViolation {
                 invariant: "STAKE_SLASHED_LE_DEPOSITED",
-                detail: format!("{addr}: slashed={} > deposited={}", stake.slashed, stake.deposited),
+                detail: format!(
+                    "{addr}: slashed={} > deposited={}",
+                    stake.slashed, stake.deposited
+                ),
             });
         }
         if stake.available() < 0 {
@@ -235,11 +245,14 @@ mod tests {
     #[test]
     fn test_stake_locked_exceeds_deposited() {
         let mut snap = base_snapshot();
-        snap.stakes.insert(Address::test(1), StakeSnapshot {
-            deposited: 100,
-            locked: 150,
-            slashed: 0,
-        });
+        snap.stakes.insert(
+            Address::test(1),
+            StakeSnapshot {
+                deposited: 100,
+                locked: 150,
+                slashed: 0,
+            },
+        );
         let v = check_all(&snap);
         assert!(v.iter().any(|x| x.invariant == "STAKE_LOCKED_LE_DEPOSITED"));
     }
@@ -247,35 +260,48 @@ mod tests {
     #[test]
     fn test_stake_slashed_exceeds_deposited() {
         let mut snap = base_snapshot();
-        snap.stakes.insert(Address::test(1), StakeSnapshot {
-            deposited: 100,
-            locked: 0,
-            slashed: 200,
-        });
+        snap.stakes.insert(
+            Address::test(1),
+            StakeSnapshot {
+                deposited: 100,
+                locked: 0,
+                slashed: 200,
+            },
+        );
         let v = check_all(&snap);
-        assert!(v.iter().any(|x| x.invariant == "STAKE_SLASHED_LE_DEPOSITED"));
+        assert!(v
+            .iter()
+            .any(|x| x.invariant == "STAKE_SLASHED_LE_DEPOSITED"));
     }
 
     #[test]
     fn test_stake_available_negative() {
         let mut snap = base_snapshot();
-        snap.stakes.insert(Address::test(1), StakeSnapshot {
-            deposited: 100,
-            locked: 60,
-            slashed: 50,
-        });
+        snap.stakes.insert(
+            Address::test(1),
+            StakeSnapshot {
+                deposited: 100,
+                locked: 60,
+                slashed: 50,
+            },
+        );
         let v = check_all(&snap);
-        assert!(v.iter().any(|x| x.invariant == "STAKE_AVAILABLE_NON_NEGATIVE"));
+        assert!(v
+            .iter()
+            .any(|x| x.invariant == "STAKE_AVAILABLE_NON_NEGATIVE"));
     }
 
     #[test]
     fn test_valid_stake_passes() {
         let mut snap = base_snapshot();
-        snap.stakes.insert(Address::test(1), StakeSnapshot {
-            deposited: 100,
-            locked: 40,
-            slashed: 30,
-        });
+        snap.stakes.insert(
+            Address::test(1),
+            StakeSnapshot {
+                deposited: 100,
+                locked: 40,
+                slashed: 30,
+            },
+        );
         let v = check_all(&snap);
         // Only balance conservation should pass, no stake violations
         assert!(!v.iter().any(|x| x.invariant.starts_with("STAKE_")));
@@ -331,13 +357,20 @@ mod tests {
         let mut snap = base_snapshot();
         snap.balances.insert(Address::test(1), 500); // conservation violation
         snap.total_rewards_distributed = snap.total_minted + 1; // reward violation
-        snap.stakes.insert(Address::test(3), StakeSnapshot {
-            deposited: 10,
-            locked: 20,
-            slashed: 0,
-        }); // stake violation
+        snap.stakes.insert(
+            Address::test(3),
+            StakeSnapshot {
+                deposited: 10,
+                locked: 20,
+                slashed: 0,
+            },
+        ); // stake violation
         let v = check_all(&snap);
-        assert!(v.len() >= 3, "expected at least 3 violations, got {}", v.len());
+        assert!(
+            v.len() >= 3,
+            "expected at least 3 violations, got {}",
+            v.len()
+        );
     }
 
     #[test]

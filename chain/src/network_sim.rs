@@ -19,19 +19,49 @@ pub type Tick = u64;
 #[derive(Debug, Clone, PartialEq)]
 pub enum NetMessage {
     /// New block announcement.
-    BlockAnnounce { height: u64, producer: NodeId, hash: [u8; 32] },
+    BlockAnnounce {
+        height: u64,
+        producer: NodeId,
+        hash: [u8; 32],
+    },
     /// Inference commit broadcast.
-    InferenceCommit { job_id: u64, provider: NodeId, activation_root: [u8; 32] },
+    InferenceCommit {
+        job_id: u64,
+        provider: NodeId,
+        activation_root: [u8; 32],
+    },
     /// Challenge initiation.
-    ChallengeOpen { job_id: u64, challenger: NodeId, round: u32 },
+    ChallengeOpen {
+        job_id: u64,
+        challenger: NodeId,
+        round: u32,
+    },
     /// Bisection step response.
-    BisectionStep { job_id: u64, responder: NodeId, round: u32, midpoint_hash: [u8; 32] },
+    BisectionStep {
+        job_id: u64,
+        responder: NodeId,
+        round: u32,
+        midpoint_hash: [u8; 32],
+    },
     /// Checkpoint proposal.
-    CheckpointProposal { epoch: u64, proposer: NodeId, state_root: [u8; 32] },
+    CheckpointProposal {
+        epoch: u64,
+        proposer: NodeId,
+        state_root: [u8; 32],
+    },
     /// Checkpoint vote.
-    CheckpointVote { epoch: u64, voter: NodeId, approve: bool },
+    CheckpointVote {
+        epoch: u64,
+        voter: NodeId,
+        approve: bool,
+    },
     /// Payment channel update.
-    PaymentUpdate { channel_id: u64, sender: NodeId, amount: u64, nonce: u64 },
+    PaymentUpdate {
+        channel_id: u64,
+        sender: NodeId,
+        amount: u64,
+        nonce: u64,
+    },
     /// Heartbeat / liveness ping.
     Ping { from: NodeId, seq: u64 },
     /// Heartbeat response.
@@ -59,7 +89,11 @@ pub struct LinkConfig {
 
 impl Default for LinkConfig {
     fn default() -> Self {
-        Self { latency_ms: 50, jitter_ms: 10, delivery: DeliveryMode::Reliable }
+        Self {
+            latency_ms: 50,
+            jitter_ms: 10,
+            delivery: DeliveryMode::Reliable,
+        }
     }
 }
 
@@ -119,7 +153,13 @@ impl SimNode {
                     }
                 }
                 NetMessage::Ping { from, seq } => {
-                    outgoing.push((*from, NetMessage::Pong { from: self.id, seq: *seq }));
+                    outgoing.push((
+                        *from,
+                        NetMessage::Pong {
+                            from: self.id,
+                            seq: *seq,
+                        },
+                    ));
                 }
                 _ => {} // Other messages processed by higher-level logic
             }
@@ -234,7 +274,11 @@ impl NetworkSim {
             return;
         }
 
-        let link = self.links.get(&(from, to)).cloned().unwrap_or(self.default_link.clone());
+        let link = self
+            .links
+            .get(&(from, to))
+            .cloned()
+            .unwrap_or(self.default_link.clone());
         match link.delivery {
             DeliveryMode::Lossy(drop_prob) => {
                 if self.rand_f64() < drop_prob {
@@ -250,14 +294,25 @@ impl NetworkSim {
         } else {
             0
         };
-        let deliver_at = (self.tick as i64 + link.latency_ms as i64 + jitter).max(self.tick as i64 + 1) as Tick;
+        let deliver_at =
+            (self.tick as i64 + link.latency_ms as i64 + jitter).max(self.tick as i64 + 1) as Tick;
 
-        self.in_flight.push(InFlightMessage { deliver_at, from, to, msg });
+        self.in_flight.push(InFlightMessage {
+            deliver_at,
+            from,
+            to,
+            msg,
+        });
     }
 
     /// Broadcast a message from one node to all others.
     pub fn broadcast(&mut self, from: NodeId, msg: NetMessage) {
-        let others: Vec<NodeId> = self.nodes.keys().filter(|&&id| id != from).copied().collect();
+        let others: Vec<NodeId> = self
+            .nodes
+            .keys()
+            .filter(|&&id| id != from)
+            .copied()
+            .collect();
         for to in others {
             self.send(from, to, msg.clone());
         }
@@ -330,20 +385,27 @@ impl NetworkSim {
             node.chain_tip = height;
             node.known_blocks.insert(height, hash);
         }
-        let msg = NetMessage::BlockAnnounce { height, producer, hash };
+        let msg = NetMessage::BlockAnnounce {
+            height,
+            producer,
+            hash,
+        };
         self.broadcast(producer, msg);
         hash
     }
 
     /// Get a snapshot of node states.
     pub fn snapshot(&self) -> Vec<NodeSnapshot> {
-        self.nodes.values().map(|n| NodeSnapshot {
-            id: n.id,
-            chain_tip: n.chain_tip,
-            blocks_produced: n.blocks_produced,
-            crashed: n.crashed,
-            inbox_size: n.inbox.len() as u64,
-        }).collect()
+        self.nodes
+            .values()
+            .map(|n| NodeSnapshot {
+                id: n.id,
+                chain_tip: n.chain_tip,
+                blocks_produced: n.blocks_produced,
+                crashed: n.crashed,
+                inbox_size: n.inbox.len() as u64,
+            })
+            .collect()
     }
 }
 
@@ -486,8 +548,16 @@ mod tests {
         }
         sim.run(50);
         // With 50% drop, we expect ~50 delivered but allow wide margin.
-        assert!(sim.delivered_count > 20, "delivered: {}", sim.delivered_count);
-        assert!(sim.delivered_count < 90, "delivered: {}", sim.delivered_count);
+        assert!(
+            sim.delivered_count > 20,
+            "delivered: {}",
+            sim.delivered_count
+        );
+        assert!(
+            sim.delivered_count < 90,
+            "delivered: {}",
+            sim.delivered_count
+        );
         assert!(sim.dropped_count > 20, "dropped: {}", sim.dropped_count);
     }
 
@@ -497,7 +567,15 @@ mod tests {
         sim.add_node(SimNode::new(1, true, false, 1000));
         sim.add_node(SimNode::new(2, true, false, 1000));
         // Set a slow link: 200ms latency.
-        sim.set_link(1, 2, LinkConfig { latency_ms: 200, jitter_ms: 0, delivery: DeliveryMode::Reliable });
+        sim.set_link(
+            1,
+            2,
+            LinkConfig {
+                latency_ms: 200,
+                jitter_ms: 0,
+                delivery: DeliveryMode::Reliable,
+            },
+        );
         sim.send(1, 2, NetMessage::Ping { from: 1, seq: 1 });
         sim.run(100);
         // Should NOT be delivered yet (only 100 ticks, need 200).
@@ -506,7 +584,10 @@ mod tests {
         // Actually ping doesn't affect chain_tip. Let's check delivered_count.
         let d1 = sim.delivered_count;
         sim.run(150); // now at tick 250
-        assert!(sim.delivered_count > d1, "message should be delivered by tick 250");
+        assert!(
+            sim.delivered_count > d1,
+            "message should be delivered by tick 250"
+        );
     }
 
     #[test]
@@ -549,7 +630,11 @@ mod tests {
     fn test_inference_commit_message() {
         let mut sim = setup_3_node_sim();
         let root = [0xABu8; 32];
-        let msg = NetMessage::InferenceCommit { job_id: 1, provider: 3, activation_root: root };
+        let msg = NetMessage::InferenceCommit {
+            job_id: 1,
+            provider: 3,
+            activation_root: root,
+        };
         sim.broadcast(3, msg);
         sim.run(100);
         assert!(sim.delivered_count >= 2);
@@ -559,7 +644,11 @@ mod tests {
     fn test_checkpoint_flow() {
         let mut sim = setup_3_node_sim();
         let state_root = [0xCDu8; 32];
-        let proposal = NetMessage::CheckpointProposal { epoch: 10, proposer: 1, state_root };
+        let proposal = NetMessage::CheckpointProposal {
+            epoch: 10,
+            proposer: 1,
+            state_root,
+        };
         sim.broadcast(1, proposal);
         sim.run(100);
         // All non-proposer nodes received the proposal.
@@ -568,7 +657,11 @@ mod tests {
 
     #[test]
     fn test_concurrent_partitions() {
-        let mut sim = NetworkSim::new(LinkConfig { latency_ms: 5, jitter_ms: 0, delivery: DeliveryMode::Reliable });
+        let mut sim = NetworkSim::new(LinkConfig {
+            latency_ms: 5,
+            jitter_ms: 0,
+            delivery: DeliveryMode::Reliable,
+        });
         for i in 1..=5 {
             sim.add_node(SimNode::new(i, true, false, 1000));
         }
@@ -589,7 +682,11 @@ mod tests {
 
     #[test]
     fn test_large_network_10_nodes() {
-        let mut sim = NetworkSim::new(LinkConfig { latency_ms: 20, jitter_ms: 5, delivery: DeliveryMode::Reliable });
+        let mut sim = NetworkSim::new(LinkConfig {
+            latency_ms: 20,
+            jitter_ms: 5,
+            delivery: DeliveryMode::Reliable,
+        });
         for i in 1..=10 {
             sim.add_node(SimNode::new(i, true, false, 1000));
         }
@@ -603,7 +700,12 @@ mod tests {
     #[test]
     fn test_payment_message_delivery() {
         let mut sim = setup_3_node_sim();
-        let msg = NetMessage::PaymentUpdate { channel_id: 42, sender: 1, amount: 500, nonce: 1 };
+        let msg = NetMessage::PaymentUpdate {
+            channel_id: 42,
+            sender: 1,
+            amount: 500,
+            nonce: 1,
+        };
         sim.send(1, 3, msg);
         sim.run(100);
         assert!(sim.delivered_count >= 1);

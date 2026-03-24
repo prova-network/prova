@@ -34,10 +34,16 @@ pub struct ProviderInfo {
 impl ProviderInfo {
     fn from_listing(listing: &Listing, weights: &ScoringWeights) -> Self {
         let combined = listing.price_per_m_input + listing.price_per_m_output;
-        let available = listing.max_concurrency.saturating_sub(listing.active_requests);
+        let available = listing
+            .max_concurrency
+            .saturating_sub(listing.active_requests);
 
         // Normalize and score: lower price better, lower latency better, more completions better
-        let price_score = if combined > 0 { 1_000_000.0 / combined as f64 } else { 1_000_000.0 };
+        let price_score = if combined > 0 {
+            1_000_000.0 / combined as f64
+        } else {
+            1_000_000.0
+        };
         let latency_score = if listing.latency_sla_ms > 0 {
             1000.0 / listing.latency_sla_ms as f64
         } else {
@@ -254,7 +260,11 @@ impl MarketplaceClient {
             .collect();
 
         // Re-sort by composite score (descending)
-        providers.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        providers.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         providers
     }
 
@@ -268,7 +278,10 @@ impl MarketplaceClient {
             .scoring_weights(self.scoring.clone())
             .limit(50);
         let results = self.search_providers(marketplace, &builder);
-        results.into_iter().next().ok_or(ClientError::NoProvidersFound)
+        results
+            .into_iter()
+            .next()
+            .ok_or(ClientError::NoProvidersFound)
     }
 
     /// Place a bid and track it client-side.
@@ -375,7 +388,8 @@ impl MarketplaceClient {
     pub fn compare_providers(a: &ProviderInfo, b: &ProviderInfo) -> ProviderComparison {
         ProviderComparison {
             price_diff_pct: if a.combined_price > 0 {
-                ((b.combined_price as f64 - a.combined_price as f64) / a.combined_price as f64) * 100.0
+                ((b.combined_price as f64 - a.combined_price as f64) / a.combined_price as f64)
+                    * 100.0
             } else {
                 0.0
             },
@@ -443,9 +457,12 @@ mod tests {
     fn setup_marketplace() -> Marketplace {
         let mut mp = Marketplace::new(100, 50);
         // Provider 1: cheap, high latency, low reputation
-        mp.create_listing(addr(1), model(1), 50, 50, 10, 5000, 100, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 50, 50, 10, 5000, 100, "sm90")
+            .unwrap();
         // Provider 2: mid-price, low latency, high reputation
-        let lid2 = mp.create_listing(addr(2), model(1), 150, 150, 10, 3000, 20, "sm90").unwrap();
+        let lid2 = mp
+            .create_listing(addr(2), model(1), 150, 150, 10, 3000, 20, "sm90")
+            .unwrap();
         // Simulate completed inferences for reputation
         for _ in 0..100 {
             let b = mp.place_bid(addr(99), model(1), 200, 200, 0);
@@ -453,7 +470,8 @@ mod tests {
             mp.complete_inference(lid2).unwrap();
         }
         // Provider 3: expensive, lowest latency, medium reputation
-        mp.create_listing(addr(3), model(1), 400, 400, 5, 8000, 10, "sm90").unwrap();
+        mp.create_listing(addr(3), model(1), 400, 400, 5, 8000, 10, "sm90")
+            .unwrap();
         mp
     }
 
@@ -494,7 +512,8 @@ mod tests {
     #[test]
     fn test_place_and_track_bid() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90")
+            .unwrap();
 
         let mut client = MarketplaceClient::new(addr(10));
         let bid_id = client.place_bid(&mut mp, model(1), 200, 200, 0);
@@ -507,7 +526,9 @@ mod tests {
     #[test]
     fn test_match_tracked_bid() {
         let mut mp = Marketplace::new(100, 50);
-        let lid = mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90").unwrap();
+        let lid = mp
+            .create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90")
+            .unwrap();
 
         let mut client = MarketplaceClient::new(addr(10));
         let bid_id = client.place_bid(&mut mp, model(1), 200, 200, 0);
@@ -522,7 +543,9 @@ mod tests {
     #[test]
     fn test_bid_and_match_convenience() {
         let mut mp = Marketplace::new(100, 50);
-        let lid = mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90").unwrap();
+        let lid = mp
+            .create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90")
+            .unwrap();
 
         let mut client = MarketplaceClient::new(addr(10));
         let (bid_id, listing_id) = client.bid_and_match(&mut mp, model(1), 200, 200).unwrap();
@@ -536,7 +559,10 @@ mod tests {
         let mut mp = Marketplace::new(100, 50);
         let mut client = MarketplaceClient::new(addr(10));
         let result = client.bid_and_match(&mut mp, model(1), 200, 200);
-        assert!(matches!(result, Err(ClientError::Chain(MarketError::NoMatchingListings))));
+        assert!(matches!(
+            result,
+            Err(ClientError::Chain(MarketError::NoMatchingListings))
+        ));
     }
 
     #[test]
@@ -552,13 +578,17 @@ mod tests {
     #[test]
     fn test_cancel_nonexistent_bid() {
         let mut client = MarketplaceClient::new(addr(10));
-        assert_eq!(client.cancel_bid(999).unwrap_err(), ClientError::BidNotTracked(999));
+        assert_eq!(
+            client.cancel_bid(999).unwrap_err(),
+            ClientError::BidNotTracked(999)
+        );
     }
 
     #[test]
     fn test_match_expired_bid_updates_tracker() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90")
+            .unwrap();
 
         let mut client = MarketplaceClient::new(addr(10));
         let bid_id = client.place_bid(&mut mp, model(1), 200, 200, 5);
@@ -587,8 +617,10 @@ mod tests {
     #[test]
     fn test_discovery_builder_arch_filter() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90").unwrap();
-        mp.create_listing(addr(2), model(1), 100, 100, 5, 200, 50, "sm89").unwrap();
+        mp.create_listing(addr(1), model(1), 100, 100, 5, 200, 50, "sm90")
+            .unwrap();
+        mp.create_listing(addr(2), model(1), 100, 100, 5, 200, 50, "sm89")
+            .unwrap();
 
         let client = MarketplaceClient::new(addr(10));
         let builder = DiscoveryBuilder::new(model(1)).arch_group("sm90");
@@ -630,7 +662,8 @@ mod tests {
     #[test]
     fn test_provider_info_fields() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 100, 200, 8, 5000, 50, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 100, 200, 8, 5000, 50, "sm90")
+            .unwrap();
 
         let client = MarketplaceClient::new(addr(10));
         let builder = DiscoveryBuilder::new(model(1));
@@ -650,8 +683,10 @@ mod tests {
     #[test]
     fn test_multiple_bids_tracking() {
         let mut mp = Marketplace::new(100, 50);
-        mp.create_listing(addr(1), model(1), 100, 100, 10, 200, 50, "sm90").unwrap();
-        mp.create_listing(addr(2), model(2), 200, 200, 10, 200, 50, "sm90").unwrap();
+        mp.create_listing(addr(1), model(1), 100, 100, 10, 200, 50, "sm90")
+            .unwrap();
+        mp.create_listing(addr(2), model(2), 200, 200, 10, 200, 50, "sm90")
+            .unwrap();
 
         let mut client = MarketplaceClient::new(addr(10));
         let b1 = client.place_bid(&mut mp, model(1), 200, 200, 0);

@@ -52,7 +52,9 @@ pub struct BenchHistory {
 
 impl BenchHistory {
     pub fn new() -> Self {
-        Self { records: Vec::new() }
+        Self {
+            records: Vec::new(),
+        }
     }
 
     /// Add a benchmark run from a suite.
@@ -144,7 +146,11 @@ impl BenchHistory {
         out.push_str("| Commit | Timestamp | Mean (ns) |\n");
         out.push_str("|--------|-----------|----------|\n");
         for (commit, ts, ns) in &trend {
-            let short = if commit.len() > 8 { &commit[..8] } else { commit };
+            let short = if commit.len() > 8 {
+                &commit[..8]
+            } else {
+                commit
+            };
             out.push_str(&format!("| {} | {} | {} |\n", short, ts, ns));
         }
         out
@@ -255,7 +261,9 @@ impl BenchHistory {
         let pattern = format!("\"{}\":", key);
         let start = s.find(&pattern)? + pattern.len();
         let rest = s[start..].trim_start();
-        let end = rest.find(|c: char| !c.is_ascii_digit()).unwrap_or(rest.len());
+        let end = rest
+            .find(|c: char| !c.is_ascii_digit())
+            .unwrap_or(rest.len());
         rest[..end].parse().ok()
     }
 

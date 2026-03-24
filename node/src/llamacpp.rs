@@ -91,8 +91,7 @@ impl LlamaCppRunner {
     /// The engine must write `layer_0.bin`/`layer_0.meta` through `layer_N.bin`/`layer_N.meta`
     /// into the specified dump directory.
     pub fn run(config: &InferenceConfig) -> Result<InferenceResult, LlamaCppError> {
-        let dump_dir = tempfile::tempdir()
-            .map_err(LlamaCppError::DumpReadError)?;
+        let dump_dir = tempfile::tempdir().map_err(LlamaCppError::DumpReadError)?;
         let dump_path = dump_dir.path();
 
         // Invoke llama-cli with deterministic flags
@@ -176,11 +175,9 @@ impl LlamaCppRunner {
             }
 
             // Read metadata
-            let meta_json =
-                fs::read_to_string(&meta_path).map_err(LlamaCppError::DumpReadError)?;
-            let meta: ActivationMeta = serde_json::from_str(&meta_json).map_err(|e| {
-                LlamaCppError::MetadataParseError(format!("{meta_path:?}: {e}"))
-            })?;
+            let meta_json = fs::read_to_string(&meta_path).map_err(LlamaCppError::DumpReadError)?;
+            let meta: ActivationMeta = serde_json::from_str(&meta_json)
+                .map_err(|e| LlamaCppError::MetadataParseError(format!("{meta_path:?}: {e}")))?;
 
             // Read raw tensor bytes
             let tensor_bytes = fs::read(&bin_path).map_err(LlamaCppError::DumpReadError)?;
@@ -235,11 +232,7 @@ fn write_test_activations(dir: &Path, count: u32, dtype: &str, shape: &[u64]) {
             "shape": shape,
             "layout": "RowMajor"
         });
-        fs::write(
-            dir.join(format!("layer_{i}.meta")),
-            meta.to_string(),
-        )
-        .unwrap();
+        fs::write(dir.join(format!("layer_{i}.meta")), meta.to_string()).unwrap();
     }
 }
 
@@ -355,6 +348,9 @@ mod tests {
         let h1 = LlamaCppRunner::read_activations(dir1.path()).unwrap();
         let h2 = LlamaCppRunner::read_activations(dir2.path()).unwrap();
 
-        assert_ne!(h1[0], h2[0], "different tensor shapes should produce different hashes");
+        assert_ne!(
+            h1[0], h2[0],
+            "different tensor shapes should produce different hashes"
+        );
     }
 }

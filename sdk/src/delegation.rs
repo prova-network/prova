@@ -5,9 +5,8 @@
 //! Wraps RPC calls and transaction signing into ergonomic operations.
 
 use prova_chain::delegation::{
-    Address, Amount, Epoch, DelegationError, ProviderInfo, Delegation, UnbondingEntry,
-    Redelegation, RewardDistribution, UNBONDING_PERIOD, MIN_DELEGATION,
-    MAX_COMMISSION_BPS,
+    Address, Amount, Delegation, DelegationError, Epoch, ProviderInfo, Redelegation,
+    RewardDistribution, UnbondingEntry, MAX_COMMISSION_BPS, MIN_DELEGATION, UNBONDING_PERIOD,
 };
 use std::collections::HashMap;
 
@@ -168,21 +167,31 @@ impl DelegationClient {
     pub fn advance_epoch(&mut self, epochs: Epoch) {
         self.state.current_epoch += epochs;
         // Process completed unbondings.
-        let completed: Vec<_> = self.state.unbondings.iter()
+        let completed: Vec<_> = self
+            .state
+            .unbondings
+            .iter()
             .filter(|u| u.completion_epoch <= self.state.current_epoch)
             .cloned()
             .collect();
         for entry in &completed {
             *self.state.balances.entry(entry.delegator).or_insert(0) += entry.amount;
         }
-        self.state.unbondings.retain(|u| u.completion_epoch > self.state.current_epoch);
+        self.state
+            .unbondings
+            .retain(|u| u.completion_epoch > self.state.current_epoch);
         // Process completed redelegations.
-        let completed_redel: Vec<_> = self.state.redelegations.iter()
+        let completed_redel: Vec<_> = self
+            .state
+            .redelegations
+            .iter()
             .filter(|r| r.completion_epoch <= self.state.current_epoch)
             .cloned()
             .collect();
         for entry in &completed_redel {
-            let del = self.state.delegations
+            let del = self
+                .state
+                .delegations
                 .entry((entry.delegator, entry.to_provider))
                 .or_insert(Delegation {
                     delegator: entry.delegator,
@@ -197,7 +206,9 @@ impl DelegationClient {
                 prov.total_delegated += entry.amount;
             }
         }
-        self.state.redelegations.retain(|r| r.completion_epoch > self.state.current_epoch);
+        self.state
+            .redelegations
+            .retain(|r| r.completion_epoch > self.state.current_epoch);
     }
 
     /// Register a provider (test helper — in prod this is a chain tx).
@@ -207,17 +218,22 @@ impl DelegationClient {
         commission_bps: u16,
     ) -> Result<(), DelegationRpcError> {
         if commission_bps > MAX_COMMISSION_BPS {
-            return Err(DelegationRpcError::ChainError(DelegationError::CommissionTooHigh));
+            return Err(DelegationRpcError::ChainError(
+                DelegationError::CommissionTooHigh,
+            ));
         }
-        self.state.providers.insert(address, ProviderInfo {
+        self.state.providers.insert(
             address,
-            commission_bps,
-            commission_last_changed: self.state.current_epoch,
-            total_delegated: 0,
-            accepting_delegations: true,
-            pending_rewards: 0,
-            auto_compound_delegators: Vec::new(),
-        });
+            ProviderInfo {
+                address,
+                commission_bps,
+                commission_last_changed: self.state.current_epoch,
+                total_delegated: 0,
+                accepting_delegations: true,
+                pending_rewards: 0,
+                auto_compound_delegators: Vec::new(),
+            },
+        );
         Ok(())
     }
 
@@ -233,17 +249,33 @@ impl DelegationClient {
             return Err(DelegationRpcError::ChainError(DelegationError::ZeroAmount));
         }
         if amount < MIN_DELEGATION {
-            return Err(DelegationRpcError::ChainError(DelegationError::BelowMinimum));
+            return Err(DelegationRpcError::ChainError(
+                DelegationError::BelowMinimum,
+            ));
         }
         if provider == self.delegator {
-            return Err(DelegationRpcError::ChainError(DelegationError::SelfDelegationNotAllowed));
+            return Err(DelegationRpcError::ChainError(
+                DelegationError::SelfDelegationNotAllowed,
+            ));
         }
-        let prov = self.state.providers.get(&provider)
-            .ok_or(DelegationRpcError::ChainError(DelegationError::ProviderNotRegistered))?;
+        let prov = self
+            .state
+            .providers
+            .get(&provider)
+            .ok_or(DelegationRpcError::ChainError(
+                DelegationError::ProviderNotRegistered,
+            ))?;
         if !prov.accepting_delegations {
-            return Err(DelegationRpcError::ChainError(DelegationError::ProviderNotRegistered));
+            return Err(DelegationRpcError::ChainError(
+                DelegationError::ProviderNotRegistered,
+            ));
         }
-        let bal = self.state.balances.get(&self.delegator).copied().unwrap_or(0);
+        let bal = self
+            .state
+            .balances
+            .get(&self.delegator)
+            .copied()
+            .unwrap_or(0);
         if bal < amount {
             return Err(DelegationRpcError::InsufficientBalance);
         }
@@ -252,7 +284,9 @@ impl DelegationClient {
         *self.state.balances.entry(self.delegator).or_insert(0) -= amount;
 
         // Update or create delegation.
-        let del = self.state.delegations
+        let del = self
+            .state
+            .delegations
             .entry((self.delegator, provider))
             .or_insert(Delegation {
                 delegator: self.delegator,
@@ -281,11 +315,17 @@ impl DelegationClient {
         if amount == 0 {
             return Err(DelegationRpcError::ChainError(DelegationError::ZeroAmount));
         }
-        let del = self.state.delegations
+        let del = self
+            .state
+            .delegations
             .get_mut(&(self.delegator, provider))
-            .ok_or(DelegationRpcError::ChainError(DelegationError::NoDelegationFound))?;
+            .ok_or(DelegationRpcError::ChainError(
+                DelegationError::NoDelegationFound,
+            ))?;
         if del.amount < amount {
-            return Err(DelegationRpcError::ChainError(DelegationError::InsufficientDelegation));
+            return Err(DelegationRpcError::ChainError(
+                DelegationError::InsufficientDelegation,
+            ));
         }
         del.amount -= amount;
 
@@ -325,17 +365,29 @@ impl DelegationClient {
             return Err(DelegationRpcError::ChainError(DelegationError::ZeroAmount));
         }
         if from_provider == to_provider {
-            return Err(DelegationRpcError::ChainError(DelegationError::RedelegationToSameProvider));
+            return Err(DelegationRpcError::ChainError(
+                DelegationError::RedelegationToSameProvider,
+            ));
         }
         // Verify destination provider exists.
-        self.state.providers.get(&to_provider)
-            .ok_or(DelegationRpcError::ChainError(DelegationError::ProviderNotRegistered))?;
+        self.state
+            .providers
+            .get(&to_provider)
+            .ok_or(DelegationRpcError::ChainError(
+                DelegationError::ProviderNotRegistered,
+            ))?;
 
-        let del = self.state.delegations
+        let del = self
+            .state
+            .delegations
             .get_mut(&(self.delegator, from_provider))
-            .ok_or(DelegationRpcError::ChainError(DelegationError::NoDelegationFound))?;
+            .ok_or(DelegationRpcError::ChainError(
+                DelegationError::NoDelegationFound,
+            ))?;
         if del.amount < amount {
-            return Err(DelegationRpcError::ChainError(DelegationError::InsufficientDelegation));
+            return Err(DelegationRpcError::ChainError(
+                DelegationError::InsufficientDelegation,
+            ));
         }
         del.amount -= amount;
 
@@ -345,7 +397,9 @@ impl DelegationClient {
 
         // Remove empty source delegation.
         if del.amount == 0 && del.pending_rewards == 0 {
-            self.state.delegations.remove(&(self.delegator, from_provider));
+            self.state
+                .delegations
+                .remove(&(self.delegator, from_provider));
         }
 
         let completion = self.state.current_epoch + UNBONDING_PERIOD;
@@ -372,9 +426,13 @@ impl DelegationClient {
         provider: Address,
         enabled: bool,
     ) -> Result<(), DelegationRpcError> {
-        let del = self.state.delegations
+        let del = self
+            .state
+            .delegations
             .get_mut(&(self.delegator, provider))
-            .ok_or(DelegationRpcError::ChainError(DelegationError::NoDelegationFound))?;
+            .ok_or(DelegationRpcError::ChainError(
+                DelegationError::NoDelegationFound,
+            ))?;
         del.auto_compound = enabled;
 
         if let Some(prov) = self.state.providers.get_mut(&provider) {
@@ -383,20 +441,22 @@ impl DelegationClient {
                     prov.auto_compound_delegators.push(self.delegator);
                 }
             } else {
-                prov.auto_compound_delegators.retain(|a| a != &self.delegator);
+                prov.auto_compound_delegators
+                    .retain(|a| a != &self.delegator);
             }
         }
         Ok(())
     }
 
     /// Claim pending rewards from a specific provider.
-    pub fn claim_rewards(
-        &mut self,
-        provider: Address,
-    ) -> Result<Amount, DelegationRpcError> {
-        let del = self.state.delegations
+    pub fn claim_rewards(&mut self, provider: Address) -> Result<Amount, DelegationRpcError> {
+        let del = self
+            .state
+            .delegations
             .get_mut(&(self.delegator, provider))
-            .ok_or(DelegationRpcError::ChainError(DelegationError::NoDelegationFound))?;
+            .ok_or(DelegationRpcError::ChainError(
+                DelegationError::NoDelegationFound,
+            ))?;
         let rewards = del.pending_rewards;
         del.pending_rewards = 0;
         *self.state.balances.entry(self.delegator).or_insert(0) += rewards;
@@ -405,7 +465,10 @@ impl DelegationClient {
 
     /// Claim rewards from ALL providers at once.
     pub fn claim_all_rewards(&mut self) -> Result<Amount, DelegationRpcError> {
-        let keys: Vec<_> = self.state.delegations.keys()
+        let keys: Vec<_> = self
+            .state
+            .delegations
+            .keys()
             .filter(|(d, _)| *d == self.delegator)
             .cloned()
             .collect();
@@ -425,11 +488,17 @@ impl DelegationClient {
     /// Get provider summary.
     pub fn provider_info(&self, provider: &Address) -> Option<ProviderSummary> {
         let prov = self.state.providers.get(provider)?;
-        let delegator_count = self.state.delegations.iter()
+        let delegator_count = self
+            .state
+            .delegations
+            .iter()
             .filter(|((_, p), d)| p == provider && d.amount > 0)
             .count();
         // Estimate APY from last 100 epochs of distributions.
-        let recent_rewards: Amount = self.state.distributions.iter()
+        let recent_rewards: Amount = self
+            .state
+            .distributions
+            .iter()
             .filter(|d| d.provider == *provider && d.epoch + 100 >= self.state.current_epoch)
             .map(|d| d.total_reward)
             .sum();
@@ -455,7 +524,9 @@ impl DelegationClient {
 
     /// List all providers.
     pub fn list_providers(&self) -> Vec<ProviderSummary> {
-        self.state.providers.keys()
+        self.state
+            .providers
+            .keys()
             .filter_map(|addr| self.provider_info(addr))
             .collect()
     }
@@ -474,7 +545,10 @@ impl DelegationClient {
 
     /// Get full portfolio overview.
     pub fn portfolio(&self) -> DelegationPortfolio {
-        let positions: Vec<DelegationPosition> = self.state.delegations.iter()
+        let positions: Vec<DelegationPosition> = self
+            .state
+            .delegations
+            .iter()
             .filter(|((d, _), _)| *d == self.delegator)
             .map(|((_, p), del)| DelegationPosition {
                 provider: *p,
@@ -485,7 +559,10 @@ impl DelegationClient {
             })
             .collect();
 
-        let unbondings: Vec<UnbondingStatus> = self.state.unbondings.iter()
+        let unbondings: Vec<UnbondingStatus> = self
+            .state
+            .unbondings
+            .iter()
             .filter(|u| u.delegator == self.delegator)
             .map(|u| UnbondingStatus {
                 provider: u.provider,
@@ -495,7 +572,10 @@ impl DelegationClient {
             })
             .collect();
 
-        let redelegations: Vec<RedelegationStatus> = self.state.redelegations.iter()
+        let redelegations: Vec<RedelegationStatus> = self
+            .state
+            .redelegations
+            .iter()
             .filter(|r| r.delegator == self.delegator)
             .map(|r| RedelegationStatus {
                 from_provider: r.from_provider,
@@ -523,12 +603,17 @@ impl DelegationClient {
 
     /// Get reward history for this delegator.
     pub fn reward_history(&self) -> Vec<RewardEntry> {
-        self.state.distributions.iter()
+        self.state
+            .distributions
+            .iter()
             .flat_map(|dist| {
-                dist.delegator_shares.iter()
+                dist.delegator_shares
+                    .iter()
                     .filter(|(addr, _)| *addr == self.delegator)
                     .map(move |(_, amount)| {
-                        let auto = self.state.delegations
+                        let auto = self
+                            .state
+                            .delegations
                             .get(&(self.delegator, dist.provider))
                             .map(|d| d.auto_compound)
                             .unwrap_or(false);
@@ -551,8 +636,13 @@ impl DelegationClient {
         provider: Address,
         total_reward: Amount,
     ) -> Result<(), DelegationRpcError> {
-        let prov = self.state.providers.get(&provider)
-            .ok_or(DelegationRpcError::ChainError(DelegationError::ProviderNotRegistered))?
+        let prov = self
+            .state
+            .providers
+            .get(&provider)
+            .ok_or(DelegationRpcError::ChainError(
+                DelegationError::ProviderNotRegistered,
+            ))?
             .clone();
 
         if prov.total_delegated == 0 {
@@ -563,7 +653,10 @@ impl DelegationClient {
         let delegator_pool = total_reward - commission;
 
         // Distribute proportionally.
-        let delegator_keys: Vec<_> = self.state.delegations.iter()
+        let delegator_keys: Vec<_> = self
+            .state
+            .delegations
+            .iter()
             .filter(|((_, p), d)| *p == provider && d.amount > 0)
             .map(|(k, _)| *k)
             .collect();
@@ -571,8 +664,8 @@ impl DelegationClient {
         let mut shares = Vec::new();
         for key in &delegator_keys {
             let del = self.state.delegations.get(key).unwrap();
-            let share = (delegator_pool as u128 * del.amount as u128
-                / prov.total_delegated as u128) as Amount;
+            let share = (delegator_pool as u128 * del.amount as u128 / prov.total_delegated as u128)
+                as Amount;
             shares.push((key.0, share));
         }
 
@@ -611,8 +704,14 @@ impl DelegationClient {
 mod tests {
     use super::*;
 
-    fn addr(n: u8) -> Address { let mut a = [0u8; 32]; a[0] = n; a }
-    fn secret() -> [u8; 32] { [42u8; 32] }
+    fn addr(n: u8) -> Address {
+        let mut a = [0u8; 32];
+        a[0] = n;
+        a
+    }
+    fn secret() -> [u8; 32] {
+        [42u8; 32]
+    }
 
     #[test]
     fn test_delegate_basic() {
@@ -644,7 +743,10 @@ mod tests {
         client.register_provider(addr(2), 1000).unwrap();
 
         let err = client.delegate(addr(2), 100).unwrap_err();
-        assert_eq!(err, DelegationRpcError::ChainError(DelegationError::BelowMinimum));
+        assert_eq!(
+            err,
+            DelegationRpcError::ChainError(DelegationError::BelowMinimum)
+        );
     }
 
     #[test]
@@ -654,7 +756,10 @@ mod tests {
         client.register_provider(addr(1), 1000).unwrap();
 
         let err = client.delegate(addr(1), 5_000_000).unwrap_err();
-        assert_eq!(err, DelegationRpcError::ChainError(DelegationError::SelfDelegationNotAllowed));
+        assert_eq!(
+            err,
+            DelegationRpcError::ChainError(DelegationError::SelfDelegationNotAllowed)
+        );
     }
 
     #[test]
@@ -709,7 +814,10 @@ mod tests {
         client.delegate(addr(2), 50_000_000).unwrap();
 
         let err = client.redelegate(addr(2), addr(2), 10_000_000).unwrap_err();
-        assert_eq!(err, DelegationRpcError::ChainError(DelegationError::RedelegationToSameProvider));
+        assert_eq!(
+            err,
+            DelegationRpcError::ChainError(DelegationError::RedelegationToSameProvider)
+        );
     }
 
     #[test]
@@ -823,7 +931,10 @@ mod tests {
         client.delegate(addr(2), 5_000_000).unwrap();
 
         let err = client.undelegate(addr(2), 10_000_000).unwrap_err();
-        assert_eq!(err, DelegationRpcError::ChainError(DelegationError::InsufficientDelegation));
+        assert_eq!(
+            err,
+            DelegationRpcError::ChainError(DelegationError::InsufficientDelegation)
+        );
     }
 
     #[test]
@@ -846,6 +957,9 @@ mod tests {
         client.set_balance(addr(1), 100_000_000);
 
         let err = client.delegate(addr(99), 5_000_000).unwrap_err();
-        assert_eq!(err, DelegationRpcError::ChainError(DelegationError::ProviderNotRegistered));
+        assert_eq!(
+            err,
+            DelegationRpcError::ChainError(DelegationError::ProviderNotRegistered)
+        );
     }
 }

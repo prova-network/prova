@@ -199,17 +199,20 @@ fn take_value(args: &[String], idx: usize, name: &str) -> Result<String, MarketP
 
 fn parse_u128(args: &[String], idx: usize, name: &str) -> Result<u128, MarketParseError> {
     let v = take_value(args, idx, name)?;
-    v.parse().map_err(|_| MarketParseError::InvalidValue(name.into(), v))
+    v.parse()
+        .map_err(|_| MarketParseError::InvalidValue(name.into(), v))
 }
 
 fn parse_u64(args: &[String], idx: usize, name: &str) -> Result<u64, MarketParseError> {
     let v = take_value(args, idx, name)?;
-    v.parse().map_err(|_| MarketParseError::InvalidValue(name.into(), v))
+    v.parse()
+        .map_err(|_| MarketParseError::InvalidValue(name.into(), v))
 }
 
 fn parse_u32(args: &[String], idx: usize, name: &str) -> Result<u32, MarketParseError> {
     let v = take_value(args, idx, name)?;
-    v.parse().map_err(|_| MarketParseError::InvalidValue(name.into(), v))
+    v.parse()
+        .map_err(|_| MarketParseError::InvalidValue(name.into(), v))
 }
 
 pub fn parse_market_args(args: &[String]) -> Result<MarketCmd, MarketParseError> {
@@ -241,7 +244,9 @@ fn parse_list(args: &[String]) -> Result<MarketCmd, MarketParseError> {
             "--limit" | "-n" => {
                 i += 1;
                 let v = take_value(args, i, "--limit")?;
-                opts.limit = v.parse().map_err(|_| MarketParseError::InvalidValue("--limit".into(), v))?;
+                opts.limit = v
+                    .parse()
+                    .map_err(|_| MarketParseError::InvalidValue("--limit".into(), v))?;
             }
             "--json" => opts.json = true,
             _ => {}
@@ -330,7 +335,9 @@ fn parse_discover(args: &[String]) -> Result<MarketCmd, MarketParseError> {
             "--limit" | "-n" => {
                 i += 1;
                 let v = take_value(args, i, "--limit")?;
-                opts.limit = v.parse().map_err(|_| MarketParseError::InvalidValue("--limit".into(), v))?;
+                opts.limit = v
+                    .parse()
+                    .map_err(|_| MarketParseError::InvalidValue("--limit".into(), v))?;
             }
             "--json" => opts.json = true,
             _ => {}
@@ -362,15 +369,20 @@ fn parse_show(args: &[String]) -> Result<MarketCmd, MarketParseError> {
             _ => {
                 // Positional: first non-flag is listing ID
                 if listing_id.is_none() {
-                    listing_id = Some(args[i].parse().map_err(|_|
-                        MarketParseError::InvalidValue("listing-id".into(), args[i].clone()))?);
+                    listing_id = Some(args[i].parse().map_err(|_| {
+                        MarketParseError::InvalidValue("listing-id".into(), args[i].clone())
+                    })?);
                 }
             }
         }
         i += 1;
     }
     let listing_id = listing_id.ok_or_else(|| MarketParseError::MissingArg("listing-id".into()))?;
-    Ok(MarketCmd::Show(ShowOpts { listing_id, rpc_url, json }))
+    Ok(MarketCmd::Show(ShowOpts {
+        listing_id,
+        rpc_url,
+        json,
+    }))
 }
 
 fn parse_create(args: &[String]) -> Result<MarketCmd, MarketParseError> {
@@ -438,15 +450,19 @@ fn parse_deactivate(args: &[String]) -> Result<MarketCmd, MarketParseError> {
             }
             _ => {
                 if listing_id.is_none() {
-                    listing_id = Some(args[i].parse().map_err(|_|
-                        MarketParseError::InvalidValue("listing-id".into(), args[i].clone()))?);
+                    listing_id = Some(args[i].parse().map_err(|_| {
+                        MarketParseError::InvalidValue("listing-id".into(), args[i].clone())
+                    })?);
                 }
             }
         }
         i += 1;
     }
     let listing_id = listing_id.ok_or_else(|| MarketParseError::MissingArg("listing-id".into()))?;
-    Ok(MarketCmd::Deactivate(DeactivateOpts { listing_id, rpc_url }))
+    Ok(MarketCmd::Deactivate(DeactivateOpts {
+        listing_id,
+        rpc_url,
+    }))
 }
 
 fn parse_my_listings(args: &[String]) -> Result<MarketCmd, MarketParseError> {
@@ -472,7 +488,11 @@ fn parse_my_listings(args: &[String]) -> Result<MarketCmd, MarketParseError> {
     if address.is_empty() {
         return Err(MarketParseError::MissingArg("--address".into()));
     }
-    Ok(MarketCmd::MyListings(MyListingsOpts { address, rpc_url, json }))
+    Ok(MarketCmd::MyListings(MyListingsOpts {
+        address,
+        rpc_url,
+        json,
+    }))
 }
 
 // ── Display formatting ──────────────────────────────────────────────
@@ -584,17 +604,27 @@ mod tests {
     #[test]
     fn test_list_defaults() {
         let cmd = parse_market_args(&args("list")).unwrap();
-        assert_eq!(cmd, MarketCmd::List(ListOpts { model_id: None, limit: 20, json: false }));
+        assert_eq!(
+            cmd,
+            MarketCmd::List(ListOpts {
+                model_id: None,
+                limit: 20,
+                json: false
+            })
+        );
     }
 
     #[test]
     fn test_list_with_model_and_json() {
         let cmd = parse_market_args(&args("list --model llama-70b --json --limit 5")).unwrap();
-        assert_eq!(cmd, MarketCmd::List(ListOpts {
-            model_id: Some("llama-70b".into()),
-            limit: 5,
-            json: true,
-        }));
+        assert_eq!(
+            cmd,
+            MarketCmd::List(ListOpts {
+                model_id: Some("llama-70b".into()),
+                limit: 5,
+                json: true,
+            })
+        );
     }
 
     #[test]
@@ -612,32 +642,45 @@ mod tests {
 
     #[test]
     fn test_bid_full() {
-        let cmd = parse_market_args(&args("bid --model llama-70b --max-price-input 100 --max-price-output 200 --expires-in 50")).unwrap();
-        assert_eq!(cmd, MarketCmd::Bid(BidOpts {
-            model_id: "llama-70b".into(),
-            max_price_input: 100,
-            max_price_output: 200,
-            expires_in: 50,
-            rpc_url: "http://127.0.0.1:9944".into(),
-        }));
+        let cmd = parse_market_args(&args(
+            "bid --model llama-70b --max-price-input 100 --max-price-output 200 --expires-in 50",
+        ))
+        .unwrap();
+        assert_eq!(
+            cmd,
+            MarketCmd::Bid(BidOpts {
+                model_id: "llama-70b".into(),
+                max_price_input: 100,
+                max_price_output: 200,
+                expires_in: 50,
+                rpc_url: "http://127.0.0.1:9944".into(),
+            })
+        );
     }
 
     #[test]
     fn test_bid_missing_model() {
-        let err = parse_market_args(&args("bid --max-price-input 100 --max-price-output 200")).unwrap_err();
+        let err = parse_market_args(&args("bid --max-price-input 100 --max-price-output 200"))
+            .unwrap_err();
         assert_eq!(err, MarketParseError::MissingArg("--model".into()));
     }
 
     #[test]
     fn test_bid_missing_price_input() {
         let err = parse_market_args(&args("bid --model x --max-price-output 200")).unwrap_err();
-        assert_eq!(err, MarketParseError::MissingArg("--max-price-input".into()));
+        assert_eq!(
+            err,
+            MarketParseError::MissingArg("--max-price-input".into())
+        );
     }
 
     #[test]
     fn test_bid_missing_price_output() {
         let err = parse_market_args(&args("bid --model x --max-price-input 100")).unwrap_err();
-        assert_eq!(err, MarketParseError::MissingArg("--max-price-output".into()));
+        assert_eq!(
+            err,
+            MarketParseError::MissingArg("--max-price-output".into())
+        );
     }
 
     // ── discover ──
@@ -660,17 +703,20 @@ mod tests {
         let cmd = parse_market_args(&args(
             "discover --model llama-70b --max-price-input 500 --max-price-output 600 --min-stake 1000 --max-latency 50 --arch sm90 --sort stake --limit 3 --json"
         )).unwrap();
-        assert_eq!(cmd, MarketCmd::Discover(DiscoverOpts {
-            model_id: "llama-70b".into(),
-            max_price_input: Some(500),
-            max_price_output: Some(600),
-            min_stake: Some(1000),
-            max_latency_ms: Some(50),
-            arch_group: Some("sm90".into()),
-            sort_by: SortField::Stake,
-            limit: 3,
-            json: true,
-        }));
+        assert_eq!(
+            cmd,
+            MarketCmd::Discover(DiscoverOpts {
+                model_id: "llama-70b".into(),
+                max_price_input: Some(500),
+                max_price_output: Some(600),
+                min_stake: Some(1000),
+                max_latency_ms: Some(50),
+                arch_group: Some("sm90".into()),
+                sort_by: SortField::Stake,
+                limit: 3,
+                json: true,
+            })
+        );
     }
 
     #[test]
@@ -682,7 +728,10 @@ mod tests {
     #[test]
     fn test_discover_invalid_sort() {
         let err = parse_market_args(&args("discover --model x --sort bogus")).unwrap_err();
-        assert_eq!(err, MarketParseError::InvalidValue("--sort".into(), "bogus".into()));
+        assert_eq!(
+            err,
+            MarketParseError::InvalidValue("--sort".into(), "bogus".into())
+        );
     }
 
     // ── show ──
@@ -690,21 +739,27 @@ mod tests {
     #[test]
     fn test_show_positional() {
         let cmd = parse_market_args(&args("show 42")).unwrap();
-        assert_eq!(cmd, MarketCmd::Show(ShowOpts {
-            listing_id: 42,
-            rpc_url: "http://127.0.0.1:9944".into(),
-            json: false,
-        }));
+        assert_eq!(
+            cmd,
+            MarketCmd::Show(ShowOpts {
+                listing_id: 42,
+                rpc_url: "http://127.0.0.1:9944".into(),
+                json: false,
+            })
+        );
     }
 
     #[test]
     fn test_show_with_flag() {
         let cmd = parse_market_args(&args("show --id 7 --json")).unwrap();
-        assert_eq!(cmd, MarketCmd::Show(ShowOpts {
-            listing_id: 7,
-            rpc_url: "http://127.0.0.1:9944".into(),
-            json: true,
-        }));
+        assert_eq!(
+            cmd,
+            MarketCmd::Show(ShowOpts {
+                listing_id: 7,
+                rpc_url: "http://127.0.0.1:9944".into(),
+                json: true,
+            })
+        );
     }
 
     #[test]
@@ -720,20 +775,24 @@ mod tests {
         let cmd = parse_market_args(&args(
             "create --model llama-70b --price-input 80 --price-output 150 --concurrency 4 --latency-sla 30 --arch sm89"
         )).unwrap();
-        assert_eq!(cmd, MarketCmd::CreateListing(CreateListingOpts {
-            model_id: "llama-70b".into(),
-            price_per_m_input: 80,
-            price_per_m_output: 150,
-            max_concurrency: 4,
-            latency_sla_ms: 30,
-            arch_group: "sm89".into(),
-            rpc_url: "http://127.0.0.1:9944".into(),
-        }));
+        assert_eq!(
+            cmd,
+            MarketCmd::CreateListing(CreateListingOpts {
+                model_id: "llama-70b".into(),
+                price_per_m_input: 80,
+                price_per_m_output: 150,
+                max_concurrency: 4,
+                latency_sla_ms: 30,
+                arch_group: "sm89".into(),
+                rpc_url: "http://127.0.0.1:9944".into(),
+            })
+        );
     }
 
     #[test]
     fn test_create_missing_model() {
-        let err = parse_market_args(&args("create --price-input 80 --price-output 150")).unwrap_err();
+        let err =
+            parse_market_args(&args("create --price-input 80 --price-output 150")).unwrap_err();
         assert_eq!(err, MarketParseError::MissingArg("--model".into()));
     }
 
@@ -748,19 +807,25 @@ mod tests {
     #[test]
     fn test_deactivate_positional() {
         let cmd = parse_market_args(&args("deactivate 5")).unwrap();
-        assert_eq!(cmd, MarketCmd::Deactivate(DeactivateOpts {
-            listing_id: 5,
-            rpc_url: "http://127.0.0.1:9944".into(),
-        }));
+        assert_eq!(
+            cmd,
+            MarketCmd::Deactivate(DeactivateOpts {
+                listing_id: 5,
+                rpc_url: "http://127.0.0.1:9944".into(),
+            })
+        );
     }
 
     #[test]
     fn test_deactivate_with_flag() {
         let cmd = parse_market_args(&args("deactivate --id 9")).unwrap();
-        assert_eq!(cmd, MarketCmd::Deactivate(DeactivateOpts {
-            listing_id: 9,
-            rpc_url: "http://127.0.0.1:9944".into(),
-        }));
+        assert_eq!(
+            cmd,
+            MarketCmd::Deactivate(DeactivateOpts {
+                listing_id: 9,
+                rpc_url: "http://127.0.0.1:9944".into(),
+            })
+        );
     }
 
     #[test]
@@ -774,11 +839,14 @@ mod tests {
     #[test]
     fn test_my_listings() {
         let cmd = parse_market_args(&args("my-listings --address 0x1234abcd --json")).unwrap();
-        assert_eq!(cmd, MarketCmd::MyListings(MyListingsOpts {
-            address: "0x1234abcd".into(),
-            rpc_url: "http://127.0.0.1:9944".into(),
-            json: true,
-        }));
+        assert_eq!(
+            cmd,
+            MarketCmd::MyListings(MyListingsOpts {
+                address: "0x1234abcd".into(),
+                rpc_url: "http://127.0.0.1:9944".into(),
+                json: true,
+            })
+        );
     }
 
     #[test]
@@ -805,7 +873,19 @@ mod tests {
 
     #[test]
     fn test_format_listing_active() {
-        let s = format_listing(1, "0x01", "llama-70b", 100, 200, 5, 2, 30, 100, "sm90", true);
+        let s = format_listing(
+            1,
+            "0x01",
+            "llama-70b",
+            100,
+            200,
+            5,
+            2,
+            30,
+            100,
+            "sm90",
+            true,
+        );
         assert!(s.contains("●"));
         assert!(s.contains("llama-70b"));
         assert!(s.contains("2/5"));
@@ -840,8 +920,24 @@ mod tests {
     #[test]
     fn test_format_discovery_table() {
         let entries = vec![
-            (1, "0x01…".to_string(), 100u128, 200u128, 30u64, 500u64, "sm90".to_string()),
-            (2, "0x02…".to_string(), 150, 250, 40, 300, "sm89".to_string()),
+            (
+                1,
+                "0x01…".to_string(),
+                100u128,
+                200u128,
+                30u64,
+                500u64,
+                "sm90".to_string(),
+            ),
+            (
+                2,
+                "0x02…".to_string(),
+                150,
+                250,
+                40,
+                300,
+                "sm89".to_string(),
+            ),
         ];
         let s = format_discovery_table(&entries);
         assert!(s.contains("ID"));
@@ -870,7 +966,9 @@ mod tests {
         assert!(format!("{}", MarketParseError::NoSubcommand).contains("subcommand required"));
         assert!(format!("{}", MarketParseError::UnknownSubcommand("x".into())).contains("'x'"));
         assert!(format!("{}", MarketParseError::MissingArg("--foo".into())).contains("--foo"));
-        assert!(format!("{}", MarketParseError::InvalidValue("k".into(), "v".into())).contains("'v'"));
+        assert!(
+            format!("{}", MarketParseError::InvalidValue("k".into(), "v".into())).contains("'v'")
+        );
     }
 
     #[test]
@@ -883,7 +981,10 @@ mod tests {
 
     #[test]
     fn test_bid_custom_rpc() {
-        let cmd = parse_market_args(&args("bid --model x --max-price-input 1 --max-price-output 1 --rpc-url http://custom:1234")).unwrap();
+        let cmd = parse_market_args(&args(
+            "bid --model x --max-price-input 1 --max-price-output 1 --rpc-url http://custom:1234",
+        ))
+        .unwrap();
         if let MarketCmd::Bid(opts) = cmd {
             assert_eq!(opts.rpc_url, "http://custom:1234");
         } else {
@@ -893,7 +994,8 @@ mod tests {
 
     #[test]
     fn test_create_defaults() {
-        let cmd = parse_market_args(&args("create --model x --price-input 1 --price-output 1")).unwrap();
+        let cmd =
+            parse_market_args(&args("create --model x --price-input 1 --price-output 1")).unwrap();
         if let MarketCmd::CreateListing(opts) = cmd {
             assert_eq!(opts.max_concurrency, 1);
             assert_eq!(opts.latency_sla_ms, 100);
@@ -906,6 +1008,9 @@ mod tests {
     #[test]
     fn test_invalid_listing_id() {
         let err = parse_market_args(&args("show notanumber")).unwrap_err();
-        assert_eq!(err, MarketParseError::InvalidValue("listing-id".into(), "notanumber".into()));
+        assert_eq!(
+            err,
+            MarketParseError::InvalidValue("listing-id".into(), "notanumber".into())
+        );
     }
 }

@@ -13,35 +13,35 @@ use std::collections::HashMap;
 #[repr(u64)]
 pub enum Capability {
     /// Submit inference commits
-    SubmitCommit       = 1 << 0,
+    SubmitCommit = 1 << 0,
     /// Challenge an inference
-    Challenge          = 1 << 1,
+    Challenge = 1 << 1,
     /// Register/update models
-    RegisterModel      = 1 << 2,
+    RegisterModel = 1 << 2,
     /// Stake tokens
-    Stake              = 1 << 3,
+    Stake = 1 << 3,
     /// Unstake tokens
-    Unstake            = 1 << 4,
+    Unstake = 1 << 4,
     /// Submit checkpoints to L1
-    SubmitCheckpoint   = 1 << 5,
+    SubmitCheckpoint = 1 << 5,
     /// Create governance proposals
-    Propose            = 1 << 6,
+    Propose = 1 << 6,
     /// Vote on proposals
-    Vote               = 1 << 7,
+    Vote = 1 << 7,
     /// Transfer tokens
-    Transfer           = 1 << 8,
+    Transfer = 1 << 8,
     /// Schedule inference jobs
-    ScheduleJob        = 1 << 9,
+    ScheduleJob = 1 << 9,
     /// Manage protocol parameters
-    ManageParams       = 1 << 10,
+    ManageParams = 1 << 10,
     /// Grant/revoke roles
-    ManageRoles        = 1 << 11,
+    ManageRoles = 1 << 11,
     /// Upgrade contracts
-    Upgrade            = 1 << 12,
+    Upgrade = 1 << 12,
     /// Emergency pause
-    EmergencyPause     = 1 << 13,
+    EmergencyPause = 1 << 13,
     /// Read-only queries (everyone has this)
-    Query              = 1 << 14,
+    Query = 1 << 14,
 }
 
 /// Packed capability set.
@@ -95,31 +95,48 @@ impl Role {
         use Capability::*;
         let bits = match self {
             Role::Admin => {
-                ManageParams as u64 | ManageRoles as u64 | Upgrade as u64
-                    | EmergencyPause as u64 | Query as u64 | Transfer as u64
-                    | Propose as u64 | Vote as u64
+                ManageParams as u64
+                    | ManageRoles as u64
+                    | Upgrade as u64
+                    | EmergencyPause as u64
+                    | Query as u64
+                    | Transfer as u64
+                    | Propose as u64
+                    | Vote as u64
             }
             Role::Operator => {
-                SubmitCommit as u64 | SubmitCheckpoint as u64 | Stake as u64
-                    | Unstake as u64 | Transfer as u64 | Vote as u64 | Query as u64
+                SubmitCommit as u64
+                    | SubmitCheckpoint as u64
+                    | Stake as u64
+                    | Unstake as u64
+                    | Transfer as u64
+                    | Vote as u64
+                    | Query as u64
             }
             Role::Provider => {
-                SubmitCommit as u64 | RegisterModel as u64 | Stake as u64
-                    | Unstake as u64 | ScheduleJob as u64 | Transfer as u64
-                    | Vote as u64 | Query as u64
+                SubmitCommit as u64
+                    | RegisterModel as u64
+                    | Stake as u64
+                    | Unstake as u64
+                    | ScheduleJob as u64
+                    | Transfer as u64
+                    | Vote as u64
+                    | Query as u64
             }
-            Role::Challenger => {
-                Challenge as u64 | Stake as u64 | Transfer as u64 | Query as u64
-            }
-            Role::Observer => {
-                Transfer as u64 | Vote as u64 | Query as u64
-            }
+            Role::Challenger => Challenge as u64 | Stake as u64 | Transfer as u64 | Query as u64,
+            Role::Observer => Transfer as u64 | Vote as u64 | Query as u64,
         };
         CapabilitySet(bits)
     }
 
     pub fn all() -> &'static [Role] {
-        &[Role::Admin, Role::Operator, Role::Provider, Role::Challenger, Role::Observer]
+        &[
+            Role::Admin,
+            Role::Operator,
+            Role::Provider,
+            Role::Challenger,
+            Role::Observer,
+        ]
     }
 }
 
@@ -155,7 +172,10 @@ pub struct AccessControl {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AccessError {
     /// Missing required capability.
-    Denied { required: &'static str, address: Address },
+    Denied {
+        required: &'static str,
+        address: Address,
+    },
     /// System is paused (only Admin can act).
     Paused,
     /// Cannot grant role without ManageRoles capability.
@@ -171,7 +191,9 @@ pub enum AccessError {
 impl std::fmt::Display for AccessError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Denied { required, address } => write!(f, "{address} lacks capability: {required}"),
+            Self::Denied { required, address } => {
+                write!(f, "{address} lacks capability: {required}")
+            }
             Self::Paused => write!(f, "protocol is paused"),
             Self::Unauthorized => write!(f, "unauthorized to manage roles"),
             Self::AlreadyGranted => write!(f, "role already granted"),
@@ -194,12 +216,15 @@ impl AccessControl {
     /// Bootstrap with genesis admin.
     pub fn with_admin(admin: Address) -> Self {
         let mut ac = Self::new();
-        ac.grants.insert(admin, vec![RoleGrant {
-            role: Role::Admin,
-            granted_by: admin,
-            granted_at: 0,
-            expires_at: 0,
-        }]);
+        ac.grants.insert(
+            admin,
+            vec![RoleGrant {
+                role: Role::Admin,
+                granted_by: admin,
+                granted_at: 0,
+                expires_at: 0,
+            }],
+        );
         ac
     }
 
@@ -227,7 +252,12 @@ impl AccessControl {
     }
 
     /// Check if address has a specific capability. Respects pause state.
-    pub fn check(&self, addr: &Address, cap: Capability, cap_name: &'static str) -> Result<(), AccessError> {
+    pub fn check(
+        &self,
+        addr: &Address,
+        cap: Capability,
+        cap_name: &'static str,
+    ) -> Result<(), AccessError> {
         if self.paused {
             // Only admin can operate during pause
             let caps = self.effective_capabilities(addr);
@@ -240,7 +270,10 @@ impl AccessControl {
         if caps.has(cap) {
             Ok(())
         } else {
-            Err(AccessError::Denied { required: cap_name, address: *addr })
+            Err(AccessError::Denied {
+                required: cap_name,
+                address: *addr,
+            })
         }
     }
 
@@ -255,7 +288,10 @@ impl AccessControl {
         self.check(granter, Capability::ManageRoles, "ManageRoles")?;
 
         let grants = self.grants.entry(*target).or_default();
-        if grants.iter().any(|g| g.role == role && !g.is_expired(self.current_epoch)) {
+        if grants
+            .iter()
+            .any(|g| g.role == role && !g.is_expired(self.current_epoch))
+        {
             return Err(AccessError::AlreadyGranted);
         }
 
@@ -281,7 +317,10 @@ impl AccessControl {
             return Err(AccessError::SelfRevoke);
         }
 
-        let grants = self.grants.get_mut(target).ok_or(AccessError::RoleNotFound)?;
+        let grants = self
+            .grants
+            .get_mut(target)
+            .ok_or(AccessError::RoleNotFound)?;
         let before = grants.len();
         grants.retain(|g| g.role != role);
         if grants.len() == before {
@@ -323,11 +362,14 @@ impl AccessControl {
 
     /// List active roles for an address.
     pub fn roles(&self, addr: &Address) -> Vec<Role> {
-        self.grants.get(addr)
-            .map(|gs| gs.iter()
-                .filter(|g| !g.is_expired(self.current_epoch))
-                .map(|g| g.role)
-                .collect())
+        self.grants
+            .get(addr)
+            .map(|gs| {
+                gs.iter()
+                    .filter(|g| !g.is_expired(self.current_epoch))
+                    .map(|g| g.role)
+                    .collect()
+            })
             .unwrap_or_default()
     }
 
@@ -344,12 +386,24 @@ impl AccessControl {
 mod tests {
     use super::*;
 
-    fn admin() -> Address { Address::test(1) }
-    fn operator() -> Address { Address::test(2) }
-    fn provider() -> Address { Address::test(3) }
-    fn challenger() -> Address { Address::test(4) }
-    fn observer() -> Address { Address::test(5) }
-    fn nobody() -> Address { Address::test(99) }
+    fn admin() -> Address {
+        Address::test(1)
+    }
+    fn operator() -> Address {
+        Address::test(2)
+    }
+    fn provider() -> Address {
+        Address::test(3)
+    }
+    fn challenger() -> Address {
+        Address::test(4)
+    }
+    fn observer() -> Address {
+        Address::test(5)
+    }
+    fn nobody() -> Address {
+        Address::test(99)
+    }
 
     #[test]
     fn test_capability_set_operations() {
@@ -397,15 +451,21 @@ mod tests {
     #[test]
     fn test_grant_and_check_role() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &operator(), Role::Operator, 0).unwrap();
-        assert!(ac.check(&operator(), Capability::SubmitCommit, "SubmitCommit").is_ok());
-        assert!(ac.check(&operator(), Capability::ManageRoles, "ManageRoles").is_err());
+        ac.grant_role(&admin(), &operator(), Role::Operator, 0)
+            .unwrap();
+        assert!(ac
+            .check(&operator(), Capability::SubmitCommit, "SubmitCommit")
+            .is_ok());
+        assert!(ac
+            .check(&operator(), Capability::ManageRoles, "ManageRoles")
+            .is_err());
     }
 
     #[test]
     fn test_unauthorized_grant() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &operator(), Role::Operator, 0).unwrap();
+        ac.grant_role(&admin(), &operator(), Role::Operator, 0)
+            .unwrap();
         // Operator can't grant roles
         let err = ac.grant_role(&operator(), &provider(), Role::Provider, 0);
         assert!(matches!(err, Err(AccessError::Denied { .. })));
@@ -414,7 +474,8 @@ mod tests {
     #[test]
     fn test_duplicate_grant() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &operator(), Role::Operator, 0).unwrap();
+        ac.grant_role(&admin(), &operator(), Role::Operator, 0)
+            .unwrap();
         let err = ac.grant_role(&admin(), &operator(), Role::Operator, 0);
         assert_eq!(err, Err(AccessError::AlreadyGranted));
     }
@@ -422,10 +483,16 @@ mod tests {
     #[test]
     fn test_revoke_role() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &provider(), Role::Provider, 0).unwrap();
-        assert!(ac.check(&provider(), Capability::SubmitCommit, "SubmitCommit").is_ok());
-        ac.revoke_role(&admin(), &provider(), Role::Provider).unwrap();
-        assert!(ac.check(&provider(), Capability::SubmitCommit, "SubmitCommit").is_err());
+        ac.grant_role(&admin(), &provider(), Role::Provider, 0)
+            .unwrap();
+        assert!(ac
+            .check(&provider(), Capability::SubmitCommit, "SubmitCommit")
+            .is_ok());
+        ac.revoke_role(&admin(), &provider(), Role::Provider)
+            .unwrap();
+        assert!(ac
+            .check(&provider(), Capability::SubmitCommit, "SubmitCommit")
+            .is_err());
     }
 
     #[test]
@@ -438,40 +505,60 @@ mod tests {
     #[test]
     fn test_role_expiry() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &operator(), Role::Operator, 100).unwrap();
-        assert!(ac.check(&operator(), Capability::SubmitCommit, "SubmitCommit").is_ok());
+        ac.grant_role(&admin(), &operator(), Role::Operator, 100)
+            .unwrap();
+        assert!(ac
+            .check(&operator(), Capability::SubmitCommit, "SubmitCommit")
+            .is_ok());
         ac.set_epoch(100);
-        assert!(ac.check(&operator(), Capability::SubmitCommit, "SubmitCommit").is_err());
+        assert!(ac
+            .check(&operator(), Capability::SubmitCommit, "SubmitCommit")
+            .is_err());
     }
 
     #[test]
     fn test_pause_blocks_non_admin() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &provider(), Role::Provider, 0).unwrap();
+        ac.grant_role(&admin(), &provider(), Role::Provider, 0)
+            .unwrap();
         ac.pause(&admin()).unwrap();
-        assert!(ac.check(&provider(), Capability::SubmitCommit, "SubmitCommit").is_err());
-        assert!(ac.check(&admin(), Capability::ManageRoles, "ManageRoles").is_ok());
+        assert!(ac
+            .check(&provider(), Capability::SubmitCommit, "SubmitCommit")
+            .is_err());
+        assert!(ac
+            .check(&admin(), Capability::ManageRoles, "ManageRoles")
+            .is_ok());
         ac.unpause(&admin()).unwrap();
-        assert!(ac.check(&provider(), Capability::SubmitCommit, "SubmitCommit").is_ok());
+        assert!(ac
+            .check(&provider(), Capability::SubmitCommit, "SubmitCommit")
+            .is_ok());
     }
 
     #[test]
     fn test_capability_override() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &observer(), Role::Observer, 0).unwrap();
-        assert!(ac.check(&observer(), Capability::Challenge, "Challenge").is_err());
-        ac.grant_capability_override(&admin(), &observer(), Capability::Challenge).unwrap();
-        assert!(ac.check(&observer(), Capability::Challenge, "Challenge").is_ok());
+        ac.grant_role(&admin(), &observer(), Role::Observer, 0)
+            .unwrap();
+        assert!(ac
+            .check(&observer(), Capability::Challenge, "Challenge")
+            .is_err());
+        ac.grant_capability_override(&admin(), &observer(), Capability::Challenge)
+            .unwrap();
+        assert!(ac
+            .check(&observer(), Capability::Challenge, "Challenge")
+            .is_ok());
     }
 
     #[test]
     fn test_multi_role_union() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &operator(), Role::Operator, 0).unwrap();
-        ac.grant_role(&admin(), &operator(), Role::Challenger, 0).unwrap();
+        ac.grant_role(&admin(), &operator(), Role::Operator, 0)
+            .unwrap();
+        ac.grant_role(&admin(), &operator(), Role::Challenger, 0)
+            .unwrap();
         let caps = ac.effective_capabilities(&operator());
-        assert!(caps.has(Capability::SubmitCommit));    // from Operator
-        assert!(caps.has(Capability::Challenge));         // from Challenger
+        assert!(caps.has(Capability::SubmitCommit)); // from Operator
+        assert!(caps.has(Capability::Challenge)); // from Challenger
         assert!(caps.has(Capability::SubmitCheckpoint)); // from Operator
     }
 
@@ -485,7 +572,8 @@ mod tests {
     #[test]
     fn test_gc_expired() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &operator(), Role::Operator, 50).unwrap();
+        ac.grant_role(&admin(), &operator(), Role::Operator, 50)
+            .unwrap();
         ac.set_epoch(50);
         assert!(ac.roles(&operator()).is_empty());
         ac.gc_expired();
@@ -495,8 +583,10 @@ mod tests {
     #[test]
     fn test_roles_listing() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &provider(), Role::Provider, 0).unwrap();
-        ac.grant_role(&admin(), &provider(), Role::Challenger, 0).unwrap();
+        ac.grant_role(&admin(), &provider(), Role::Provider, 0)
+            .unwrap();
+        ac.grant_role(&admin(), &provider(), Role::Challenger, 0)
+            .unwrap();
         let roles = ac.roles(&provider());
         assert_eq!(roles.len(), 2);
         assert!(roles.contains(&Role::Provider));
@@ -506,7 +596,8 @@ mod tests {
     #[test]
     fn test_pause_requires_capability() {
         let mut ac = AccessControl::with_admin(admin());
-        ac.grant_role(&admin(), &operator(), Role::Operator, 0).unwrap();
+        ac.grant_role(&admin(), &operator(), Role::Operator, 0)
+            .unwrap();
         let err = ac.pause(&operator());
         assert!(matches!(err, Err(AccessError::Denied { .. })));
     }

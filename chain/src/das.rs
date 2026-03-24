@@ -226,10 +226,7 @@ impl DasEngine {
         blob_id: BlobId,
         randomness: &Hash,
     ) -> Result<SampleChallenge, &'static str> {
-        let commitment = self
-            .commitments
-            .get(&blob_id)
-            .ok_or("blob not found")?;
+        let commitment = self.commitments.get(&blob_id).ok_or("blob not found")?;
         if commitment.status != DasStatus::Pending {
             return Err("blob not in pending state");
         }
@@ -243,8 +240,8 @@ impl DasEngine {
             h.update(round.to_le_bytes());
             h.update(i.to_le_bytes());
             let hash: [u8; 32] = h.finalize().into();
-            let idx = u64::from_le_bytes(hash[..8].try_into().unwrap()) as usize
-                % commitment.chunk_count;
+            let idx =
+                u64::from_le_bytes(hash[..8].try_into().unwrap()) as usize % commitment.chunk_count;
             indices.push(idx);
         }
 
@@ -266,10 +263,7 @@ impl DasEngine {
         round: u32,
         proofs: &[ChunkProof],
     ) -> Result<(), &'static str> {
-        let commitment = self
-            .commitments
-            .get(&blob_id)
-            .ok_or("blob not found")?;
+        let commitment = self.commitments.get(&blob_id).ok_or("blob not found")?;
         if commitment.status != DasStatus::Pending {
             return Err("blob not in pending state");
         }
@@ -356,9 +350,7 @@ impl DasEngine {
 
 /// Prepare erasure-coded blob from raw data chunks.
 /// Returns (BlobId, data_root, all_chunks, merkle_layers) for use in proofs.
-pub fn prepare_blob(
-    original_chunks: &[Vec<u8>],
-) -> (BlobId, Hash, Vec<Vec<u8>>, Vec<Vec<Hash>>) {
+pub fn prepare_blob(original_chunks: &[Vec<u8>]) -> (BlobId, Hash, Vec<Vec<u8>>, Vec<Vec<Hash>>) {
     let all_chunks = erasure_encode(original_chunks);
     let leaf_hashes: Vec<Hash> = all_chunks
         .iter()
@@ -648,8 +640,12 @@ mod tests {
         let (id1, root1, chunks1, layers1) = prepare_blob(&orig1);
         let (id2, root2, chunks2, _) = prepare_blob(&orig2);
 
-        engine.submit_commitment(id1, Address::test(1), root1, chunks1.len()).unwrap();
-        engine.submit_commitment(id2, Address::test(2), root2, chunks2.len()).unwrap();
+        engine
+            .submit_commitment(id1, Address::test(1), root1, chunks1.len())
+            .unwrap();
+        engine
+            .submit_commitment(id2, Address::test(2), root2, chunks2.len())
+            .unwrap();
 
         // Confirm blob1, let blob2 expire
         for seed in 0..REQUIRED_ROUNDS as u8 {
@@ -664,8 +660,14 @@ mod tests {
         engine.set_epoch(RESPONSE_WINDOW + 2);
         engine.process_expired();
 
-        assert_eq!(engine.get_commitment(&id1).unwrap().status, DasStatus::Confirmed);
-        assert_eq!(engine.get_commitment(&id2).unwrap().status, DasStatus::Failed);
+        assert_eq!(
+            engine.get_commitment(&id1).unwrap().status,
+            DasStatus::Confirmed
+        );
+        assert_eq!(
+            engine.get_commitment(&id2).unwrap().status,
+            DasStatus::Failed
+        );
         assert_eq!(engine.get_penalty(&Address::test(1)), 0);
         assert_eq!(engine.get_penalty(&Address::test(2)), DAS_PENALTY);
     }

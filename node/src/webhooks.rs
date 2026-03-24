@@ -198,7 +198,12 @@ pub struct HttpResponse {
 
 /// Pluggable HTTP client trait for delivery.
 pub trait HttpClient: Send + Sync {
-    fn post(&self, url: &str, body: &str, headers: &HashMap<String, String>) -> Result<HttpResponse, String>;
+    fn post(
+        &self,
+        url: &str,
+        body: &str,
+        headers: &HashMap<String, String>,
+    ) -> Result<HttpResponse, String>;
 }
 
 /// Mock HTTP client for testing.
@@ -212,7 +217,11 @@ impl MockHttpClient {
     pub fn new() -> Self {
         Self {
             responses: Arc::new(Mutex::new(HashMap::new())),
-            default_response: HttpResponse { status_code: 200, body: "OK".into(), latency_ms: 10 },
+            default_response: HttpResponse {
+                status_code: 200,
+                body: "OK".into(),
+                latency_ms: 10,
+            },
             call_log: Arc::new(Mutex::new(Vec::new())),
         }
     }
@@ -220,7 +229,11 @@ impl MockHttpClient {
     pub fn with_default(status: u16) -> Self {
         Self {
             responses: Arc::new(Mutex::new(HashMap::new())),
-            default_response: HttpResponse { status_code: status, body: String::new(), latency_ms: 10 },
+            default_response: HttpResponse {
+                status_code: status,
+                body: String::new(),
+                latency_ms: 10,
+            },
             call_log: Arc::new(Mutex::new(Vec::new())),
         }
     }
@@ -240,8 +253,16 @@ impl MockHttpClient {
 }
 
 impl HttpClient for MockHttpClient {
-    fn post(&self, url: &str, body: &str, headers: &HashMap<String, String>) -> Result<HttpResponse, String> {
-        self.call_log.lock().unwrap().push((url.to_string(), body.to_string(), headers.clone()));
+    fn post(
+        &self,
+        url: &str,
+        body: &str,
+        headers: &HashMap<String, String>,
+    ) -> Result<HttpResponse, String> {
+        self.call_log
+            .lock()
+            .unwrap()
+            .push((url.to_string(), body.to_string(), headers.clone()));
         let mut map = self.responses.lock().unwrap();
         if let Some(queue) = map.get_mut(url) {
             if !queue.is_empty() {
@@ -261,7 +282,7 @@ pub struct WebhookEngine<C: HttpClient> {
     retry_config: RetryConfig,
     client: Arc<C>,
     delivery_counter: u64,
-    now_ms: u64, // Simulated clock for deterministic testing
+    now_ms: u64,                              // Simulated clock for deterministic testing
     seen_delivery_ids: HashMap<String, bool>, // Deduplication
 }
 
@@ -301,7 +322,10 @@ impl<C: HttpClient> WebhookEngine<C> {
 
     /// Remove a webhook endpoint.
     pub fn remove_endpoint(&mut self, id: &str) -> Result<(), String> {
-        self.endpoints.remove(id).map(|_| ()).ok_or_else(|| "Endpoint not found".into())
+        self.endpoints
+            .remove(id)
+            .map(|_| ())
+            .ok_or_else(|| "Endpoint not found".into())
     }
 
     /// Get a registered endpoint.
@@ -317,7 +341,9 @@ impl<C: HttpClient> WebhookEngine<C> {
     /// Emit an event — creates delivery tasks for all matching endpoints.
     pub fn emit_event(&mut self, event: WebhookEvent) -> Vec<String> {
         let mut delivery_ids = Vec::new();
-        let matching: Vec<WebhookEndpoint> = self.endpoints.values()
+        let matching: Vec<WebhookEndpoint> = self
+            .endpoints
+            .values()
             .filter(|ep| ep.enabled && ep.events.contains(&event.event_type))
             .cloned()
             .collect();
@@ -437,7 +463,10 @@ impl<C: HttpClient> WebhookEngine<C> {
         let mut headers = HashMap::new();
         headers.insert("Content-Type".into(), "application/json".into());
         headers.insert("X-Prova-Signature".into(), signature);
-        headers.insert("X-Prova-Event".into(), task.event.event_type.as_str().to_string());
+        headers.insert(
+            "X-Prova-Event".into(),
+            task.event.event_type.as_str().to_string(),
+        );
         headers.insert("X-Prova-Delivery".into(), task.delivery_id.clone());
         headers.insert("X-Prova-Timestamp".into(), task.event.timestamp.to_string());
 
@@ -521,7 +550,10 @@ impl<C: HttpClient> WebhookEngine<C> {
 
     /// Replay a dead-lettered event (re-enqueue for delivery).
     pub fn replay_dead_letter(&mut self, delivery_id: &str) -> Result<String, String> {
-        let idx = self.dead_letters.iter().position(|dl| dl.delivery_id == delivery_id)
+        let idx = self
+            .dead_letters
+            .iter()
+            .position(|dl| dl.delivery_id == delivery_id)
             .ok_or_else(|| "Not found in dead-letter queue".to_string())?;
         let entry = self.dead_letters.remove(idx);
         self.seen_delivery_ids.remove(&entry.delivery_id);
@@ -593,7 +625,11 @@ mod tests {
     fn test_register_and_list_endpoints() {
         let client = Arc::new(MockHttpClient::new());
         let mut engine = WebhookEngine::new(client, RetryConfig::default());
-        let ep = make_endpoint("ep1", "https://example.com/hook", vec![EventType::JobCompleted]);
+        let ep = make_endpoint(
+            "ep1",
+            "https://example.com/hook",
+            vec![EventType::JobCompleted],
+        );
         engine.register_endpoint(ep).unwrap();
         assert_eq!(engine.list_endpoints().len(), 1);
         assert!(engine.get_endpoint("ep1").is_some());
@@ -619,7 +655,11 @@ mod tests {
     fn test_remove_endpoint() {
         let client = Arc::new(MockHttpClient::new());
         let mut engine = WebhookEngine::new(client, RetryConfig::default());
-        let ep = make_endpoint("ep1", "https://example.com/hook", vec![EventType::JobCompleted]);
+        let ep = make_endpoint(
+            "ep1",
+            "https://example.com/hook",
+            vec![EventType::JobCompleted],
+        );
         engine.register_endpoint(ep).unwrap();
         engine.remove_endpoint("ep1").unwrap();
         assert!(engine.get_endpoint("ep1").is_none());
@@ -630,14 +670,21 @@ mod tests {
     fn test_successful_delivery() {
         let client = Arc::new(MockHttpClient::new());
         let mut engine = WebhookEngine::new(client.clone(), RetryConfig::default());
-        let ep = make_endpoint("ep1", "https://example.com/hook", vec![EventType::JobCompleted]);
+        let ep = make_endpoint(
+            "ep1",
+            "https://example.com/hook",
+            vec![EventType::JobCompleted],
+        );
         engine.register_endpoint(ep).unwrap();
 
         let ids = engine.emit_event(make_event(EventType::JobCompleted));
         assert_eq!(ids.len(), 1);
 
         engine.process_next();
-        assert_eq!(engine.delivery_status(&ids[0]), Some(DeliveryStatus::Delivered));
+        assert_eq!(
+            engine.delivery_status(&ids[0]),
+            Some(DeliveryStatus::Delivered)
+        );
         assert_eq!(client.call_count(), 1);
     }
 
@@ -647,16 +694,28 @@ mod tests {
         let payload = r#"{"test": true}"#;
         let sig = WebhookEngine::<MockHttpClient>::sign_payload(secret, payload);
         assert!(sig.starts_with("sha256="));
-        assert!(WebhookEngine::<MockHttpClient>::verify_signature(secret, payload, &sig));
-        assert!(!WebhookEngine::<MockHttpClient>::verify_signature(secret, "tampered", &sig));
-        assert!(!WebhookEngine::<MockHttpClient>::verify_signature(b"wrong-key", payload, &sig));
+        assert!(WebhookEngine::<MockHttpClient>::verify_signature(
+            secret, payload, &sig
+        ));
+        assert!(!WebhookEngine::<MockHttpClient>::verify_signature(
+            secret, "tampered", &sig
+        ));
+        assert!(!WebhookEngine::<MockHttpClient>::verify_signature(
+            b"wrong-key",
+            payload,
+            &sig
+        ));
     }
 
     #[test]
     fn test_signature_in_delivery_headers() {
         let client = Arc::new(MockHttpClient::new());
         let mut engine = WebhookEngine::new(client.clone(), RetryConfig::default());
-        let ep = make_endpoint("ep1", "https://example.com/hook", vec![EventType::JobCompleted]);
+        let ep = make_endpoint(
+            "ep1",
+            "https://example.com/hook",
+            vec![EventType::JobCompleted],
+        );
         engine.register_endpoint(ep).unwrap();
 
         engine.emit_event(make_event(EventType::JobCompleted));
@@ -674,9 +733,16 @@ mod tests {
     #[test]
     fn test_retry_on_failure() {
         let client = Arc::new(MockHttpClient::with_default(500));
-        let config = RetryConfig { max_retries: 3, ..Default::default() };
+        let config = RetryConfig {
+            max_retries: 3,
+            ..Default::default()
+        };
         let mut engine = WebhookEngine::new(client.clone(), config);
-        let ep = make_endpoint("ep1", "https://example.com/hook", vec![EventType::JobCompleted]);
+        let ep = make_endpoint(
+            "ep1",
+            "https://example.com/hook",
+            vec![EventType::JobCompleted],
+        );
         engine.register_endpoint(ep).unwrap();
 
         let ids = engine.emit_event(make_event(EventType::JobCompleted));
@@ -684,7 +750,10 @@ mod tests {
 
         // Should have attempted 3 times then failed
         assert_eq!(client.call_count(), 3);
-        assert_eq!(engine.delivery_status(&ids[0]), Some(DeliveryStatus::DeadLettered));
+        assert_eq!(
+            engine.delivery_status(&ids[0]),
+            Some(DeliveryStatus::DeadLettered)
+        );
         assert_eq!(engine.dead_letter_queue().len(), 1);
     }
 
@@ -692,20 +761,44 @@ mod tests {
     fn test_retry_then_success() {
         let client = Arc::new(MockHttpClient::with_default(200));
         // First two calls fail, third succeeds
-        client.enqueue_response("https://example.com/hook", HttpResponse { status_code: 503, body: "".into(), latency_ms: 5 });
-        client.enqueue_response("https://example.com/hook", HttpResponse { status_code: 502, body: "".into(), latency_ms: 5 });
+        client.enqueue_response(
+            "https://example.com/hook",
+            HttpResponse {
+                status_code: 503,
+                body: "".into(),
+                latency_ms: 5,
+            },
+        );
+        client.enqueue_response(
+            "https://example.com/hook",
+            HttpResponse {
+                status_code: 502,
+                body: "".into(),
+                latency_ms: 5,
+            },
+        );
         // Third call uses default (200)
 
-        let config = RetryConfig { max_retries: 5, ..Default::default() };
+        let config = RetryConfig {
+            max_retries: 5,
+            ..Default::default()
+        };
         let mut engine = WebhookEngine::new(client.clone(), config);
-        let ep = make_endpoint("ep1", "https://example.com/hook", vec![EventType::JobCompleted]);
+        let ep = make_endpoint(
+            "ep1",
+            "https://example.com/hook",
+            vec![EventType::JobCompleted],
+        );
         engine.register_endpoint(ep).unwrap();
 
         let ids = engine.emit_event(make_event(EventType::JobCompleted));
         engine.process_all();
 
         assert_eq!(client.call_count(), 3);
-        assert_eq!(engine.delivery_status(&ids[0]), Some(DeliveryStatus::Delivered));
+        assert_eq!(
+            engine.delivery_status(&ids[0]),
+            Some(DeliveryStatus::Delivered)
+        );
         assert_eq!(engine.dead_letter_queue().len(), 0);
     }
 
@@ -758,9 +851,16 @@ mod tests {
     #[test]
     fn test_dead_letter_replay() {
         let client = Arc::new(MockHttpClient::with_default(500));
-        let config = RetryConfig { max_retries: 1, ..Default::default() };
+        let config = RetryConfig {
+            max_retries: 1,
+            ..Default::default()
+        };
         let mut engine = WebhookEngine::new(client.clone(), config);
-        let ep = make_endpoint("ep1", "https://example.com/hook", vec![EventType::JobCompleted]);
+        let ep = make_endpoint(
+            "ep1",
+            "https://example.com/hook",
+            vec![EventType::JobCompleted],
+        );
         engine.register_endpoint(ep).unwrap();
 
         let ids = engine.emit_event(make_event(EventType::JobCompleted));
@@ -769,7 +869,10 @@ mod tests {
 
         // Now fix the endpoint (switch to 200)
         let client2 = Arc::new(MockHttpClient::new());
-        let config2 = RetryConfig { max_retries: 3, ..Default::default() };
+        let config2 = RetryConfig {
+            max_retries: 3,
+            ..Default::default()
+        };
         // Replay on same engine (endpoint still returns 500, but test the mechanism)
         let new_id = engine.replay_dead_letter(&ids[0]).unwrap();
         assert_eq!(engine.dead_letter_queue().len(), 0);
@@ -803,9 +906,16 @@ mod tests {
         let client = Arc::new(MockHttpClient::new());
         // Override to return errors
         let err_client = Arc::new(ErrorHttpClient);
-        let config = RetryConfig { max_retries: 2, ..Default::default() };
+        let config = RetryConfig {
+            max_retries: 2,
+            ..Default::default()
+        };
         let mut engine = WebhookEngine::new(err_client, config);
-        let ep = make_endpoint("ep1", "https://example.com/hook", vec![EventType::JobCompleted]);
+        let ep = make_endpoint(
+            "ep1",
+            "https://example.com/hook",
+            vec![EventType::JobCompleted],
+        );
         engine.register_endpoint(ep).unwrap();
 
         let ids = engine.emit_event(make_event(EventType::JobCompleted));
@@ -820,7 +930,11 @@ mod tests {
     fn test_stats() {
         let client = Arc::new(MockHttpClient::new());
         let mut engine = WebhookEngine::new(client, RetryConfig::default());
-        let ep = make_endpoint("ep1", "https://a.com", vec![EventType::JobCompleted, EventType::JobFailed]);
+        let ep = make_endpoint(
+            "ep1",
+            "https://a.com",
+            vec![EventType::JobCompleted, EventType::JobFailed],
+        );
         engine.register_endpoint(ep).unwrap();
 
         engine.emit_event(make_event(EventType::JobCompleted));
@@ -838,7 +952,11 @@ mod tests {
     fn test_custom_event_type() {
         let client = Arc::new(MockHttpClient::new());
         let mut engine = WebhookEngine::new(client.clone(), RetryConfig::default());
-        let ep = make_endpoint("ep1", "https://a.com", vec![EventType::Custom("my.custom.event".into())]);
+        let ep = make_endpoint(
+            "ep1",
+            "https://a.com",
+            vec![EventType::Custom("my.custom.event".into())],
+        );
         engine.register_endpoint(ep).unwrap();
 
         let event = WebhookEvent {
@@ -858,7 +976,12 @@ mod tests {
     /// Error-producing HTTP client for testing.
     struct ErrorHttpClient;
     impl HttpClient for ErrorHttpClient {
-        fn post(&self, _url: &str, _body: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, String> {
+        fn post(
+            &self,
+            _url: &str,
+            _body: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, String> {
             Err("Connection refused".into())
         }
     }

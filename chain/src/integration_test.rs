@@ -4,24 +4,26 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::types::Address;
-    use crate::state::StateTrie;
-    use crate::rewards::RewardLedger;
-    use crate::executor::{Executor, Transaction as ExTx, TxKind};
-    use crate::stake::{StakeLedger, SlashReason};
-    use crate::governance::{GovernanceState, ProposalType, ProposalPayload, Vote, ProposalStatus};
     use crate::epoch::ChainState;
+    use crate::executor::{Executor, Transaction as ExTx, TxKind};
+    use crate::governance::{GovernanceState, ProposalPayload, ProposalStatus, ProposalType, Vote};
     use crate::mempool::{self, Mempool, MempoolConfig};
+    use crate::rewards::RewardLedger;
+    use crate::stake::{SlashReason, StakeLedger};
+    use crate::state::StateTrie;
+    use crate::types::Address;
     use std::collections::HashMap;
 
-    fn a(n: u8) -> Address { Address::test(n) }
+    fn a(n: u8) -> Address {
+        Address::test(n)
+    }
 
     #[test]
     fn test_full_chain_lifecycle() {
         // Phase 1: Genesis — set up initial state
         let mut state = StateTrie::new();
         state.set_balance(a(1), 100_000); // provider
-        state.set_balance(a(2), 50_000);  // challenger
+        state.set_balance(a(2), 50_000); // challenger
         state.set_balance(a(3), 100_000); // user
         let treasury = a(99);
         state.set_balance(treasury, 0);
@@ -36,8 +38,15 @@ mod tests {
 
         // Phase 3: Transaction execution
         let mut executor = Executor::new(treasury);
-        let tx = ExTx::new(a(3), 0, TxKind::Transfer { to: a(1), amount: 1_000 })
-            .with_gas(21_000, 1);
+        let tx = ExTx::new(
+            a(3),
+            0,
+            TxKind::Transfer {
+                to: a(1),
+                amount: 1_000,
+            },
+        )
+        .with_gas(21_000, 1);
         let receipt = executor.execute(&mut state, &tx, 0);
         assert!(receipt.success);
         assert_eq!(state.get(&a(1)).balance, 101_000);
@@ -54,15 +63,22 @@ mod tests {
 
         // Phase 5: Governance — change a parameter
         let mut gov = GovernanceState::new();
-        let stakes: HashMap<Address, u128> = vec![
-            (a(1), 20_000), (a(2), 5_000),
-        ].into_iter().collect();
+        let stakes: HashMap<Address, u128> =
+            vec![(a(1), 20_000), (a(2), 5_000)].into_iter().collect();
 
-        let pid = gov.create_proposal(
-            a(1), ProposalType::ParameterChange,
-            ProposalPayload::ParameterChange { key: "block_reward".into(), value: 20 },
-            "Double block reward".into(), 0, &stakes,
-        ).unwrap();
+        let pid = gov
+            .create_proposal(
+                a(1),
+                ProposalType::ParameterChange,
+                ProposalPayload::ParameterChange {
+                    key: "block_reward".into(),
+                    value: 20,
+                },
+                "Double block reward".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
 
         gov.vote(pid, a(1), Vote::Yes).unwrap();
         gov.vote(pid, a(2), Vote::Yes).unwrap();
@@ -85,7 +101,9 @@ mod tests {
         stake_ledger.deposit(a(1), 10_000, 0);
 
         // Slash for lost dispute (10%)
-        let slashed = stake_ledger.slash(&a(1), SlashReason::DisputeLost, 0).unwrap();
+        let slashed = stake_ledger
+            .slash(&a(1), SlashReason::DisputeLost, 0)
+            .unwrap();
         assert_eq!(slashed, 1_000);
 
         let entry = stake_ledger.get(&a(1)).unwrap();
@@ -109,8 +127,15 @@ mod tests {
         let mut executor = Executor::new(a(99));
 
         for i in 0..10u64 {
-            let tx = ExTx::new(a(1), i, TxKind::Transfer { to: a(2), amount: 1_000 })
-                .with_gas(21_000, 1);
+            let tx = ExTx::new(
+                a(1),
+                i,
+                TxKind::Transfer {
+                    to: a(2),
+                    amount: 1_000,
+                },
+            )
+            .with_gas(21_000, 1);
             let receipt = executor.execute(&mut state, &tx, i as usize);
             assert!(receipt.success);
         }
@@ -153,17 +178,23 @@ mod tests {
         let mut gov = GovernanceState::new();
         gov.treasury = 1_000_000;
 
-        let stakes: HashMap<Address, u128> = vec![
-            (a(1), 8_000), (a(2), 2_000),
-        ].into_iter().collect();
+        let stakes: HashMap<Address, u128> =
+            vec![(a(1), 8_000), (a(2), 2_000)].into_iter().collect();
 
-        let pid = gov.create_proposal(
-            a(1), ProposalType::TreasurySpend,
-            ProposalPayload::TreasurySpend {
-                recipient: a(5), amount: 50_000, memo: "dev grant".into(),
-            },
-            "Fund development".into(), 0, &stakes,
-        ).unwrap();
+        let pid = gov
+            .create_proposal(
+                a(1),
+                ProposalType::TreasurySpend,
+                ProposalPayload::TreasurySpend {
+                    recipient: a(5),
+                    amount: 50_000,
+                    memo: "dev grant".into(),
+                },
+                "Fund development".into(),
+                0,
+                &stakes,
+            )
+            .unwrap();
 
         gov.vote(pid, a(1), Vote::Yes).unwrap();
         gov.vote(pid, a(2), Vote::Yes).unwrap();

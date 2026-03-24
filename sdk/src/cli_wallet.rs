@@ -9,8 +9,8 @@
 //   - Address derivation and display
 
 use prova_chain::types::Address;
-use sha2::{Sha256, Digest};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 
 // ── CLI Wallet Errors ──────────────────────────────────────────
@@ -59,9 +59,10 @@ impl SecretKey {
     pub fn from_hex(hex: &str) -> Result<Self, WalletError> {
         let hex = hex.strip_prefix("0x").unwrap_or(hex);
         if hex.len() != 64 {
-            return Err(WalletError::InvalidHexSeed(
-                format!("expected 64 hex chars, got {}", hex.len()),
-            ));
+            return Err(WalletError::InvalidHexSeed(format!(
+                "expected 64 hex chars, got {}",
+                hex.len()
+            )));
         }
         let mut bytes = [0u8; 32];
         for i in 0..32 {
@@ -151,7 +152,9 @@ impl Signature {
     pub fn from_hex(hex: &str) -> Result<Self, WalletError> {
         let hex = hex.strip_prefix("0x").unwrap_or(hex);
         if hex.len() != 128 {
-            return Err(WalletError::SigningError("signature must be 128 hex chars".into()));
+            return Err(WalletError::SigningError(
+                "signature must be 128 hex chars".into(),
+            ));
         }
         let mut bytes = [0u8; 64];
         for i in 0..64 {
@@ -183,7 +186,12 @@ impl KeystoreEntry {
             s
         };
         let mask = Self::derive_mask(password, &salt);
-        let ciphertext: Vec<u8> = secret.0.iter().zip(mask.iter()).map(|(a, b)| a ^ b).collect();
+        let ciphertext: Vec<u8> = secret
+            .0
+            .iter()
+            .zip(mask.iter())
+            .map(|(a, b)| a ^ b)
+            .collect();
         KeystoreEntry {
             version: 1,
             address: format!("{addr}"),
@@ -227,8 +235,7 @@ impl KeystoreEntry {
     }
 
     pub fn from_json(json: &str) -> Result<Self, WalletError> {
-        serde_json::from_str(json)
-            .map_err(|e| WalletError::InvalidKeystoreJson(e.to_string()))
+        serde_json::from_str(json).map_err(|e| WalletError::InvalidKeystoreJson(e.to_string()))
     }
 }
 
@@ -297,7 +304,7 @@ pub struct SignedTransaction {
 
 mod sig_serde {
     use super::Signature;
-    use serde::{self, Deserializer, Serializer, Deserialize};
+    use serde::{self, Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S: Serializer>(sig: &Signature, s: S) -> Result<S::Ok, S::Error> {
         s.serialize_str(&sig.to_hex())
@@ -313,8 +320,7 @@ impl SignedTransaction {
     /// Verify the signature is valid for the embedded transaction.
     pub fn verify(&self) -> bool {
         let hash = self.tx.signing_hash();
-        self.signer.verify(&hash, &self.signature)
-            && self.signer.address() == self.tx.from
+        self.signer.verify(&hash, &self.signature) && self.signer.address() == self.tx.from
     }
 
     /// Serialize to JSON for file storage or broadcast submission.
@@ -325,8 +331,7 @@ impl SignedTransaction {
 
     /// Deserialize from JSON.
     pub fn from_json(json: &str) -> Result<Self, WalletError> {
-        serde_json::from_str(json)
-            .map_err(|e| WalletError::InvalidTransaction(e.to_string()))
+        serde_json::from_str(json).map_err(|e| WalletError::InvalidTransaction(e.to_string()))
     }
 }
 
@@ -391,14 +396,18 @@ impl KeystoreManager {
 
     /// Export a key as encrypted JSON.
     pub fn export_json(&self, address: &str) -> Result<String, WalletError> {
-        let entry = self.entries.get(address)
+        let entry = self
+            .entries
+            .get(address)
             .ok_or_else(|| WalletError::KeyNotFound(address.into()))?;
         entry.to_json()
     }
 
     /// List all addresses with optional labels.
     pub fn list(&self) -> Vec<(String, Option<String>)> {
-        let mut out: Vec<_> = self.entries.iter()
+        let mut out: Vec<_> = self
+            .entries
+            .iter()
             .map(|(addr, e)| (addr.clone(), e.label.clone()))
             .collect();
         out.sort_by(|a, b| a.0.cmp(&b.0));
@@ -407,7 +416,8 @@ impl KeystoreManager {
 
     /// Delete a key by address.
     pub fn delete(&mut self, address: &str) -> Result<(), WalletError> {
-        self.entries.remove(address)
+        self.entries
+            .remove(address)
             .map(|_| ())
             .ok_or_else(|| WalletError::KeyNotFound(address.into()))
     }
@@ -419,7 +429,9 @@ impl KeystoreManager {
         password: &str,
         tx: &OfflineTransaction,
     ) -> Result<SignedTransaction, WalletError> {
-        let entry = self.entries.get(address)
+        let entry = self
+            .entries
+            .get(address)
             .ok_or_else(|| WalletError::KeyNotFound(address.into()))?;
         let sk = entry.decrypt(password)?;
         tx.sign(&sk)
@@ -461,7 +473,9 @@ mod tests {
 
     fn test_seed() -> [u8; 32] {
         let mut s = [0u8; 32];
-        for i in 0..32 { s[i] = i as u8 + 1; }
+        for i in 0..32 {
+            s[i] = i as u8 + 1;
+        }
         s
     }
 
@@ -484,7 +498,10 @@ mod tests {
     #[test]
     fn test_invalid_hex_seed() {
         assert!(SecretKey::from_hex("tooshort").is_err());
-        assert!(SecretKey::from_hex("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz").is_err());
+        assert!(SecretKey::from_hex(
+            "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        )
+        .is_err());
     }
 
     #[test]
@@ -594,7 +611,9 @@ mod tests {
     fn test_manager_import_and_list() {
         let mut mgr = KeystoreManager::new();
         let sk = SecretKey(test_seed());
-        let addr = mgr.import_hex(&sk.to_hex(), "pw", Some("main".into())).unwrap();
+        let addr = mgr
+            .import_hex(&sk.to_hex(), "pw", Some("main".into()))
+            .unwrap();
         let list = mgr.list();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].0, addr);
@@ -663,7 +682,9 @@ mod tests {
     #[test]
     fn test_manager_export_json() {
         let mut mgr = KeystoreManager::new();
-        let addr = mgr.import_passphrase("wallet1", "pw", Some("export-test".into())).unwrap();
+        let addr = mgr
+            .import_passphrase("wallet1", "pw", Some("export-test".into()))
+            .unwrap();
         let json = mgr.export_json(&addr).unwrap();
         assert!(json.contains("export-test"));
         assert!(json.contains(&addr));
@@ -672,8 +693,10 @@ mod tests {
     #[test]
     fn test_manager_save_load_roundtrip() {
         let mut mgr = KeystoreManager::new();
-        mgr.import_passphrase("key1", "pw", Some("first".into())).unwrap();
-        mgr.import_passphrase("key2", "pw", Some("second".into())).unwrap();
+        mgr.import_passphrase("key1", "pw", Some("first".into()))
+            .unwrap();
+        mgr.import_passphrase("key2", "pw", Some("second".into()))
+            .unwrap();
 
         let json = mgr.save_to_json().unwrap();
         let mgr2 = KeystoreManager::load_from_json(&json).unwrap();
@@ -722,14 +745,26 @@ mod tests {
         let sk = SecretKey(test_seed());
         let addr = sk.public_key().address();
         let tx1 = OfflineTransaction {
-            from: addr, nonce: 0, to: Address([0; 20]),
-            value: 0, data: vec![], gas_limit: 21000,
-            max_fee_per_gas: 0, max_priority_fee: 0, chain_id: 1,
+            from: addr,
+            nonce: 0,
+            to: Address([0; 20]),
+            value: 0,
+            data: vec![],
+            gas_limit: 21000,
+            max_fee_per_gas: 0,
+            max_priority_fee: 0,
+            chain_id: 1,
         };
         let tx2 = OfflineTransaction {
-            from: addr, nonce: 0, to: Address([0; 20]),
-            value: 0, data: vec![], gas_limit: 21000,
-            max_fee_per_gas: 0, max_priority_fee: 0, chain_id: 2,
+            from: addr,
+            nonce: 0,
+            to: Address([0; 20]),
+            value: 0,
+            data: vec![],
+            gas_limit: 21000,
+            max_fee_per_gas: 0,
+            max_priority_fee: 0,
+            chain_id: 2,
         };
         assert_ne!(tx1.signing_hash(), tx2.signing_hash());
     }

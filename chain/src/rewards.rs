@@ -77,7 +77,11 @@ impl RewardLedger {
     }
 
     /// Distribute block reward to a producer for the given epoch.
-    pub fn distribute_block_reward(&mut self, producer: Address, epoch: Epoch) -> BlockRewardResult {
+    pub fn distribute_block_reward(
+        &mut self,
+        producer: Address,
+        epoch: Epoch,
+    ) -> BlockRewardResult {
         let total = Self::block_reward_at(epoch);
         if total == 0 {
             return BlockRewardResult {
@@ -135,9 +139,7 @@ impl RewardLedger {
         // Filter to eligible providers (must have minimum stake)
         let eligible: Vec<(Address, u64)> = providers
             .iter()
-            .filter(|(addr, _)| {
-                staked.get(addr).copied().unwrap_or(0) >= MIN_STAKE_FOR_STORAGE
-            })
+            .filter(|(addr, _)| staked.get(addr).copied().unwrap_or(0) >= MIN_STAKE_FOR_STORAGE)
             .copied()
             .collect();
 
@@ -295,7 +297,10 @@ mod tests {
 
         // 30% and 70% (approximately)
         assert_eq!(rewards[0].1, STORAGE_SUBSIDY_PER_EPOCH * 3 / 10);
-        assert_eq!(rewards[1].1, STORAGE_SUBSIDY_PER_EPOCH - STORAGE_SUBSIDY_PER_EPOCH * 3 / 10);
+        assert_eq!(
+            rewards[1].1,
+            STORAGE_SUBSIDY_PER_EPOCH - STORAGE_SUBSIDY_PER_EPOCH * 3 / 10
+        );
     }
 
     #[test]
@@ -305,8 +310,7 @@ mod tests {
             (addr(1), 5_000_000_000u64),
             (addr(2), 5_000_000_000u64), // Not staked
         ];
-        let staked: HashMap<Address, u128> =
-            [(addr(1), MIN_STAKE_FOR_STORAGE)].into();
+        let staked: HashMap<Address, u128> = [(addr(1), MIN_STAKE_FOR_STORAGE)].into();
 
         let rewards = ledger.distribute_storage_subsidies(&providers, &staked);
         assert_eq!(rewards.len(), 1);
@@ -391,8 +395,7 @@ mod tests {
         assert!(after_fee > after_block);
 
         // Storage subsidy
-        let staked: HashMap<Address, u128> =
-            [(provider, MIN_STAKE_FOR_STORAGE)].into();
+        let staked: HashMap<Address, u128> = [(provider, MIN_STAKE_FOR_STORAGE)].into();
         ledger.distribute_storage_subsidies(&[(provider, 1_000_000)], &staked);
         let after_storage = ledger.pending_for(&provider);
         assert!(after_storage > after_fee);

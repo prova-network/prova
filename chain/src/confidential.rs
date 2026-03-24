@@ -36,7 +36,10 @@ pub enum ConfidentialStatus {
     /// Within challenge window, no dispute
     Committed,
     /// Disputed — provider must reveal within REVEAL_WINDOW
-    Disputed { challenger: Address, dispute_epoch: Epoch },
+    Disputed {
+        challenger: Address,
+        dispute_epoch: Epoch,
+    },
     /// Provider revealed plaintext, ready for bisection
     Revealed { plaintext_root: Hash },
     /// Challenge window passed, result finalized privately
@@ -54,7 +57,7 @@ pub struct ConfidentialStore {
 
 /// Hash helper — SHA-256 of concatenated inputs.
 fn hash_concat(a: &[u8], b: &[u8]) -> Hash {
-    use sha2::{Sha256, Digest};
+    use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(a);
     hasher.update(b);
@@ -83,15 +86,18 @@ impl ConfidentialStore {
     ) -> CommitId {
         let id = CommitId(self.next_id);
         self.next_id += 1;
-        self.commits.insert(id, ConfidentialCommit {
+        self.commits.insert(
             id,
-            provider,
-            model_id,
-            encrypted_root,
-            blinding_hash,
-            epoch,
-            status: ConfidentialStatus::Committed,
-        });
+            ConfidentialCommit {
+                id,
+                provider,
+                model_id,
+                encrypted_root,
+                blinding_hash,
+                epoch,
+                status: ConfidentialStatus::Committed,
+            },
+        );
         id
     }
 
@@ -184,7 +190,10 @@ impl ConfidentialStore {
 
     /// Get all commits by provider.
     pub fn by_provider(&self, provider: Address) -> Vec<&ConfidentialCommit> {
-        self.commits.values().filter(|c| c.provider == provider).collect()
+        self.commits
+            .values()
+            .filter(|c| c.provider == provider)
+            .collect()
     }
 }
 
@@ -237,11 +246,17 @@ mod tests {
 
         // Dispute within window
         store.dispute(id, challenger, 105).unwrap();
-        assert!(matches!(store.get(id).unwrap().status, ConfidentialStatus::Disputed { .. }));
+        assert!(matches!(
+            store.get(id).unwrap().status,
+            ConfidentialStatus::Disputed { .. }
+        ));
 
         // Reveal with correct blinding
         store.reveal(id, plaintext, factor, 108).unwrap();
-        assert!(matches!(store.get(id).unwrap().status, ConfidentialStatus::Revealed { .. }));
+        assert!(matches!(
+            store.get(id).unwrap().status,
+            ConfidentialStatus::Revealed { .. }
+        ));
     }
 
     #[test]
@@ -279,7 +294,9 @@ mod tests {
         store.dispute(id, challenger, 105).unwrap();
 
         // Wrong blinding factor
-        let err = store.reveal(id, plaintext, b"wrong-secret", 108).unwrap_err();
+        let err = store
+            .reveal(id, plaintext, b"wrong-secret", 108)
+            .unwrap_err();
         assert_eq!(err, "blinding hash mismatch — invalid reveal");
     }
 
@@ -377,9 +394,15 @@ mod tests {
         store.reveal(id1, plaintext1, factor1, 108).unwrap();
 
         // id2 should still be committable/finalizable
-        assert_eq!(store.get(id2).unwrap().status, ConfidentialStatus::Committed);
+        assert_eq!(
+            store.get(id2).unwrap().status,
+            ConfidentialStatus::Committed
+        );
         store.finalize(111);
-        assert_eq!(store.get(id2).unwrap().status, ConfidentialStatus::Finalized);
+        assert_eq!(
+            store.get(id2).unwrap().status,
+            ConfidentialStatus::Finalized
+        );
     }
 
     #[test]
@@ -404,14 +427,18 @@ mod tests {
     #[test]
     fn test_dispute_nonexistent() {
         let mut store = ConfidentialStore::new();
-        let err = store.dispute(CommitId(999), Address::test(2), 100).unwrap_err();
+        let err = store
+            .dispute(CommitId(999), Address::test(2), 100)
+            .unwrap_err();
         assert_eq!(err, "commit not found");
     }
 
     #[test]
     fn test_reveal_nonexistent() {
         let mut store = ConfidentialStore::new();
-        let err = store.reveal(CommitId(999), test_hash(1), b"x", 100).unwrap_err();
+        let err = store
+            .reveal(CommitId(999), test_hash(1), b"x", 100)
+            .unwrap_err();
         assert_eq!(err, "commit not found");
     }
 }

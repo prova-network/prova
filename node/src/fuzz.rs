@@ -15,9 +15,9 @@
 //! 8. **Large-scale stress** — 1000 txs, no crash
 //! 9. **Rapid seed sweep** — 500 seeds, broad coverage
 
-use prova_chain::types::*;
+use prova_chain::executor::{Executor, Transaction, TxKind};
 use prova_chain::state::StateTrie;
-use prova_chain::executor::{Transaction, TxKind, Executor};
+use prova_chain::types::*;
 
 /// Simple deterministic PRNG (xorshift64) for reproducible fuzz runs.
 struct Rng(u64);
@@ -35,7 +35,9 @@ impl Rng {
     }
 
     fn range(&mut self, lo: u64, hi: u64) -> u64 {
-        if lo >= hi { return lo; }
+        if lo >= hi {
+            return lo;
+        }
         lo + self.next() % (hi - lo)
     }
 
@@ -247,12 +249,16 @@ mod tests {
         for seed in 500..=510 {
             let root1 = {
                 let mut env = FuzzEnv::new(seed, 4);
-                for _ in 0..20 { env.step(); }
+                for _ in 0..20 {
+                    env.step();
+                }
                 env.state.root()
             };
             let root2 = {
                 let mut env = FuzzEnv::new(seed, 4);
-                for _ in 0..20 { env.step(); }
+                for _ in 0..20 {
+                    env.step();
+                }
                 env.state.root()
             };
             assert_eq!(
@@ -272,11 +278,21 @@ mod tests {
             let nonce = env.nonces[0];
             env.nonces[0] += 1;
 
-            let tx = Transaction::new(addr, nonce, TxKind::Transfer { to: addr, amount: 500 });
+            let tx = Transaction::new(
+                addr,
+                nonce,
+                TxKind::Transfer {
+                    to: addr,
+                    amount: 500,
+                },
+            );
             env.exec_tx(&tx);
 
             let after = env.state.get(&addr).balance;
-            assert!(after <= before, "seed={seed}: self-transfer increased balance");
+            assert!(
+                after <= before,
+                "seed={seed}: self-transfer increased balance"
+            );
         }
     }
 
@@ -294,7 +310,10 @@ mod tests {
             }
             for addr in &env.accounts {
                 let bal = env.state.get(addr).balance;
-                assert!(bal < u128::MAX / 2, "seed={seed}: suspiciously large balance — possible underflow");
+                assert!(
+                    bal < u128::MAX / 2,
+                    "seed={seed}: suspiciously large balance — possible underflow"
+                );
             }
         }
     }
@@ -310,7 +329,10 @@ mod tests {
                     let tx = Transaction::new(
                         env.accounts[0],
                         999_999,
-                        TxKind::Transfer { to: env.accounts[1], amount: 100 },
+                        TxKind::Transfer {
+                            to: env.accounts[1],
+                            amount: 100,
+                        },
                     );
                     let r = env.exec_tx(&tx);
                     assert!(!r, "Wrong nonce accepted at i={i}");

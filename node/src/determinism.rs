@@ -135,7 +135,9 @@ impl QuantizedTensor {
         // LCG-based deterministic fill
         let mut state = seed;
         for _ in 0..n {
-            state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
             // Map to [-128, 127] range
             data.push((state >> 33) as i8);
         }
@@ -235,7 +237,8 @@ pub fn simulate_int8_inference(
         // Adjust shape for next matmul if needed
         if i + 1 < weights.len() {
             assert_eq!(
-                current.shape[1], weights[i + 1].shape[0],
+                current.shape[1],
+                weights[i + 1].shape[0],
                 "layer {} output cols must match layer {} weight rows",
                 i,
                 i + 1
@@ -250,10 +253,7 @@ pub fn simulate_int8_inference(
 ///
 /// Simulates INT8 inference on multiple architectures and verifies
 /// that same-ArchGroup runs produce identical activation hashes.
-pub fn cross_arch_determinism_test(
-    layer_count: usize,
-    hidden_dim: u64,
-) -> CrossArchTestResult {
+pub fn cross_arch_determinism_test(layer_count: usize, hidden_dim: u64) -> CrossArchTestResult {
     let quant = QuantParams {
         scale: 0.05,
         zero_point: 0,
@@ -354,7 +354,10 @@ mod tests {
 
     #[test]
     fn test_quantized_tensor_deterministic() {
-        let q = QuantParams { scale: 0.1, zero_point: 0 };
+        let q = QuantParams {
+            scale: 0.1,
+            zero_point: 0,
+        };
         let t1 = QuantizedTensor::from_seed(42, 4, 4, q);
         let t2 = QuantizedTensor::from_seed(42, 4, 4, q);
         assert_eq!(t1.data, t2.data);
@@ -363,7 +366,10 @@ mod tests {
 
     #[test]
     fn test_quantized_tensor_different_seeds() {
-        let q = QuantParams { scale: 0.1, zero_point: 0 };
+        let q = QuantParams {
+            scale: 0.1,
+            zero_point: 0,
+        };
         let t1 = QuantizedTensor::from_seed(42, 4, 4, q);
         let t2 = QuantizedTensor::from_seed(43, 4, 4, q);
         assert_ne!(t1.data, t2.data);
@@ -372,8 +378,14 @@ mod tests {
 
     #[test]
     fn test_int8_gemm_basic() {
-        let q = QuantParams { scale: 1.0, zero_point: 0 };
-        let oq = QuantParams { scale: 1.0, zero_point: 0 };
+        let q = QuantParams {
+            scale: 1.0,
+            zero_point: 0,
+        };
+        let oq = QuantParams {
+            scale: 1.0,
+            zero_point: 0,
+        };
 
         // Identity-like: 2x2 × 2x2
         let a = QuantizedTensor {
@@ -395,8 +407,14 @@ mod tests {
 
     #[test]
     fn test_int8_gemm_accumulation() {
-        let q = QuantParams { scale: 1.0, zero_point: 0 };
-        let oq = QuantParams { scale: 1.0, zero_point: 0 };
+        let q = QuantParams {
+            scale: 1.0,
+            zero_point: 0,
+        };
+        let oq = QuantParams {
+            scale: 1.0,
+            zero_point: 0,
+        };
 
         // [1, 2] × [[3], [4]] = [1*3 + 2*4] = [11]
         let a = QuantizedTensor {
@@ -417,8 +435,14 @@ mod tests {
 
     #[test]
     fn test_int8_gemm_requantization_clamp() {
-        let q = QuantParams { scale: 1.0, zero_point: 0 };
-        let oq = QuantParams { scale: 0.5, zero_point: 0 };
+        let q = QuantParams {
+            scale: 1.0,
+            zero_point: 0,
+        };
+        let oq = QuantParams {
+            scale: 0.5,
+            zero_point: 0,
+        };
 
         // Large accumulation that needs clamping
         let a = QuantizedTensor {
@@ -439,8 +463,14 @@ mod tests {
 
     #[test]
     fn test_int8_gemm_deterministic() {
-        let q = QuantParams { scale: 0.05, zero_point: 0 };
-        let oq = QuantParams { scale: 0.02, zero_point: 0 };
+        let q = QuantParams {
+            scale: 0.05,
+            zero_point: 0,
+        };
+        let oq = QuantParams {
+            scale: 0.02,
+            zero_point: 0,
+        };
 
         let a = QuantizedTensor::from_seed(1, 8, 16, q);
         let b = QuantizedTensor::from_seed(2, 16, 8, q);
@@ -454,8 +484,14 @@ mod tests {
 
     #[test]
     fn test_simulate_int8_inference() {
-        let q = QuantParams { scale: 0.05, zero_point: 0 };
-        let oq = QuantParams { scale: 0.02, zero_point: 0 };
+        let q = QuantParams {
+            scale: 0.05,
+            zero_point: 0,
+        };
+        let oq = QuantParams {
+            scale: 0.02,
+            zero_point: 0,
+        };
 
         let input = QuantizedTensor::from_seed(42, 1, 16, q);
         let weights: Vec<QuantizedTensor> = (0..4)
@@ -477,8 +513,14 @@ mod tests {
 
     #[test]
     fn test_simulate_int8_inference_deterministic() {
-        let q = QuantParams { scale: 0.05, zero_point: 0 };
-        let oq = QuantParams { scale: 0.02, zero_point: 0 };
+        let q = QuantParams {
+            scale: 0.05,
+            zero_point: 0,
+        };
+        let oq = QuantParams {
+            scale: 0.02,
+            zero_point: 0,
+        };
 
         let input = QuantizedTensor::from_seed(42, 1, 16, q);
         let weights: Vec<QuantizedTensor> = (0..4)
@@ -495,7 +537,10 @@ mod tests {
     fn test_cross_arch_determinism_small() {
         let result = cross_arch_determinism_test(4, 16);
 
-        assert!(result.all_match, "all archs should produce identical results with INT32 accum");
+        assert!(
+            result.all_match,
+            "all archs should produce identical results with INT32 accum"
+        );
         assert_eq!(result.arch_count, 5);
         assert_eq!(result.layer_count, 4);
         assert!(result.mismatches.is_empty());
@@ -530,8 +575,14 @@ mod tests {
 
     #[test]
     fn test_merkle_tree_from_int8_activations() {
-        let q = QuantParams { scale: 0.05, zero_point: 0 };
-        let oq = QuantParams { scale: 0.02, zero_point: 0 };
+        let q = QuantParams {
+            scale: 0.05,
+            zero_point: 0,
+        };
+        let oq = QuantParams {
+            scale: 0.02,
+            zero_point: 0,
+        };
 
         let input = QuantizedTensor::from_seed(42, 1, 16, q);
         let weights: Vec<QuantizedTensor> = (0..8)

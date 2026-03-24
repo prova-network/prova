@@ -66,7 +66,13 @@ impl ProvaNode {
     ) -> CommitId {
         let epoch = self.chain.epoch();
         let commit_id = self.chain.commits.publish(
-            provider, model_id, arch.clone(), input_hash, activation_root, leaf_count, epoch,
+            provider,
+            model_id,
+            arch.clone(),
+            input_hash,
+            activation_root,
+            leaf_count,
+            epoch,
         );
         self.seen_commits.push(commit_id);
 
@@ -111,7 +117,9 @@ impl ProvaNode {
                     );
                     self.seen_commits.push(cid);
                 }
-                MessagePayload::NewBlock { epoch, block_hash, .. } => {
+                MessagePayload::NewBlock {
+                    epoch, block_hash, ..
+                } => {
                     self.blocks_applied.push(block_hash);
                     // Advance local chain to match
                     while self.chain.epoch() < epoch {
@@ -309,7 +317,10 @@ mod tests {
 
         // Each node publishes a commit
         for i in 0..5 {
-            h.nodes[i].chain.stakes.deposit(Address::test(i as u8 + 1), 5_000_000, 0);
+            h.nodes[i]
+                .chain
+                .stakes
+                .deposit(Address::test(i as u8 + 1), 5_000_000, 0);
             h.nodes[i].publish_commit(
                 Address::test(i as u8 + 1),
                 ModelId({
@@ -328,7 +339,12 @@ mod tests {
 
         // Each node should have all 5 commits (its own + 4 from others)
         for node in &h.nodes {
-            assert_eq!(node.commit_count(), 5, "Node {} missing commits", node.index);
+            assert_eq!(
+                node.commit_count(),
+                5,
+                "Node {} missing commits",
+                node.index
+            );
         }
     }
 

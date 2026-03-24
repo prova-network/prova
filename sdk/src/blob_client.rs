@@ -12,11 +12,10 @@
 //! let status = client.status(receipt.blob_id)?;
 //! ```
 
-use prova_chain::das::{BlobId, DasStatus, ORIGINAL_CHUNKS, TOTAL_CHUNKS};
 use prova_chain::blob_tx::{
-    BlobTransaction, BlobTxResult, BASE_BLOB_FEE, FEE_PER_CHUNK,
-    MAX_BLOB_SIZE, MIN_BLOB_SIZE,
+    BlobTransaction, BlobTxResult, BASE_BLOB_FEE, FEE_PER_CHUNK, MAX_BLOB_SIZE, MIN_BLOB_SIZE,
 };
+use prova_chain::das::{BlobId, DasStatus, ORIGINAL_CHUNKS, TOTAL_CHUNKS};
 use prova_chain::types::{Address, Epoch, Hash};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -89,7 +88,10 @@ pub struct UploadReceipt {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UploadStatus {
     /// Transaction submitted, awaiting DAS sampling.
-    Pending { rounds_complete: u32, rounds_required: u32 },
+    Pending {
+        rounds_complete: u32,
+        rounds_required: u32,
+    },
     /// DAS confirmed — blob is available.
     Confirmed,
     /// Upload failed (provider didn't serve chunks).
@@ -419,10 +421,7 @@ impl BlobUploadClient {
     }
 
     /// Batch upload multiple data blobs, returning receipts for each.
-    pub fn upload_batch(
-        &mut self,
-        items: &[&[u8]],
-    ) -> Vec<Result<UploadReceipt, BlobUploadError>> {
+    pub fn upload_batch(&mut self, items: &[&[u8]]) -> Vec<Result<UploadReceipt, BlobUploadError>> {
         items.iter().map(|data| self.upload(data)).collect()
     }
 

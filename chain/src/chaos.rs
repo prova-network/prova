@@ -31,7 +31,11 @@ pub enum ChaosAction {
     /// Broadcast a message from a node.
     BroadcastMessage { from: NodeId, msg: NetMessage },
     /// Set link quality between two nodes.
-    SetLink { a: NodeId, b: NodeId, config: LinkConfig },
+    SetLink {
+        a: NodeId,
+        b: NodeId,
+        config: LinkConfig,
+    },
     /// Advance simulation by N ticks.
     Wait(u64),
     /// Assert all alive nodes have the same chain tip.
@@ -126,7 +130,8 @@ impl ChaosScenario {
                     if let Some(node) = sim.nodes.get_mut(id) {
                         node.crash();
                         events.push(ChaosEvent {
-                            tick, step: step_idx,
+                            tick,
+                            step: step_idx,
                             action: "crash".into(),
                             detail: format!("node {} crashed", id),
                         });
@@ -136,13 +141,18 @@ impl ChaosScenario {
                     if let Some(node) = sim.nodes.get_mut(id) {
                         node.restart();
                         events.push(ChaosEvent {
-                            tick, step: step_idx,
+                            tick,
+                            step: step_idx,
                             action: "restart".into(),
                             detail: format!("node {} restarted", id),
                         });
                     }
                 }
-                ChaosAction::Partition { group_a, group_b, duration_ticks } => {
+                ChaosAction::Partition {
+                    group_a,
+                    group_b,
+                    duration_ticks,
+                } => {
                     sim.add_partition(Partition {
                         group_a: group_a.clone(),
                         group_b: group_b.clone(),
@@ -151,16 +161,20 @@ impl ChaosScenario {
                     });
                     partition_counter += 1;
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "partition".into(),
-                        detail: format!("partition #{}: {:?} | {:?} for {} ticks",
-                            partition_counter, group_a, group_b, duration_ticks),
+                        detail: format!(
+                            "partition #{}: {:?} | {:?} for {} ticks",
+                            partition_counter, group_a, group_b, duration_ticks
+                        ),
                     });
                 }
                 ChaosAction::HealAll => {
                     sim.partitions.clear();
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "heal".into(),
                         detail: "all partitions removed".into(),
                     });
@@ -168,7 +182,8 @@ impl ChaosScenario {
                 ChaosAction::ProduceBlock { producer, height } => {
                     sim.produce_block(*producer, *height);
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "block".into(),
                         detail: format!("node {} produced block {}", producer, height),
                     });
@@ -176,7 +191,8 @@ impl ChaosScenario {
                 ChaosAction::BroadcastMessage { from, msg } => {
                     sim.broadcast(*from, msg.clone());
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "broadcast".into(),
                         detail: format!("node {} broadcast {:?}", from, msg),
                     });
@@ -184,7 +200,8 @@ impl ChaosScenario {
                 ChaosAction::SetLink { a, b, config } => {
                     sim.set_link(*a, *b, config.clone());
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "link".into(),
                         detail: format!("link {}↔{} set to {:?}", a, b, config.delivery),
                     });
@@ -192,13 +209,16 @@ impl ChaosScenario {
                 ChaosAction::Wait(ticks) => {
                     sim.run(*ticks);
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "wait".into(),
                         detail: format!("advanced {} ticks (now at {})", ticks, sim.tick),
                     });
                 }
                 ChaosAction::AssertConverged => {
-                    let tips: Vec<u64> = sim.nodes.values()
+                    let tips: Vec<u64> = sim
+                        .nodes
+                        .values()
                         .filter(|n| !n.crashed)
                         .map(|n| n.chain_tip)
                         .collect();
@@ -213,7 +233,9 @@ impl ChaosScenario {
                     }
                     let first = tips[0];
                     if !tips.iter().all(|t| *t == first) {
-                        let tip_map: HashMap<NodeId, u64> = sim.nodes.iter()
+                        let tip_map: HashMap<NodeId, u64> = sim
+                            .nodes
+                            .iter()
                             .filter(|(_, n)| !n.crashed)
                             .map(|(id, n)| (*id, n.chain_tip))
                             .collect();
@@ -221,12 +243,16 @@ impl ChaosScenario {
                             success: false,
                             steps_executed: step_idx,
                             events,
-                            failure: Some(format!("convergence assert failed: tips = {:?}", tip_map)),
+                            failure: Some(format!(
+                                "convergence assert failed: tips = {:?}",
+                                tip_map
+                            )),
                             final_stats: sim.run(0),
                         };
                     }
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "assert".into(),
                         detail: format!("converged at tip {}", first),
                     });
@@ -238,13 +264,17 @@ impl ChaosScenario {
                                 success: false,
                                 steps_executed: step_idx,
                                 events,
-                                failure: Some(format!("min-tip assert: node {} at tip {} < {}", id, node.chain_tip, min)),
+                                failure: Some(format!(
+                                    "min-tip assert: node {} at tip {} < {}",
+                                    id, node.chain_tip, min
+                                )),
                                 final_stats: sim.run(0),
                             };
                         }
                     }
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "assert".into(),
                         detail: format!("all alive nodes at tip >= {}", min),
                     });
@@ -261,19 +291,23 @@ impl ChaosScenario {
                         };
                     }
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "assert".into(),
                         detail: format!("{} nodes alive (>= {})", alive, min),
                     });
                 }
                 ChaosAction::AssertMaxDivergence(max_div) => {
-                    let tips: Vec<u64> = sim.nodes.values()
+                    let tips: Vec<u64> = sim
+                        .nodes
+                        .values()
                         .filter(|n| !n.crashed)
                         .map(|n| n.chain_tip)
                         .collect();
                     if tips.is_empty() {
                         events.push(ChaosEvent {
-                            tick, step: step_idx,
+                            tick,
+                            step: step_idx,
                             action: "assert".into(),
                             detail: "no alive nodes, divergence trivially 0".into(),
                         });
@@ -286,12 +320,16 @@ impl ChaosScenario {
                                 success: false,
                                 steps_executed: step_idx,
                                 events,
-                                failure: Some(format!("max-divergence assert: {} > {} (tips: {:?})", div, max_div, tips)),
+                                failure: Some(format!(
+                                    "max-divergence assert: {} > {} (tips: {:?})",
+                                    div, max_div, tips
+                                )),
                                 final_stats: sim.run(0),
                             };
                         }
                         events.push(ChaosEvent {
-                            tick, step: step_idx,
+                            tick,
+                            step: step_idx,
                             action: "assert".into(),
                             detail: format!("divergence {} <= {}", div, max_div),
                         });
@@ -309,7 +347,8 @@ impl ChaosScenario {
                         };
                     }
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "assert".into(),
                         detail: format!("node {} is crashed", id),
                     });
@@ -321,12 +360,16 @@ impl ChaosScenario {
                             success: false,
                             steps_executed: step_idx,
                             events,
-                            failure: Some(format!("node {} expected alive but is crashed/missing", id)),
+                            failure: Some(format!(
+                                "node {} expected alive but is crashed/missing",
+                                id
+                            )),
                             final_stats: sim.run(0),
                         };
                     }
                     events.push(ChaosEvent {
-                        tick, step: step_idx,
+                        tick,
+                        step: step_idx,
                         action: "assert".into(),
                         detail: format!("node {} is alive", id),
                     });
@@ -351,9 +394,16 @@ impl ChaosScenario {
 pub fn scenario_split_brain_recovery() -> ChaosScenario {
     ChaosScenario::new("split-brain-recovery")
         .add_validators(5, 1000)
-        .with_default_link(LinkConfig { latency_ms: 10, jitter_ms: 2, delivery: DeliveryMode::Reliable })
+        .with_default_link(LinkConfig {
+            latency_ms: 10,
+            jitter_ms: 2,
+            delivery: DeliveryMode::Reliable,
+        })
         // Produce initial blocks all nodes agree on.
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 1 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 1,
+        })
         .then(ChaosAction::Wait(50))
         .then(ChaosAction::AssertConverged)
         // Partition: [1,2] | [3,4,5]
@@ -363,19 +413,31 @@ pub fn scenario_split_brain_recovery() -> ChaosScenario {
             duration_ticks: 300,
         })
         // Group A produces block 2
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 2 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 2,
+        })
         .then(ChaosAction::Wait(50))
         // Group B produces blocks 2 and 3 (longer chain)
-        .then(ChaosAction::ProduceBlock { producer: 3, height: 2 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 3,
+            height: 2,
+        })
         .then(ChaosAction::Wait(30))
-        .then(ChaosAction::ProduceBlock { producer: 4, height: 3 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 4,
+            height: 3,
+        })
         .then(ChaosAction::Wait(50))
         // During partition: divergence exists
         .then(ChaosAction::AssertMaxDivergence(2))
         // Wait for partition to heal
         .then(ChaosAction::Wait(200))
         // After heal, broadcast the longer chain
-        .then(ChaosAction::ProduceBlock { producer: 3, height: 4 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 3,
+            height: 4,
+        })
         .then(ChaosAction::Wait(100))
         .then(ChaosAction::AssertConverged)
         .then(ChaosAction::AssertMinTip(4))
@@ -386,24 +448,40 @@ pub fn scenario_split_brain_recovery() -> ChaosScenario {
 pub fn scenario_cascading_crashes() -> ChaosScenario {
     ChaosScenario::new("cascading-crashes")
         .add_validators(5, 1000)
-        .with_default_link(LinkConfig { latency_ms: 10, jitter_ms: 0, delivery: DeliveryMode::Reliable })
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 1 })
+        .with_default_link(LinkConfig {
+            latency_ms: 10,
+            jitter_ms: 0,
+            delivery: DeliveryMode::Reliable,
+        })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 1,
+        })
         .then(ChaosAction::Wait(50))
         .then(ChaosAction::AssertConverged)
         // Crash nodes one at a time
         .then(ChaosAction::CrashNode(5))
         .then(ChaosAction::AssertCrashed(5))
         .then(ChaosAction::AssertMinAlive(4))
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 2 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 2,
+        })
         .then(ChaosAction::Wait(50))
         .then(ChaosAction::CrashNode(4))
         .then(ChaosAction::AssertMinAlive(3))
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 3 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 3,
+        })
         .then(ChaosAction::Wait(50))
         .then(ChaosAction::CrashNode(3))
         .then(ChaosAction::AssertMinAlive(2))
         // Only nodes 1,2 alive — they should still converge
-        .then(ChaosAction::ProduceBlock { producer: 2, height: 4 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 2,
+            height: 4,
+        })
         .then(ChaosAction::Wait(50))
         .then(ChaosAction::AssertConverged)
         // Restart all crashed nodes
@@ -412,7 +490,10 @@ pub fn scenario_cascading_crashes() -> ChaosScenario {
         .then(ChaosAction::RestartNode(5))
         .then(ChaosAction::AssertMinAlive(5))
         // New block should reach everyone
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 5 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 5,
+        })
         .then(ChaosAction::Wait(100))
         .then(ChaosAction::AssertConverged)
         .then(ChaosAction::AssertMinTip(5))
@@ -422,34 +503,56 @@ pub fn scenario_cascading_crashes() -> ChaosScenario {
 pub fn scenario_rolling_restart() -> ChaosScenario {
     ChaosScenario::new("rolling-restart")
         .add_validators(4, 1000)
-        .with_default_link(LinkConfig { latency_ms: 10, jitter_ms: 0, delivery: DeliveryMode::Reliable })
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 1 })
+        .with_default_link(LinkConfig {
+            latency_ms: 10,
+            jitter_ms: 0,
+            delivery: DeliveryMode::Reliable,
+        })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 1,
+        })
         .then(ChaosAction::Wait(50))
         // Restart node 1
         .then(ChaosAction::CrashNode(1))
-        .then(ChaosAction::ProduceBlock { producer: 2, height: 2 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 2,
+            height: 2,
+        })
         .then(ChaosAction::Wait(30))
         .then(ChaosAction::RestartNode(1))
         .then(ChaosAction::Wait(20))
         // Restart node 2
         .then(ChaosAction::CrashNode(2))
-        .then(ChaosAction::ProduceBlock { producer: 3, height: 3 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 3,
+            height: 3,
+        })
         .then(ChaosAction::Wait(30))
         .then(ChaosAction::RestartNode(2))
         .then(ChaosAction::Wait(20))
         // Restart node 3
         .then(ChaosAction::CrashNode(3))
-        .then(ChaosAction::ProduceBlock { producer: 4, height: 4 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 4,
+            height: 4,
+        })
         .then(ChaosAction::Wait(30))
         .then(ChaosAction::RestartNode(3))
         .then(ChaosAction::Wait(20))
         // Restart node 4
         .then(ChaosAction::CrashNode(4))
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 5 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 5,
+        })
         .then(ChaosAction::Wait(30))
         .then(ChaosAction::RestartNode(4))
         // Re-broadcast so restarted node catches up
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 6 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 6,
+        })
         .then(ChaosAction::Wait(50))
         // Everyone should be alive and converged
         .then(ChaosAction::AssertMinAlive(4))
@@ -461,19 +564,41 @@ pub fn scenario_rolling_restart() -> ChaosScenario {
 pub fn scenario_lossy_network_convergence() -> ChaosScenario {
     ChaosScenario::new("lossy-network-convergence")
         .add_validators(5, 1000)
-        .with_default_link(LinkConfig { latency_ms: 20, jitter_ms: 10, delivery: DeliveryMode::Lossy(0.3) })
+        .with_default_link(LinkConfig {
+            latency_ms: 20,
+            jitter_ms: 10,
+            delivery: DeliveryMode::Lossy(0.3),
+        })
         // Produce several blocks with redundant broadcasts
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 1 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 1,
+        })
         .then(ChaosAction::Wait(100))
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 1 }) // re-broadcast
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 1,
+        }) // re-broadcast
         .then(ChaosAction::Wait(100))
-        .then(ChaosAction::ProduceBlock { producer: 2, height: 2 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 2,
+            height: 2,
+        })
         .then(ChaosAction::Wait(100))
-        .then(ChaosAction::ProduceBlock { producer: 2, height: 2 }) // re-broadcast
+        .then(ChaosAction::ProduceBlock {
+            producer: 2,
+            height: 2,
+        }) // re-broadcast
         .then(ChaosAction::Wait(100))
-        .then(ChaosAction::ProduceBlock { producer: 3, height: 3 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 3,
+            height: 3,
+        })
         .then(ChaosAction::Wait(100))
-        .then(ChaosAction::ProduceBlock { producer: 3, height: 3 }) // re-broadcast
+        .then(ChaosAction::ProduceBlock {
+            producer: 3,
+            height: 3,
+        }) // re-broadcast
         .then(ChaosAction::Wait(200))
         // With re-broadcasts and 30% loss, should converge
         .then(ChaosAction::AssertMinTip(3))
@@ -483,8 +608,15 @@ pub fn scenario_lossy_network_convergence() -> ChaosScenario {
 pub fn scenario_partition_flapping() -> ChaosScenario {
     ChaosScenario::new("partition-flapping")
         .add_validators(4, 1000)
-        .with_default_link(LinkConfig { latency_ms: 5, jitter_ms: 0, delivery: DeliveryMode::Reliable })
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 1 })
+        .with_default_link(LinkConfig {
+            latency_ms: 5,
+            jitter_ms: 0,
+            delivery: DeliveryMode::Reliable,
+        })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 1,
+        })
         .then(ChaosAction::Wait(20))
         // Partition A
         .then(ChaosAction::Partition {
@@ -492,7 +624,10 @@ pub fn scenario_partition_flapping() -> ChaosScenario {
             group_b: vec![3, 4],
             duration_ticks: 50,
         })
-        .then(ChaosAction::ProduceBlock { producer: 1, height: 2 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 1,
+            height: 2,
+        })
         .then(ChaosAction::Wait(60)) // partition heals
         // Partition B (reversed)
         .then(ChaosAction::Partition {
@@ -500,7 +635,10 @@ pub fn scenario_partition_flapping() -> ChaosScenario {
             group_b: vec![2, 4],
             duration_ticks: 50,
         })
-        .then(ChaosAction::ProduceBlock { producer: 2, height: 3 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 2,
+            height: 3,
+        })
         .then(ChaosAction::Wait(60)) // heals
         // Partition C
         .then(ChaosAction::Partition {
@@ -508,10 +646,16 @@ pub fn scenario_partition_flapping() -> ChaosScenario {
             group_b: vec![2, 3],
             duration_ticks: 50,
         })
-        .then(ChaosAction::ProduceBlock { producer: 3, height: 4 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 3,
+            height: 4,
+        })
         .then(ChaosAction::Wait(60)) // heals
         // Final convergence
-        .then(ChaosAction::ProduceBlock { producer: 4, height: 5 })
+        .then(ChaosAction::ProduceBlock {
+            producer: 4,
+            height: 5,
+        })
         .then(ChaosAction::Wait(100))
         .then(ChaosAction::AssertConverged)
         .then(ChaosAction::AssertMinTip(5))
@@ -554,9 +698,7 @@ mod tests {
 
     #[test]
     fn test_empty_scenario() {
-        let result = ChaosScenario::new("empty")
-            .add_validators(3, 1000)
-            .run();
+        let result = ChaosScenario::new("empty").add_validators(3, 1000).run();
         assert!(result.success);
         assert_eq!(result.steps_executed, 0);
     }
@@ -577,14 +719,24 @@ mod tests {
     fn test_assert_converged_fails_on_divergence() {
         let result = ChaosScenario::new("divergence-fail")
             .add_validators(3, 1000)
-            .with_default_link(LinkConfig { latency_ms: 1000, jitter_ms: 0, delivery: DeliveryMode::Reliable })
-            .then(ChaosAction::ProduceBlock { producer: 1, height: 5 })
+            .with_default_link(LinkConfig {
+                latency_ms: 1000,
+                jitter_ms: 0,
+                delivery: DeliveryMode::Reliable,
+            })
+            .then(ChaosAction::ProduceBlock {
+                producer: 1,
+                height: 5,
+            })
             // Don't wait long enough for propagation
             .then(ChaosAction::Wait(1))
             .then(ChaosAction::AssertConverged)
             .run();
         assert!(!result.success);
-        assert!(result.failure.unwrap().contains("convergence assert failed"));
+        assert!(result
+            .failure
+            .unwrap()
+            .contains("convergence assert failed"));
     }
 
     #[test]
@@ -603,8 +755,15 @@ mod tests {
     fn test_assert_max_divergence_fails() {
         let result = ChaosScenario::new("divergence-limit-fail")
             .add_validators(2, 1000)
-            .with_default_link(LinkConfig { latency_ms: 5000, jitter_ms: 0, delivery: DeliveryMode::Reliable })
-            .then(ChaosAction::ProduceBlock { producer: 1, height: 10 })
+            .with_default_link(LinkConfig {
+                latency_ms: 5000,
+                jitter_ms: 0,
+                delivery: DeliveryMode::Reliable,
+            })
+            .then(ChaosAction::ProduceBlock {
+                producer: 1,
+                height: 10,
+            })
             .then(ChaosAction::Wait(1))
             .then(ChaosAction::AssertMaxDivergence(0))
             .run();
@@ -616,17 +775,27 @@ mod tests {
     fn test_heal_all_removes_partitions() {
         let result = ChaosScenario::new("heal-all")
             .add_validators(4, 1000)
-            .with_default_link(LinkConfig { latency_ms: 5, jitter_ms: 0, delivery: DeliveryMode::Reliable })
+            .with_default_link(LinkConfig {
+                latency_ms: 5,
+                jitter_ms: 0,
+                delivery: DeliveryMode::Reliable,
+            })
             .then(ChaosAction::Partition {
                 group_a: vec![1, 2],
                 group_b: vec![3, 4],
                 duration_ticks: 100000, // very long
             })
-            .then(ChaosAction::ProduceBlock { producer: 1, height: 1 })
+            .then(ChaosAction::ProduceBlock {
+                producer: 1,
+                height: 1,
+            })
             .then(ChaosAction::Wait(50))
             // Node 3 shouldn't see block yet
             .then(ChaosAction::HealAll)
-            .then(ChaosAction::ProduceBlock { producer: 1, height: 2 })
+            .then(ChaosAction::ProduceBlock {
+                producer: 1,
+                height: 2,
+            })
             .then(ChaosAction::Wait(50))
             .then(ChaosAction::AssertConverged)
             .run();
@@ -638,10 +807,18 @@ mod tests {
         let result = ChaosScenario::new("link-quality")
             .add_validators(2, 1000)
             .then(ChaosAction::SetLink {
-                a: 1, b: 2,
-                config: LinkConfig { latency_ms: 5, jitter_ms: 0, delivery: DeliveryMode::Reliable },
+                a: 1,
+                b: 2,
+                config: LinkConfig {
+                    latency_ms: 5,
+                    jitter_ms: 0,
+                    delivery: DeliveryMode::Reliable,
+                },
             })
-            .then(ChaosAction::ProduceBlock { producer: 1, height: 1 })
+            .then(ChaosAction::ProduceBlock {
+                producer: 1,
+                height: 1,
+            })
             .then(ChaosAction::Wait(20))
             .then(ChaosAction::AssertConverged)
             .run();
@@ -654,7 +831,11 @@ mod tests {
             .add_validators(3, 1000)
             .then(ChaosAction::BroadcastMessage {
                 from: 1,
-                msg: NetMessage::CheckpointProposal { epoch: 1, proposer: 1, state_root: [0xAA; 32] },
+                msg: NetMessage::CheckpointProposal {
+                    epoch: 1,
+                    proposer: 1,
+                    state_root: [0xAA; 32],
+                },
             })
             .then(ChaosAction::Wait(100))
             .then(ChaosAction::AssertMinAlive(3))
@@ -668,7 +849,10 @@ mod tests {
             .add_validators(2, 1000)
             .then(ChaosAction::CrashNode(1))
             .then(ChaosAction::RestartNode(1))
-            .then(ChaosAction::ProduceBlock { producer: 1, height: 1 })
+            .then(ChaosAction::ProduceBlock {
+                producer: 1,
+                height: 1,
+            })
             .then(ChaosAction::Wait(50))
             .run();
         assert!(result.success);
@@ -683,8 +867,15 @@ mod tests {
     fn test_scenario_builder_chaining() {
         let scenario = ChaosScenario::new("chain-test")
             .add_validators(3, 500)
-            .with_default_link(LinkConfig { latency_ms: 1, jitter_ms: 0, delivery: DeliveryMode::Reliable })
-            .then(ChaosAction::ProduceBlock { producer: 1, height: 1 })
+            .with_default_link(LinkConfig {
+                latency_ms: 1,
+                jitter_ms: 0,
+                delivery: DeliveryMode::Reliable,
+            })
+            .then(ChaosAction::ProduceBlock {
+                producer: 1,
+                height: 1,
+            })
             .then(ChaosAction::Wait(10))
             .then(ChaosAction::AssertConverged);
         assert_eq!(scenario.name, "chain-test");
@@ -708,8 +899,15 @@ mod tests {
     fn test_combined_crash_partition_recovery() {
         let result = ChaosScenario::new("combined-chaos")
             .add_validators(6, 1000)
-            .with_default_link(LinkConfig { latency_ms: 5, jitter_ms: 0, delivery: DeliveryMode::Reliable })
-            .then(ChaosAction::ProduceBlock { producer: 1, height: 1 })
+            .with_default_link(LinkConfig {
+                latency_ms: 5,
+                jitter_ms: 0,
+                delivery: DeliveryMode::Reliable,
+            })
+            .then(ChaosAction::ProduceBlock {
+                producer: 1,
+                height: 1,
+            })
             .then(ChaosAction::Wait(30))
             .then(ChaosAction::AssertConverged)
             // Crash 2 nodes AND partition the rest
@@ -720,14 +918,20 @@ mod tests {
                 group_b: vec![3, 4],
                 duration_ticks: 100,
             })
-            .then(ChaosAction::ProduceBlock { producer: 1, height: 2 })
+            .then(ChaosAction::ProduceBlock {
+                producer: 1,
+                height: 2,
+            })
             .then(ChaosAction::Wait(50))
             .then(ChaosAction::AssertMinAlive(4))
             // Heal and restart
             .then(ChaosAction::Wait(60)) // partition heals at tick ~140
             .then(ChaosAction::RestartNode(5))
             .then(ChaosAction::RestartNode(6))
-            .then(ChaosAction::ProduceBlock { producer: 3, height: 3 })
+            .then(ChaosAction::ProduceBlock {
+                producer: 3,
+                height: 3,
+            })
             .then(ChaosAction::Wait(100))
             .then(ChaosAction::AssertConverged)
             .then(ChaosAction::AssertMinAlive(6))

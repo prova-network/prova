@@ -38,15 +38,9 @@ pub enum L1EventType {
         l1_epoch: u64,
     },
     /// A new stake deposit was made via the L1 staking contract.
-    StakeDeposited {
-        staker: [u8; 20],
-        amount: u128,
-    },
+    StakeDeposited { staker: [u8; 20], amount: u128 },
     /// A stake withdrawal was processed on L1.
-    StakeWithdrawn {
-        staker: [u8; 20],
-        amount: u128,
-    },
+    StakeWithdrawn { staker: [u8; 20], amount: u128 },
     /// A governance proposal was ratified on L1.
     GovernanceRatified {
         proposal_id: u64,
@@ -243,7 +237,9 @@ impl<C: L1Client> L1EventWatcher<C> {
                     event,
                     first_seen_l1_epoch: epoch,
                     expected_block_hash: block_hash,
-                    status: EventStatus::Pending { seen_at_l1_epoch: epoch },
+                    status: EventStatus::Pending {
+                        seen_at_l1_epoch: epoch,
+                    },
                 });
             }
         }
@@ -273,10 +269,15 @@ impl<C: L1Client> L1EventWatcher<C> {
             // Check finality
             if head >= event_epoch + finality_depth {
                 let mut pe = self.pending.remove(i).unwrap();
-                pe.status = EventStatus::Finalized { finalized_at_l1_epoch: head };
+                pe.status = EventStatus::Finalized {
+                    finalized_at_l1_epoch: head,
+                };
 
                 // Track checkpoint confirmations
-                if let L1EventType::CheckpointAnchored { sequence, l1_epoch, .. } = &pe.event.event {
+                if let L1EventType::CheckpointAnchored {
+                    sequence, l1_epoch, ..
+                } = &pe.event.event
+                {
                     self.confirmed_checkpoints.insert(*sequence, *l1_epoch);
                 }
 
@@ -377,10 +378,14 @@ mod tests {
     #[test]
     fn test_basic_event_detection() {
         let mut w = setup_watcher(0, 50, 5);
-        let ev = make_event(1, 0, L1EventType::StakeDeposited {
-            staker: [1u8; 20],
-            amount: 1000,
-        });
+        let ev = make_event(
+            1,
+            0,
+            L1EventType::StakeDeposited {
+                staker: [1u8; 20],
+                amount: 1000,
+            },
+        );
         w.client_mut().set_block(1, make_block_hash(1));
         w.client_mut().add_event(1, ev);
 
@@ -401,10 +406,14 @@ mod tests {
     #[test]
     fn test_event_waits_for_finality() {
         let mut w = setup_watcher(0, 3, 10);
-        let ev = make_event(1, 0, L1EventType::StakeDeposited {
-            staker: [2u8; 20],
-            amount: 500,
-        });
+        let ev = make_event(
+            1,
+            0,
+            L1EventType::StakeDeposited {
+                staker: [2u8; 20],
+                amount: 500,
+            },
+        );
         w.client_mut().set_block(1, make_block_hash(1));
         w.client_mut().add_event(1, ev);
 
@@ -423,10 +432,14 @@ mod tests {
     #[test]
     fn test_deduplication() {
         let mut w = setup_watcher(0, 50, 5);
-        let ev = make_event(1, 0, L1EventType::StakeDeposited {
-            staker: [3u8; 20],
-            amount: 100,
-        });
+        let ev = make_event(
+            1,
+            0,
+            L1EventType::StakeDeposited {
+                staker: [3u8; 20],
+                amount: 100,
+            },
+        );
         w.client_mut().set_block(1, make_block_hash(1));
         w.client_mut().add_event(1, ev.clone());
         w.client_mut().add_event(1, ev); // duplicate
@@ -439,11 +452,15 @@ mod tests {
     fn test_reorg_removes_event() {
         let mut w = setup_watcher(0, 5, 10);
         let original_hash = make_block_hash(3);
-        let ev = make_event(3, 0, L1EventType::TokenBridgeDeposit {
-            sender: [4u8; 20],
-            recipient: [5u8; 20],
-            amount: 2000,
-        });
+        let ev = make_event(
+            3,
+            0,
+            L1EventType::TokenBridgeDeposit {
+                sender: [4u8; 20],
+                recipient: [5u8; 20],
+                amount: 2000,
+            },
+        );
         w.client_mut().set_block(3, original_hash);
         w.client_mut().add_event(3, ev);
 
@@ -464,11 +481,15 @@ mod tests {
     #[test]
     fn test_checkpoint_confirmation_tracking() {
         let mut w = setup_watcher(0, 50, 5);
-        let ev = make_event(10, 0, L1EventType::CheckpointAnchored {
-            sequence: 42,
-            state_root: [0xAB; 32],
-            l1_epoch: 10,
-        });
+        let ev = make_event(
+            10,
+            0,
+            L1EventType::CheckpointAnchored {
+                sequence: 42,
+                state_root: [0xAB; 32],
+                l1_epoch: 10,
+            },
+        );
         w.client_mut().set_block(10, make_block_hash(10));
         w.client_mut().add_event(10, ev);
 
@@ -483,10 +504,14 @@ mod tests {
         let mut w = setup_watcher(0, 50, 5);
 
         for i in 1..=5u64 {
-            let ev = make_event(i * 5, 0, L1EventType::StakeDeposited {
-                staker: [i as u8; 20],
-                amount: i as u128 * 100,
-            });
+            let ev = make_event(
+                i * 5,
+                0,
+                L1EventType::StakeDeposited {
+                    staker: [i as u8; 20],
+                    amount: i as u128 * 100,
+                },
+            );
             w.client_mut().set_block(i * 5, make_block_hash(i * 5));
             w.client_mut().add_event(i * 5, ev);
         }
@@ -501,10 +526,14 @@ mod tests {
         let mut w = setup_watcher(0, 500, 5);
         w.config.max_blocks_per_poll = 10;
 
-        let ev = make_event(5, 0, L1EventType::StakeDeposited {
-            staker: [7u8; 20],
-            amount: 999,
-        });
+        let ev = make_event(
+            5,
+            0,
+            L1EventType::StakeDeposited {
+                staker: [7u8; 20],
+                amount: 999,
+            },
+        );
         w.client_mut().set_block(5, make_block_hash(5));
         w.client_mut().add_event(5, ev);
 
@@ -519,10 +548,14 @@ mod tests {
     #[test]
     fn test_governance_event() {
         let mut w = setup_watcher(0, 50, 5);
-        let ev = make_event(7, 1, L1EventType::GovernanceRatified {
-            proposal_id: 101,
-            action_hash: [0xCC; 32],
-        });
+        let ev = make_event(
+            7,
+            1,
+            L1EventType::GovernanceRatified {
+                proposal_id: 101,
+                action_hash: [0xCC; 32],
+            },
+        );
         w.client_mut().set_block(7, make_block_hash(7));
         w.client_mut().add_event(7, ev);
 
@@ -530,7 +563,10 @@ mod tests {
         let events = w.drain_finalized();
         assert_eq!(events.len(), 1);
         match &events[0].event {
-            L1EventType::GovernanceRatified { proposal_id, action_hash } => {
+            L1EventType::GovernanceRatified {
+                proposal_id,
+                action_hash,
+            } => {
                 assert_eq!(*proposal_id, 101);
                 assert_eq!(action_hash, &[0xCC; 32]);
             }
@@ -541,10 +577,14 @@ mod tests {
     #[test]
     fn test_withdrawal_event() {
         let mut w = setup_watcher(0, 50, 5);
-        let ev = make_event(15, 0, L1EventType::StakeWithdrawn {
-            staker: [8u8; 20],
-            amount: 750,
-        });
+        let ev = make_event(
+            15,
+            0,
+            L1EventType::StakeWithdrawn {
+                staker: [8u8; 20],
+                amount: 750,
+            },
+        );
         w.client_mut().set_block(15, make_block_hash(15));
         w.client_mut().add_event(15, ev);
 
@@ -591,27 +631,47 @@ mod tests {
         let block_hash = make_block_hash(20);
         w.client_mut().set_block(20, block_hash);
 
-        w.client_mut().add_event(20, L1Event {
-            l1_epoch: 20,
-            block_hash,
-            tx_hash: make_tx_hash(b"tx1"),
-            log_index: 0,
-            event: L1EventType::CheckpointAnchored { sequence: 1, state_root: [0x11; 32], l1_epoch: 20 },
-        });
-        w.client_mut().add_event(20, L1Event {
-            l1_epoch: 20,
-            block_hash,
-            tx_hash: make_tx_hash(b"tx2"),
-            log_index: 0,
-            event: L1EventType::StakeDeposited { staker: [9u8; 20], amount: 300 },
-        });
-        w.client_mut().add_event(20, L1Event {
-            l1_epoch: 20,
-            block_hash,
-            tx_hash: make_tx_hash(b"tx3"),
-            log_index: 0,
-            event: L1EventType::TokenBridgeDeposit { sender: [10u8; 20], recipient: [11u8; 20], amount: 5000 },
-        });
+        w.client_mut().add_event(
+            20,
+            L1Event {
+                l1_epoch: 20,
+                block_hash,
+                tx_hash: make_tx_hash(b"tx1"),
+                log_index: 0,
+                event: L1EventType::CheckpointAnchored {
+                    sequence: 1,
+                    state_root: [0x11; 32],
+                    l1_epoch: 20,
+                },
+            },
+        );
+        w.client_mut().add_event(
+            20,
+            L1Event {
+                l1_epoch: 20,
+                block_hash,
+                tx_hash: make_tx_hash(b"tx2"),
+                log_index: 0,
+                event: L1EventType::StakeDeposited {
+                    staker: [9u8; 20],
+                    amount: 300,
+                },
+            },
+        );
+        w.client_mut().add_event(
+            20,
+            L1Event {
+                l1_epoch: 20,
+                block_hash,
+                tx_hash: make_tx_hash(b"tx3"),
+                log_index: 0,
+                event: L1EventType::TokenBridgeDeposit {
+                    sender: [10u8; 20],
+                    recipient: [11u8; 20],
+                    amount: 5000,
+                },
+            },
+        );
 
         w.poll();
         let events = w.drain_finalized();
@@ -621,11 +681,32 @@ mod tests {
 
     #[test]
     fn test_event_dedup_key_uniqueness() {
-        let ev1 = make_event(1, 0, L1EventType::StakeDeposited { staker: [1u8; 20], amount: 100 });
-        let ev2 = make_event(1, 1, L1EventType::StakeDeposited { staker: [1u8; 20], amount: 100 });
+        let ev1 = make_event(
+            1,
+            0,
+            L1EventType::StakeDeposited {
+                staker: [1u8; 20],
+                amount: 100,
+            },
+        );
+        let ev2 = make_event(
+            1,
+            1,
+            L1EventType::StakeDeposited {
+                staker: [1u8; 20],
+                amount: 100,
+            },
+        );
         assert_ne!(ev1.dedup_key(), ev2.dedup_key());
 
-        let ev3 = make_event(2, 0, L1EventType::StakeDeposited { staker: [1u8; 20], amount: 100 });
+        let ev3 = make_event(
+            2,
+            0,
+            L1EventType::StakeDeposited {
+                staker: [1u8; 20],
+                amount: 100,
+            },
+        );
         assert_ne!(ev1.dedup_key(), ev3.dedup_key());
     }
 
@@ -633,10 +714,14 @@ mod tests {
     fn test_reorg_then_re_emit_event() {
         let mut w = setup_watcher(0, 5, 10);
         let original_hash = make_block_hash(3);
-        let ev = make_event(3, 0, L1EventType::StakeDeposited {
-            staker: [12u8; 20],
-            amount: 888,
-        });
+        let ev = make_event(
+            3,
+            0,
+            L1EventType::StakeDeposited {
+                staker: [12u8; 20],
+                amount: 888,
+            },
+        );
         w.client_mut().set_block(3, original_hash);
         w.client_mut().add_event(3, ev.clone());
 
@@ -653,7 +738,10 @@ mod tests {
 
         // Re-emit same event in new block (different block hash, reset cursor trick)
         // The dedup key was cleared on reorg, so it should be picked up again
-        let re_ev = L1Event { block_hash: new_hash, ..ev };
+        let re_ev = L1Event {
+            block_hash: new_hash,
+            ..ev
+        };
         w.client_mut().set_block(9, new_hash);
         w.client_mut().events.entry(9).or_default().push(re_ev);
         w.client_mut().head = 25;

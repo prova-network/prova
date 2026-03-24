@@ -20,34 +20,19 @@ use std::fmt;
 #[derive(Debug, Clone, PartialEq)]
 pub enum ValidatorCmd {
     /// Register as a validator candidate with initial stake.
-    Register {
-        stake: u64,
-        capacity: u64,
-    },
+    Register { stake: u64, capacity: u64 },
     /// Begin voluntary exit (starts unbonding period).
-    Exit {
-        force: bool,
-    },
+    Exit { force: bool },
     /// Complete exit after unbonding — withdraw remaining stake.
     Withdraw,
     /// Show status of a validator (self or by address).
-    Status {
-        address: Option<String>,
-        json: bool,
-    },
+    Status { address: Option<String>, json: bool },
     /// List validators in the current set.
-    List {
-        active_only: bool,
-        json: bool,
-    },
+    List { active_only: bool, json: bool },
     /// Add stake to your validator.
-    StakeAdd {
-        amount: u64,
-    },
+    StakeAdd { amount: u64 },
     /// Show current epoch info and optionally history.
-    Epoch {
-        history: usize,
-    },
+    Epoch { history: usize },
     /// Show help for validator subcommands.
     Help,
 }
@@ -157,7 +142,9 @@ fn parse_list(args: &[&str]) -> Result<ValidatorCmd, ValidatorParseError> {
 
 fn parse_stake(args: &[&str]) -> Result<ValidatorCmd, ValidatorParseError> {
     if args.is_empty() {
-        return Err(ValidatorParseError::MissingArg("stake subcommand (add)".into()));
+        return Err(ValidatorParseError::MissingArg(
+            "stake subcommand (add)".into(),
+        ));
     }
     match args[0] {
         "add" => {
@@ -184,9 +171,9 @@ fn parse_epoch(args: &[&str]) -> Result<ValidatorCmd, ValidatorParseError> {
             if i >= args.len() {
                 return Err(ValidatorParseError::MissingArg("--history count".into()));
             }
-            history = args[i].parse().map_err(|_| {
-                ValidatorParseError::InvalidValue("history".into(), args[i].into())
-            })?;
+            history = args[i]
+                .parse()
+                .map_err(|_| ValidatorParseError::InvalidValue("history".into(), args[i].into()))?;
         }
         i += 1;
     }
@@ -249,7 +236,10 @@ impl fmt::Display for ValidatorResult {
                 write!(f, "✓ Registered as validator candidate (stake: {stake}, capacity: {capacity} ops/s)")
             }
             Self::ExitInitiated { ready_epoch } => {
-                write!(f, "✓ Exit initiated. Stake withdrawable at epoch {ready_epoch}")
+                write!(
+                    f,
+                    "✓ Exit initiated. Stake withdrawable at epoch {ready_epoch}"
+                )
             }
             Self::WithdrawComplete { returned_stake } => {
                 write!(f, "✓ Withdraw complete. Returned: {returned_stake}")
@@ -269,7 +259,11 @@ impl fmt::Display for ValidatorResult {
                 if validators.is_empty() {
                     return write!(f, "No validators found.");
                 }
-                writeln!(f, "{:<20} {:>10} {:>6} {:>8} {:>8}", "ADDRESS", "STAKE", "REP", "SCORE", "STATUS")?;
+                writeln!(
+                    f,
+                    "{:<20} {:>10} {:>6} {:>8} {:>8}",
+                    "ADDRESS", "STAKE", "REP", "SCORE", "STATUS"
+                )?;
                 writeln!(f, "{}", "-".repeat(56))?;
                 for v in validators {
                     writeln!(
@@ -291,7 +285,11 @@ impl fmt::Display for ValidatorResult {
                 if !history.is_empty() {
                     writeln!(f, "\nHistory:")?;
                     for h in history {
-                        writeln!(f, "  Epoch {}: {} validators, {} stake", h.epoch, h.active_count, h.total_stake)?;
+                        writeln!(
+                            f,
+                            "  Epoch {}: {} validators, {} stake",
+                            h.epoch, h.active_count, h.total_stake
+                        )?;
                     }
                 }
                 Ok(())
@@ -437,9 +435,7 @@ impl MockValidatorRpc {
                     return Err(ValidatorExecError::InvalidState(v.status.clone()));
                 }
                 v.stake += amount;
-                Ok(ValidatorResult::StakeAdded {
-                    new_total: v.stake,
-                })
+                Ok(ValidatorResult::StakeAdded { new_total: v.stake })
             }
             ValidatorCmd::Epoch { history } => {
                 let current = EpochSummary {
@@ -530,13 +526,25 @@ mod tests {
     #[test]
     fn test_parse_register_basic() {
         let cmd = parse_validator_cmd(&["register", "200000"]).unwrap();
-        assert_eq!(cmd, ValidatorCmd::Register { stake: 200_000, capacity: 100 });
+        assert_eq!(
+            cmd,
+            ValidatorCmd::Register {
+                stake: 200_000,
+                capacity: 100
+            }
+        );
     }
 
     #[test]
     fn test_parse_register_with_capacity() {
         let cmd = parse_validator_cmd(&["register", "500000", "--capacity", "1000"]).unwrap();
-        assert_eq!(cmd, ValidatorCmd::Register { stake: 500_000, capacity: 1000 });
+        assert_eq!(
+            cmd,
+            ValidatorCmd::Register {
+                stake: 500_000,
+                capacity: 1000
+            }
+        );
     }
 
     #[test]
@@ -572,31 +580,61 @@ mod tests {
     #[test]
     fn test_parse_status_no_addr() {
         let cmd = parse_validator_cmd(&["status"]).unwrap();
-        assert_eq!(cmd, ValidatorCmd::Status { address: None, json: false });
+        assert_eq!(
+            cmd,
+            ValidatorCmd::Status {
+                address: None,
+                json: false
+            }
+        );
     }
 
     #[test]
     fn test_parse_status_with_addr() {
         let cmd = parse_validator_cmd(&["status", "val_123"]).unwrap();
-        assert_eq!(cmd, ValidatorCmd::Status { address: Some("val_123".into()), json: false });
+        assert_eq!(
+            cmd,
+            ValidatorCmd::Status {
+                address: Some("val_123".into()),
+                json: false
+            }
+        );
     }
 
     #[test]
     fn test_parse_status_json() {
         let cmd = parse_validator_cmd(&["status", "--json"]).unwrap();
-        assert_eq!(cmd, ValidatorCmd::Status { address: None, json: true });
+        assert_eq!(
+            cmd,
+            ValidatorCmd::Status {
+                address: None,
+                json: true
+            }
+        );
     }
 
     #[test]
     fn test_parse_list_defaults() {
         let cmd = parse_validator_cmd(&["list"]).unwrap();
-        assert_eq!(cmd, ValidatorCmd::List { active_only: false, json: false });
+        assert_eq!(
+            cmd,
+            ValidatorCmd::List {
+                active_only: false,
+                json: false
+            }
+        );
     }
 
     #[test]
     fn test_parse_list_active_json() {
         let cmd = parse_validator_cmd(&["list", "--active-only", "--json"]).unwrap();
-        assert_eq!(cmd, ValidatorCmd::List { active_only: true, json: true });
+        assert_eq!(
+            cmd,
+            ValidatorCmd::List {
+                active_only: true,
+                json: true
+            }
+        );
     }
 
     #[test]
@@ -650,31 +688,58 @@ mod tests {
     #[test]
     fn test_exec_register() {
         let mut rpc = mock_rpc();
-        let cmd = ValidatorCmd::Register { stake: 200_000, capacity: 500 };
+        let cmd = ValidatorCmd::Register {
+            stake: 200_000,
+            capacity: 500,
+        };
         let res = rpc.execute(&cmd).unwrap();
-        assert_eq!(res, ValidatorResult::Registered { stake: 200_000, capacity: 500 });
+        assert_eq!(
+            res,
+            ValidatorResult::Registered {
+                stake: 200_000,
+                capacity: 500
+            }
+        );
         assert!(rpc.validators.contains_key("my_validator"));
     }
 
     #[test]
     fn test_exec_register_duplicate() {
         let mut rpc = mock_rpc();
-        rpc.execute(&ValidatorCmd::Register { stake: 200_000, capacity: 100 }).unwrap();
-        let err = rpc.execute(&ValidatorCmd::Register { stake: 200_000, capacity: 100 }).unwrap_err();
+        rpc.execute(&ValidatorCmd::Register {
+            stake: 200_000,
+            capacity: 100,
+        })
+        .unwrap();
+        let err = rpc
+            .execute(&ValidatorCmd::Register {
+                stake: 200_000,
+                capacity: 100,
+            })
+            .unwrap_err();
         assert_eq!(err, ValidatorExecError::AlreadyRegistered);
     }
 
     #[test]
     fn test_exec_register_insufficient_stake() {
         let mut rpc = mock_rpc();
-        let err = rpc.execute(&ValidatorCmd::Register { stake: 50_000, capacity: 100 }).unwrap_err();
+        let err = rpc
+            .execute(&ValidatorCmd::Register {
+                stake: 50_000,
+                capacity: 100,
+            })
+            .unwrap_err();
         assert_eq!(err, ValidatorExecError::InsufficientStake);
     }
 
     #[test]
     fn test_exec_exit() {
         let mut rpc = mock_rpc();
-        rpc.execute(&ValidatorCmd::Register { stake: 200_000, capacity: 100 }).unwrap();
+        rpc.execute(&ValidatorCmd::Register {
+            stake: 200_000,
+            capacity: 100,
+        })
+        .unwrap();
         let res = rpc.execute(&ValidatorCmd::Exit { force: false }).unwrap();
         assert_eq!(res, ValidatorResult::ExitInitiated { ready_epoch: 24 }); // 10 + 14
     }
@@ -682,23 +747,38 @@ mod tests {
     #[test]
     fn test_exec_exit_not_registered() {
         let mut rpc = mock_rpc();
-        let err = rpc.execute(&ValidatorCmd::Exit { force: false }).unwrap_err();
+        let err = rpc
+            .execute(&ValidatorCmd::Exit { force: false })
+            .unwrap_err();
         assert_eq!(err, ValidatorExecError::NotRegistered);
     }
 
     #[test]
     fn test_exec_withdraw() {
         let mut rpc = mock_rpc();
-        rpc.execute(&ValidatorCmd::Register { stake: 200_000, capacity: 100 }).unwrap();
+        rpc.execute(&ValidatorCmd::Register {
+            stake: 200_000,
+            capacity: 100,
+        })
+        .unwrap();
         rpc.execute(&ValidatorCmd::Exit { force: false }).unwrap();
         let res = rpc.execute(&ValidatorCmd::Withdraw).unwrap();
-        assert_eq!(res, ValidatorResult::WithdrawComplete { returned_stake: 200_000 });
+        assert_eq!(
+            res,
+            ValidatorResult::WithdrawComplete {
+                returned_stake: 200_000
+            }
+        );
     }
 
     #[test]
     fn test_exec_withdraw_wrong_state() {
         let mut rpc = mock_rpc();
-        rpc.execute(&ValidatorCmd::Register { stake: 200_000, capacity: 100 }).unwrap();
+        rpc.execute(&ValidatorCmd::Register {
+            stake: 200_000,
+            capacity: 100,
+        })
+        .unwrap();
         let err = rpc.execute(&ValidatorCmd::Withdraw).unwrap_err();
         assert_eq!(err, ValidatorExecError::InvalidState("candidate".into()));
     }
@@ -706,8 +786,17 @@ mod tests {
     #[test]
     fn test_exec_status_self() {
         let mut rpc = mock_rpc();
-        rpc.execute(&ValidatorCmd::Register { stake: 200_000, capacity: 100 }).unwrap();
-        let res = rpc.execute(&ValidatorCmd::Status { address: None, json: false }).unwrap();
+        rpc.execute(&ValidatorCmd::Register {
+            stake: 200_000,
+            capacity: 100,
+        })
+        .unwrap();
+        let res = rpc
+            .execute(&ValidatorCmd::Status {
+                address: None,
+                json: false,
+            })
+            .unwrap();
         match res {
             ValidatorResult::Status(info) => {
                 assert_eq!(info.address, "my_validator");
@@ -730,7 +819,12 @@ mod tests {
             score: 0.59,
         };
         let mut rpc = mock_rpc().with_validator(info);
-        let res = rpc.execute(&ValidatorCmd::Status { address: Some("other_val".into()), json: false }).unwrap();
+        let res = rpc
+            .execute(&ValidatorCmd::Status {
+                address: Some("other_val".into()),
+                json: false,
+            })
+            .unwrap();
         match res {
             ValidatorResult::Status(v) => assert_eq!(v.stake, 300_000),
             _ => panic!("expected Status"),
@@ -740,24 +834,44 @@ mod tests {
     #[test]
     fn test_exec_status_not_found() {
         let mut rpc = mock_rpc();
-        let err = rpc.execute(&ValidatorCmd::Status { address: Some("ghost".into()), json: false }).unwrap_err();
+        let err = rpc
+            .execute(&ValidatorCmd::Status {
+                address: Some("ghost".into()),
+                json: false,
+            })
+            .unwrap_err();
         assert_eq!(err, ValidatorExecError::NotFound("ghost".into()));
     }
 
     #[test]
     fn test_exec_list_all() {
         let v1 = ValidatorInfo {
-            address: "v1".into(), stake: 200_000, reputation: 0.5,
-            status: "active".into(), capacity: 100, blocks_produced: 10,
-            consecutive_misses: 0, score: 0.85,
+            address: "v1".into(),
+            stake: 200_000,
+            reputation: 0.5,
+            status: "active".into(),
+            capacity: 100,
+            blocks_produced: 10,
+            consecutive_misses: 0,
+            score: 0.85,
         };
         let v2 = ValidatorInfo {
-            address: "v2".into(), stake: 150_000, reputation: 0.3,
-            status: "candidate".into(), capacity: 80, blocks_produced: 0,
-            consecutive_misses: 0, score: 0.44,
+            address: "v2".into(),
+            stake: 150_000,
+            reputation: 0.3,
+            status: "candidate".into(),
+            capacity: 80,
+            blocks_produced: 0,
+            consecutive_misses: 0,
+            score: 0.44,
         };
         let mut rpc = mock_rpc().with_validator(v1).with_validator(v2);
-        let res = rpc.execute(&ValidatorCmd::List { active_only: false, json: false }).unwrap();
+        let res = rpc
+            .execute(&ValidatorCmd::List {
+                active_only: false,
+                json: false,
+            })
+            .unwrap();
         match res {
             ValidatorResult::List(list) => {
                 assert_eq!(list.len(), 2);
@@ -770,17 +884,32 @@ mod tests {
     #[test]
     fn test_exec_list_active_only() {
         let v1 = ValidatorInfo {
-            address: "v1".into(), stake: 200_000, reputation: 0.5,
-            status: "active".into(), capacity: 100, blocks_produced: 10,
-            consecutive_misses: 0, score: 0.85,
+            address: "v1".into(),
+            stake: 200_000,
+            reputation: 0.5,
+            status: "active".into(),
+            capacity: 100,
+            blocks_produced: 10,
+            consecutive_misses: 0,
+            score: 0.85,
         };
         let v2 = ValidatorInfo {
-            address: "v2".into(), stake: 150_000, reputation: 0.3,
-            status: "candidate".into(), capacity: 80, blocks_produced: 0,
-            consecutive_misses: 0, score: 0.44,
+            address: "v2".into(),
+            stake: 150_000,
+            reputation: 0.3,
+            status: "candidate".into(),
+            capacity: 80,
+            blocks_produced: 0,
+            consecutive_misses: 0,
+            score: 0.44,
         };
         let mut rpc = mock_rpc().with_validator(v1).with_validator(v2);
-        let res = rpc.execute(&ValidatorCmd::List { active_only: true, json: false }).unwrap();
+        let res = rpc
+            .execute(&ValidatorCmd::List {
+                active_only: true,
+                json: false,
+            })
+            .unwrap();
         match res {
             ValidatorResult::List(list) => {
                 assert_eq!(list.len(), 1);
@@ -793,15 +922,23 @@ mod tests {
     #[test]
     fn test_exec_stake_add() {
         let mut rpc = mock_rpc();
-        rpc.execute(&ValidatorCmd::Register { stake: 200_000, capacity: 100 }).unwrap();
-        let res = rpc.execute(&ValidatorCmd::StakeAdd { amount: 50_000 }).unwrap();
+        rpc.execute(&ValidatorCmd::Register {
+            stake: 200_000,
+            capacity: 100,
+        })
+        .unwrap();
+        let res = rpc
+            .execute(&ValidatorCmd::StakeAdd { amount: 50_000 })
+            .unwrap();
         assert_eq!(res, ValidatorResult::StakeAdded { new_total: 250_000 });
     }
 
     #[test]
     fn test_exec_stake_add_not_registered() {
         let mut rpc = mock_rpc();
-        let err = rpc.execute(&ValidatorCmd::StakeAdd { amount: 50_000 }).unwrap_err();
+        let err = rpc
+            .execute(&ValidatorCmd::StakeAdd { amount: 50_000 })
+            .unwrap_err();
         assert_eq!(err, ValidatorExecError::NotRegistered);
     }
 
@@ -821,8 +958,16 @@ mod tests {
     #[test]
     fn test_exec_epoch_with_history() {
         let mut rpc = mock_rpc()
-            .with_epoch_record(EpochSummary { epoch: 8, active_count: 5, total_stake: 500_000 })
-            .with_epoch_record(EpochSummary { epoch: 9, active_count: 6, total_stake: 600_000 });
+            .with_epoch_record(EpochSummary {
+                epoch: 8,
+                active_count: 5,
+                total_stake: 500_000,
+            })
+            .with_epoch_record(EpochSummary {
+                epoch: 9,
+                active_count: 6,
+                total_stake: 600_000,
+            });
         let res = rpc.execute(&ValidatorCmd::Epoch { history: 1 }).unwrap();
         match res {
             ValidatorResult::Epoch { history, .. } => {
@@ -845,7 +990,10 @@ mod tests {
 
     #[test]
     fn test_display_registered() {
-        let r = ValidatorResult::Registered { stake: 200_000, capacity: 500 };
+        let r = ValidatorResult::Registered {
+            stake: 200_000,
+            capacity: 500,
+        };
         let s = format!("{r}");
         assert!(s.contains("200000"));
         assert!(s.contains("500"));
@@ -880,9 +1028,15 @@ mod tests {
     #[test]
     fn test_exec_exit_already_unbonding() {
         let mut rpc = mock_rpc();
-        rpc.execute(&ValidatorCmd::Register { stake: 200_000, capacity: 100 }).unwrap();
+        rpc.execute(&ValidatorCmd::Register {
+            stake: 200_000,
+            capacity: 100,
+        })
+        .unwrap();
         rpc.execute(&ValidatorCmd::Exit { force: false }).unwrap();
-        let err = rpc.execute(&ValidatorCmd::Exit { force: false }).unwrap_err();
+        let err = rpc
+            .execute(&ValidatorCmd::Exit { force: false })
+            .unwrap_err();
         assert_eq!(err, ValidatorExecError::InvalidState("unbonding".into()));
     }
 }
