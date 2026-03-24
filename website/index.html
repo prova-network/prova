@@ -109,6 +109,29 @@ footer .links{display:flex;gap:20px}
 footer .links a{font-family:var(--mono);font-size:11px;color:var(--text3);text-decoration:none;letter-spacing:1px}
 footer .links a:hover{color:var(--brass)}
 
+/* Connect button */
+.btn-connect{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;background:transparent;color:var(--brass);border:1px solid var(--brass-dim);border-radius:2px;cursor:pointer;transition:all 0.2s}
+.btn-connect:hover{background:rgba(201,168,76,0.08);border-color:var(--brass)}
+.btn-connect.connected{color:var(--green);border-color:var(--green)}
+
+/* Buy section */
+.buy-panel{background:var(--bg2);border:1px solid rgba(201,168,76,0.1);padding:32px;margin-top:40px;position:relative}
+.buy-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--brass-dim),transparent)}
+.buy-panel h4{font-family:var(--mono);font-size:14px;color:var(--text);margin-bottom:16px;letter-spacing:2px}
+.pay-options{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.pay-opt{font-family:var(--mono);font-size:11px;padding:8px 14px;background:var(--bg3);border:1px solid rgba(255,255,255,0.06);color:var(--text2);cursor:pointer;transition:all 0.2s;border-radius:2px}
+.pay-opt:hover,.pay-opt.active{border-color:var(--brass);color:var(--brass);background:rgba(201,168,76,0.05)}
+.buy-input{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.buy-input input{flex:1;font-family:var(--mono);font-size:16px;padding:12px 16px;background:var(--bg);border:1px solid rgba(255,255,255,0.08);color:var(--text);outline:none;border-radius:2px}
+.buy-input input:focus{border-color:var(--brass-dim)}
+.buy-input .suffix{font-family:var(--mono);font-size:12px;color:var(--text3);min-width:60px}
+.buy-output{font-family:var(--mono);font-size:13px;color:var(--text2);margin-bottom:16px}
+.buy-output span{color:var(--brass);font-weight:700}
+.btn-buy{width:100%;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:14px;background:var(--brass);color:var(--bg);border:none;cursor:pointer;border-radius:2px;transition:all 0.2s}
+.btn-buy:hover{background:var(--brass-glow)}
+.btn-buy:disabled{background:var(--text3);cursor:not-allowed}
+.wallet-status{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:8px}
+
 /* Mobile */
 @media(max-width:600px){
   nav .links{gap:12px}
@@ -127,6 +150,7 @@ footer .links a:hover{color:var(--brass)}
       <a href="#token">Token</a>
       <a href="#roadmap">Roadmap</a>
       <a href="https://github.com/Reiers/prova" target="_blank">GitHub</a>
+      <button id="connectBtn" class="btn-connect" onclick="connectWallet()">Connect Wallet</button>
     </div>
   </div>
 </nav>
@@ -233,6 +257,25 @@ footer .links a:hover{color:var(--brass)}
         </table>
       </div>
     </div>
+
+    <!-- Buy Panel -->
+    <div class="buy-panel" id="buyPanel">
+      <h4>ACQUIRE PROVA</h4>
+      <div class="pay-options">
+        <div class="pay-opt active" data-token="ETH" onclick="selectPayment('ETH')">ETH</div>
+        <div class="pay-opt" data-token="USDC" onclick="selectPayment('USDC')">USDC</div>
+        <div class="pay-opt" data-token="USDT" onclick="selectPayment('USDT')">USDT</div>
+        <div class="pay-opt" data-token="DAI" onclick="selectPayment('DAI')">DAI</div>
+        <div class="pay-opt" data-token="WBTC" onclick="selectPayment('WBTC')">WBTC</div>
+      </div>
+      <div class="buy-input">
+        <input type="number" id="payAmount" placeholder="0.0" oninput="updateProvaAmount()">
+        <div class="suffix" id="paySuffix">ETH</div>
+      </div>
+      <div class="buy-output">You receive: <span id="provaAmount">0</span> PROVA</div>
+      <button class="btn-buy" id="buyBtn" onclick="buyTokens()" disabled>Connect Wallet First</button>
+      <div class="wallet-status" id="walletStatus"></div>
+    </div>
   </div>
 </section>
 
@@ -288,14 +331,206 @@ footer .links a:hover{color:var(--brass)}
 
 <footer>
   <div class="inner">
-    <div class="copy">© 2026 Prova. Built by Nicklas and Capri.</div>
+    <div class="copy">© 2026 Prova Team.</div>
     <div class="links">
       <a href="https://github.com/Reiers/prova" target="_blank">GitHub</a>
       <a href="https://x.com/ProvaNetwork" target="_blank">X / Twitter</a>
-      <a href="#">Whitepaper</a>
+      <a href="whitepaper.html">Whitepaper</a>
     </div>
   </div>
 </footer>
+
+<script>
+// Wallet state
+let walletAddress = null;
+let selectedToken = 'ETH';
+let provider = null;
+
+// Token prices relative to PROVA (how many PROVA per 1 unit of payment token)
+// At $0.015/PROVA: 1 ETH (~$3500) = ~233,333 PROVA, 1 USDC = 66.67 PROVA, etc.
+const rates = {
+  ETH: 233333,
+  USDC: 66.67,
+  USDT: 66.67,
+  DAI: 66.67,
+  WBTC: 4666666  // ~$70K per BTC
+};
+
+// Contract addresses (to be filled after deployment)
+const CONTRACTS = {
+  crowdsale: '0x0000000000000000000000000000000000000000', // ProvaCrowdsale
+  provaToken: '0x0000000000000000000000000000000000000000',
+  // Payment tokens (Ethereum mainnet)
+  USDC: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+  DAI: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+  WBTC: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'
+};
+
+async function connectWallet() {
+  if (typeof window.ethereum === 'undefined') {
+    alert('Please install MetaMask to connect your wallet.');
+    window.open('https://metamask.io/download/', '_blank');
+    return;
+  }
+
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    walletAddress = accounts[0];
+
+    const btn = document.getElementById('connectBtn');
+    btn.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+    btn.classList.add('connected');
+
+    const buyBtn = document.getElementById('buyBtn');
+    buyBtn.disabled = false;
+    buyBtn.textContent = 'BUY PROVA';
+
+    document.getElementById('walletStatus').textContent = 'Connected: ' + walletAddress;
+
+    // Listen for account changes
+    window.ethereum.on('accountsChanged', (accounts) => {
+      if (accounts.length === 0) {
+        disconnectWallet();
+      } else {
+        walletAddress = accounts[0];
+        btn.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+        document.getElementById('walletStatus').textContent = 'Connected: ' + walletAddress;
+      }
+    });
+  } catch (err) {
+    console.error('Wallet connect failed:', err);
+    document.getElementById('walletStatus').textContent = 'Connection failed. Try again.';
+  }
+}
+
+function disconnectWallet() {
+  walletAddress = null;
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = 'Connect Wallet';
+  btn.classList.remove('connected');
+  document.getElementById('buyBtn').disabled = true;
+  document.getElementById('buyBtn').textContent = 'Connect Wallet First';
+  document.getElementById('walletStatus').textContent = '';
+}
+
+function selectPayment(token) {
+  selectedToken = token;
+  document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('active'));
+  document.querySelector(`[data-token="${token}"]`).classList.add('active');
+  document.getElementById('paySuffix').textContent = token;
+  updateProvaAmount();
+}
+
+function updateProvaAmount() {
+  const input = document.getElementById('payAmount').value;
+  const amount = parseFloat(input) || 0;
+  const provaAmount = amount * (rates[selectedToken] || 0);
+  document.getElementById('provaAmount').textContent = provaAmount.toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+async function buyTokens() {
+  if (!walletAddress) {
+    connectWallet();
+    return;
+  }
+
+  const amount = parseFloat(document.getElementById('payAmount').value);
+  if (!amount || amount <= 0) {
+    alert('Enter an amount.');
+    return;
+  }
+
+  const buyBtn = document.getElementById('buyBtn');
+  const status = document.getElementById('walletStatus');
+
+  try {
+    buyBtn.disabled = true;
+    buyBtn.textContent = 'PROCESSING...';
+
+    if (selectedToken === 'ETH') {
+      // Send ETH directly to crowdsale contract
+      const weiAmount = '0x' + BigInt(Math.floor(amount * 1e18)).toString(16);
+      const txHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: walletAddress,
+          to: CONTRACTS.crowdsale,
+          value: weiAmount,
+          gas: '0x30000'
+        }]
+      });
+      status.textContent = 'TX sent: ' + txHash.slice(0, 20) + '...';
+    } else {
+      // ERC-20: need approval then buy
+      // For MVP, just show the approval flow
+      const tokenAddr = CONTRACTS[selectedToken];
+      if (!tokenAddr) {
+        status.textContent = 'Token not supported yet.';
+        return;
+      }
+
+      // Simplified: show user needs to approve + buy via contract
+      // In production, this would use ethers.js with proper ABI encoding
+      const decimals = selectedToken === 'WBTC' ? 8 : (selectedToken === 'USDC' || selectedToken === 'USDT' ? 6 : 18);
+      const rawAmount = BigInt(Math.floor(amount * (10 ** decimals)));
+
+      // ERC-20 approve(spender, amount) function selector: 0x095ea7b3
+      const approveData = '0x095ea7b3'
+        + CONTRACTS.crowdsale.slice(2).padStart(64, '0')
+        + rawAmount.toString(16).padStart(64, '0');
+
+      status.textContent = 'Requesting token approval...';
+      const approveTx = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: walletAddress,
+          to: tokenAddr,
+          data: approveData,
+          gas: '0x20000'
+        }]
+      });
+      status.textContent = 'Approved. Now purchasing... TX: ' + approveTx.slice(0, 16) + '...';
+
+      // buy(amount) function selector: 0xd96a094a (simplified)
+      // In production, use proper ABI encoding via ethers.js
+      const buyData = '0xd96a094a' + rawAmount.toString(16).padStart(64, '0');
+      const buyTx = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: walletAddress,
+          to: CONTRACTS.crowdsale,
+          data: buyData,
+          gas: '0x50000'
+        }]
+      });
+      status.textContent = 'Purchase sent! TX: ' + buyTx.slice(0, 20) + '...';
+    }
+
+    buyBtn.textContent = 'BUY PROVA';
+    buyBtn.disabled = false;
+  } catch (err) {
+    console.error('Transaction failed:', err);
+    status.textContent = 'Transaction failed: ' + (err.message || 'User rejected');
+    buyBtn.textContent = 'BUY PROVA';
+    buyBtn.disabled = false;
+  }
+}
+
+// Auto-connect if already authorized
+if (window.ethereum) {
+  window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+    if (accounts.length > 0) {
+      walletAddress = accounts[0];
+      const btn = document.getElementById('connectBtn');
+      btn.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+      btn.classList.add('connected');
+      document.getElementById('buyBtn').disabled = false;
+      document.getElementById('buyBtn').textContent = 'BUY PROVA';
+    }
+  });
+}
+</script>
 
 </body>
 </html>
