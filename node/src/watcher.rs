@@ -1,6 +1,6 @@
-//! L1 event watcher — monitors Filecoin for anchor confirmations and inbound events.
+//! L1 event watcher — monitors L1 for anchor confirmations and inbound events.
 //!
-//! Watches Filecoin L1 for:
+//! Watches Ethereum L1 for:
 //! - Checkpoint anchor confirmations (submitted by CheckpointSubmitter)
 //! - Stake deposit events (new stakers joining via L1 contract)
 //! - Governance action events (proposals ratified on L1)
@@ -23,12 +23,12 @@ pub type L1BlockHash = [u8; 32];
 pub type L1TxHash = [u8; 32];
 
 /// Finality depth: how many L1 blocks to wait before considering an event final.
-pub const DEFAULT_FINALITY_DEPTH: u64 = 30; // ~15 minutes on Filecoin (30s epochs)
+pub const DEFAULT_FINALITY_DEPTH: u64 = 30; // ~15 minutes on Ethereum (12s blocks)
 
 /// Maximum number of blocks to scan per poll cycle (prevents runaway on long gaps).
 pub const MAX_BLOCKS_PER_POLL: u64 = 100;
 
-/// L1 event types emitted by Prova's Filecoin contracts.
+/// L1 event types emitted by Prova's L1 anchor contracts.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum L1EventType {
     /// A checkpoint was successfully anchored on L1.

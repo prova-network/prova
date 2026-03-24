@@ -474,7 +474,7 @@ Arweave provides permanent storage with Proof of Access. AO adds a compute layer
 ### Phase 1: Foundation (Q2 2026)
 - Empirical validation of quantized determinism across GPU architectures
 - Formal specification of QBP protocol
-- Fork and strip base chain (PDP-first, no Fil+, no mining reserve)
+- Core chain implementation (PDP-first, clean economics)
 - Private testnet with 3-5 nodes
 
 ### Phase 2: Testnet (Q3 2026)

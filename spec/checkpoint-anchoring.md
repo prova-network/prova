@@ -4,14 +4,14 @@
 Draft — v1.0 (2026-03-04)
 
 ## Abstract
-Defines the protocol for anchoring Prova L2 state checkpoints to Filecoin L1, enabling cross-chain trust minimization, light client verification, and finality inheritance.
+Defines the protocol for anchoring Prova L2 state checkpoints to Ethereum L1, enabling cross-chain trust minimization, light client verification, and finality inheritance.
 
 ## 1. Overview
 
-Prova produces checkpoints every `CHECKPOINT_INTERVAL` (120) epochs (~1 hour at 30s blocks). Each checkpoint commits the Prova state root, block hash, and validator set hash to Filecoin L1 via a smart contract call, creating an immutable trust anchor.
+Prova produces checkpoints every `CHECKPOINT_INTERVAL` (120) epochs (~1 hour at 30s blocks). Each checkpoint commits the Prova state root, block hash, and validator set hash to Ethereum L1 via a smart contract call, creating an immutable trust anchor.
 
 ```
-Prova L2                          Filecoin L1
+Prova L2                          Ethereum L1
 ─────────                         ───────────
 epoch 120 ──► Checkpoint #0 ──►  AnchorContract.anchor(seq, stateRoot, ...)
 epoch 240 ──► Checkpoint #1 ──►  AnchorContract.anchor(seq, stateRoot, ...)
@@ -78,7 +78,7 @@ If a pending checkpoint does not reach quorum within `CHECKPOINT_TIMEOUT` (60 ep
 
 ### 5.1 Submitter Role
 
-Any node may run the checkpoint submitter. In practice, a designated set of submitter nodes maintains hot wallets funded with FIL for gas.
+Any node may run the checkpoint submitter. In practice, a designated set of submitter nodes maintains hot wallets funded with ETH for gas.
 
 ### 5.2 Transaction Format
 
@@ -154,7 +154,7 @@ Signature verification is deferred to a future upgrade (initially trusted submit
 
 A Prova light client can verify any state claim by:
 
-1. Fetching the anchored checkpoint from L1 (trusted by Filecoin consensus)
+1. Fetching the anchored checkpoint from L1 (trusted by L1 consensus)
 2. Verifying the state root matches
 3. Verifying Merkle proofs against the state root for specific account/storage queries
 
@@ -179,7 +179,7 @@ A 2/3+ coalition could anchor false state roots. Mitigation: fraud proofs allow 
 If all submitters refuse to anchor, checkpoints stall. Mitigation: any funded address can submit; permissionless fallback.
 
 ### 8.3 L1 Reorgs
-If Filecoin reorgs past an anchor transaction, the checkpoint must be resubmitted. The contract's sequential ordering prevents stale anchors.
+If L1 reorgs past an anchor transaction, the checkpoint must be resubmitted. The contract's sequential ordering prevents stale anchors.
 
 ### 8.4 Eclipse Attacks
 An attacker isolating a light client from L1 could serve stale checkpoints. Mitigation: clients should verify L1 finality depth before trusting anchors.

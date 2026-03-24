@@ -3,7 +3,7 @@
 //! Provides two finality levels:
 //! - **Fast finality:** Achieved when a checkpoint is finalized by 2/3+ validator stake
 //!   (optimistic, within ~120 epochs / ~1 hour)
-//! - **Slow (L1) finality:** Achieved when the checkpoint is anchored on Filecoin L1
+//! - **Slow (L1) finality:** Achieved when the checkpoint is anchored on Ethereum L1
 //!   and the L1 block reaches sufficient depth (e.g., 900 epochs / ~7.5 hours)
 //!
 //! Design:
@@ -20,7 +20,7 @@ pub enum FinalityLevel {
     Tentative,
     /// Checkpoint finalized by validator quorum (2/3+ stake).
     FastFinal,
-    /// Checkpoint anchored on Filecoin L1 with sufficient depth.
+    /// Checkpoint anchored on Ethereum L1 with sufficient depth.
     L1Final,
 }
 
@@ -35,7 +35,7 @@ impl std::fmt::Display for FinalityLevel {
 }
 
 /// Minimum L1 depth before considering an anchor as L1-final.
-pub const L1_FINALITY_DEPTH: u64 = 900; // ~7.5 hours at 30s Filecoin epochs
+pub const L1_FINALITY_DEPTH: u64 = 900; // ~7.5 hours at 12s Ethereum blocks
 
 /// Record of a finalized checkpoint and its anchoring status.
 #[derive(Debug, Clone, PartialEq, Eq)]

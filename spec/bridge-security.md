@@ -4,7 +4,7 @@
 Draft — v1.0 (2026-03-04)
 
 ## Abstract
-Defines the security model, threat landscape, and mitigation strategies for the Prova ↔ Filecoin cross-chain bridge. Covers relay integrity, proof verification, censorship resistance, liveness guarantees, and economic security bounds.
+Defines the security model, threat landscape, and mitigation strategies for the Prova ↔ Ethereum cross-chain bridge. Covers relay integrity, proof verification, censorship resistance, liveness guarantees, and economic security bounds.
 
 ## 1. Security Model
 
@@ -12,7 +12,7 @@ Defines the security model, threat landscape, and mitigation strategies for the 
 
 | Component | Trust Assumption |
 |-----------|-----------------|
-| Filecoin L1 | Honest majority (>50% power). Finality after 900 epochs (~7.5 hours). |
+| Ethereum L1 | Honest majority (>50% power). Finality after 900 epochs (~7.5 hours). |
 | Prova L2 validators | Honest supermajority (≥2/3 weighted stake) for checkpoint signing. |
 | Bridge relayers | Untrusted. Any party can relay; correctness enforced by proofs. |
 | Merkle proofs | Cryptographic (SHA-256). Soundness: computationally infeasible to forge. |
@@ -70,7 +70,7 @@ Defines the security model, threat landscape, and mitigation strategies for the 
 
 **Mitigation**: `BridgeMessage::is_expired()` rejects messages older than `MAX_MESSAGE_AGE` (2880 epochs ≈ 24 hours). The inbox checks expiry before processing.
 
-**Edge case**: Clock skew between chains. Prova epoch timestamps are authoritative for Prova-originated messages; Filecoin tipset heights for L1-originated messages.
+**Edge case**: Clock skew between chains. Prova epoch timestamps are authoritative for Prova-originated messages; L1 block heights for L1-originated messages.
 
 **Residual risk**: Messages near the expiry boundary may be accepted or rejected depending on relay timing. This is by design — the 24h window provides ample relay time.
 
@@ -91,7 +91,7 @@ Defines the security model, threat landscape, and mitigation strategies for the 
 **Attack**: Attacker exploits the bridge to mint or transfer tokens exceeding the locked collateral.
 
 **Mitigation**:
-1. **Lock-and-mint model**: Tokens transferred Filecoin→Prova are locked in the L1 bridge contract. Prova mints representative tokens 1:1. Prova→Filecoin burns representative tokens and unlocks L1 collateral.
+1. **Lock-and-mint model**: Tokens transferred L1→Prova are locked in the L1 bridge contract. Prova mints representative tokens 1:1. Prova→L1 burns representative tokens and unlocks L1 collateral.
 2. **Conservation invariant**: `locked_on_L1 >= total_minted_on_L2` enforced by the L1 contract.
 3. **Per-epoch rate limit**: The bridge contract enforces a maximum transfer volume per epoch (`MAX_TRANSFER_PER_EPOCH`), limiting damage from a compromised L2.
 4. **Withdrawal delay**: Large withdrawals (>1% of bridge TVL) trigger a `WITHDRAWAL_DELAY` (48 epochs ≈ 24 minutes) during which validators can halt the bridge if fraud is detected.
@@ -100,14 +100,14 @@ Defines the security model, threat landscape, and mitigation strategies for the 
 
 ### T8 — L1 Reorg Invalidating Checkpoint
 
-**Attack**: A Filecoin chain reorganization reverts an anchored checkpoint, causing the bridge to reference a non-canonical state.
+**Attack**: A L1 chain reorganization reverts an anchored checkpoint, causing the bridge to reference a non-canonical state.
 
 **Mitigation**:
-1. **Confirmation depth**: The L1 watcher (`watcher.rs`) waits for `CONFIRMATION_DEPTH` (30 Filecoin epochs ≈ 15 minutes) before treating an anchor as confirmed.
-2. **Finality inheritance**: Full finality requires 900 Filecoin epochs (~7.5 hours). Bridge messages referencing unfinalized checkpoints carry explicit "soft-finality" status.
+1. **Confirmation depth**: The L1 watcher (`watcher.rs`) waits for `CONFIRMATION_DEPTH` (30 L1 blocks ≈ 15 minutes) before treating an anchor as confirmed.
+2. **Finality inheritance**: Full finality requires 900 L1 blocks (~7.5 hours). Bridge messages referencing unfinalized checkpoints carry explicit "soft-finality" status.
 3. **Reorg detection**: The watcher monitors for L1 reorgs and emits `ReorgDetected` events, triggering automatic re-verification of affected checkpoints.
 
-**Residual risk**: Deep reorgs (>30 epochs) could invalidate confirmed checkpoints. Probability is negligible under Filecoin's Expected Consensus with F3 fast finality (FIP-0086).
+**Residual risk**: Deep reorgs (>30 epochs) could invalidate confirmed checkpoints. Probability is negligible under L1 consensus finality guarantees.
 
 ### T9 — Validator Set Transition Attack
 
@@ -150,7 +150,7 @@ Where `max_bridge_tvl_at_risk` = `MAX_TRANSFER_PER_EPOCH × WITHDRAWAL_DELAY` (t
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
 | `MAX_MESSAGE_AGE` | 2880 epochs (24h) | Ample relay time, limits stale attack surface |
-| `CONFIRMATION_DEPTH` | 30 Filecoin epochs (15min) | Exceeds typical Filecoin reorg depth |
+| `CONFIRMATION_DEPTH` | 30 L1 blocks (15min) | Exceeds typical L1 reorg depth |
 | `MAX_TRANSFER_PER_EPOCH` | 1% of bridge TVL | Limits single-epoch drain |
 | `WITHDRAWAL_DELAY` | 48 epochs (24min) | Detection window for large withdrawals |
 | `TRANSITION_WINDOW` | 60 epochs (30min) | Dual-signing overlap for validator rotation |
@@ -175,13 +175,13 @@ Bridge implementations MUST satisfy all items before mainnet deployment:
 - [ ] Rate limiter and withdrawal delay are not bypassable
 - [ ] Emergency halt correctly freezes all bridge state transitions
 - [ ] Validator set transition requires dual-set signing
-- [ ] No integer overflow in stake arithmetic (u128 sufficient for 10^18 attoFIL units)
+- [ ] No integer overflow in stake arithmetic (u128 sufficient for 10^18 wei units)
 - [ ] Fuzzing: 10,000+ random message sequences with invalid proofs all rejected
 
 ## 5. Open Questions
 
 1. **Cross-chain MEV**: Should the bridge enforce ordering fairness across relayers? Current design is first-valid-relay-wins.
-2. **Multi-hop bridges**: If Prova bridges to chains beyond Filecoin, should the security model compose transitively or require direct anchoring per chain?
+2. **Multi-hop bridges**: If Prova bridges to chains beyond Ethereum, should the security model compose transitively or require direct anchoring per chain?
 3. **Proof aggregation**: Batching multiple message proofs into a single verification could reduce L1 gas. Trade-off: latency vs. cost.
 
 ## References

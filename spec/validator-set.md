@@ -140,7 +140,7 @@ An attacker could split stake across many identities to game the scoring functio
 Selectively completing easy jobs to inflate reputation. Mitigation: reputation is an EMA with slow growth, and job assignment is randomized (CHAIN-013). A validator cannot choose which jobs it receives.
 
 ### 8.3 Long-Range Attacks
-An attacker accumulates historical validator keys from exited validators. Mitigation: Filecoin L1 checkpoint anchoring (SPEC-014) provides an external finality root. Clients that sync from a checkpoint less than `UNBONDING_EPOCHS` old are safe.
+An attacker accumulates historical validator keys from exited validators. Mitigation: Ethereum L1 checkpoint anchoring (SPEC-014) provides an external finality root. Clients that sync from a checkpoint less than `UNBONDING_EPOCHS` old are safe.
 
 ### 8.4 Validator Set Capture
 A wealthy actor acquires enough stake to control >67% of the active set. Mitigation: `MAX_ACTIVE_VALIDATORS = 128` means the attacker must outbid 85+ honest validators. The reputation component (30%) further penalizes newcomers without operational history.

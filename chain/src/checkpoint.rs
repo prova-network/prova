@@ -1,13 +1,13 @@
-//! Filecoin checkpoint anchoring.
+//! L1 checkpoint anchoring.
 //!
-//! Prova periodically commits state root checkpoints to Filecoin L1,
+//! Prova periodically commits state root checkpoints to Ethereum L1,
 //! enabling light client verification and cross-chain trust anchoring.
 //!
 //! Design:
 //! - Checkpoints are produced every `CHECKPOINT_INTERVAL` Prova epochs
 //! - Each checkpoint contains: Prova epoch range, state root, block hash, validator set hash
 //! - Checkpoints require 2/3+ validator signatures (weighted by stake)
-//! - Anchoring to Filecoin is via a smart contract call (FVM actor)
+//! - Anchoring to Ethereum is via a smart contract call (smart contract)
 
 use crate::types::{Address, Epoch, Hash};
 use sha2::{Digest, Sha256};
@@ -234,7 +234,7 @@ impl CheckpointManager {
         }
     }
 
-    /// Simulate anchoring a finalized checkpoint to Filecoin L1.
+    /// Simulate anchoring a finalized checkpoint to L1.
     pub fn anchor_to_l1(
         &mut self,
         sequence: u64,

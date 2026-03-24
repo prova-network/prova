@@ -67,7 +67,7 @@ Pre-audit checklist for external security review. Each item maps to a module, th
 |----|-------|--------|----------|-------------|
 | AUD-050 | Checkpoint quorum requires >2/3 stake weight | `checkpoint.rs` | Critical | Submit checkpoint with 60% quorum; assert rejection |
 | AUD-051 | Bridge message replay rejected (nonce tracking) | `bridge.rs` | Critical | Replay previously processed bridge message; assert rejection |
-| AUD-052 | L1 anchor verification checks Filecoin tipset validity | `watcher.rs`, `checkpoint.rs` | High | Submit anchor referencing non-existent tipset; assert rejection |
+| AUD-052 | L1 anchor verification checks L1 block validity | `watcher.rs`, `checkpoint.rs` | High | Submit anchor referencing non-existent tipset; assert rejection |
 | AUD-053 | State proof verification matches committed state root | `bridge.rs` | Critical | Submit proof against wrong state root; assert verification failure |
 
 ### 2.7 State & Storage

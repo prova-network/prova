@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-Prova integrates Provable Data Possession (PDP) as its storage verification layer. Unlike Filecoin's sealed PoRep, Prova uses lightweight PDP proofs over raw unsealed data, enabling hot/warm storage with lower overhead.
+Prova integrates Provable Data Possession (PDP) as its storage verification layer. Unlike sealed PoRep approaches, Prova uses lightweight PDP proofs over raw unsealed data, enabling hot/warm storage with lower overhead.
 
 PDP in Prova serves dual purposes:
 1. **Storage verification** — prove that model weights and datasets are stored
@@ -14,7 +14,7 @@ PDP in Prova serves dual purposes:
 
 ## 2. CommP Compatibility
 
-Prova uses the same CommP (Piece Commitment) format as Filecoin's PDP:
+Prova uses the CommP (Piece Commitment) format for content addressing:
 - SHA-256 truncated to 254 bits (Fr-safe)
 - Binary Merkle tree over 32-byte leaves
 - Piece sizes: powers of 2 from 128 bytes to 64 GiB
@@ -49,7 +49,7 @@ Chain: Creates proof set, starts proving schedule
 
 ### 3.2 Challenge Protocol
 
-Challenges use drand randomness (same as Filecoin PDP):
+Challenges use drand randomness (standard drand-based):
 
 ```
 epoch E:
@@ -119,7 +119,7 @@ QBP_Stake = f(inference_throughput)   # Proportional to compute committed
 
 ## 6. Gas Costs (Estimated)
 
-Based on Filecoin PDP empirical data:
+Based on empirical PDP network data:
 - Proof set creation (100 roots): ~140M gas
 - Proof set creation (1K roots): ~150M gas
 - Proof set creation (10K roots): ~160M gas
@@ -135,7 +135,7 @@ Beyond model weights, PDP can prove storage of:
 
 ## 8. References
 
-- [Filecoin PDP Spec](https://github.com/filecoin-project/FIPs)
+- PDP specification (open standard)
 - [SPEC-001: QBP Protocol](./qbp-protocol.md)
 - [SPEC-003: Model Registry](./model-registry.md)
 - Prova Whitepaper §4 (Storage Layer)

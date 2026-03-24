@@ -1,12 +1,12 @@
-//! Cross-chain bridge message format (Prova ↔ Filecoin).
+//! Cross-chain bridge message format (Prova ↔ Ethereum).
 //!
 //! Defines the message envelope, state proofs, and relay logic for
-//! bidirectional communication between Prova L2 and Filecoin L1.
+//! bidirectional communication between Prova and Ethereum L1.
 //!
 //! Design:
 //! - Messages are Merkle-proven against checkpoint state roots
-//! - Outbound (Prova→Filecoin): queued in an outbox trie, proven against anchored checkpoints
-//! - Inbound (Filecoin→Prova): L1 events parsed and verified against Filecoin tipset CIDs
+//! - Outbound (Prova→L1): queued in an outbox trie, proven against anchored checkpoints
+//! - Inbound (L1→Prova): L1 events parsed and verified against L1 block hashes
 //! - Nonce-ordered per (source_chain, sender) to prevent replay
 //! - TTL-bounded: messages expire if not relayed within `MAX_MESSAGE_AGE` epochs
 
@@ -21,7 +21,7 @@ pub const MAX_MESSAGE_AGE: Epoch = 2880; // ~1 day at 30s epochs
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChainId {
     Prova,
-    Filecoin,
+    Ethereum,
 }
 
 /// Cross-chain message payload types.
@@ -64,11 +64,11 @@ impl BridgeMessage {
         let mut h = Sha256::new();
         h.update(match self.source {
             ChainId::Prova => [0u8],
-            ChainId::Filecoin => [1u8],
+            ChainId::Ethereum => [1u8],
         });
         h.update(match self.destination {
             ChainId::Prova => [0u8],
-            ChainId::Filecoin => [1u8],
+            ChainId::Ethereum => [1u8],
         });
         h.update(self.sender.0);
         h.update(self.nonce.to_le_bytes());
@@ -395,7 +395,7 @@ mod tests {
     fn make_msg(sender: u8, nonce: u64, epoch: Epoch) -> BridgeMessage {
         BridgeMessage {
             source: ChainId::Prova,
-            destination: ChainId::Filecoin,
+            destination: ChainId::Ethereum,
             sender: Address::test(sender),
             nonce,
             created_at: epoch,
@@ -408,7 +408,7 @@ mod tests {
 
     fn make_inbound_msg(sender: u8, nonce: u64, epoch: Epoch) -> BridgeMessage {
         BridgeMessage {
-            source: ChainId::Filecoin,
+            source: ChainId::Ethereum,
             destination: ChainId::Prova,
             sender: Address::test(sender),
             nonce,
@@ -521,7 +521,7 @@ mod tests {
         let msg = make_inbound_msg(1, 0, 100);
         // Build a mini outbox just for proof generation
         let outbound_copy = BridgeMessage {
-            source: ChainId::Filecoin,
+            source: ChainId::Ethereum,
             destination: ChainId::Prova,
             sender: msg.sender,
             nonce: msg.nonce,
@@ -603,7 +603,7 @@ mod tests {
     fn test_all_payload_types_hash_differently() {
         let base = BridgeMessage {
             source: ChainId::Prova,
-            destination: ChainId::Filecoin,
+            destination: ChainId::Ethereum,
             sender: Address::test(1),
             nonce: 0,
             created_at: 100,
@@ -674,10 +674,10 @@ mod tests {
         // Use outbox as the source chain's outbox
         let mut src_outbox = Outbox::new();
         for m in &msgs {
-            // Re-create as outbound from Filecoin perspective
+            // Re-create as outbound from L1 perspective
             src_outbox
                 .queue(BridgeMessage {
-                    source: ChainId::Filecoin,
+                    source: ChainId::Ethereum,
                     destination: ChainId::Prova,
                     sender: m.sender,
                     nonce: m.nonce,

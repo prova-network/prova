@@ -86,7 +86,7 @@ Block {
 ```
 
 ### 5.2 Block Time
-Target: 30 seconds (matches Filecoin epoch duration).
+Target: 30 seconds (calibrated for network stability).
 
 ### 5.3 Block Size
 Soft limit: 1 MB. Hard limit: 5 MB. Priority ordering:
@@ -142,4 +142,4 @@ Every 2880 epochs (~24 hours). Checkpoints include full state root + proof.
 
 - [libp2p Gossipsub](https://docs.libp2p.io/concepts/pubsub/overview/)
 - [Kademlia DHT](https://en.wikipedia.org/wiki/Kademlia)
-- Filecoin network protocol (for epoch timing reference)
+- Ethereum network protocol (for timing reference)

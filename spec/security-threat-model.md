@@ -145,7 +145,7 @@ This document enumerates known attack vectors against the Prova network, assesse
 
 - **Vector:** Provider doesn't store data locally but retrieves it from another source just-in-time for proofs
 - **Severity:** Low
-- **Mitigation:** Challenge response timeout is calibrated to local-disk latency. Retrieving from remote storage would exceed timeout for large proof sets. This is fundamentally a PDP protocol concern (inherited from Filecoin PDP spec).
+- **Mitigation:** Challenge response timeout is calibrated to local-disk latency. Retrieving from remote storage would exceed timeout for large proof sets. This is fundamentally a PDP protocol concern (standard PDP concern).
 
 ## 7. Operational & Implementation
 

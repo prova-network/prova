@@ -1,6 +1,6 @@
 //! Payment Channels — streaming payments for inference and storage.
 //!
-//! Inspired by Filecoin Pay but simplified for Prova's use case.
+//! Streaming payment channels for Prova services.
 //! Payers lock funds in a channel; providers earn per-inference or
 //! per-epoch for storage. Settlement happens on-chain periodically.
 

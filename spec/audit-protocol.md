@@ -102,7 +102,7 @@ Standard QBP bisection game begins (see `qbp-protocol.md`). The dispute narrows 
 | Offense | Slash % | Cooldown | Notes |
 |---------|---------|----------|-------|
 | Lost QBP dispute (inference) | 20% of stake | 2,880 epochs (24h) | Per-commit, not per-layer |
-| Missed PDP proof (storage) | 5% of stake | 1,440 epochs (12h) | Aligned with Filecoin PDP penalties |
+| Missed PDP proof (storage) | 5% of stake | 1,440 epochs (12h) | Aligned with standard PDP penalties |
 | False challenge (auditor) | 100% of bond | None | Bond forfeited to provider |
 | Repeated offense (3+ in 30d) | 50% of stake | 8,640 epochs (72h) | Escalating penalty |
 | Consensus fault (equivocation) | 100% of stake | Permanent ban | Reserved for future consensus |

@@ -189,7 +189,7 @@ Inference commit transactions can include a `blob_reference` field linking to a 
 
 ### 8.3 PDP Integration
 
-For long-term storage (beyond `BLOB_RETENTION_EPOCHS`), blob data can be migrated to PDP proof sets on Filecoin L1, providing persistent storage guarantees.
+For long-term storage (beyond `BLOB_RETENTION_EPOCHS`), blob data can be migrated to PDP proof sets on Ethereum L1, providing persistent storage guarantees.
 
 ## 9. Security Analysis
 
@@ -203,7 +203,7 @@ Eclipse attacks could prevent validators from receiving sample responses. Mitiga
 
 ### 9.3 Long-Range Data Attacks
 
-After pruning window, data is no longer available on the DA layer. Mitigation: critical data migrated to PDP/Filecoin for permanent storage; dispute windows close before pruning begins.
+After pruning window, data is no longer available on the DA layer. Mitigation: critical data migrated to PDP/L1 for permanent storage; dispute windows close before pruning begins.
 
 ## 10. Constants Summary
 

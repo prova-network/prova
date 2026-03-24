@@ -1,7 +1,7 @@
 //! Checkpoint submitter — automatic L1 transaction submission.
 //!
 //! Monitors the CheckpointManager for finalized-but-unanchored checkpoints
-//! and submits them to Filecoin L1 via an RPC client abstraction.
+//! and submits them to Ethereum L1 via an RPC client abstraction.
 //!
 //! Design:
 //! - Polls at configurable intervals for new finalized checkpoints

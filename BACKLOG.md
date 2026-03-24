@@ -63,14 +63,14 @@
 ## Phase 5 — Cross-Chain & Finality
 
 ### P0 — Active
-- [x] CHAIN-016: Filecoin checkpoint anchoring (quorum voting, L1 anchor, light client verify) — `chain/src/checkpoint.rs` (16 tests)
-- [x] CHAIN-017: Cross-chain bridge message format (Prova↔Filecoin state proofs) — `chain/src/bridge.rs` (20 tests)
+- [x] CHAIN-016: L1 checkpoint anchoring (quorum voting, L1 anchor, light client verify) — `chain/src/checkpoint.rs` (16 tests)
+- [x] CHAIN-017: Cross-chain bridge message format (Prova↔L1 state proofs) — `chain/src/bridge.rs` (20 tests)
 - [x] NODE-016: Checkpoint submitter (automatic L1 tx submission) — `node/src/submitter.rs` (15 tests)
 - [x] SPEC-014: Checkpoint anchoring specification — `spec/checkpoint-anchoring.md`
 
 ### P1 — Next (promoted to P0)
 - [x] CHAIN-018: Finality gadget (fast finality via checkpoint + slow finality via L1) — `chain/src/finality.rs` (18 tests)
-- [x] NODE-017: L1 event watcher (monitor Filecoin for anchor confirmations) — `node/src/watcher.rs` (14 tests)
+- [x] NODE-017: L1 event watcher (monitor L1 for anchor confirmations) — `node/src/watcher.rs` (14 tests)
 - [x] SPEC-015: Bridge security specification — `spec/bridge-security.md`
 
 ## Phase 2 — Integration & Hardening

@@ -105,7 +105,7 @@ prova/
 │       ├── marketplace.rs    Model marketplace + bidding
 │       ├── delegation.rs     Delegated staking + liquid staking
 │       ├── das.rs            Data availability sampling
-│       ├── checkpoint.rs     Filecoin L1 checkpoint anchoring
+│       ├── checkpoint.rs     L1 checkpoint anchoring
 │       ├── bridge.rs         Cross-chain state proofs
 │       ├── finality.rs       Fast + slow finality gadget
 │       ├── events.rs         Structured event log
@@ -187,7 +187,7 @@ cargo run -p prova-node
 | SPEC-011 | [Governance](spec/governance.md) — On-chain proposals |
 | SPEC-012 | [Light Client](spec/light-client.md) — Minimal verification |
 | SPEC-013 | [Security Threat Model](spec/security-threat-model.md) — 21 threats |
-| SPEC-014 | [Checkpoint Anchoring](spec/checkpoint-anchoring.md) — Filecoin L1 |
+| SPEC-014 | [Checkpoint Anchoring](spec/checkpoint-anchoring.md) — L1 Anchoring |
 | SPEC-015 | [Bridge Security](spec/bridge-security.md) — Cross-chain proofs |
 | SPEC-016 | [Event Schema](spec/event-schema.md) — Structured events |
 | SPEC-017 | [Security Audit Checklist](spec/security-audit-checklist.md) — 73 checks |

@@ -8,7 +8,7 @@
 
 Prova uses streaming payment channels for both inference and storage services. Payers lock funds in a channel; providers earn per-inference or per-epoch. Settlement happens on-chain with a dispute window.
 
-This design is inspired by Filecoin Pay but simplified for Prova's dual compute+storage model.
+This design is designed for Prova's dual compute+storage model.
 
 ## 2. Channel Lifecycle
 
@@ -116,6 +116,6 @@ This reduces gas costs for frequent small payments.
 
 ## 9. References
 
-- [Filecoin Pay specification](https://github.com/FilOzone/filecoin-pay)
+- Payment channel prior art
 - [SPEC-001: QBP Protocol](./qbp-protocol.md)
 - [SPEC-004: PDP Integration](./pdp-integration.md)
