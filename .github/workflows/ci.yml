@@ -131,3 +131,31 @@ jobs:
         run: cargo doc --workspace --no-deps
         env:
           RUSTDOCFLAGS: "-D warnings"
+
+  test-hexa:
+    name: Tests (self-hosted, Hexa)
+    runs-on: [self-hosted, linux, x64, hexa]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust version
+        run: |
+          source ~/.cargo/env
+          rustc --version
+          cargo --version
+
+      - name: Build
+        run: |
+          source ~/.cargo/env
+          cargo build --workspace
+
+      - name: Test all crates
+        run: |
+          source ~/.cargo/env
+          cargo test --workspace -- --nocapture
+
+      - name: Clippy
+        run: |
+          source ~/.cargo/env
+          rustup component add clippy 2>/dev/null || true
+          cargo clippy --workspace -- -D warnings
