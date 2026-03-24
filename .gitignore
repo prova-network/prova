@@ -10,3 +10,6 @@ target/
 .idea/
 .vscode/
 *.iml
+contracts/lib/
+contracts/cache/
+contracts/out/
