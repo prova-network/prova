@@ -78,7 +78,7 @@ nav .links a:hover{color:var(--text)}
 .section .desc{color:var(--text2);font-size:18px;max-width:560px;margin-bottom:48px;line-height:1.7}
 
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:700px){.grid-2{grid-template-columns:1fr}}
+@media(max-width:700px){.grid-2{grid-template-columns:1fr}#saftTiers{grid-template-columns:1fr!important}}
 
 /* Apple-style glass cards */
 .card{background:rgba(255,255,255,0.6);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:32px 28px;transition:transform 0.3s,box-shadow 0.3s;box-shadow:0 1px 2px rgba(0,0,0,0.02),0 4px 16px rgba(0,0,0,0.03)}
@@ -289,8 +289,8 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
     <table class="spec">
       <tr><th>Parameter</th><th>Value</th></tr>
       <tr><td>Total supply</td><td>1,000,000,000</td></tr>
-      <tr><td>ICO price</td><td>$0.015</td></tr>
-      <tr><td>FDV at launch</td><td>$15,000,000</td></tr>
+      <tr><td>Base price</td><td>$0.05</td></tr>
+      <tr><td>FDV at launch</td><td>$50,000,000</td></tr>
       <tr><td>Team cliff</td><td>18 months</td></tr>
       <tr><td>TGE unlock</td><td>10%</td></tr>
       <tr><td>Fee burn</td><td>50%</td></tr>
@@ -298,8 +298,55 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
     </table>
   </div>
 
+  <!-- SAFT Tiers -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px" class="reveal" id="saftTiers">
+    <div class="card" style="position:relative;overflow:visible">
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">Tier 1</div>
+      <div style="font-size:28px;font-weight:800;color:var(--text);margin-bottom:4px">$0.033</div>
+      <div style="font-size:13px;color:#2d7a4f;font-weight:600;margin-bottom:16px">35% discount</div>
+      <div style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:20px">
+        3-year vesting<br>
+        12-month cliff<br>
+        Linear unlock after cliff<br>
+        Min. $10,000
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">For long-term believers</div>
+    </div>
+    <div class="card" style="position:relative;border-color:rgba(154,122,46,0.25);box-shadow:0 2px 4px rgba(0,0,0,0.02),0 12px 40px rgba(154,122,46,0.06)">
+      <div style="position:absolute;top:-10px;right:16px;background:var(--brass);color:white;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:6px">Popular</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--brass);margin-bottom:12px">Tier 2</div>
+      <div style="font-size:28px;font-weight:800;color:var(--text);margin-bottom:4px">$0.040</div>
+      <div style="font-size:13px;color:#2d7a4f;font-weight:600;margin-bottom:16px">20% discount</div>
+      <div style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:20px">
+        2-year vesting<br>
+        6-month cliff<br>
+        Linear unlock after cliff<br>
+        Min. $1,000
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">Balanced risk/reward</div>
+    </div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">Tier 3</div>
+      <div style="font-size:28px;font-weight:800;color:var(--text);margin-bottom:4px">$0.050</div>
+      <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:16px">Base price</div>
+      <div style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:20px">
+        10% at TGE<br>
+        12-month linear vest<br>
+        No minimum<br>
+        Instant participation
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">Maximum flexibility</div>
+    </div>
+  </div>
+
+  <!-- Buy panel -->
   <div class="buy-panel reveal" id="buyPanel">
     <h4>Acquire PROVA</h4>
+    <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap" id="tierOpts">
+      <div class="pay-opt" data-tier="1" onclick="selTier(1)">Tier 1 · $0.033</div>
+      <div class="pay-opt on" data-tier="2" onclick="selTier(2)">Tier 2 · $0.040</div>
+      <div class="pay-opt" data-tier="3" onclick="selTier(3)">Tier 3 · $0.050</div>
+    </div>
     <div class="pay-opts">
       <div class="pay-opt on" data-t="ETH" onclick="selPay('ETH')">ETH</div>
       <div class="pay-opt" data-t="USDC" onclick="selPay('USDC')">USDC</div>
@@ -528,8 +575,11 @@ document.querySelectorAll('.links a').forEach(a=>{a.addEventListener('click',()=
 
 <!-- Wallet + Buy -->
 <script>
-let wallet=null,payToken='ETH';
-const rates={ETH:233333,USDC:66.67,USDT:66.67,DAI:66.67,WBTC:4666666};
+let wallet=null,payToken='ETH',selectedTier=2;
+const tierPrices={1:0.033,2:0.040,3:0.050};
+const ethPrice=3500; // approximate ETH/USD
+function getRates(){const p=tierPrices[selectedTier];return{ETH:ethPrice/p,USDC:1/p,USDT:1/p,DAI:1/p,WBTC:97000/p}}
+function selTier(t){selectedTier=t;document.querySelectorAll('[data-tier]').forEach(e=>e.classList.remove('on'));document.querySelector(`[data-tier="${t}"]`).classList.add('on');calcProva()}
 const CONTRACTS={sale:'0x0000000000000000000000000000000000000000',USDC:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',USDT:'0xdAC17F958D2ee523a2206206994597C13D831ec7',DAI:'0x6B175474E89094C44Da98b954EedeAC495271d0F',WBTC:'0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'};
 
 async function connectWallet(){
@@ -544,7 +594,7 @@ async function connectWallet(){
   }catch(e){document.getElementById('wStatus').textContent='Failed: '+e.message}
 }
 function selPay(t){payToken=t;document.querySelectorAll('.pay-opt').forEach(e=>e.classList.remove('on'));document.querySelector(`[data-t="${t}"]`).classList.add('on');document.getElementById('paySuf').textContent=t;calcProva()}
-function calcProva(){const v=parseFloat(document.getElementById('payAmt').value)||0;document.getElementById('provaOut').textContent=(v*(rates[payToken]||0)).toLocaleString('en-US',{maximumFractionDigits:0})}
+function calcProva(){const v=parseFloat(document.getElementById('payAmt').value)||0;const r=getRates();document.getElementById('provaOut').textContent=(v*(r[payToken]||0)).toLocaleString('en-US',{maximumFractionDigits:0})}
 async function buyTokens(){
   if(!wallet){connectWallet();return}
   const amt=parseFloat(document.getElementById('payAmt').value);

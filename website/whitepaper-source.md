@@ -477,7 +477,7 @@ Inference results have a separate finality timeline. The challenge window adds a
 |---|---|---|
 | Mining rewards (storage + compute + network) | 55% | Released via minting function (~20 years, 5 halvings) |
 | Team and founders | 15% | 18-month cliff, 3-year linear vest |
-| Public sale (ICO) | 10% | 10% TGE, 12-month linear vest |
+| Public sale (SAFT) | 10% | Three tiers: T1 $0.033 (35% off, 3yr vest), T2 $0.040 (20% off, 2yr vest), T3 $0.050 (base, 10% TGE + 12mo vest) |
 | Ecosystem and grants | 10% | DAO-governed after year 1 |
 | Community and airdrop | 5% | Testnet operators, bug bounty, early contributors |
 | Seed round | 3% | 12-month cliff, 2-year linear vest |
