@@ -425,7 +425,7 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
   const geo=new THREE.IcosahedronGeometry(1.8,2);
   const wire=new THREE.LineSegments(
     new THREE.WireframeGeometry(geo),
-    new THREE.LineBasicMaterial({color:0xc9a84c,transparent:true,opacity:0.07})
+    new THREE.LineBasicMaterial({color:0xc9a84c,transparent:true,opacity:0.03})
   );
   globe.add(wire);
 
@@ -442,7 +442,7 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
 
   // Dot sprites
   const dotGeo=new THREE.BufferGeometry().setFromPoints(nPos);
-  const dotMat=new THREE.PointsMaterial({color:0xc9a84c,size:0.045,transparent:true,opacity:0.9,sizeAttenuation:true});
+  const dotMat=new THREE.PointsMaterial({color:0xc9a84c,size:0.035,transparent:true,opacity:0.35,sizeAttenuation:true});
   globe.add(new THREE.Points(dotGeo,dotMat));
 
   // Connections
@@ -454,7 +454,7 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
   }
   const lGeo=new THREE.BufferGeometry();
   lGeo.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));
-  globe.add(new THREE.LineSegments(lGeo,new THREE.LineBasicMaterial({color:0xc9a84c,transparent:true,opacity:0.15})));
+  globe.add(new THREE.LineSegments(lGeo,new THREE.LineBasicMaterial({color:0xc9a84c,transparent:true,opacity:0.06})));
 
   // Orbiting particles
   const PC=180;
@@ -467,16 +467,16 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
     pp[i*3]=rad*Math.sin(p)*Math.cos(t);
     pp[i*3+1]=rad*Math.sin(p)*Math.sin(t);
     pp[i*3+2]=rad*Math.cos(p);
-    pv.push({s:0.002+Math.random()*0.005,a:new THREE.Vector3(Math.random()-0.5,1,Math.random()-0.5).normalize()});
+    pv.push({s:0.0008+Math.random()*0.002,a:new THREE.Vector3(Math.random()-0.5,1,Math.random()-0.5).normalize()});
   }
   const pGeo=new THREE.BufferGeometry();
   pGeo.setAttribute('position',new THREE.Float32BufferAttribute(pp,3));
-  globe.add(new THREE.Points(pGeo,new THREE.PointsMaterial({color:0x7c4ddb,size:0.025,transparent:true,opacity:0.45,sizeAttenuation:true})));
+  globe.add(new THREE.Points(pGeo,new THREE.PointsMaterial({color:0x7c4ddb,size:0.018,transparent:true,opacity:0.2,sizeAttenuation:true})));
 
   // Orbital rings
-  const makeRing=(rx,ry,op)=>{const g=new THREE.RingGeometry(1.85,1.92,80);const m=new THREE.MeshBasicMaterial({color:0xc9a84c,transparent:true,opacity:op,side:THREE.DoubleSide});const r=new THREE.Mesh(g,m);r.rotation.x=rx;r.rotation.y=ry;globe.add(r);return r};
-  const r1=makeRing(1.2,0,0.06);
-  const r2=makeRing(0.8,0.9,0.04);
+  const makeRing=(rx,ry,op)=>{const g=new THREE.RingGeometry(1.85,1.90,80);const m=new THREE.MeshBasicMaterial({color:0xc9a84c,transparent:true,opacity:op,side:THREE.DoubleSide});const r=new THREE.Mesh(g,m);r.rotation.x=rx;r.rotation.y=ry;globe.add(r);return r};
+  const r1=makeRing(1.2,0,0.035);
+  const r2=makeRing(0.8,0.9,0.02);
 
   // Mouse
   let mx=0,my=0,tmx=0,tmy=0;
@@ -486,9 +486,9 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
     requestAnimationFrame(animate);
     mx+=(tmx-mx)*0.03;my+=(tmy-my)*0.03;
 
-    globe.rotation.y+=0.0015;
-    globe.rotation.x=-0.2+my*0.6;
-    globe.rotation.y+=mx*0.008;
+    globe.rotation.y+=0.0004;
+    globe.rotation.x=-0.15+my*0.3;
+    globe.rotation.y+=mx*0.003;
 
     // Animate particles
     const pos=pGeo.attributes.position.array;
@@ -500,8 +500,8 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
     }
     pGeo.attributes.position.needsUpdate=true;
 
-    r1.rotation.z+=0.0008;
-    r2.rotation.z-=0.0006;
+    r1.rotation.z+=0.0003;
+    r2.rotation.z-=0.0002;
 
     renderer.render(scene,camera);
   }
