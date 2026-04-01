@@ -392,7 +392,7 @@ This is weaker than the cryptographic guarantees of the storage and compute laye
 Inbound DDoS is the primary risk to SP infrastructure from hosting routable VMs:
 
 - **Per-VM ingress cap:** Protocol-enforced maximum (default 1 Gbps, configurable by SP). Traffic exceeding the cap is dropped at the SP's edge.
-- **Blackhole routing:** SPs can blackhole a specific VM's prefix via a single on-chain transaction, taking effect within one epoch (~30 seconds). The VM loses inbound connectivity but the SP's network is protected.
+- **Blackhole routing:** SPs can blackhole a specific VM's prefix via a single on-chain transaction, taking effect within one block (~10 seconds). The VM loses inbound connectivity but the SP's network is protected.
 - **Third-party integration:** SPs may optionally place Cloudflare, AWS Shield, or similar DDoS mitigation in front of their edge. The protocol does not mandate this but does not interfere with it.
 
 The protocol's position: DDoS protection is an SP operational concern, not a consensus problem. The protocol provides the tools (per-VM caps, blackhole routing) and stays out of the way.
@@ -463,9 +463,11 @@ Block producers are selected proportionally to their voting power using a verifi
 
 ### 4.2 Finality
 
-Prova uses a BFT-style finality gadget on top of the block production mechanism. Blocks achieve finality after 2/3 of voting power attests, typically within 2-3 epochs (~60-90 seconds).
+Prova uses a BFT-style finality gadget on top of block production. With a 10-second block time and 2/3 voting threshold, blocks achieve single-slot finality: once produced and attested, a block is final with no possibility of reorgs. This is a fundamental improvement over Filecoin's 900-epoch (~7.5 hour) probabilistic finality.
 
-Inference results have a separate finality timeline. The challenge window adds an additional delay before inference results are considered settled. This dual-finality approach keeps block production fast while allowing time for compute verification.
+An epoch consists of 60 blocks (10 minutes). Epochs are the reward distribution boundary: at each epoch transition, mining rewards are calculated and split across storage, compute, and network contributors.
+
+Inference results have a separate finality timeline. The challenge window (6 epochs, ~60 minutes) adds delay before inference results are considered settled. This dual-finality approach keeps block production fast (10s) while allowing time for compute verification via QBP.
 
 ---
 
@@ -626,6 +628,17 @@ The following parameters are governance-adjustable via on-chain voting:
 ### 8.2 Upgrade Path
 
 Protocol upgrades follow a propose-vote-activate cycle with a mandatory delay between vote passage and activation. This delay allows node operators to upgrade software and SPs to adjust networking configuration before new rules take effect.
+
+### 8.3 Implementation Architecture
+
+Prova uses a dual-language architecture: **Go for the node application, Rust for the proof core.** This follows the same pattern proven by Filecoin/Lotus (Go application calling Rust cryptographic libraries via FFI).
+
+- **Rust:** Consensus state machine, proof verification (PDP, QBP), Merkle tree construction, cryptographic primitives, deterministic computation. Performance-critical and safety-critical code where Rust's guarantees matter.
+- **Go:** Node orchestration, P2P networking (go-libp2p), RPC server, CLI tooling, networking layer (IPv6/SNI/bandwidth), operator-facing infrastructure. Leverages the team's deep Go experience from building Filecoin storage infrastructure.
+- **Solidity:** ERC-20 token contracts (pre-mainnet phase, Ethereum).
+- **TypeScript + Python:** Developer SDKs for adoption.
+
+The Go node wraps the Rust core via C FFI, identical to how Lotus wraps filecoin-ffi. This boundary is well-understood by the team and allows each language to play to its strengths.
 
 ---
 
