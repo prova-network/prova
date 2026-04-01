@@ -6,6 +6,7 @@
 <title>Prova Network</title>
 <meta name="description" content="A Layer 1 blockchain combining verifiable storage, AI compute, and networking with clean economics.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><circle cx='20' cy='20' r='18' fill='none' stroke='%23C9A84C' stroke-width='2'/><polygon points='14,10 30,20 14,30' fill='none' stroke='%23C9A84C' stroke-width='2' stroke-linejoin='round'/><circle cx='20' cy='20' r='3' fill='%23C9A84C'/></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -53,8 +54,8 @@ nav .links a:hover{color:var(--brass)}
 
 /* Hero */
 .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
-.hero-bg{position:absolute;inset:0;z-index:0}
-.hero-bg canvas{width:100%;height:100%}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-bg canvas{width:100%;height:100%;display:block}
 .hero-content{position:relative;z-index:2;text-align:center;padding:0 24px;max-width:720px}
 .hero-badge{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--brass);border:1px solid rgba(154,122,46,0.25);border-radius:20px;padding:6px 18px;margin-bottom:32px;opacity:0;transform:translateY(20px)}
 .hero h1{font-size:clamp(36px,6vw,64px);font-weight:700;line-height:1.1;margin-bottom:20px;opacity:0;transform:translateY(30px)}
@@ -204,7 +205,7 @@ footer .footer-bottom span{font-family:var(--mono);font-size:10px;color:var(--te
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-bg"><canvas id="bgCanvas"></canvas></div>
+  <div class="hero-bg"></div>
   <div class="hero-content">
     <div class="hero-badge">Layer 1 Protocol</div>
     <h1>Prove <span class="accent">everything.</span></h1>
@@ -411,95 +412,172 @@ footer .footer-bottom span{font-family:var(--mono);font-size:10px;color:var(--te
   </div>
 </footer>
 
-<!-- Background: geometric mesh network -->
+<!-- 3D Globe: Proof Network Visualization -->
 <script>
 (function(){
-  const c=document.getElementById('bgCanvas'),x=c.getContext('2d');
-  let w,h,mx=0,my=0;
-  function resize(){w=c.width=window.innerWidth;h=c.height=window.innerHeight}
-  resize();window.addEventListener('resize',resize);
-  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
+  if(typeof THREE==='undefined'||window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
 
-  const N=60;
-  const nodes=[];
-  for(let i=0;i<N;i++){
-    nodes.push({
-      x:Math.random()*w,y:Math.random()*h,
-      vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25,
-      r:Math.random()*2.5+1
-    });
+  const container=document.querySelector('.hero-bg');
+  const W=()=>window.innerWidth, H=()=>window.innerHeight;
+
+  // Scene setup
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(45,W()/H(),0.1,100);
+  camera.position.z=4.5;
+
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setSize(W(),H());
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setClearColor(0x000000,0);
+  container.innerHTML='';
+  container.appendChild(renderer.domElement);
+
+  // Colors
+  const BRASS=new THREE.Color(0xc9a84c);
+  const PURPLE=new THREE.Color(0x7c4ddb);
+  const DIM=new THREE.Color(0x9a7a2e);
+
+  // Globe group
+  const globe=new THREE.Group();
+  scene.add(globe);
+
+  // Wireframe sphere (the globe shell)
+  const sphereGeo=new THREE.IcosahedronGeometry(1.6,3);
+  const wireframe=new THREE.LineSegments(
+    new THREE.WireframeGeometry(sphereGeo),
+    new THREE.LineBasicMaterial({color:0xc9a84c,transparent:true,opacity:0.06})
+  );
+  globe.add(wireframe);
+
+  // Node points on sphere surface
+  const NODE_COUNT=120;
+  const nodePositions=[];
+  const nodeSpeeds=[];
+  // Fibonacci sphere distribution
+  const phi=Math.PI*(3-Math.sqrt(5));
+  for(let i=0;i<NODE_COUNT;i++){
+    const y=1-(i/(NODE_COUNT-1))*2;
+    const r=Math.sqrt(1-y*y);
+    const theta=phi*i;
+    const pos=new THREE.Vector3(Math.cos(theta)*r,y,Math.sin(theta)*r).multiplyScalar(1.62);
+    nodePositions.push(pos);
+    nodeSpeeds.push(0.0005+Math.random()*0.001);
   }
 
-  function draw(){
-    x.clearRect(0,0,w,h);
+  // Node dots (as points)
+  const dotGeo=new THREE.BufferGeometry().setFromPoints(nodePositions);
+  const dotMat=new THREE.PointsMaterial({color:0xc9a84c,size:0.035,transparent:true,opacity:0.8,sizeAttenuation:true});
+  const dots=new THREE.Points(dotGeo,dotMat);
+  globe.add(dots);
 
-    // Warm radial glow
-    const grd=x.createRadialGradient(w*0.35,h*0.3,0,w*0.35,h*0.3,w*0.55);
-    grd.addColorStop(0,'rgba(154,122,46,0.07)');
-    grd.addColorStop(0.4,'rgba(124,77,219,0.03)');
-    grd.addColorStop(1,'transparent');
-    x.fillStyle=grd;
-    x.fillRect(0,0,w,h);
-
-    // Update nodes
-    nodes.forEach(n=>{
-      n.x+=n.vx;n.y+=n.vy;
-      if(n.x<-20)n.x=w+20;if(n.x>w+20)n.x=-20;
-      if(n.y<-20)n.y=h+20;if(n.y>h+20)n.y=-20;
-
-      // Mouse repulsion
-      const dx=n.x-mx,dy=n.y-my;
-      const dist=Math.sqrt(dx*dx+dy*dy);
-      if(dist<200&&dist>0){
-        const force=0.5*(1-dist/200);
-        n.x+=dx/dist*force;
-        n.y+=dy/dist*force;
-      }
-    });
-
-    // Draw connections (thicker, more visible)
-    for(let i=0;i<N;i++){
-      for(let j=i+1;j<N;j++){
-        const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y;
-        const d=Math.sqrt(dx*dx+dy*dy);
-        if(d<200){
-          const alpha=0.15*(1-d/200);
-          x.beginPath();x.moveTo(nodes[i].x,nodes[i].y);x.lineTo(nodes[j].x,nodes[j].y);
-          x.strokeStyle=`rgba(154,122,46,${alpha})`;x.lineWidth=0.8;x.stroke();
-        }
+  // Connection lines between nearby nodes
+  const linePositions=[];
+  const lineOpacities=[];
+  for(let i=0;i<NODE_COUNT;i++){
+    for(let j=i+1;j<NODE_COUNT;j++){
+      const d=nodePositions[i].distanceTo(nodePositions[j]);
+      if(d<0.7){
+        linePositions.push(nodePositions[i].x,nodePositions[i].y,nodePositions[i].z);
+        linePositions.push(nodePositions[j].x,nodePositions[j].y,nodePositions[j].z);
       }
     }
-
-    // Triangle fills between close triplets
-    for(let i=0;i<N;i++){
-      for(let j=i+1;j<N;j++){
-        const d1=Math.hypot(nodes[i].x-nodes[j].x,nodes[i].y-nodes[j].y);
-        if(d1>140) continue;
-        for(let k=j+1;k<N;k++){
-          const d2=Math.hypot(nodes[j].x-nodes[k].x,nodes[j].y-nodes[k].y);
-          const d3=Math.hypot(nodes[k].x-nodes[i].x,nodes[k].y-nodes[i].y);
-          if(d2<140&&d3<140){
-            x.beginPath();
-            x.moveTo(nodes[i].x,nodes[i].y);
-            x.lineTo(nodes[j].x,nodes[j].y);
-            x.lineTo(nodes[k].x,nodes[k].y);
-            x.closePath();
-            x.fillStyle='rgba(154,122,46,0.035)';
-            x.fill();
-          }
-        }
-      }
-    }
-
-    // Draw dots on top
-    nodes.forEach(n=>{
-      x.beginPath();x.arc(n.x,n.y,n.r,0,Math.PI*2);
-      x.fillStyle='rgba(154,122,46,0.25)';x.fill();
-    });
-
-    requestAnimationFrame(draw);
   }
-  draw();
+  const lineGeo=new THREE.BufferGeometry();
+  lineGeo.setAttribute('position',new THREE.Float32BufferAttribute(linePositions,3));
+  const lineMat=new THREE.LineBasicMaterial({color:0xc9a84c,transparent:true,opacity:0.12});
+  globe.add(new THREE.LineSegments(lineGeo,lineMat));
+
+  // Orbiting particles (data flowing through network)
+  const PARTICLE_COUNT=200;
+  const pGeo=new THREE.BufferGeometry();
+  const pPositions=new Float32Array(PARTICLE_COUNT*3);
+  const pVelocities=[];
+  for(let i=0;i<PARTICLE_COUNT;i++){
+    const theta=Math.random()*Math.PI*2;
+    const phiA=Math.acos(2*Math.random()-1);
+    const rad=1.5+Math.random()*0.8;
+    pPositions[i*3]=rad*Math.sin(phiA)*Math.cos(theta);
+    pPositions[i*3+1]=rad*Math.sin(phiA)*Math.sin(theta);
+    pPositions[i*3+2]=rad*Math.cos(phiA);
+    pVelocities.push({
+      speed:0.002+Math.random()*0.004,
+      axis:new THREE.Vector3(Math.random()-0.5,Math.random()-0.5,Math.random()-0.5).normalize(),
+      rad:rad
+    });
+  }
+  pGeo.setAttribute('position',new THREE.Float32BufferAttribute(pPositions,3));
+  const pMat=new THREE.PointsMaterial({color:0x7c4ddb,size:0.02,transparent:true,opacity:0.5,sizeAttenuation:true});
+  const particles=new THREE.Points(pGeo,pMat);
+  globe.add(particles);
+
+  // Glow ring
+  const ringGeo=new THREE.RingGeometry(1.65,1.72,64);
+  const ringMat=new THREE.MeshBasicMaterial({color:0xc9a84c,transparent:true,opacity:0.08,side:THREE.DoubleSide});
+  const ring=new THREE.Mesh(ringGeo,ringMat);
+  ring.rotation.x=Math.PI/2.2;
+  globe.add(ring);
+
+  // Second ring at different angle
+  const ring2=ring.clone();
+  ring2.rotation.x=Math.PI/3.5;
+  ring2.rotation.y=Math.PI/4;
+  ring2.material=ringMat.clone();
+  ring2.material.opacity=0.05;
+  globe.add(ring2);
+
+  // Mouse tracking for rotation influence
+  let mx=0,my=0,tmx=0,tmy=0;
+  document.addEventListener('mousemove',e=>{
+    tmx=(e.clientX/W()-0.5)*0.4;
+    tmy=(e.clientY/H()-0.5)*0.3;
+  });
+
+  // Pulse effect: nodes that "verify"
+  let pulseTime=0;
+  const pulseNodes=new Set();
+
+  function animate(){
+    requestAnimationFrame(animate);
+
+    // Smooth mouse follow
+    mx+=(tmx-mx)*0.03;
+    my+=(tmy-my)*0.03;
+
+    // Globe rotation: slow auto + mouse influence
+    globe.rotation.y+=0.002;
+    globe.rotation.x=my*0.5;
+    globe.rotation.y+=mx*0.01;
+
+    // Animate orbiting particles
+    const pos=particles.geometry.attributes.position.array;
+    for(let i=0;i<PARTICLE_COUNT;i++){
+      const v=pVelocities[i];
+      const p=new THREE.Vector3(pos[i*3],pos[i*3+1],pos[i*3+2]);
+      p.applyAxisAngle(v.axis,v.speed);
+      pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;
+    }
+    particles.geometry.attributes.position.needsUpdate=true;
+
+    // Pulse: periodically brighten random nodes
+    pulseTime++;
+    if(pulseTime%120===0){
+      const idx=Math.floor(Math.random()*NODE_COUNT);
+      pulseNodes.add({idx,life:60});
+    }
+
+    // Ring subtle rotation
+    ring.rotation.z+=0.001;
+    ring2.rotation.z-=0.0008;
+
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  window.addEventListener('resize',()=>{
+    camera.aspect=W()/H();
+    camera.updateProjectionMatrix();
+    renderer.setSize(W(),H());
+  });
 })();
 </script>
 
