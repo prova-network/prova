@@ -420,80 +420,82 @@ footer .footer-bottom span{font-family:var(--mono);font-size:10px;color:var(--te
   resize();window.addEventListener('resize',resize);
   document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
 
-  // Nodes: slow-drifting geometric points
-  const N=50;
+  const N=60;
   const nodes=[];
   for(let i=0;i<N;i++){
     nodes.push({
       x:Math.random()*w,y:Math.random()*h,
-      vx:(Math.random()-0.5)*0.2,vy:(Math.random()-0.5)*0.2,
-      r:Math.random()*2+1,
-      base:Math.random()*0.5+0.3 // opacity variation
+      vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25,
+      r:Math.random()*2.5+1
     });
   }
 
   function draw(){
     x.clearRect(0,0,w,h);
 
-    // Subtle radial glow behind center
-    const grd=x.createRadialGradient(w*0.4,h*0.35,0,w*0.4,h*0.35,w*0.5);
-    grd.addColorStop(0,'rgba(154,122,46,0.03)');
-    grd.addColorStop(0.5,'rgba(124,77,219,0.015)');
+    // Warm radial glow
+    const grd=x.createRadialGradient(w*0.35,h*0.3,0,w*0.35,h*0.3,w*0.55);
+    grd.addColorStop(0,'rgba(154,122,46,0.07)');
+    grd.addColorStop(0.4,'rgba(124,77,219,0.03)');
     grd.addColorStop(1,'transparent');
     x.fillStyle=grd;
     x.fillRect(0,0,w,h);
 
-    // Update and draw nodes
+    // Update nodes
     nodes.forEach(n=>{
       n.x+=n.vx;n.y+=n.vy;
       if(n.x<-20)n.x=w+20;if(n.x>w+20)n.x=-20;
       if(n.y<-20)n.y=h+20;if(n.y>h+20)n.y=-20;
 
-      // Slight mouse repulsion for interactivity
+      // Mouse repulsion
       const dx=n.x-mx,dy=n.y-my;
       const dist=Math.sqrt(dx*dx+dy*dy);
       if(dist<200&&dist>0){
-        const force=0.3*(1-dist/200);
+        const force=0.5*(1-dist/200);
         n.x+=dx/dist*force;
         n.y+=dy/dist*force;
       }
-
-      x.beginPath();x.arc(n.x,n.y,n.r,0,Math.PI*2);
-      x.fillStyle=`rgba(154,122,46,${n.base*0.12})`;x.fill();
     });
 
-    // Draw connections
+    // Draw connections (thicker, more visible)
     for(let i=0;i<N;i++){
       for(let j=i+1;j<N;j++){
         const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y;
         const d=Math.sqrt(dx*dx+dy*dy);
-        if(d<180){
-          const alpha=0.04*(1-d/180);
+        if(d<200){
+          const alpha=0.15*(1-d/200);
           x.beginPath();x.moveTo(nodes[i].x,nodes[i].y);x.lineTo(nodes[j].x,nodes[j].y);
-          x.strokeStyle=`rgba(154,122,46,${alpha})`;x.lineWidth=0.5;x.stroke();
+          x.strokeStyle=`rgba(154,122,46,${alpha})`;x.lineWidth=0.8;x.stroke();
         }
       }
     }
 
-    // Occasional triangle fills for geometric feel
+    // Triangle fills between close triplets
     for(let i=0;i<N;i++){
       for(let j=i+1;j<N;j++){
+        const d1=Math.hypot(nodes[i].x-nodes[j].x,nodes[i].y-nodes[j].y);
+        if(d1>140) continue;
         for(let k=j+1;k<N;k++){
-          const d1=Math.hypot(nodes[i].x-nodes[j].x,nodes[i].y-nodes[j].y);
           const d2=Math.hypot(nodes[j].x-nodes[k].x,nodes[j].y-nodes[k].y);
           const d3=Math.hypot(nodes[k].x-nodes[i].x,nodes[k].y-nodes[i].y);
-          if(d1<120&&d2<120&&d3<120){
+          if(d2<140&&d3<140){
             x.beginPath();
             x.moveTo(nodes[i].x,nodes[i].y);
             x.lineTo(nodes[j].x,nodes[j].y);
             x.lineTo(nodes[k].x,nodes[k].y);
             x.closePath();
-            x.fillStyle='rgba(154,122,46,0.008)';
+            x.fillStyle='rgba(154,122,46,0.035)';
             x.fill();
           }
         }
       }
     }
+
+    // Draw dots on top
+    nodes.forEach(n=>{
+      x.beginPath();x.arc(n.x,n.y,n.r,0,Math.PI*2);
+      x.fillStyle='rgba(154,122,46,0.25)';x.fill();
+    });
 
     requestAnimationFrame(draw);
   }
