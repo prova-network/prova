@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Prova mark: geometric proof symbol -->
+  <!-- Outer circle: completeness, the network -->
+  <circle cx="100" cy="100" r="88" fill="none" stroke="#C9A84C" stroke-width="3"/>
+  
+  <!-- Inner triangle: direction, proof, verification -->
+  <polygon points="60,45 160,100 60,155" fill="none" stroke="#C9A84C" stroke-width="3" stroke-linejoin="round"/>
+  
+  <!-- Center dot: the core, the truth -->
+  <circle cx="100" cy="100" r="8" fill="#C9A84C"/>
+  
+  <!-- Three small proof dots on the triangle vertices -->
+  <circle cx="60" cy="45" r="4" fill="#C9A84C" opacity="0.4"/>
+  <circle cx="160" cy="100" r="4" fill="#C9A84C" opacity="0.4"/>
+  <circle cx="60" cy="155" r="4" fill="#C9A84C" opacity="0.4"/>
+</svg>

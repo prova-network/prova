@@ -475,13 +475,15 @@ Inference results have a separate finality timeline. The challenge window adds a
 
 | Allocation | Percentage | Vesting |
 |---|---|---|
-| Mining rewards (storage + compute + network) | 60% | Released via minting function |
-| Team and development | 15% | 4-year vest, 1-year cliff |
+| Mining rewards (storage + compute + network) | 55% | Released via minting function (~20 years, 5 halvings) |
+| Team and founders | 15% | 18-month cliff, 3-year linear vest |
+| Public sale (ICO) | 10% | 10% TGE, 12-month linear vest |
 | Ecosystem and grants | 10% | DAO-governed after year 1 |
-| Genesis operators | 10% | 1-year vest |
-| Public distribution | 5% | TBD |
+| Community and airdrop | 5% | Testnet operators, bug bounty, early contributors |
+| Seed round | 3% | 12-month cliff, 2-year linear vest |
+| Liquidity provision | 2% | Unlocked at TGE for DEX pools |
 
-Total supply is fixed at genesis. No mining reserve, no hidden allocations.
+Total supply is 1,000,000,000 PROVA, fixed at genesis. No reserve fund, no hidden allocations. Every token has a defined purpose.
 
 ### 5.2 Three Reward Streams
 
