@@ -9,6 +9,7 @@ import {ProverRegistry} from "../src/ProverRegistry.sol";
 import {ProverStaking} from "../src/ProverStaking.sol";
 import {ContentRegistry} from "../src/ContentRegistry.sol";
 import {StorageMarketplace} from "../src/StorageMarketplace.sol";
+import {MockProofVerifier} from "../src/MockProofVerifier.sol";
 
 /// @title Deploy
 /// @notice Deploys the Prova contract set and wires the cross-contract
@@ -34,6 +35,7 @@ contract DeployScript is Script {
         address staking;
         address content;
         address marketplace;
+        address verifier;
     }
 
     function run() external returns (Addresses memory out) {
@@ -59,14 +61,16 @@ contract DeployScript is Script {
         ContentRegistry content = new ContentRegistry();
         console2.log("ContentRegistry deployed at:", address(content));
 
-        // 5. Storage marketplace. Wire ProofVerifier as 0x..dEaD for now
-        // (integration tests substitute EOA for ProofVerifier); real deployment
-        // will pass the initialized proxy address.
-        address proofVerifierPlaceholder = address(0xdead);
+        // 5. Mock ProofVerifier for local / integration testing. Real
+        // deployments must replace this with the UUPS-proxied production
+        // ProofVerifier and call marketplace.setProofVerifier (future).
+        MockProofVerifier verifier = new MockProofVerifier();
+        console2.log("MockProofVerifier deployed at:", address(verifier));
+
         uint256 slashPerFault = 50 ether;
 
         StorageMarketplace marketplace = new StorageMarketplace(
-            proofVerifierPlaceholder,
+            address(verifier),
             token,
             registry,
             staking,
@@ -87,7 +91,8 @@ contract DeployScript is Script {
             registry: address(registry),
             staking: address(staking),
             content: address(content),
-            marketplace: address(marketplace)
+            marketplace: address(marketplace),
+            verifier: address(verifier)
         });
 
         console2.log("---");
@@ -96,5 +101,6 @@ contract DeployScript is Script {
         console2.log("ProverStaking      =", out.staking);
         console2.log("ContentRegistry    =", out.content);
         console2.log("StorageMarketplace =", out.marketplace);
+        console2.log("MockProofVerifier  =", out.verifier);
     }
 }

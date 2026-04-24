@@ -164,3 +164,38 @@ func (c *Client) BalanceOf(ctx context.Context, addr common.Address) (*big.Int, 
 func (c *Client) BlockNumber(ctx context.Context) (uint64, error) {
 	return c.raw.BlockNumber(ctx)
 }
+
+// TxResult is a tiny struct returned by WaitReceiptInfo. It carries the
+// minimal receipt metadata the deal package needs, without forcing any
+// consumer to import go-ethereum's types.Receipt.
+type TxResult struct {
+	OK          bool         // true iff receipt.Status == 1
+	BlockNumber *big.Int
+	Logs        []TxLog
+}
+
+// TxLog mirrors the subset of types.Log needed for event parsing.
+type TxLog struct {
+	Topics []common.Hash
+	Data   []byte
+}
+
+// WaitReceiptInfo waits for a tx receipt and returns a plain struct
+// the deal package can consume without importing go-ethereum types.
+func (c *Client) WaitReceiptInfo(ctx context.Context, txHash common.Hash) (*TxResult, error) {
+	r, err := c.WaitReceipt(ctx, txHash)
+	if err != nil {
+		return nil, err
+	}
+	out := &TxResult{
+		OK:          r.Status == 1,
+		BlockNumber: r.BlockNumber,
+		Logs:        make([]TxLog, len(r.Logs)),
+	}
+	for i, lg := range r.Logs {
+		out.Logs[i] = TxLog{Topics: lg.Topics, Data: lg.Data}
+	}
+	return out, nil
+}
+
+

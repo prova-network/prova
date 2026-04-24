@@ -48,6 +48,31 @@ Tracking work on the Go prover daemon. Each task links to a matching issue or PR
   * Full-flow test: store piece → build proof for leaf → reconstruct root via proof path → matches CommP. Same algorithm as on-chain `Proofs.sol`.
 - [ ] Challenge-event poller (subscribes to `NextProvingPeriod` events, triggers Runner per data set, handles retry/backoff).
 
+## Post-Phase wiring — closing the full deal loop ✅
+
+- [x] `pkg/deal/accepter.go` — `OnChainAccepter` submits `ProofVerifier.createDataSet(marketplaceAddr, abi.encode(dealId))` and waits for the receipt. Parses the `DataSetCreated` event to return the assigned `dataSetID`.
+- [x] `pkg/ethclient/client.go` — added `TxResult` + `TxLog` + `WaitReceiptInfo` so `pkg/deal` doesn't need to import `go-ethereum/types`.
+- [x] `contracts/src/MockProofVerifier.sol` — minimal integration-test stand-in that emits `DataSetCreated` + forwards to the marketplace's `PDPListener.dataSetCreated` hook. Deploy script uses it as a placeholder for the real UUPS-proxied ProofVerifier.
+- [x] `pkg/deal/events.go` — EventPoller now also processes `DealAccepted`, `DealCompleted`, `DealCancelled`, `DealSlashed` events and drives `engine.MarkActive/Completed/Cancelled/Slashed` accordingly. Watermark advances only after all five filters succeed.
+- [x] `cmdStart` wires `OnChainAccepter` automatically when `proof_verifier` is set (falls back to a warning-only stub otherwise).
+- [x] `cmdRegister` actually submits `ProverRegistry.register(endpoint, features, prices, metadata)` and waits for confirmation.
+- [x] `cmdStatus` queries `StorageMarketplace.nextDealId + getDeal` for the prover's recent deals and prints status + proof count.
+- [x] Config: `[source_url] allow_insecure = true` flows into `Fetcher.AllowInsecure` so operators don't need `PROVA_PULL_ALLOW_INSECURE=1` in the environment.
+
+**Validated end-to-end against live anvil:**
+
+1. Deployed 6 contracts (5 Prova + MockProofVerifier).
+2. Prover registered via `cast send` + staked 500 PROVA.
+3. Client proposed deal with commP computed via `go-fil-commp-hashhash`.
+4. Started `provad` with full config.
+5. Daemon ingested deal (`newDeals=1`).
+6. Engine ran download → verify → accept steps; 127 bytes fetched from local HTTP source server, CommP matched, piece stored at `/tmp/.../ba/ga/baga6ea4seaqlqfy...`.
+7. OnChainAccepter submitted `createDataSet` tx; MockProofVerifier emitted `DataSetCreated`; Marketplace `dataSetCreated` hook ran and transitioned deal to Active on-chain.
+8. EventPoller picked up `DealAccepted` event on next poll (`accepted=1`) and `engine.MarkActive` transitioned the local record to Active.
+9. Status line at uptime=1m0s: `deals_active=1`. Metrics: `prova_deals_active 1`, `prova_bytes_stored_total 127`, `prova_pieces_stored 1`.
+10. `provad status` command showed the deal inline: `deal #1 status=Active proofs=0`.
+11. SIGTERM → clean shutdown.
+
 ## Phase E — HTTP retrieval endpoint ✅
 
 - [x] `pkg/httpserver/` — stdlib `net/http` server, no framework deps

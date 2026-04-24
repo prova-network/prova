@@ -45,6 +45,7 @@ mkdir -p "$BINDINGS_OUT"
 CONTRACTS=(
   "ProvaToken:provatoken:ProvaToken"
   "ProofVerifier:proofverifier:ProofVerifier"
+  "MockProofVerifier:mockproofverifier:MockProofVerifier"
   "ProverRegistry:proverregistry:ProverRegistry"
   "ProverStaking:proverstaking:ProverStaking"
   "ContentRegistry:contentregistry:ContentRegistry"

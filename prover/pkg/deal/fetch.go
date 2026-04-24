@@ -27,8 +27,9 @@ var pullAllowInsecure = os.Getenv("PROVA_PULL_ALLOW_INSECURE") == "1"
 
 // Fetcher downloads piece content from a source URL.
 type Fetcher struct {
-	client   *http.Client
-	maxBytes int64 // hard limit on piece size downloads
+	client         *http.Client
+	maxBytes       int64 // hard limit on piece size downloads
+	allowInsecure  bool  // if true, allow http:// and private/loopback hosts
 }
 
 // FetcherOptions configures a Fetcher.
@@ -38,6 +39,12 @@ type FetcherOptions struct {
 
 	// MaxBytes caps download size. Default: 32 GiB.
 	MaxBytes int64
+
+	// AllowInsecure permits http:// + private/loopback source hosts. Never
+	// enable in production. Defaults to false; $PROVA_PULL_ALLOW_INSECURE=1
+	// at process start still flips the package-level default for the sake
+	// of existing test fixtures.
+	AllowInsecure bool
 }
 
 // NewFetcher constructs a fetcher with sensible defaults.
@@ -61,7 +68,8 @@ func NewFetcher(opts FetcherOptions) *Fetcher {
 				return nil
 			},
 		},
-		maxBytes: opts.MaxBytes,
+		maxBytes:      opts.MaxBytes,
+		allowInsecure: opts.AllowInsecure,
 	}
 }
 
@@ -76,6 +84,10 @@ func NewFetcher(opts FetcherOptions) *Fetcher {
 //
 // Adapted from curio/pdp/pull_types.go ValidatePullSourceURL.
 func ValidateSourceURL(raw string) error {
+	return validateSourceURLWithAllow(raw, pullAllowInsecure)
+}
+
+func validateSourceURLWithAllow(raw string, allowInsecure bool) error {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return fmt.Errorf("invalid URL: %w", err)
@@ -89,8 +101,8 @@ func ValidateSourceURL(raw string) error {
 	case "https":
 		// ok
 	case "http":
-		if !pullAllowInsecure {
-			return fmt.Errorf("URL must use https; got %q (set PROVA_PULL_ALLOW_INSECURE=1 to permit http for dev)", u.Scheme)
+		if !allowInsecure {
+			return fmt.Errorf("URL must use https; got %q (set [source_url].allow_insecure=true or PROVA_PULL_ALLOW_INSECURE=1 to permit http for dev)", u.Scheme)
 		}
 	default:
 		return fmt.Errorf("unsupported scheme %q", u.Scheme)
@@ -101,7 +113,7 @@ func ValidateSourceURL(raw string) error {
 		return fmt.Errorf("URL must have a host")
 	}
 
-	if !pullAllowInsecure {
+	if !allowInsecure {
 		if err := rejectUnsafeHost(host); err != nil {
 			return err
 		}
@@ -144,7 +156,9 @@ func rejectUnsafeHost(host string) error {
 //
 // The download is bounded by the fetcher's maxBytes limit.
 func (f *Fetcher) Fetch(ctx context.Context, sourceURL string, dst io.Writer) (int64, error) {
-	if err := ValidateSourceURL(sourceURL); err != nil {
+	// Per-fetcher override of the package-level allowInsecure flag.
+	allow := pullAllowInsecure || f.allowInsecure
+	if err := validateSourceURLWithAllow(sourceURL, allow); err != nil {
 		return 0, err
 	}
 

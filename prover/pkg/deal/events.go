@@ -80,8 +80,15 @@ func NewEventPoller(opts EventPollerOptions) (*EventPoller, error) {
 	}, nil
 }
 
-// PollOnce fetches events since the last watermark and ingests any deals
-// addressed to this prover. Returns the number of new deals ingested.
+// PollOnce fetches events since the last watermark and processes them:
+//   - DealProposed: ingest into the engine if it targets this prover
+//   - DealAccepted: transition the local deal to Active
+//   - DealCompleted: transition to Completed (terminal)
+//   - DealCancelled: transition to Cancelled (terminal)
+//   - DealSlashed: transition to Slashed (terminal)
+//
+// Returns the number of newly-ingested deals (other transitions are
+// applied silently to existing records).
 //
 // The caller provides currentBlock (from eth_blockNumber). We filter up to
 // (currentBlock - BlockLookback) to leave a reorg safety margin.
@@ -159,15 +166,133 @@ func (p *EventPoller) PollOnce(ctx context.Context, currentBlock uint64) (int, e
 		return count, fmt.Errorf("iterate events: %w", err)
 	}
 
+	// Process chain-driven transitions: Accepted, Completed, Cancelled, Slashed.
+	// Watermark is only advanced after all filters succeed, so a partial
+	// failure retries the whole window.
+	accepted, err := p.processDealAccepted(ctx, start, end)
+	if err != nil {
+		return count, fmt.Errorf("DealAccepted: %w", err)
+	}
+	completed, err := p.processDealCompleted(ctx, start, end)
+	if err != nil {
+		return count, fmt.Errorf("DealCompleted: %w", err)
+	}
+	cancelled, err := p.processDealCancelled(ctx, start, end)
+	if err != nil {
+		return count, fmt.Errorf("DealCancelled: %w", err)
+	}
+	slashed, err := p.processDealSlashed(ctx, start, end)
+	if err != nil {
+		return count, fmt.Errorf("DealSlashed: %w", err)
+	}
+
 	if err := p.engine.deals.SetLastSeenBlock(safe); err != nil {
 		return count, fmt.Errorf("update watermark: %w", err)
 	}
 
-	if count > 0 {
+	if count+accepted+completed+cancelled+slashed > 0 {
 		p.logger.Info("poll complete",
 			"blocks", fmt.Sprintf("%d..%d", start, end),
 			"newDeals", count,
+			"accepted", accepted,
+			"completed", completed,
+			"cancelled", cancelled,
+			"slashed", slashed,
 		)
 	}
 	return count, nil
+}
+
+func (p *EventPoller) processDealAccepted(ctx context.Context, start, end uint64) (int, error) {
+	opts := &bind.FilterOpts{Start: start, End: &end, Context: ctx}
+	it, err := p.marketplace.FilterDealAccepted(opts, nil, []common.Address{p.ourAddress})
+	if err != nil {
+		return 0, err
+	}
+	defer it.Close()
+	n := 0
+	for it.Next() {
+		evt := it.Event
+		if evt == nil {
+			continue
+		}
+		if err := p.engine.MarkActive(DealID(evt.DealId.Uint64()), evt.DataSetId.Uint64()); err != nil {
+			p.logger.Warn("mark active failed",
+				"dealID", evt.DealId.Uint64(),
+				"err", err,
+			)
+			continue
+		}
+		n++
+	}
+	return n, it.Error()
+}
+
+func (p *EventPoller) processDealCompleted(ctx context.Context, start, end uint64) (int, error) {
+	opts := &bind.FilterOpts{Start: start, End: &end, Context: ctx}
+	it, err := p.marketplace.FilterDealCompleted(opts, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer it.Close()
+	n := 0
+	for it.Next() {
+		evt := it.Event
+		if evt == nil {
+			continue
+		}
+		id := DealID(evt.DealId.Uint64())
+		if existing, err := p.engine.deals.Get(id); err == nil && existing != nil {
+			if err := p.engine.MarkCompleted(id); err == nil {
+				n++
+			}
+		}
+	}
+	return n, it.Error()
+}
+
+func (p *EventPoller) processDealCancelled(ctx context.Context, start, end uint64) (int, error) {
+	opts := &bind.FilterOpts{Start: start, End: &end, Context: ctx}
+	it, err := p.marketplace.FilterDealCancelled(opts, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer it.Close()
+	n := 0
+	for it.Next() {
+		evt := it.Event
+		if evt == nil {
+			continue
+		}
+		id := DealID(evt.DealId.Uint64())
+		if existing, err := p.engine.deals.Get(id); err == nil && existing != nil {
+			if err := p.engine.MarkCancelled(id); err == nil {
+				n++
+			}
+		}
+	}
+	return n, it.Error()
+}
+
+func (p *EventPoller) processDealSlashed(ctx context.Context, start, end uint64) (int, error) {
+	opts := &bind.FilterOpts{Start: start, End: &end, Context: ctx}
+	it, err := p.marketplace.FilterDealSlashed(opts, nil, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer it.Close()
+	n := 0
+	for it.Next() {
+		evt := it.Event
+		if evt == nil {
+			continue
+		}
+		id := DealID(evt.DealId.Uint64())
+		if existing, err := p.engine.deals.Get(id); err == nil && existing != nil {
+			if err := p.engine.MarkSlashed(id, "slashed on-chain"); err == nil {
+				n++
+			}
+		}
+	}
+	return n, it.Error()
 }
