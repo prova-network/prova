@@ -40,7 +40,12 @@ Tracking work on the Go prover daemon. Each task links to a matching issue or PR
 - [x] `pkg/challenges/runner.go` — `Runner.ProveSet(ctx, dataSetID)` orchestrates read-challenge → compute-indices → lookup-pieces → build-proofs → submit-tx.
 - [x] Interfaces: `PieceLookup` (maps leaf → piece+offset via on-chain `findPieceIds`) and `MerkleBuilder` (builds inclusion proof from piece bytes) keep Merkle tree implementation pluggable.
 - [x] Tests: 17 in this package. Challenge determinism, distribution, bounds, dataset isolation, error propagation, runner orchestration.
-- [ ] **Phase D.2** (deferred): Merkle tree builder (`pkg/pdptree/` planned) — load piece, pad to next power-of-two, construct SHA2-254-trunc254-padded binary tree, navigate to challenged leaf. Can reuse `curio/lib/proof/merkle_sha254_memtree.go` (~400 LOC, MIT).
+- [x] **Phase D.2** — `pkg/pdptree/` (~250 LOC + 210 LOC tests):
+  * `fr32.go` — bit-for-bit port of lotus fr32.pad with SPDX attribution
+  * `memtree.go` — `BuildMemtree`, `BuildMemtreeFromSnapshot`, `MemtreeProof` ported from curio
+  * `builder.go` — `StoreBackedBuilder` implements `challenges.MerkleBuilder`
+  * **Cross-validated against `go-fil-commp-hashhash`** on 4 size vectors (127, 1016, 8128, 65024 bytes): roots bit-identical to canonical Filecoin implementation.
+  * Full-flow test: store piece → build proof for leaf → reconstruct root via proof path → matches CommP. Same algorithm as on-chain `Proofs.sol`.
 - [ ] Challenge-event poller (subscribes to `NextProvingPeriod` events, triggers Runner per data set, handles retry/backoff).
 
 ## Phase E — HTTPS retrieval endpoint
