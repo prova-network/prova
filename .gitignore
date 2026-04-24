@@ -36,3 +36,5 @@ contracts/broadcast/
 
 # Internal planning docs (not for public repo)
 MAKING-MONEY.md
+LISTINGS-AND-LIQUIDITY.md
+.preview/

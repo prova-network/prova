@@ -70,7 +70,16 @@ curl -fsSL https://get.prova.network | bash
 
 Detects your platform (linux or darwin, amd64 or arm64), verifies the SHA-256 checksum of the release tarball against the published `checksums.txt`, drops the binary into `/usr/local/bin/provad`, writes an example config, and on Linux offers to install a hardened systemd unit.
 
-Overrides via env vars:
+**Supported systems:**
+
+- **Linux:** Ubuntu 22.04+, Debian 12+, Fedora 39+, anything with systemd 249+
+- **macOS:** 13 (Ventura) or newer
+- **Arches:** amd64, arm64
+- **Windows:** not supported natively (use WSL2 at your own risk)
+
+**Host dependencies** (already present on every modern Linux/macOS): `bash`, `curl`, `tar`, `install`, `sha256sum` (or `shasum` on macOS), and `sudo` + `systemctl` if you opt into the Linux service unit. The Prova binary itself is statically compiled; no Go, libssl, or glibc compatibility surprises.
+
+**Env var overrides:**
 
 ```bash
 PROVA_VERSION=v0.1.0          # pin a specific release (default: latest)
@@ -78,9 +87,21 @@ PROVA_PREFIX=$HOME/.local     # user-local install instead of /usr/local
 PROVA_CONFIG=/etc/prova       # where to drop prover.toml.example
 PROVA_NO_SYSTEMD=1            # skip systemd unit setup on Linux
 PROVA_DRY_RUN=1               # print what would happen, don't do it
+PROVA_YES=1                   # answer yes to all prompts, for CI
 ```
 
 The source is [`install.sh`](./install.sh), intentionally readable. Pair with [`uninstall.sh`](./uninstall.sh) to remove.
+
+---
+
+## For humans
+
+Four short guides cover the common "how do I actually use this?" questions:
+
+- **[Running a prover](./docs/RUNNING-A-PROVER.md)**: hardware, staking, rewards, what happens if you stop, uninstall, everything a new prover operator needs
+- **[Building on Prova](./docs/BUILDING-ON-PROVA.md)**: how devs store files, host `.eth` websites, and build platforms on top
+- **[What it looks like on-chain](./docs/ONCHAIN.md)**: six contracts explained, money flows, Basescan events, indexer guide
+- **[Specs](./spec/)**: the canonical protocol specification for deep implementers
 
 ---
 

@@ -8,8 +8,41 @@
 #
 #   Safe by default: asks before doing anything destructive. Idempotent.
 #   Re-running upgrades in place.
+#
+# ─── Supported systems ───
+#   • Linux:    Ubuntu 22.04+, Debian 12+, Fedora 39+, anything w/ systemd 249+
+#   • macOS:    13 (Ventura) or newer
+#   • Arches:   amd64, arm64
+#   • Windows:  not supported; use WSL2 at your own risk
+#
+# ─── Dependencies (on the host) ───
+#   Already on every modern Linux/macOS by default:
+#     bash 4+, curl, tar, install, mktemp, awk, grep, sed, uname
+#     sha256sum (Linux) OR shasum -a 256 (macOS)
+#     sudo (only if installing into system paths like /usr/local/bin)
+#     systemctl (Linux, only if opting into the systemd unit)
+#
+#   The Prova binary itself is statically compiled, no runtime deps:
+#     no Go, no libssl, no glibc-version issues.
 
 set -euo pipefail
+
+# ─── Dep check (fail fast with a useful message) ──────────────────────────
+check_deps() {
+  local missing=()
+  for cmd in bash curl tar install mktemp awk grep sed uname; do
+    command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
+  done
+  if ! command -v sha256sum >/dev/null 2>&1 && ! command -v shasum >/dev/null 2>&1; then
+    missing+=("sha256sum or shasum")
+  fi
+  if (( ${#missing[@]} > 0 )); then
+    printf 'prova install: missing required tools: %s\n' "${missing[*]}" >&2
+    printf 'prova install: please install them via your package manager and re-run.\n' >&2
+    exit 1
+  fi
+}
+check_deps
 
 # ─── colors + banners ────────────────────────────────────────────────────
 if [[ -t 1 ]] && [[ "${TERM:-}" != "dumb" ]] && [[ -z "${NO_COLOR:-}" ]]; then
