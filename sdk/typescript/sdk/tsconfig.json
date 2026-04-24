@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*", "package.json", "../synapse-core/src/utils/epoch.ts", "../synapse-core/test/epoch.test.ts"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    {
+      "path": "../synapse-core/tsconfig.json"
+    }
+  ],
+  "typedocOptions": {
+    "entryPointStrategy": "resolve",
+    "entryPoints": [
+      "src/index.ts",
+      "src/payments/index.ts",
+      "src/storage/index.ts",
+      "src/warm-storage/index.ts",
+      "src/sp-registry/index.ts",
+      "src/filbeam/index.ts"
+    ]
+  }
+}

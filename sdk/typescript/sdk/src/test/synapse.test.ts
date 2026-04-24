@@ -1,0 +1,849 @@
+/* globals describe it beforeEach */
+
+/**
+ * Basic tests for Prova class
+ */
+
+import { calibration } from '@prova-network/core/chains'
+import * as Mocks from '@prova-network/core/mocks'
+import * as Piece from '@prova-network/core/piece'
+import { assert } from 'chai'
+import { setup } from 'iso-web/msw'
+import { HttpResponse, http } from 'msw'
+import pDefer from 'p-defer'
+import { type Address, createWalletClient, isAddressEqual, parseUnits, http as viemHttp } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import { PaymentsService } from '../payments/index.ts'
+import type { StorageContext } from '../storage/context.ts'
+import { Prova } from '../prova.ts'
+import { SIZE_CONSTANTS } from '../utils/constants.ts'
+
+// mock server for testing
+const server = setup()
+
+const providers = [Mocks.PROVIDERS.provider1, Mocks.PROVIDERS.provider2]
+const providerIds = providers.map((provider) => provider.providerId)
+const account = privateKeyToAccount(Mocks.PRIVATE_KEYS.key1)
+const client = createWalletClient({
+  chain: calibration,
+  transport: viemHttp(),
+  account,
+})
+
+describe('Prova', () => {
+  before(async () => {
+    await server.start()
+  })
+
+  after(() => {
+    server.stop()
+  })
+  beforeEach(() => {
+    server.resetHandlers()
+  })
+
+  describe('StorageManager access', () => {
+    it('should provide access to StorageManager via prova.storage', async () => {
+      server.use(Mocks.JSONRPC(Mocks.presets.basic))
+      const prova = Prova.create({
+        chain: calibration,
+        account,
+        source: null,
+      })
+
+      // Should be able to access storage manager
+      assert.exists(prova.storage)
+      assert.isObject(prova.storage)
+
+      // Should have all storage manager methods available
+      assert.isFunction(prova.storage.upload)
+      assert.isFunction(prova.storage.download)
+      assert.isFunction(prova.storage.createContext)
+      assert.isFunction(prova.storage.getDefaultContext)
+      assert.isFunction(prova.storage.findDataSets)
+    })
+
+    it('should create storage manager with CDN settings', async () => {
+      server.use(Mocks.JSONRPC(Mocks.presets.basic))
+      const prova = new Prova({
+        client,
+        source: null,
+        withCDN: true,
+      })
+
+      assert.exists(prova.storage)
+      // The storage manager should inherit the withCDN setting
+      // We can't directly test this without accessing private properties
+      // but it will be used in upload/download operations
+    })
+
+    it('should return same storage manager instance', async () => {
+      server.use(Mocks.JSONRPC(Mocks.presets.basic))
+      const prova = new Prova({ client, source: null })
+
+      const storage1 = prova.storage
+      const storage2 = prova.storage
+
+      // Should be the same instance
+      assert.equal(storage1, storage2)
+    })
+  })
+
+  describe('Payment access', () => {
+    it('should provide read-only access to payments', async () => {
+      server.use(Mocks.JSONRPC(Mocks.presets.basic))
+      const prova = new Prova({ client, source: null })
+
+      // Should be able to access payments
+      assert.exists(prova.payments)
+      assert.isTrue(prova.payments instanceof PaymentsService)
+
+      // Should have all payment methods available
+      assert.isFunction(prova.payments.walletBalance)
+      assert.isFunction(prova.payments.balance)
+      assert.isFunction(prova.payments.deposit)
+      assert.isFunction(prova.payments.withdraw)
+      assert.isFunction(prova.payments.decimals)
+
+      // payments property should be read-only (getter only)
+      const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(prova), 'payments')
+      assert.exists(descriptor?.get)
+      assert.notExists(descriptor?.set)
+    })
+  })
+
+  describe('getProviderInfo', () => {
+    it('should get provider info for valid approved provider', async () => {
+      server.use(Mocks.JSONRPC(Mocks.presets.basic))
+
+      const prova = new Prova({ client, source: null })
+      const providerInfo = await prova.getProviderInfo(Mocks.ADDRESSES.serviceProvider1)
+
+      assert.ok(isAddressEqual(providerInfo.serviceProvider as Address, Mocks.ADDRESSES.serviceProvider1))
+      assert.equal(providerInfo.pdp.serviceURL, 'https://pdp.example.com')
+    })
+
+    it('should throw for invalid provider address', async () => {
+      server.use(Mocks.JSONRPC(Mocks.presets.basic))
+      const prova = new Prova({ client, source: null })
+
+      try {
+        // @ts-expect-error - invalid address
+        await prova.getProviderInfo('invalid-address')
+        assert.fail('Should have thrown')
+      } catch (error: any) {
+        assert.include(error.message, 'Address "invalid-address" is invalid')
+      }
+    })
+
+    it('should throw for non-found provider', async () => {
+      server.use(
+        Mocks.JSONRPC({
+          ...Mocks.presets.basic,
+          serviceRegistry: {
+            ...Mocks.presets.basic.serviceRegistry,
+          },
+        })
+      )
+
+      try {
+        const prova = new Prova({ client, source: null })
+        await prova.getProviderInfo(Mocks.ADDRESSES.zero)
+        assert.fail('Should have thrown')
+      } catch (error: any) {
+        assert.include(error.message, 'not found in registry')
+      }
+    })
+
+    it('should throw when provider not found', async () => {
+      server.use(
+        Mocks.JSONRPC({
+          ...Mocks.presets.basic,
+          serviceRegistry: {
+            ...Mocks.presets.basic.serviceRegistry,
+          },
+        })
+      )
+
+      try {
+        const prova = new Prova({ client, source: null })
+        await prova.getProviderInfo(Mocks.ADDRESSES.zero)
+        assert.fail('Should have thrown')
+      } catch (error: any) {
+        assert.include(error.message, 'not found')
+      }
+    })
+  })
+
+  describe('download', () => {
+    it('should validate PieceCID input', async () => {
+      server.use(Mocks.JSONRPC(Mocks.presets.basic))
+      const prova = new Prova({ client, source: null })
+
+      try {
+        await prova.storage.download({ pieceCid: 'invalid-piece-link' })
+        assert.fail('Should have thrown')
+      } catch (error: any) {
+        assert.include(error.message, 'Invalid PieceCID')
+        assert.include(error.message, 'invalid-piece-link')
+      }
+    })
+
+    it('should accept valid PieceCID string', async () => {
+      // Create test data that matches the expected PieceCID
+      const testData = new TextEncoder().encode('test data')
+      server.use(
+        Mocks.JSONRPC(Mocks.presets.basic),
+        http.get('https://pdp.example.com/pdp/piece', async ({ request }) => {
+          const url = new URL(request.url)
+          const pieceCid = url.searchParams.get('pieceCid')
+
+          return HttpResponse.json({
+            pieceCid,
+          })
+        }),
+        http.get('https://pdp.example.com/piece/:pieceCid', async () => {
+          return HttpResponse.arrayBuffer(testData.buffer)
+        })
+      )
+
+      const prova = new Prova({ client, source: null })
+
+      // Use the actual PieceCID for 'test data'
+      const testPieceCid = 'bafkzcibcoybm2jlqsbekq6uluyl7xm5ffemw7iuzni5ez3a27iwy4qu3ssebqdq'
+      const data = await prova.storage.download({ pieceCid: testPieceCid })
+
+      // Should return Uint8Array
+      assert.isTrue(data instanceof Uint8Array)
+      assert.equal(new TextDecoder().decode(data), 'test data')
+    })
+
+    it('should pass withCDN option to retriever', async () => {
+      const deferred = pDefer<{ cid: string; wallet: string }>()
+      const testData = new TextEncoder().encode('test data')
+      server.use(
+        Mocks.JSONRPC({ ...Mocks.presets.basic }),
+        http.head<{ cid: string; wallet: string }>(`https://:wallet.calibration.filbeam.io/:cid`, async () => {
+          return HttpResponse.text('ok', { status: 200 })
+        }),
+        http.get<{ cid: string; wallet: string }>(`https://:wallet.calibration.filbeam.io/:cid`, async ({ params }) => {
+          deferred.resolve(params)
+          return HttpResponse.arrayBuffer(testData.buffer)
+        }),
+        http.get('https://pdp.example.com/pdp/piece', async ({ request }) => {
+          const url = new URL(request.url)
+          const pieceCid = url.searchParams.get('pieceCid')
+
+          return HttpResponse.json({
+            pieceCid,
+          })
+        }),
+        http.get('https://pdp.example.com/piece/:pieceCid', async () => {
+          return HttpResponse.arrayBuffer(testData.buffer)
+        })
+      )
+
+      const prova = new Prova({
+        client,
+        source: null,
+        withCDN: false, // Instance default
+      })
+
+      const testPieceCid = 'bafkzcibcoybm2jlqsbekq6uluyl7xm5ffemw7iuzni5ez3a27iwy4qu3ssebqdq'
+
+      // Test with explicit withCDN
+      await prova.storage.download({ pieceCid: testPieceCid, withCDN: true })
+      const result = await deferred.promise
+
+      const { cid, wallet } = result
+      assert.equal(cid, testPieceCid)
+      assert.ok(isAddressEqual(wallet as Address, Mocks.ADDRESSES.client1))
+
+      // Test without explicit withCDN (should use instance default)
+      const data = await prova.storage.download({ pieceCid: testPieceCid })
+      assert.isTrue(data instanceof Uint8Array)
+      assert.equal(new TextDecoder().decode(data), 'test data')
+    })
+
+    it('should pass providerAddress option to retriever', async () => {
+      let providerAddressReceived: string | undefined
+      const testData = new TextEncoder().encode('test data')
+
+      server.use(
+        Mocks.JSONRPC({
+          ...Mocks.presets.basic,
+          debug: false,
+          serviceRegistry: {
+            ...Mocks.presets.basic.serviceRegistry,
+            getProviderIdByAddress: (data) => {
+              providerAddressReceived = data[0]
+              return [1n]
+            },
+          },
+        }),
+        http.get('https://pdp.example.com/pdp/piece', async ({ request }) => {
+          const url = new URL(request.url)
+          const pieceCid = url.searchParams.get('pieceCid')
+
+          return HttpResponse.json({
+            pieceCid,
+          })
+        }),
+        http.get('https://pdp.example.com/piece/:pieceCid', async () => {
+          return HttpResponse.arrayBuffer(testData.buffer)
+        })
+      )
+      const prova = new Prova({
+        client,
+        source: null,
+      })
+
+      const testPieceCid = 'bafkzcibcoybm2jlqsbekq6uluyl7xm5ffemw7iuzni5ez3a27iwy4qu3ssebqdq'
+      const testProvider = '0x1234567890123456789012345678901234567890'
+
+      await prova.storage.download({ pieceCid: testPieceCid, providerAddress: testProvider })
+      assert.equal(providerAddressReceived, testProvider)
+    })
+
+    it('should handle download errors', async () => {
+      server.use(
+        Mocks.JSONRPC(Mocks.presets.basic),
+        http.get('https://pdp.example.com/pdp/piece', async () => {
+          return HttpResponse.error()
+        })
+      )
+
+      const prova = new Prova({
+        client,
+        source: null,
+      })
+
+      const testPieceCid = 'bafkzcibcoybm2jlqsbekq6uluyl7xm5ffemw7iuzni5ez3a27iwy4qu3ssebqdq'
+
+      try {
+        await prova.storage.download({ pieceCid: testPieceCid })
+        assert.fail('Should have thrown')
+      } catch (error: any) {
+        assert.include(
+          error.message,
+          'All provider retrieval attempts failed and no additional retriever method was configured'
+        )
+      }
+    })
+  })
+
+  describe('getStorageInfo', () => {
+    it('should return comprehensive storage information', async () => {
+      server.use(Mocks.JSONRPC({ ...Mocks.presets.basic }))
+
+      const prova = new Prova({ client, source: null })
+      const storageInfo = await prova.storage.getStorageInfo()
+
+      // Check pricing
+      assert.exists(storageInfo.pricing)
+      assert.exists(storageInfo.pricing.noCDN)
+      assert.exists(storageInfo.pricing.withCDN)
+
+      // Verify pricing calculations (2.5 USDFC per TiB per month)
+      const expectedNoCDNMonthly = parseUnits('2.5', 18) // 2.5 USDFC
+      assert.equal(storageInfo.pricing.noCDN.perTiBPerMonth, expectedNoCDNMonthly)
+
+      // Check providers
+      assert.equal(storageInfo.providers.length, 2)
+      assert.equal(storageInfo.providers[0].serviceProvider, Mocks.ADDRESSES.serviceProvider1)
+      assert.equal(storageInfo.providers[1].serviceProvider, Mocks.ADDRESSES.serviceProvider2)
+
+      // Check service parameters
+      assert.equal(storageInfo.serviceParameters.epochsPerMonth, 86400n)
+      assert.equal(storageInfo.serviceParameters.epochsPerDay, 2880n)
+      assert.equal(storageInfo.serviceParameters.epochDuration, 30)
+      assert.equal(storageInfo.serviceParameters.minUploadSize, 127)
+      assert.equal(storageInfo.serviceParameters.maxUploadSize, SIZE_CONSTANTS.MAX_UPLOAD_SIZE)
+
+      // Check allowances (including operator approval flag)
+      assert.exists(storageInfo.allowances)
+      assert.equal(storageInfo.allowances?.isApproved, true)
+      assert.equal(storageInfo.allowances?.service, Mocks.ADDRESSES.calibration.warmStorage)
+      assert.equal(storageInfo.allowances?.rateAllowance, 1000000n)
+      assert.equal(storageInfo.allowances?.lockupAllowance, 10000000n)
+    })
+
+    it('should handle missing allowances gracefully', async () => {
+      server.use(
+        Mocks.JSONRPC({
+          ...Mocks.presets.basic,
+          payments: {
+            operatorApprovals: () => [false, 0n, 0n, 0n, 0n, 0n],
+          },
+        })
+      )
+
+      const prova = new Prova({ client, source: null })
+      const storageInfo = await prova.storage.getStorageInfo()
+
+      // Should still return data with null allowances
+      assert.exists(storageInfo.pricing)
+      assert.exists(storageInfo.providers)
+      assert.exists(storageInfo.serviceParameters)
+      assert.deepEqual(storageInfo.allowances, {
+        isApproved: false,
+        service: Mocks.ADDRESSES.calibration.warmStorage,
+        rateAllowance: 0n,
+        lockupAllowance: 0n,
+        rateUsed: 0n,
+        lockupUsed: 0n,
+        maxLockupPeriod: 0n,
+      })
+    })
+
+    it('should handle contract call failures', async () => {
+      server.use(
+        Mocks.JSONRPC({
+          ...Mocks.presets.basic,
+          warmStorage: {
+            ...Mocks.presets.basic.warmStorage,
+            getServicePrice: () => {
+              throw new Error('RPC error')
+            },
+          },
+        })
+      )
+      try {
+        const prova = new Prova({ client, source: null })
+        await prova.storage.getStorageInfo()
+        assert.fail('Should have thrown')
+      } catch (error: any) {
+        // The error should bubble up from the contract call
+        assert.include(error.message, 'RPC error')
+      }
+    })
+  })
+
+  describe('createContexts', () => {
+    let prova: Prova
+    const endorsedProviderIds: bigint[] = []
+
+    beforeEach(async () => {
+      endorsedProviderIds.length = 0
+      server.use(
+        Mocks.JSONRPC({
+          ...Mocks.presets.basic,
+          serviceRegistry: Mocks.mockServiceProviderRegistry([Mocks.PROVIDERS.provider1, Mocks.PROVIDERS.provider2]),
+          endorsements: {
+            getProviderIds: () => [endorsedProviderIds],
+          },
+        })
+      )
+      prova = new Prova({ client, source: null })
+      for (const { products } of [Mocks.PROVIDERS.provider1, Mocks.PROVIDERS.provider2]) {
+        server.use(
+          Mocks.PING({
+            baseUrl: products[0].offering.serviceURL,
+          })
+        )
+      }
+    })
+
+    it('selects specified providerIds', async () => {
+      const contexts = await prova.storage.createContexts({
+        providerIds: [Mocks.PROVIDERS.provider1.providerId, Mocks.PROVIDERS.provider2.providerId],
+      })
+      assert.equal(contexts.length, 2)
+      assert.equal(BigInt(contexts[0].provider.id), Mocks.PROVIDERS.provider1.providerId)
+      assert.equal(BigInt(contexts[1].provider.id), Mocks.PROVIDERS.provider2.providerId)
+      // should create new data sets
+      assert.equal((contexts[0] as any)._dataSetId, undefined)
+      assert.equal((contexts[1] as any)._dataSetId, undefined)
+    })
+
+    it('uses existing data set specified by providerId when metadata matches', async () => {
+      const metadata = {
+        environment: 'test',
+        withCDN: '',
+      }
+      const contexts = await prova.storage.createContexts({
+        providerIds: [Mocks.PROVIDERS.provider1.providerId],
+        metadata,
+        copies: 1,
+      })
+      assert.equal(contexts.length, 1)
+      assert.equal(BigInt(contexts[0].provider.id), Mocks.PROVIDERS.provider1.providerId)
+      // should use existing data set
+      assert.equal((contexts[0] as any)._dataSetId, 1n)
+    })
+
+    it('creates new data set when metadata does not fully match existing data set', async () => {
+      const metadata = {
+        withCDN: '',
+      }
+      const contexts = await prova.storage.createContexts({
+        providerIds: [Mocks.PROVIDERS.provider1.providerId],
+        metadata,
+        copies: 1,
+      })
+      assert.equal(contexts.length, 1)
+      assert.equal(BigInt(contexts[0].provider.id), Mocks.PROVIDERS.provider1.providerId)
+      // Existing data set has { environment: 'test', withCDN: '' } which differs from { withCDN: '' }
+      assert.equal((contexts[0] as any)._dataSetId, undefined)
+    })
+
+    it('fails when provided an invalid providerId', async () => {
+      try {
+        await prova.storage.createContexts({
+          providerIds: [3n, 4n],
+        })
+        assert.fail('Expected createContexts to fail for invalid specified providerIds')
+      } catch (error: any) {
+        assert.include(error.message, 'Provider ID 3 not found in registry')
+      }
+    })
+
+    it('selects providers specified by data set id', async () => {
+      const contexts1 = await prova.storage.createContexts({
+        copies: 1,
+        dataSetIds: [1n],
+      })
+      assert.equal(contexts1.length, 1)
+      assert.equal(contexts1[0].provider.id, 1n)
+      assert.equal((contexts1[0] as any)._dataSetId, 1n)
+    })
+
+    it('fails when provided an invalid data set id', async () => {
+      // Test dataSetId 0: should fail with "does not exist" (pdpRailId is 0)
+      try {
+        await prova.storage.createContexts({
+          copies: 1,
+          dataSetIds: [0n],
+        })
+        assert.fail('Expected createContexts to fail for data set id 0')
+      } catch (error: any) {
+        assert.include(error?.message, 'Data set 0 does not exist')
+      }
+
+      // Test dataSetId 2: should fail (not in mock data, so pdpRailId will be 0)
+      try {
+        await prova.storage.createContexts({
+          copies: 1,
+          dataSetIds: [2n],
+        })
+        assert.fail('Expected createContexts to fail for data set id 2')
+      } catch (error: any) {
+        assert.include(error?.message, 'Data set 2 does not exist')
+      }
+    })
+
+    it('deduplicates dataSetIds and defaults count to deduped length', async () => {
+      const metadata = {
+        environment: 'test',
+        withCDN: '',
+      }
+      const contexts = await prova.storage.createContexts({
+        dataSetIds: [1n, 1n],
+        metadata,
+      })
+      assert.equal(contexts.length, 1)
+      assert.equal((contexts[0] as any)._dataSetId, 1n)
+    })
+
+    it('throws when count mismatches deduped dataSetIds', async () => {
+      const metadata = {
+        environment: 'test',
+        withCDN: '',
+      }
+      try {
+        await prova.storage.createContexts({
+          copies: 2,
+          dataSetIds: [1n, 1n],
+          metadata,
+        })
+        assert.fail('Expected createContexts to throw for count mismatch')
+      } catch (error: any) {
+        assert.include(error.message, 'Requested 2 context(s)')
+        assert.include(error.message, 'resolved to 1 after deduplication')
+      }
+    })
+
+    it('deduplicates providerIds and defaults count to deduped length', async () => {
+      const metadata = {
+        environment: 'test',
+        withCDN: '',
+      }
+      const contexts = await prova.storage.createContexts({
+        providerIds: [Mocks.PROVIDERS.provider1.providerId, Mocks.PROVIDERS.provider1.providerId],
+        metadata,
+      })
+      assert.equal(contexts.length, 1)
+      assert.equal((contexts[0] as any)._dataSetId, 1n)
+    })
+
+    it('throws when count mismatches deduped providerIds', async () => {
+      const metadata = {
+        environment: 'test',
+        withCDN: '',
+      }
+      try {
+        await prova.storage.createContexts({
+          copies: 2,
+          providerIds: [Mocks.PROVIDERS.provider1.providerId, Mocks.PROVIDERS.provider1.providerId],
+          metadata,
+        })
+        assert.fail('Expected createContexts to throw for count mismatch')
+      } catch (error: any) {
+        assert.include(error.message, 'Requested 2 context(s)')
+        assert.include(error.message, 'resolved to 1 after deduplication')
+      }
+    })
+
+    it('throws when dataSetIds resolve to duplicate providers', async () => {
+      // Override getDataSet so both dataSetId 1 and 2 resolve to providerId 1
+      server.use(
+        Mocks.JSONRPC({
+          ...Mocks.presets.basic,
+          warmStorageView: {
+            ...Mocks.presets.basic.warmStorageView,
+            getDataSet: (args: readonly [bigint]) => {
+              const [dataSetId] = args
+              return [
+                {
+                  cacheMissRailId: 0n,
+                  cdnRailId: 0n,
+                  clientDataSetId: 0n,
+                  commissionBps: 100n,
+                  dataSetId,
+                  payee: Mocks.ADDRESSES.serviceProvider1,
+                  payer: Mocks.ADDRESSES.client1,
+                  pdpEndEpoch: 0n,
+                  pdpRailId: dataSetId,
+                  providerId: 1n, // Same provider for both
+                  serviceProvider: Mocks.ADDRESSES.serviceProvider1,
+                  cdnEndEpoch: 0n,
+                },
+              ]
+            },
+          },
+        })
+      )
+      try {
+        await prova.storage.createContexts({
+          dataSetIds: [1n, 2n],
+        })
+        assert.fail('Expected error for duplicate providers')
+      } catch (error: any) {
+        assert.include(error.message, 'dataSetIds resolve to duplicate providers')
+      }
+    })
+
+    it('throws when both dataSetIds and providerIds are specified', async () => {
+      const metadata = {
+        environment: 'test',
+        withCDN: '',
+      }
+      try {
+        await prova.storage.createContexts({
+          copies: 2,
+          dataSetIds: [1n],
+          providerIds: [Mocks.PROVIDERS.provider1.providerId],
+          metadata,
+        })
+        assert.fail('Expected createContexts to throw')
+      } catch (error: any) {
+        assert.include(error.message, "Cannot specify both 'dataSetIds' and 'providerIds'")
+      }
+    })
+
+    it('selects existing data set by default when metadata matches', async () => {
+      const metadata = {
+        environment: 'test',
+        withCDN: '',
+      }
+      const contexts = await prova.storage.createContexts({
+        copies: 1,
+        metadata,
+      })
+      assert.equal(contexts.length, 1)
+      assert.equal(contexts[0].provider.id, 1n)
+      assert.equal((contexts[0] as any)._dataSetId, 1n)
+    })
+
+    it('avoids existing data set when provider is excluded even when metadata matches', async () => {
+      const metadata = {
+        environment: 'test',
+        withCDN: '',
+      }
+      const contexts = await prova.storage.createContexts({
+        copies: 1,
+        metadata,
+        excludeProviderIds: [1n],
+      })
+      assert.equal(contexts.length, 1)
+      assert.notEqual(contexts[0].provider.id, 1n)
+    })
+
+    it('can select new data sets from different providers using default params', async () => {
+      const contexts = await prova.storage.createContexts()
+      assert.equal(contexts.length, 2)
+      assert.equal((contexts[0] as any)._dataSetId, undefined)
+      assert.equal((contexts[1] as any)._dataSetId, undefined)
+      assert.notEqual(contexts[0].provider.id, contexts[1].provider.id)
+
+      // should return the same contexts when invoked again
+      const defaultContexts = await prova.storage.createContexts()
+      assert.isTrue(defaultContexts === contexts)
+    })
+
+    providerIds.forEach((endorsedProviderId, index) => {
+      describe(`when endorsing providers[${index}]`, async () => {
+        beforeEach(() => {
+          endorsedProviderIds.push(BigInt(endorsedProviderId))
+        })
+
+        it('throws when endorsed provider is excluded', async () => {
+          try {
+            await prova.storage.createContexts({
+              copies: 1,
+              excludeProviderIds: [BigInt(endorsedProviderId)],
+            })
+            assert.fail('Expected createContexts to throw')
+          } catch (error: any) {
+            assert.include(error.message, 'No endorsed provider available')
+          }
+        })
+
+        it('throws when endorsed provider fails ping (no fallback to non-endorsed)', async () => {
+          // mock ping to fail for endorsed provider
+          const endorsedProvider = providers[index]
+          server.use(
+            http.get(`${endorsedProvider.products[0].offering.serviceURL}/pdp/ping`, () => HttpResponse.error())
+          )
+
+          try {
+            await prova.storage.createContexts({
+              copies: 1,
+            })
+            assert.fail('Expected createContexts to throw when no endorsed provider available')
+          } catch (error: any) {
+            assert.include(error.message, 'No endorsed provider available')
+            assert.include(error.message, 'failed health check')
+          }
+        })
+
+        for (const numCopies of [1, 2]) {
+          it(`prefers to select the endorsed context when selecting ${numCopies} providers`, async () => {
+            const counts: Record<string, number> = {}
+            for (const providerId of providerIds) {
+              counts[providerId.toString()] = 0
+            }
+            for (let i = 0; i < 5; i++) {
+              const contexts = await prova.storage.createContexts({
+                copies: numCopies,
+              })
+              assert.equal(contexts.length, numCopies)
+              assert.equal((contexts[0] as any)._dataSetId, undefined)
+              counts[contexts[0].provider.id.toString()]++
+              if (numCopies > 1) {
+                assert.notEqual(contexts[0].provider.id, contexts[1].provider.id)
+                assert.equal((contexts[1] as any)._dataSetId, undefined)
+              }
+            }
+            for (const providerId of providerIds) {
+              assert.equal(counts[providerId.toString()], providerId === endorsedProviderId ? 5 : 0)
+            }
+          })
+        }
+      })
+    })
+
+    it('can attempt to create numerous contexts, returning fewer', async () => {
+      const contexts = await prova.storage.createContexts({
+        copies: 100,
+      })
+      assert.equal(contexts.length, 2)
+      assert.notEqual(contexts[0].provider.id, contexts[1].provider.id)
+    })
+
+    describe('upload', () => {
+      let contexts: StorageContext[]
+      const FAKE_TX_HASH = '0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc'
+      const DATA_SET_ID = 7
+      beforeEach(async () => {
+        contexts = await prova.storage.createContexts({
+          providerIds: [1n, 2n],
+        })
+        for (const provider of [Mocks.PROVIDERS.provider1, Mocks.PROVIDERS.provider2]) {
+          const pdpOptions: Mocks.pdp.PDPMockOptions = {
+            baseUrl: provider.products[0].offering.serviceURL,
+          }
+          server.use(
+            Mocks.pdp.dataSetCreationStatusHandler(
+              FAKE_TX_HASH,
+              {
+                ok: true,
+                dataSetId: DATA_SET_ID,
+                createMessageHash: FAKE_TX_HASH,
+                dataSetCreated: true,
+                service: '',
+                txStatus: 'confirmed',
+              },
+              pdpOptions
+            )
+          )
+        }
+      })
+
+      it('succeeds for ArrayBuffer data when upload found', async () => {
+        const data = new Uint8Array(1024)
+        const pieceCid = Piece.calculate(data)
+        const mockUUID = '12345678-90ab-cdef-1234-567890abcdef'
+        const found = true
+        for (const provider of [Mocks.PROVIDERS.provider1, Mocks.PROVIDERS.provider2]) {
+          const pdpOptions = {
+            baseUrl: provider.products[0].offering.serviceURL,
+          }
+          server.use(Mocks.pdp.postPieceUploadsHandler(mockUUID, pdpOptions))
+          server.use(Mocks.pdp.uploadPieceStreamingHandler(mockUUID, pdpOptions))
+          server.use(Mocks.pdp.finalizePieceUploadHandler(mockUUID, pieceCid.toString(), pdpOptions))
+          server.use(Mocks.pdp.findPieceHandler(pieceCid.toString(), found, pdpOptions))
+          server.use(Mocks.pdp.createAndAddPiecesHandler(FAKE_TX_HASH, pdpOptions))
+          server.use(
+            Mocks.pdp.pieceAdditionStatusHandler(
+              DATA_SET_ID,
+              FAKE_TX_HASH,
+              {
+                txHash: FAKE_TX_HASH,
+                txStatus: 'confirmed',
+                dataSetId: DATA_SET_ID,
+                pieceCount: 1,
+                addMessageOk: true,
+                piecesAdded: true,
+                confirmedPieceIds: [0],
+              },
+              pdpOptions
+            )
+          )
+        }
+        const result = await prova.storage.upload(data, { contexts })
+        assert.equal(result.pieceCid.toString(), pieceCid.toString())
+        assert.equal(result.size, 1024)
+      })
+
+      it('fails when primary store fails', async () => {
+        const data = new Uint8Array(1024)
+        const pdpOptions = {
+          baseUrl: Mocks.PROVIDERS.provider1.products[0].offering.serviceURL,
+        }
+        // Primary SP rejects upload
+        server.use(
+          http.post(`${pdpOptions.baseUrl}/pdp/piece/uploads`, async () => {
+            return HttpResponse.error()
+          })
+        )
+        try {
+          await prova.storage.upload(data, { contexts })
+          assert.fail('Expected upload to fail when primary store fails')
+        } catch (error: any) {
+          assert.include(error.message, 'Failed to store piece on service provider')
+        }
+      })
+    })
+  })
+})

@@ -1,0 +1,747 @@
+/**
+ * Prova SDK Type Definitions
+ *
+ * This file contains type aliases, option objects, and data structures
+ * used throughout the SDK. Concrete classes are defined in their own files.
+ */
+
+import type { Chain } from '@prova-network/core/chains'
+import type { PieceCID } from '@prova-network/core/piece'
+import type { SessionKey, SessionKeyAccount } from '@prova-network/core/session-key'
+import type { pullPiecesApiRequest } from '@prova-network/core/sp'
+import type { PDPProvider } from '@prova-network/core/sp-registry'
+import type { MetadataObject } from '@prova-network/core/utils'
+import type { Account, Address, Client, Hash, Hex, Transport } from 'viem'
+import type { Prova } from './prova.ts'
+import type { StorageService } from './storage/service.ts'
+
+// Re-export PieceCID, PDPProvider, and PullStatus types
+export type { PDPProvider, PieceCID }
+export type PullStatus = pullPiecesApiRequest.PullStatus
+export type PrivateKey = string
+export type TokenAmount = bigint
+export type DataSetId = bigint
+export type ServiceProvider = Address
+
+export type { RailInfo } from '@prova-network/core/pay'
+export type { MetadataEntry, MetadataObject } from '@prova-network/core/utils'
+
+// Re-export upload cost types from prova-core
+export type { getUploadCosts } from '@prova-network/core/storage'
+
+/** Alias for the upload costs return type */
+export type UploadCosts = import('@prova-network/core/storage').getUploadCosts.OutputType
+/** Alias for the upload costs options type */
+export type GetUploadCostsOptions = import('@prova-network/core/storage').getUploadCosts.OptionsType
+
+/**
+ * Options for the fund() method on PaymentsService.
+ * Re-exported from prova-core.
+ */
+export type FundOptions = import('@prova-network/core/pay').fund.OptionsType
+
+/**
+ * Options for the prepare() method on StorageManager
+ */
+export interface PrepareOptions {
+  /** StorageContext(s) to prepare for upload. */
+  context?: import('./storage/context.ts').StorageContext | import('./storage/context.ts').StorageContext[]
+  /** Size of new data to upload, in bytes. */
+  dataSize: bigint
+  /** Extra runway in epochs beyond the required lockup. */
+  extraRunwayEpochs?: bigint
+  /** Safety margin in epochs. Default: 5n */
+  bufferEpochs?: bigint
+  /** Pre-computed costs — skips internal getUploadCosts() call. */
+  costs?: UploadCosts
+}
+
+/**
+ * Result of the prepare() method on StorageManager
+ */
+export interface PrepareResult {
+  /** The cost breakdown (either passed in or freshly computed). */
+  costs: UploadCosts
+  /** The single transaction to execute, or null if already ready. */
+  transaction: {
+    /** Amount to deposit into the payments contract. 0n when only approval is needed. */
+    depositAmount: bigint
+    /** Whether this transaction includes FWSS operator approval. */
+    includesApproval: boolean
+    /** Execute the transaction, wait for confirmation, and return the hash + receipt. */
+    execute: (options?: {
+      onHash?: (hash: Hash) => void
+    }) => Promise<{ hash: Hash; receipt: import('viem').TransactionReceipt | null }>
+  } | null
+}
+
+/**
+ * Supported Filecoin network types
+ */
+export type FilecoinNetworkType = 'mainnet' | 'calibration' | 'devnet'
+
+/**
+ * Token identifier for balance queries
+ */
+export type TokenIdentifier = 'USDFC' | string
+
+/**
+ * Options for initializing the Prova instance
+ */
+export interface ProvaOptions {
+  /**
+   * Viem transport
+   *
+   * @see https://viem.sh/docs/clients/intro#transports
+   */
+  transport?: Transport
+
+  /**
+   * Filecoin chain
+   *
+   */
+  chain?: Chain
+
+  /**
+   * Viem account
+   *
+   * @see https://viem.sh/docs/accounts/jsonRpc
+   * @see https://viem.sh/docs/accounts/local
+   */
+  account: Account | Address
+
+  sessionKey?: SessionKey<'Secp256k1'>
+
+  /** Whether to use CDN for retrievals (default: false) */
+  withCDN?: boolean
+
+  /**
+   * Application identifier for namespace isolation. When set to a non-empty string, datasets
+   * are tagged with this value and only datasets with a matching source are reused. Set to
+   * `null` to explicitly opt out.
+   */
+  source: string | null
+}
+
+export interface ProvaFromClientOptions {
+  /**
+   * Viem wallet client
+   *
+   * @see https://viem.sh/docs/clients/wallet#optional-hoist-the-account
+   */
+  client: Client<Transport, Chain, Account>
+
+  // Advanced Configuration
+  sessionClient?: Client<Transport, Chain, SessionKeyAccount<'Secp256k1'>>
+
+  /** Whether to use CDN for retrievals (default: false) */
+  withCDN?: boolean
+
+  /**
+   * Application identifier for namespace isolation. When set to a non-empty string, datasets
+   * are tagged with this value and only datasets with a matching source are reused. Set to
+   * `null` to explicitly opt out.
+   */
+  source: string | null
+}
+
+/**
+ * Storage service options
+ */
+export interface StorageOptions {
+  /** Existing data set ID to use (optional) */
+  dataSetId?: DataSetId
+  /** Preferred service provider (optional) */
+  serviceProvider?: ServiceProvider
+}
+
+/**
+ * Upload task tracking
+ */
+export interface UploadTask {
+  /** Get the PieceCID (Piece CID) once calculated */
+  pieceCid: () => Promise<PieceCID>
+  /** Get the service provider once data is stored */
+  store: () => Promise<ServiceProvider>
+  /** Wait for the entire upload process to complete, returns transaction hash */
+  done: () => Promise<string>
+}
+
+/**
+ * Download options
+ * Currently empty, reserved for future options
+ */
+
+export type DownloadOptions = {
+  withCDN?: boolean
+  pieceCid: string | PieceCID
+}
+
+export interface PieceFetchOptions {
+  pieceCid: PieceCID // Internal interface uses PieceCID type for validation
+  client: Address
+  providerAddress?: Address // Restrict to specific provider
+  withCDN?: boolean // Enable CDN retrieval attempts
+  signal?: AbortSignal // Optional AbortSignal for request cancellation
+}
+
+/**
+ * PieceRetriever interface for fetching pieces from various sources
+ * Returns standard Web API Response objects for flexibility
+ */
+export interface PieceRetriever {
+  /**
+   * Fetch a piece from available sources
+   * @param options - Retrieval parameters
+   * @param options.pieceCid - The PieceCID identifier of the piece (validated internally)
+   * @param options.client - The client address requesting the piece
+   * @param options.providerAddress - Restrict retrieval to a specific provider
+   * @param options.withCDN - Enable CDN retrieval attempts
+   * @param options.signal - Optional AbortSignal for request cancellation
+   * @returns A Response object that can be processed for the piece data
+   */
+  fetchPiece: (options: PieceFetchOptions) => Promise<Response>
+}
+
+/**
+ * Data set information returned from Warm Storage contract
+ */
+export interface DataSetInfo {
+  /** ID of the PDP payment rail */
+  pdpRailId: bigint
+  /** For CDN add-on: ID of the cache miss payment rail */
+  cacheMissRailId: bigint
+  /** For CDN add-on: ID of the CDN payment rail */
+  cdnRailId: bigint
+  /** Address paying for storage */
+  payer: Address
+  /** SP's beneficiary address */
+  payee: Address
+  /** Service provider address (operator) */
+  serviceProvider: Address
+  /** Commission rate in basis points (dynamic based on CDN usage) */
+  commissionBps: bigint
+  /** Client's sequential dataset ID within this Warm Storage contract */
+  clientDataSetId: bigint
+  /** Epoch when PDP payments end (0 if not terminated) */
+  pdpEndEpoch: bigint
+  /** Provider ID from the ServiceProviderRegistry */
+  providerId: bigint
+  // Legacy alias for backward compatibility
+  paymentEndEpoch?: bigint
+  /** PDP Data Set ID */
+  dataSetId: bigint
+}
+
+/**
+ * Enhanced data set information with chain details and clear ID separation
+ */
+export interface EnhancedDataSetInfo extends DataSetInfo {
+  /** PDPVerifier global data set ID */
+  pdpVerifierDataSetId: bigint
+  /** Number of active pieces in the data set (excludes removed pieces) */
+  activePieceCount: bigint
+  /** Whether the data set is live on-chain */
+  isLive: boolean
+  /** Whether this data set is managed by the current Warm Storage contract */
+  isManaged: boolean
+  /** Whether the data set is using CDN (cdnRailId > 0 and withCDN metadata key present) */
+  withCDN: boolean
+  /** Metadata associated with this data set (key-value pairs) */
+  metadata: Record<string, string>
+}
+
+/**
+ * Settlement result from settling a payment rail
+ */
+export interface SettlementResult {
+  /** Total amount that was settled */
+  totalSettledAmount: bigint
+  /** Net amount sent to payee after commission */
+  totalNetPayeeAmount: bigint
+  /** Commission amount for operator */
+  totalOperatorCommission: bigint
+  /** Payments contract network fee */
+  totalNetworkFee: bigint
+  /** Final epoch that was settled */
+  finalSettledEpoch: bigint
+  /** Note about the settlement */
+  note: string
+}
+
+// ============================================================================
+// Storage Context Creation Types
+// ============================================================================
+//
+// BaseContextOptions contains shared fields: withCDN, metadata, callbacks.
+//
+// StorageServiceOptions extends BaseContextOptions with singular fields
+// (providerId, dataSetId) for single-context creation via createContext().
+//
+// CreateContextsOptions extends BaseContextOptions with plural fields
+// (providerIds, dataSetIds, count, excludeProviderIds) for createContexts().
+//
+// StorageManagerUploadOptions (in manager.ts) extends CreateContextsOptions
+// with upload-specific fields (contexts, pieceCid, pieceMetadata, signal).
+//
+// ============================================================================
+
+/**
+ * Callbacks for storage context creation process
+ *
+ * These callbacks provide visibility into the context creation process,
+ * including provider and data set selection.
+ */
+export interface StorageContextCallbacks {
+  /**
+   * Called when a service provider has been selected
+   * @param provider - The selected provider info
+   */
+  onProviderSelected?: (provider: PDPProvider) => void
+
+  /**
+   * Called when an existing data set is matched during provider selection.
+   * Not called when a new data set will be created (dataSetId is null on the
+   * resolution result); the data set ID is assigned during commit.
+   * @param info - The matched data set and its provider
+   */
+  onDataSetResolved?: (info: { dataSetId: bigint; provider: PDPProvider }) => void
+}
+
+/**
+ * Base options shared by all context creation methods
+ *
+ * Contains fields common to both single and multi-context creation:
+ * CDN enablement, metadata matching, and creation callbacks.
+ */
+export interface BaseContextOptions {
+  /** Whether to enable CDN services */
+  withCDN?: boolean
+
+  /**
+   * Custom metadata for data sets (key-value pairs).
+   * Used to match existing data sets during provider selection.
+   */
+  metadata?: Record<string, string>
+
+  /** Callbacks for creation process */
+  callbacks?: StorageContextCallbacks
+}
+
+/**
+ * Options for creating multiple storage contexts via createContexts()
+ *
+ * Extends BaseContextOptions with plural provider/dataset selection
+ * and count for multi-provider redundancy.
+ *
+ * Provider targeting is mutually exclusive, use ONE of:
+ * - `providerIds` to target specific providers (SDK handles dataset resolution)
+ * - `dataSetIds` to target specific existing datasets
+ * - Neither, to let the SDK auto-select providers
+ */
+export interface CreateContextsOptions extends BaseContextOptions {
+  /** Number of storage copies to create (optional, defaults to 2) */
+  copies?: number
+
+  /**
+   * Specific data set IDs to target. Each must be an active data set owned by
+   * the caller. Mutually exclusive with `providerIds`.
+   *
+   * Use this only when resuming into a known data set from a prior operation.
+   * For first-time uploads to specific providers, use `providerIds` instead,
+   * the SDK handles data set creation automatically.
+   */
+  dataSetIds?: bigint[]
+
+  /**
+   * Specific provider IDs to upload to. The SDK resolves or creates data sets
+   * on each provider automatically. Mutually exclusive with `dataSetIds`.
+   *
+   * This is the recommended way to target specific providers. Do not call
+   * `createContext()` to resolve data sets first, pass provider IDs here
+   * and the SDK handles the rest.
+   *
+   * @example Upload to two specific providers
+   * ```ts
+   * await prova.storage.upload(data, { providerIds: [4n, 9n] })
+   * ```
+   */
+  providerIds?: bigint[]
+
+  /** Do not select any of these providers */
+  excludeProviderIds?: bigint[]
+}
+
+export interface ContextCreateContextsOptions extends CreateContextsOptions {
+  /** The Prova instance */
+  prova: Prova
+  /** The StorageService instance */
+  warmStorageService: StorageService
+}
+
+/**
+ * Options for creating or selecting a single storage context via createContext()
+ *
+ * Extends BaseContextOptions with singular provider/dataset selection.
+ */
+export interface StorageServiceOptions extends BaseContextOptions {
+  /** Specific provider ID to use (optional) */
+  providerId?: bigint
+  /** Do not select any of these providers */
+  excludeProviderIds?: bigint[]
+  /** Specific data set ID to use (optional) */
+  dataSetId?: bigint
+}
+
+export interface StorageContextCreateOptions extends StorageServiceOptions {
+  /** The Prova instance */
+  prova: Prova
+  /** The StorageService instance */
+  warmStorageService: StorageService
+}
+
+// ============================================================================
+// Upload Types
+// ============================================================================
+// The SDK provides different upload options for different use cases:
+//
+// 1. UploadCallbacks - Progress callbacks only (used by all upload methods)
+// 2. UploadOptions - For StorageContext.upload() (adds piece metadata)
+// 3. StorageManagerUploadOptions - For StorageManager.upload() (internal type
+//    that combines context creation + upload in one call)
+// ============================================================================
+
+export interface UploadCallbacks {
+  /** Called periodically during upload with bytes uploaded so far */
+  onProgress?: (bytesUploaded: number) => void
+  /** Called when piece data has been stored on a provider (before on-chain commit) */
+  onStored?: (providerId: bigint, pieceCid: PieceCID) => void
+  /** Called when the addPieces transaction has been submitted for a provider */
+  onPiecesAdded?: (transaction: Hex, providerId: bigint, pieces: { pieceCid: PieceCID }[]) => void
+  /** Called when the addPieces transaction is confirmed on-chain for a provider */
+  onPiecesConfirmed?: (dataSetId: bigint, providerId: bigint, pieces: PieceRecord[]) => void
+  /** Called when a secondary copy completes successfully */
+  onCopyComplete?: (providerId: bigint, pieceCid: PieceCID) => void
+  /** Called when a secondary copy fails */
+  onCopyFailed?: (providerId: bigint, pieceCid: PieceCID, error: Error) => void
+  /** Called with pull status updates during SP-to-SP transfer */
+  onPullProgress?: (providerId: bigint, pieceCid: PieceCID, status: PullStatus) => void
+}
+
+/**
+ * Canonical representation of a piece within a data set.
+ *
+ * This is used when reporting confirmed pieces and when iterating over pieces
+ * in a data set.
+ */
+export interface PieceRecord {
+  pieceId: bigint
+  pieceCid: PieceCID
+}
+
+/**
+ * Options for uploading individual pieces to an existing storage context
+ *
+ * Used by StorageContext.upload() for uploading data to a specific provider
+ * and data set that has already been created/selected.
+ */
+export interface UploadOptions extends StoreOptions, UploadCallbacks {
+  /** Custom metadata for this specific piece (key-value pairs) */
+  pieceMetadata?: MetadataObject
+}
+
+/**
+ * Role of a copy in a multi-provider upload.
+ *
+ * - `'primary'`: The provider that received the original upload (store).
+ * - `'secondary'`: A provider that pulled the data from the primary (SP-to-SP transfer).
+ */
+export type CopyRole = 'primary' | 'secondary'
+
+/**
+ * Result for a single successful copy of data on a provider
+ */
+export interface CopyResult {
+  /** Provider ID that holds this copy */
+  providerId: bigint
+  /** Data set ID on this provider */
+  dataSetId: bigint
+  /** Piece ID within the data set */
+  pieceId: bigint
+  /** Whether this is the primary (store) or secondary (pull) copy */
+  role: CopyRole
+  /** URL where this copy can be retrieved */
+  retrievalUrl: string
+  /** Whether a new data set was created for this copy */
+  isNewDataSet: boolean
+}
+
+/**
+ * A provider attempt that did not produce a successful copy.
+ *
+ * A non-empty `failedAttempts` array does NOT mean the upload failed.
+ * Failed attempts include providers that were tried and replaced by
+ * successful attempts on other providers. Always check `UploadResult.complete`
+ * to determine overall success.
+ */
+export interface FailedAttempt {
+  /** Provider ID that was attempted */
+  providerId: bigint
+  /** Role the provider was being used for */
+  role: CopyRole
+  /** Error description */
+  error: string
+  /** Whether the provider was explicitly specified (no auto-retry for explicit) */
+  explicit: boolean
+}
+
+/**
+ * Result of a multi-copy upload operation.
+ *
+ * To determine success, check `complete`, it's `true` when all requested
+ * copies were successfully stored and recorded on-chain. Do NOT use
+ * `failedAttempts.length > 0` as a failure signal; failed attempts may have
+ * been resolved by successful retries on other providers.
+ *
+ * @example
+ * ```typescript
+ * const result = await prova.storage.upload(data, { copies: 3 })
+ * if (!result.complete) {
+ *   console.warn(`Got ${result.copies.length}/${result.requestedCopies} copies`)
+ *   for (const attempt of result.failedAttempts) {
+ *     console.warn(`  Provider ${attempt.providerId}: ${attempt.error}`)
+ *   }
+ * }
+ * ```
+ */
+export interface UploadResult {
+  /** PieceCID of the uploaded data */
+  pieceCid: PieceCID
+  /** Size of the original data */
+  size: number
+  /** Number of copies that were requested */
+  requestedCopies: number
+  /** True when all requested copies were successfully stored and recorded on-chain */
+  complete: boolean
+  /** Successful copies across providers */
+  copies: CopyResult[]
+  /**
+   * Provider attempts that did not produce a copy. A non-empty array does NOT
+   * indicate upload failure, check `complete` or compare `copies.length`
+   * against `requestedCopies` to determine overall success.
+   */
+  failedAttempts: FailedAttempt[]
+}
+
+// ============================================================================
+// Split Operation Types
+// ============================================================================
+// The upload flow can be decomposed into: store → pull → commit
+// These types support that split flow for advanced use cases.
+// ============================================================================
+
+/**
+ * Options for storing data on a provider without on-chain commit
+ */
+export interface StoreOptions {
+  /** Optional pre-calculated PieceCID to skip CommP calculation */
+  pieceCid?: PieceCID
+  /** Optional AbortSignal to cancel the store */
+  signal?: AbortSignal
+  /** Progress callback for upload bytes */
+  onProgress?: (bytesUploaded: number) => void
+}
+
+/**
+ * Result of a store operation
+ */
+export interface StoreResult {
+  /** PieceCID of the stored data */
+  pieceCid: PieceCID
+  /** Size of the original data in bytes */
+  size: number
+}
+
+/**
+ * Source for pulling pieces from another provider.
+ * Either a base URL string or a function that returns a piece URL for a given PieceCID.
+ */
+export type PullSource = string | ((pieceCid: PieceCID) => string)
+
+/**
+ * Options for pulling pieces from a source provider
+ */
+export interface PullOptions {
+  /** Pieces to pull */
+  pieces: PieceCID[]
+  /** Source provider to pull from (URL or context with getPieceUrl) */
+  from: PullSource
+  /** Optional AbortSignal */
+  signal?: AbortSignal
+  /** Pull progress callback */
+  onProgress?: (pieceCid: PieceCID, status: PullStatus) => void
+  /** Pre-built signed extraData (avoids double wallet prompts) */
+  extraData?: Hex
+}
+
+/**
+ * Result of a pull operation
+ */
+export interface PullResult {
+  /** Overall status */
+  status: 'complete' | 'failed'
+  /** Per-piece status */
+  pieces: Array<{ pieceCid: PieceCID; status: 'complete' | 'failed' }>
+}
+
+/**
+ * Options for committing pieces on-chain
+ */
+export interface CommitOptions {
+  /** Pieces to commit with optional per-piece metadata */
+  pieces: Array<{ pieceCid: PieceCID; pieceMetadata?: MetadataObject }>
+  /** Pre-built signed extraData (avoids re-signing) */
+  extraData?: Hex
+  /** Called when the commit transaction is submitted (before on-chain confirmation) */
+  onSubmitted?: (txHash: Hex) => void
+}
+
+/**
+ * Result of a commit operation
+ */
+export interface CommitResult {
+  /** Transaction hash */
+  txHash: Hex
+  /** Piece IDs assigned by the contract */
+  pieceIds: bigint[]
+  /** Data set ID (may be newly created) */
+  dataSetId: bigint
+  /** Whether a new data set was created */
+  isNewDataSet: boolean
+}
+
+/**
+ * Comprehensive storage service information
+ */
+export interface StorageInfo {
+  /** Pricing information for storage services */
+  pricing: {
+    /** Pricing without CDN */
+    noCDN: {
+      /** Cost per TiB per month in token units */
+      perTiBPerMonth: bigint
+      /** Cost per TiB per day in token units */
+      perTiBPerDay: bigint
+      /** Cost per TiB per epoch in token units */
+      perTiBPerEpoch: bigint
+    }
+    /** Pricing with CDN enabled */
+    withCDN: {
+      /** Cost per TiB per month in token units */
+      perTiBPerMonth: bigint
+      /** Cost per TiB per day in token units */
+      perTiBPerDay: bigint
+      /** Cost per TiB per epoch in token units */
+      perTiBPerEpoch: bigint
+    }
+    /** Token contract address */
+    tokenAddress: Address
+    /** Token symbol (always USDFC for now) */
+    tokenSymbol: string
+  }
+
+  /** List of approved service providers */
+  providers: PDPProvider[]
+
+  /** Service configuration parameters */
+  serviceParameters: {
+    /** Number of epochs in a month */
+    epochsPerMonth: bigint
+    /** Number of epochs in a day */
+    epochsPerDay: bigint
+    /** Duration of each epoch in seconds */
+    epochDuration: number
+    /** Minimum allowed upload size in bytes */
+    minUploadSize: number
+    /** Maximum allowed upload size in bytes */
+    maxUploadSize: number
+  }
+
+  /** Current user allowances (null if wallet not connected) */
+  allowances: {
+    /** Whether the service operator is approved to act on behalf of the wallet */
+    isApproved: boolean
+    /** Service contract address */
+    service: Address
+    /** Maximum payment rate per epoch allowed */
+    rateAllowance: bigint
+    /** Maximum lockup amount allowed */
+    lockupAllowance: bigint
+    /** Current rate allowance used */
+    rateUsed: bigint
+    /** Current lockup allowance used */
+    lockupUsed: bigint
+    /** Maximum lockup period in epochs the operator can set */
+    maxLockupPeriod: bigint
+  } | null
+}
+
+/**
+ * Data set data returned from the API
+ */
+export interface DataSetData {
+  /** The data set ID */
+  id: bigint
+  /** Array of piece data in the data set */
+  pieces: DataSetPieceData[]
+  /** Next challenge epoch */
+  nextChallengeEpoch: number
+}
+
+/**
+ * Individual data set piece data from API
+ */
+export interface DataSetPieceData {
+  /** Piece ID within the data set */
+  pieceId: bigint
+  /** The piece CID */
+  pieceCid: PieceCID
+  /** Sub-piece CID (usually same as pieceCid) */
+  subPieceCid: PieceCID
+  /** Sub-piece offset */
+  subPieceOffset: number
+}
+
+/**
+ * Status information for a piece stored on a provider
+ * Note: Proofs are submitted for entire data sets, not individual pieces.
+ * The timing information reflects the data set's status.
+ */
+export interface PieceStatus {
+  /** When the data set containing this piece was last proven on-chain (null if never proven or not yet due) */
+  dataSetLastProven: Date | null
+  /** When the next proof is due for the data set containing this piece (end of challenge window) */
+  dataSetNextProofDue: Date | null
+  /** URL where the piece can be retrieved (null if not available) */
+  retrievalUrl: string | null
+  /** The piece ID if the piece is in the data set */
+  pieceId?: bigint
+  /** Whether the data set is currently in a challenge window */
+  inChallengeWindow?: boolean
+  /** Time until the data set enters the challenge window (in hours) */
+  hoursUntilChallengeWindow?: number
+  /** Whether the proof is overdue (past the challenge window without being submitted) */
+  isProofOverdue?: boolean
+}
+
+/**
+ * Result of provider selection and data set resolution
+ */
+export interface ProviderSelectionResult {
+  /** Selected service provider */
+  provider: PDPProvider
+  /** Selected data set ID, or null if a new data set will be created on commit */
+  dataSetId: bigint | null
+  /** Data set metadata */
+  dataSetMetadata: Record<string, string>
+}

@@ -13,3 +13,11 @@ target/
 contracts/lib/
 contracts/cache/
 contracts/out/
+
+# Node / TypeScript
+node_modules/
+sdk/typescript/**/dist/
+sdk/typescript/**/.wireit/
+sdk/typescript/**/coverage/
+*.tsbuildinfo
+.pnpm-store/

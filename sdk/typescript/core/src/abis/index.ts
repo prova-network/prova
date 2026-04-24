@@ -1,0 +1,27 @@
+/**
+ * ABIs
+ *
+ * @example
+ * ```ts
+ * import * as Abis from '@prova-network/core/abis'
+ * ```
+ *
+ * @module abis
+ */
+
+export * from './erc20.ts'
+export * as generated from './generated.ts'
+
+import * as generated from './generated.ts'
+
+// Merge the storage and errors ABIs
+export const fwss = [...generated.filecoinStorageServiceAbi, ...generated.errorsAbi] as const
+export const serviceProviderRegistry = [...generated.serviceProviderRegistryAbi, ...generated.errorsAbi] as const
+
+export {
+  filecoinPayV1Abi as filecoinPay,
+  filecoinStorageServiceStateViewAbi as fwssView,
+  pdpVerifierAbi as pdp,
+  providerIdSetAbi as providerIdSet,
+  sessionKeyRegistryAbi as sessionKeyRegistry,
+} from './generated.ts'

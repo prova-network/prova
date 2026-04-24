@@ -1,0 +1,31 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["src", "test"],
+  "exclude": ["node_modules", "dist"],
+  "typedocOptions": {
+    "entryPointStrategy": "resolve",
+    "entryPoints": [
+      "src/abis/index.ts",
+      "src/auction/index.ts",
+      "src/endorsements/index.ts",
+      "src/erc20/index.ts",
+      "src/errors/index.ts",
+      "src/mocks/index.ts",
+      "src/pay/index.ts",
+      "src/pdp-verifier/index.ts",
+      "src/session-key/index.ts",
+      "src/sp-registry/index.ts",
+      "src/typed-data/index.ts",
+      "src/utils/index.ts",
+      "src/warm-storage/index.ts",
+      "src/chains.ts",
+      "src/index.ts",
+      "src/piece/index.ts",
+      "src/sp/index.ts",
+      "src/usdfc.ts"
+    ]
+  }
+}

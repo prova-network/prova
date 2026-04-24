@@ -1,0 +1,81 @@
+{
+  "name": "@prova-network/sdk",
+  "version": "0.1.0-pre",
+  "description": "TypeScript SDK for Prova Network: verifiable storage on Base, secured by Ethereum.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prova-network/prova.git",
+    "directory": "sdk/typescript/sdk"
+  },
+  "keywords": [
+    "prova",
+    "ethereum",
+    "base",
+    "storage",
+    "pdp",
+    "ens",
+    "verifiable-storage",
+    "web3"
+  ],
+  "author": "Prova Network contributors",
+  "contributors": [
+    "Rod Vagg <rod@vagg.org> (upstream: @filoz/synapse-sdk)",
+    "Hugo Dias <hugomrdias@gmail.com> (upstream: @filoz/synapse-core)"
+  ],
+  "license": "Apache-2.0 OR MIT",
+  "bugs": {
+    "url": "https://github.com/prova-network/prova/issues"
+  },
+  "homepage": "https://github.com/prova-network/prova/tree/main/sdk/typescript/sdk",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    },
+    "./payments": {
+      "import": "./dist/src/payments/index.js",
+      "types": "./dist/src/payments/index.d.ts"
+    },
+    "./storage": {
+      "import": "./dist/src/storage/index.js",
+      "types": "./dist/src/storage/index.d.ts"
+    },
+    "./prover-registry": {
+      "import": "./dist/src/prover-registry/index.js",
+      "types": "./dist/src/prover-registry/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build --pretty",
+    "test": "playwright-test 'src/test/**/*.test.ts' --mode node",
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix ."
+  },
+  "dependencies": {
+    "@prova-network/core": "workspace:^",
+    "multiformats": "^13.4.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.2.0",
+    "chai": "^6.2.1",
+    "iso-web": "^2.2.1",
+    "mocha": "^11.1.0",
+    "msw": "^2.7.0",
+    "p-defer": "^4.0.1",
+    "playwright-test": "^14.1.12",
+    "typescript": "^5.7.3",
+    "viem": "^2.37.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "viem": "2.x"
+  }
+}

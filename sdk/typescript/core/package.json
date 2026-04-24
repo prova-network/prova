@@ -1,0 +1,144 @@
+{
+  "name": "@prova-network/core",
+  "version": "0.1.0-pre",
+  "description": "Low-level primitives for Prova Network (Ethereum-native verifiable storage on Base).",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prova-network/prova.git",
+    "directory": "sdk/typescript/core"
+  },
+  "keywords": [
+    "prova",
+    "ethereum",
+    "base",
+    "storage",
+    "pdp",
+    "proof-of-data-possession",
+    "web3"
+  ],
+  "author": "Prova Network contributors",
+  "contributors": [
+    "Hugo Dias <hugomrdias@gmail.com> (upstream: @filoz/synapse-core)",
+    "Rod Vagg <rod@vagg.org> (upstream: @filoz/synapse-sdk)"
+  ],
+  "license": "Apache-2.0 OR MIT",
+  "bugs": {
+    "url": "https://github.com/prova-network/prova/issues"
+  },
+  "homepage": "https://github.com/prova-network/prova/tree/main/sdk/typescript/core",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "module": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./chains": {
+      "types": "./dist/src/chains.d.ts",
+      "default": "./dist/src/chains.js"
+    },
+    "./sp": {
+      "types": "./dist/src/sp/index.d.ts",
+      "default": "./dist/src/sp/index.js"
+    },
+    "./pdp-verifier": {
+      "types": "./dist/src/pdp-verifier/index.d.ts",
+      "default": "./dist/src/pdp-verifier/index.js"
+    },
+    "./erc20": {
+      "types": "./dist/src/erc20/index.d.ts",
+      "default": "./dist/src/erc20/index.js"
+    },
+    "./abis": {
+      "types": "./dist/src/abis/index.d.ts",
+      "default": "./dist/src/abis/index.js"
+    },
+    "./auction": {
+      "types": "./dist/src/auction/index.d.ts",
+      "default": "./dist/src/auction/index.js"
+    },
+    "./pay": {
+      "types": "./dist/src/pay/index.d.ts",
+      "default": "./dist/src/pay/index.js"
+    },
+    "./typed-data": {
+      "types": "./dist/src/typed-data/index.d.ts",
+      "default": "./dist/src/typed-data/index.js"
+    },
+    "./session-key": {
+      "types": "./dist/src/session-key/index.d.ts",
+      "default": "./dist/src/session-key/index.js"
+    },
+    "./sp-registry": {
+      "types": "./dist/src/sp-registry/index.d.ts",
+      "default": "./dist/src/sp-registry/index.js"
+    },
+    "./errors": {
+      "types": "./dist/src/errors/index.d.ts",
+      "default": "./dist/src/errors/index.js"
+    },
+    "./piece": {
+      "types": "./dist/src/piece/index.d.ts",
+      "default": "./dist/src/piece/index.js"
+    },
+    "./utils": {
+      "types": "./dist/src/utils/index.d.ts",
+      "default": "./dist/src/utils/index.js"
+    },
+    "./mocks": {
+      "types": "./dist/src/mocks/index.d.ts",
+      "default": "./dist/src/mocks/index.js"
+    },
+    "./devnet": {
+      "types": "./dist/src/devnet/index.d.ts",
+      "default": "./dist/src/devnet/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "dist/src",
+    "dist/src/**/*.d.ts",
+    "dist/src/**/*.d.ts.map"
+  ],
+  "scripts": {
+    "build": "tsc --build --pretty",
+    "test": "playwright-test 'test/**/*.test.ts' --mode node",
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix ."
+  },
+  "dependencies": {
+    "@web3-storage/data-segment": "^5.3.0",
+    "dnum": "^2.15.0",
+    "iso-web": "^2.2.1",
+    "multiformats": "^13.4.1",
+    "ox": "^0.10.0",
+    "p-locate": "^7.0.0",
+    "p-queue": "^9.1.2",
+    "p-some": "^7.0.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.2.0",
+    "@wagmi/cli": "^2.7.0",
+    "abitype": "^1.1.0",
+    "chai": "^6.2.1",
+    "mocha": "^11.1.0",
+    "msw": "^2.7.0",
+    "playwright-test": "^14.1.12",
+    "type-fest": "^5.4.3",
+    "typescript": "^5.7.3",
+    "viem": "^2.37.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "viem": "2.x"
+  }
+}
