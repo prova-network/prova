@@ -1,0 +1,73 @@
+appId: network.prova.desktop
+generateUpdatesFilesForAllChannels: true
+
+extraMetadata:
+  buildNumber: "will be set from before-pack script"
+
+files:
+  - filter:
+    - main/**/*
+    - assets/**/*
+    - renderer/dist/**/*
+    - node_modules/**/*
+    - package.json
+
+# The provad Go binary is bundled into the packaged app. Build scripts
+# produce per-arch copies and the before-pack hook picks the right one.
+extraResources:
+  - from: '../prover/dist/${os}-${arch}/'
+    to: 'provad/'
+    filter: ['provad*']
+
+beforePack: './build/before-pack.js'
+afterPack: './build/after-pack.js'
+afterSign: './build/notarize-macos.js'
+artifactName: '${productName}.${ext}'
+
+mac:
+  category: public.app-category.utilities
+  darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: 'build/entitlements.mac.plist'
+  entitlementsInherit: 'build/entitlements.mac.plist'
+  target:
+    - target: dmg
+      arch: ['universal']
+    - target: zip
+      arch: ['universal']
+
+dmg:
+  iconSize: 160
+  iconTextSize: 12
+  window:
+    width: 660
+    height: 400
+  contents:
+    - x: 180
+      y: 200
+      type: file
+    - x: 480
+      y: 200
+      type: link
+      path: /Applications
+
+nsis:
+  oneClick: false
+  warningsAsErrors: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+
+linux:
+  artifactName: ${name}-${os}-${arch}.${ext}
+  executableName: prova
+  icon: prova
+  category: Network;FileTransfer;P2P
+  synopsis: Prova Desktop — verifiable storage prover for Base
+  maintainer: hello@prova.network
+  target:
+    - AppImage
+
+publish:
+  - github

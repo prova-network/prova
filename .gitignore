@@ -34,6 +34,13 @@ prover/**/*.test
 prover/provad
 contracts/broadcast/
 
+# Desktop build artifacts
+desktop/node_modules/
+desktop/dist/
+desktop/renderer/dist/
+desktop/.vite/
+desktop/out/
+
 # Local SVG preview renders
 .preview/
 
