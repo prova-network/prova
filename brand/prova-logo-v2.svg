@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prova logo v2: silver-blue chrome treatment.
+     Variations from v1 to avoid the generic "play button" read:
+       1. Outer ring has a small gap at top-right (signals flow / circulation)
+       2. Triangle rotated slightly (-8deg) so the vertex points up-right, not straight right
+       3. Triangle geometry has curved vertices (piece proof shape, not media glyph)
+       4. Cyan focal dot is smaller + more luminous, reads as a node not a record button
+     Designed to read on deep space-blue (#0A1020). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#EAF0FA"/>
+      <stop offset="45%" stop-color="#9FB3D4"/>
+      <stop offset="65%" stop-color="#3E6BD6"/>
+      <stop offset="100%" stop-color="#1A3B8F"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.7"/>
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="aura" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#7FE3FF" stop-opacity="0.35"/>
+      <stop offset="65%" stop-color="#2B5CFF" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#2B5CFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="35%" stop-color="#7FE3FF"/>
+      <stop offset="100%" stop-color="#2B5CFF" stop-opacity="0.8"/>
+    </radialGradient>
+    <filter id="coreGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+
+  <!-- Aura halo -->
+  <circle cx="100" cy="100" r="96" fill="url(#aura)"/>
+
+  <!-- Outer ring with a gap at the top-right (306deg opening, 54deg → circulation cue) -->
+  <path d="M 100 22
+           A 78 78 0 1 1 155.15 155.15"
+        fill="none" stroke="url(#chrome)" stroke-width="7"
+        stroke-linecap="round"/>
+  <!-- Top-half highlight sheen -->
+  <path d="M 22 100 A 78 78 0 0 1 168 77"
+        fill="none" stroke="url(#sheen)" stroke-width="7"
+        stroke-linecap="round" opacity="0.95"/>
+
+  <!-- Triangle: upright, rounded vertices. The ring gap + cyan core
+       carry the 'node in orbit' reading; rotation is not needed and
+       would cost silhouette stability. -->
+  <polygon points="72,58 140,100 72,142"
+           fill="none" stroke="url(#chrome)" stroke-width="7"
+           stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- Focal node: smaller, brighter, with outer glow -->
+  <circle cx="100" cy="100" r="12" fill="url(#core)" opacity="0.5" filter="url(#coreGlow)"/>
+  <circle cx="100" cy="100" r="5" fill="url(#core)"/>
+</svg>
