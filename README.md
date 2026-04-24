@@ -86,6 +86,32 @@ Machine-verifiable retention attestations for regulated industries. Pay in USDC.
 ### 4. Developer Storage Primitive
 S3-with-proofs for any application that needs verifiable storage.
 
+## Install
+
+Once Prova reaches public testnet (see status below), the prover
+installs with:
+
+```bash
+curl -fsSL https://prova.network/install.sh | bash
+```
+
+This fetches the right platform binary, verifies its SHA-256 checksum,
+installs to `/usr/local/bin/provad`, drops an example config at
+`/etc/prova/prover.toml.example`, and (on Linux) installs a hardened
+systemd unit.
+
+Override behavior with env vars:
+
+```bash
+PROVA_VERSION=v0.1.0    curl -fsSL https://prova.network/install.sh | bash
+PROVA_PREFIX=$HOME/.local  curl -fsSL https://prova.network/install.sh | bash
+PROVA_NO_SYSTEMD=1         curl -fsSL https://prova.network/install.sh | bash
+```
+
+See [`install.sh`](./install.sh) for the full source; it's intentionally
+short and auditable. Uninstall with
+`curl -fsSL https://prova.network/uninstall.sh | bash`.
+
 ## Project Status
 
 **Pivot in progress.** See [`PIVOT.md`](./PIVOT.md).

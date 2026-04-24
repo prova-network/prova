@@ -1,129 +1,99 @@
-# Security Audit Checklist — Prova Network
+# SPEC: Security Audit Checklist — Prova v2
 
-**Status:** Draft v0.1
-**Author:** Capri (for Prova project)
-**Date:** 2026-03-04
-**Companion docs:** `security-threat-model.md`, `bridge-security.md`, `checkpoint-anchoring.md`
+**Status:** Draft v1 (post-pivot)
+**Updated:** 2026-04-24
+**Companion:** [`security-threat-model.md`](./security-threat-model.md)
 
 ## 1. Purpose
 
-Pre-audit checklist for external security review. Each item maps to a module, threat vector, and verification method. Auditors should verify every MUST item; SHOULD items are recommended.
+Pre-audit checklist for external security review. Each item maps to a
+module and a verification method. Auditors should verify every MUST
+item before mainnet deployment; SHOULD items are recommended.
 
-## 2. Checklist Categories
+## 2. Contracts — `contracts/src/`
 
-### 2.1 Consensus & Block Production
-
-| ID | Check | Module | Severity | Verification |
-|----|-------|--------|----------|-------------|
-| AUD-001 | Equivocation detection slashes 100% stake on conflicting blocks at same height | `stake.rs`, `block.rs` | Critical | Submit two blocks at height N from same validator; assert full slash |
-| AUD-002 | Finality gadget prevents reorgs beyond checkpoint depth | `finality.rs`, `checkpoint.rs` | Critical | Attempt reorg past last anchored checkpoint; assert rejection |
-| AUD-003 | Block validation rejects invalid proposer (wrong turn / insufficient stake) | `block.rs`, `stake.rs` | High | Forge block from non-elected proposer; assert rejection |
-| AUD-004 | Epoch transitions are atomic (no partial state) | `epoch.rs` | High | Kill node mid-epoch-transition; restart; assert consistent state |
-| AUD-005 | Fork choice rule selects heaviest valid chain | `block.rs` | High | Present two forks with different weights; assert correct selection |
-
-### 2.2 Inference Verification (QBP)
+### 2.1 `StorageMarketplace`
 
 | ID | Check | Module | Severity | Verification |
-|----|-------|--------|----------|-------------|
-| AUD-010 | Bisection game resolves to single divergent step | `dispute.rs`, `participant.rs` | Critical | Run full bisection with known-bad activation at step K; assert isolation |
-| AUD-011 | Challenge window enforced — late challenges rejected | `commit.rs` | High | Submit challenge after window expires; assert rejection |
-| AUD-012 | Activation Merkle proofs validate against committed root | `merkle.rs` | Critical | Submit proof with tampered leaf; assert verification failure |
-| AUD-013 | Canonical CPU path produces identical output to reference | `canonical_cpu.rs` | High | Run same input on canonical and reference; assert bitwise match |
-| AUD-014 | Invalid inference commit leads to slashing after successful challenge | `dispute.rs`, `stake.rs` | Critical | Commit wrong result, challenge, complete bisection; assert slash |
+|----|-------|--------|----------|--------------|
+| MKT-01 | Escrow funds cannot be released more than once per deal | `StorageMarketplace.sol` | Critical | Unit test double-release; assert second call reverts |
+| MKT-02 | `completeDeal` pays exactly `totalPayment - paidOut` with protocol fee | `StorageMarketplace.sol` | Critical | Full-flow test with streaming release + completion |
+| MKT-03 | `faultDeal` slashes prover exactly once and refunds only unreleased escrow | `StorageMarketplace.sol` | Critical | Exercise fault at various `paidOut` levels |
+| MKT-04 | Only `proofVerifier` address can call listener hooks | `StorageMarketplace.sol` | High | Call hooks from arbitrary EOA; assert revert |
+| MKT-05 | Reentrancy guard on every `external payable` and on `proposeDeal` / `cancelProposedDeal` / `completeDeal` / `faultDeal` | `StorageMarketplace.sol` | Critical | Malicious token `transferFrom` callback; assert no re-entry |
+| MKT-06 | Deal state machine cannot regress (Active → Proposed, Completed → Active, etc.) | `StorageMarketplace.sol` | High | Fuzz sequence of transitions |
+| MKT-07 | Cancelled-before-accepted returns full escrow to client | `StorageMarketplace.sol` | High | Propose + cancel; assert client balance restored |
+| MKT-08 | Protocol fee bps cap is enforced (≤ 10%) | `StorageMarketplace.sol` | Medium | Try `setProtocolFeeBps(1001)`; assert revert |
 
-### 2.3 Economic Security
-
-| ID | Check | Module | Severity | Verification |
-|----|-------|--------|----------|-------------|
-| AUD-020 | Total supply is conserved across all operations (mint + burn + transfer = 0) | `rewards.rs`, `gas.rs`, `stake.rs` | Critical | Run 10K random transactions; assert sum of all balance changes = block rewards minted |
-| AUD-021 | Staking lock period enforced — early unstake rejected | `stake.rs` | High | Attempt unstake before lock expires; assert rejection |
-| AUD-022 | Gas fee burning matches EIP-1559 base fee calculation | `gas.rs` | Medium | Sequence of blocks at varying utilization; assert base fee follows formula |
-| AUD-023 | Payment channels cannot be double-settled | `payment.rs` | Critical | Attempt settle with old state after newer settle; assert rejection |
-| AUD-024 | Reward distribution sums to exactly the block reward (no rounding leak) | `rewards.rs` | Medium | Distribute across 100 recipients; assert sum = reward |
-| AUD-025 | SLA penalties cannot exceed staked amount | `sla.rs` | High | Trigger maximum penalty accumulation; assert capped at stake |
-
-### 2.4 Access Control & Authorization
+### 2.2 `ProverStaking`
 
 | ID | Check | Module | Severity | Verification |
-|----|-------|--------|----------|-------------|
-| AUD-030 | Role capabilities are least-privilege (Observer cannot submit txs) | `access.rs` | High | Attempt tx submission from Observer role; assert denied |
-| AUD-031 | Pause halts all non-governance operations | `access.rs` | Critical | Enable pause; attempt commit/challenge/transfer; assert all rejected |
-| AUD-032 | Capability expiry enforced — expired grants rejected | `access.rs` | Medium | Grant capability with TTL; advance past TTL; assert denied |
-| AUD-033 | Admin role cannot bypass slashing (no self-exemption) | `access.rs`, `stake.rs` | Critical | Equivocate from Admin account; assert slashing proceeds |
-| AUD-034 | Rate limiter prevents address from exceeding tx throughput cap | `rate_limiter.rs` | Medium | Send N+1 txs from same address in one epoch; assert last rejected |
+|----|-------|--------|----------|--------------|
+| STK-01 | Unbonding period enforced; withdraw before `unbondingEndsAt` reverts | `ProverStaking.sol` | Critical | `stake` → `requestUnstake` → warp 13d → `withdraw` reverts; warp 1d more → succeeds |
+| STK-02 | Slashing reduces stake but not beyond the staked amount | `ProverStaking.sol` | Critical | Slash attempts exceeding stake; assert amount clamped |
+| STK-03 | Only authorized controllers can `commitBytes` / `releaseBytes` / `slash` | `ProverStaking.sol` | Critical | Call from unauthorized EOA; assert revert |
+| STK-04 | Slashed amounts accumulate in `slashedPool`; withdrawal only by owner | `ProverStaking.sol` | High | Slash → owner withdraw; non-owner withdraw reverts |
+| STK-05 | `requestUnstake` blocks dropping below `minStakeFor(committedBytes)` | `ProverStaking.sol` | High | Commit bytes → attempt partial unstake; assert floor held |
 
-### 2.5 Networking & P2P
-
-| ID | Check | Module | Severity | Verification |
-|----|-------|--------|----------|-------------|
-| AUD-040 | TLS mutual authentication rejects invalid certificates | `tls.rs` | High | Connect with self-signed cert not in trust store; assert rejection |
-| AUD-041 | Gossip protocol rejects messages from non-staked peers | `network.rs` | Medium | Send gossip from address with 0 stake; assert dropped |
-| AUD-042 | Block sync validates all blocks in downloaded range | `sync.rs` | High | Inject invalid block in sync range; assert detection and disconnect |
-| AUD-043 | Eclipse attack resistance — minimum diverse peer connections | `network.rs` | High | Attempt to fill all peer slots from single subnet; assert diversity requirement |
-
-### 2.6 Cross-Chain & Bridge
+### 2.3 `ProofVerifier` (forked from FilOzone/pdp, adapted)
 
 | ID | Check | Module | Severity | Verification |
-|----|-------|--------|----------|-------------|
-| AUD-050 | Checkpoint quorum requires >2/3 stake weight | `checkpoint.rs` | Critical | Submit checkpoint with 60% quorum; assert rejection |
-| AUD-051 | Bridge message replay rejected (nonce tracking) | `bridge.rs` | Critical | Replay previously processed bridge message; assert rejection |
-| AUD-052 | L1 anchor verification checks L1 block validity | `watcher.rs`, `checkpoint.rs` | High | Submit anchor referencing non-existent tipset; assert rejection |
-| AUD-053 | State proof verification matches committed state root | `bridge.rs` | Critical | Submit proof against wrong state root; assert verification failure |
+|----|-------|--------|----------|--------------|
+| PVR-01 | UUPS upgrade path requires timelock + prior announcement | `ProofVerifier.sol` | Critical | Attempt upgrade without `announcePlannedUpgrade`; assert revert |
+| PVR-02 | `createDataSet` requires exactly `sybilFee()` in `msg.value`; excess refunded | `ProofVerifier.sol` | High | Test with insufficient + over-paid calls |
+| PVR-03 | `provePossession` rejects proofs for non-live data sets | `ProofVerifier.sol` | Critical | Submit proof for deleted set; assert revert |
+| PVR-04 | Merkle proof verification matches canonical (cross-check against `prover/pkg/pdptree`) | `Proofs.sol`, `ProofVerifier.sol` | Critical | Reference vectors from `go-fil-commp-hashhash` |
+| PVR-05 | `findPieceIds` returns correct `(pieceId, offset)` for arbitrary leaf indices | `ProofVerifier.sol` | High | Property-based test across data set sizes |
+| PVR-06 | Sybil-fee burn transfers to 0x...dEaD; balance changes verified | `ProofVerifier.sol` | Medium | Observe burn address delta after a call |
 
-### 2.7 State & Storage
-
-| ID | Check | Module | Severity | Verification |
-|----|-------|--------|----------|-------------|
-| AUD-060 | State trie produces deterministic root for identical state | `state.rs` | Critical | Apply same txs in same order on two nodes; assert identical roots |
-| AUD-061 | Snapshot integrity verified on import (Merkle root check) | `snapshot.rs` | High | Corrupt one chunk of snapshot; import; assert rejection |
-| AUD-062 | Pruning preserves all state needed for active dispute windows | `pruning.rs` | High | Prune aggressively; attempt to resolve open dispute; assert state available |
-| AUD-063 | Mempool eviction respects priority ordering | `mempool.rs` | Low | Fill mempool; submit higher-priority tx; assert lowest evicted |
-
-### 2.8 Governance
+### 2.4 `ProvaToken`
 
 | ID | Check | Module | Severity | Verification |
-|----|-------|--------|----------|-------------|
-| AUD-070 | Governance proposals require minimum stake to submit | `governance.rs` | Medium | Submit proposal from account below threshold; assert rejection |
-| AUD-071 | Vote weight proportional to stake at snapshot height | `governance.rs` | High | Change stake after snapshot; vote; assert weight uses snapshot |
-| AUD-072 | Emergency pause requires supermajority (>80%) | `governance.rs` | Critical | Attempt emergency pause with 75% vote; assert rejection |
+|----|-------|--------|----------|--------------|
+| TOK-01 | Total supply is 1B PROVA, minted once at genesis, never again | `ProvaToken.sol` | Critical | Inspect constructor; assert no `_mint` elsewhere |
+| TOK-02 | ERC-20 Permit (EIP-2612) signatures validate correctly | `ProvaToken.sol` | High | Positive + replay + wrong-signer test |
+| TOK-03 | Burn reduces total supply and affects only burner's balance | `ProvaToken.sol` | Medium | `ERC20Burnable` conformance test |
 
-## 3. Testing Requirements
+### 2.5 `ProverRegistry` + `ContentRegistry`
 
-### 3.1 Coverage Targets
+| ID | Check | Module | Severity | Verification |
+|----|-------|--------|----------|--------------|
+| REG-01 | Only the content owner can `bindENS` or `unbindENS` | `ContentRegistry.sol` | High | Call as non-owner; assert revert |
+| REG-02 | Prover deregistration is soft (historical lookups still work) | `ProverRegistry.sol` | Low | Deregister + read; active=false but record present |
+| REG-03 | Feature bitmap must include `FEATURE_PDP` on register | `ProverRegistry.sol` | Medium | Register without PDP bit; assert revert |
 
-| Category | Minimum Line Coverage | Minimum Branch Coverage |
-|----------|----------------------|------------------------|
-| Consensus (`block.rs`, `epoch.rs`) | 90% | 85% |
-| Economics (`stake.rs`, `rewards.rs`, `gas.rs`, `payment.rs`) | 95% | 90% |
-| Dispute (`dispute.rs`, `participant.rs`, `merkle.rs`) | 95% | 90% |
-| Access control (`access.rs`, `rate_limiter.rs`) | 90% | 85% |
-| Networking (`tls.rs`, `network.rs`, `sync.rs`) | 80% | 75% |
-| Bridge (`checkpoint.rs`, `bridge.rs`) | 90% | 85% |
+## 3. Prover — `prover/pkg/`
 
-### 3.2 Fuzz Testing Targets (Future — CHAIN-026, NODE-025)
+| ID | Check | Module | Severity | Verification |
+|----|-------|--------|----------|--------------|
+| PRV-01 | `ValidateSourceURL` rejects http, private/loopback/link-local IPs, userinfo | `pkg/deal/fetch.go` | Critical | Table-driven test (already present) |
+| PRV-02 | `Fetcher.MaxBytes` hard-caps downloads | `pkg/deal/fetch.go` | High | Set small cap; attempt larger fetch; assert error |
+| PRV-03 | Engine marks deal `Failed` on CommP mismatch without ever writing the piece to store | `pkg/deal/engine.go` | Critical | Feed wrong content; assert store unchanged + deal failed |
+| PRV-04 | `OnChainAccepter` parses the `DataSetCreated` event correctly | `pkg/deal/accepter.go` | High | Mock receipt with various log topologies |
+| PRV-05 | `EventPoller` watermark advances only after all 5 filters succeed | `pkg/deal/events.go` | High | Inject filter error; assert watermark unchanged |
+| PRV-06 | PDP tree root reconstruction matches canonical CommP on fixture sizes | `pkg/pdptree/memtree.go` | Critical | Existing cross-check against `go-fil-commp-hashhash` |
+| PRV-07 | Wallet loader's env precedence is documented and deterministic | `pkg/wallet/wallet.go` | Medium | Unit tests cover all 3 sources |
+| PRV-08 | HTTP server access log does not leak secrets (passphrase, private key) | `pkg/httpserver/server.go` | Medium | grep access log over a realistic session |
 
-- State trie: random tx sequences must never produce inconsistent roots
-- Merkle tree: arbitrary leaf insertions/deletions must maintain valid proofs
-- Mempool: random insert/evict patterns must maintain ordering invariants
-- Payment channels: random open/update/settle/dispute sequences must conserve funds
+## 4. Integration
 
-## 4. Audit Engagement Recommendations
+| ID | Check | Module | Severity | Verification |
+|----|-------|--------|----------|--------------|
+| INT-01 | End-to-end deal flow succeeds on local anvil | `prover/internal/soaktest/` | Critical | `./run.sh` exits 0 with 3 deals Active |
+| INT-02 | Graceful shutdown on SIGTERM drains active HTTP connections within `ShutdownTimeout` | `pkg/daemon/daemon.go` | Medium | Start daemon → `kill -TERM` → assert 'stopped cleanly' within 30s |
+| INT-03 | Soak test metrics match expected values (pieces stored, bytes stored, deals active) | `prover/internal/soaktest/` | Medium | Assertions in `run.sh` |
 
-1. **Scope:** All `chain/src/` and `node/src/` modules (≈30 files, ~15K lines)
-2. **Duration:** 2–3 week engagement for two senior auditors
-3. **Methodology:** Manual review + automated (Clippy strict, Miri for UB, cargo-fuzz)
-4. **Priority order:** Economics → Consensus → Bridge → Dispute → Access Control → Networking
-5. **Deliverable:** Finding-by-finding report with severity, PoC, and remediation guidance
-6. **Re-audit trigger:** Any change to slashing, finality, or bridge logic
+## 5. Deployment
 
-## 5. Known Accepted Risks
+| ID | Check | Severity | Notes |
+|----|-------|----------|-------|
+| DEP-01 | Mainnet `ProofVerifier` proxy owner is a Safe multisig, not an EOA | Critical | Verify on-chain after deploy |
+| DEP-02 | `StorageMarketplace.protocolFeeBps` matches governance-approved value | High | Check post-deploy |
+| DEP-03 | `MockProofVerifier` is NOT deployed on mainnet | Critical | Use the UUPS-proxied real `ProofVerifier` |
+| DEP-04 | Systemd unit uses hardened defaults (`NoNewPrivileges`, `ProtectSystem=strict`, etc.) | Medium | Compare against `prover/deploy/provad.service` |
+| DEP-05 | Prover keystore file has mode 0600 and non-empty passphrase | High | Operator verifies before boot |
 
-| Risk | Rationale | Monitoring |
-|------|-----------|------------|
-| Single checkpoint submitter can delay (not forge) anchors | Timeout fallback promotes next submitter | `submitter.rs` watchdog |
-| Canonical CPU path is slower than GPU for verification | Correctness > speed for dispute resolution | Performance metrics |
-| Observer role can read all state (no privacy) | Public chain by design | N/A |
+## 6. Out of scope
 
----
-
-*This checklist should be updated whenever new modules are added or threat model changes.*
+PoRep, sealing, TEE attestation, AI inference proofs, cross-chain
+bridges. These are not part of Prova v2.

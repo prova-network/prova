@@ -126,9 +126,9 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     // For Base L2 (and L2s generally), the reorg horizon is effectively
     // instant once the batch is posted to L1 and finalized. A value of ~6
     // (matching default block_lookback in the Prova prover) is ample.
-    // Upstream PDPVerifier on Filecoin uses 150 based on PoRep epoch
-    // analysis, which is overkill on a rollup. Operator tunes via
-    // initialize(). Kept parameterizable for portability.
+    // Upstream PDPVerifier picked a higher value for its L1 reorg model,
+    // which is overkill on a rollup. Operator tunes via initialize();
+    // kept parameterizable for portability.
     uint256 challengeFinality;
 
     // TODO PERF: https://github.com/FILCAT/pdp/issues/16#issuecomment-2329838769

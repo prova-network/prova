@@ -6,156 +6,90 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  CARGO_TERM_COLOR: always
-  RUSTFLAGS: "-D warnings"
+permissions:
+  contents: read
 
 jobs:
-  build:
-    name: Build
+  # ── Solidity ────────────────────────────────────────────────────────
+  contracts:
+    name: Contracts (foundry)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Cache cargo
-        uses: actions/cache@v4
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build all crates
-        run: cargo build --workspace
-      - name: Build release
-        run: cargo build --workspace --release
+          submodules: recursive
 
-  test:
-    name: Tests (${{ matrix.crate }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        crate: [prova-chain, prova-node, prova-sdk]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Cache cargo
-        uses: actions/cache@v4
+      - uses: foundry-rs/foundry-toolchain@v1
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
-      - name: Run tests
-        run: cargo test --package ${{ matrix.crate }} -- --nocapture
-      - name: Run tests (release)
-        run: cargo test --package ${{ matrix.crate }} --release
+          version: nightly
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-      - name: Check format
-        run: cargo fmt --all -- --check
-      - name: Clippy (all targets)
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install cargo-audit
-        run: cargo install cargo-audit --locked || true
-      - name: Run audit
-        run: cargo audit
-
-  coverage:
-    name: Code Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Install cargo-tarpaulin
-        run: cargo install cargo-tarpaulin --locked || true
-      - name: Run coverage
-        run: cargo tarpaulin --workspace --out xml --skip-clean
-      - name: Upload coverage
-        if: github.ref == 'refs/heads/main'
-        run: echo "Coverage report generated"
-
-  bench:
-    name: Benchmark Gate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
-      - name: Run benchmarks
-        run: cargo test --package prova-chain -- bench_ --nocapture 2>&1 | tee bench-output.txt
-      - name: Benchmark regression check
-        run: cargo test --package prova-chain bench_history -- --nocapture
-
-  doc:
-    name: Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Build docs
-        run: cargo doc --workspace --no-deps
-        env:
-          RUSTDOCFLAGS: "-A rustdoc::all"
-
-  test-hexa:
-    name: Tests (self-hosted, Hexa)
-    runs-on: [self-hosted, linux, x64, hexa]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Rust version
+      - name: Install OpenZeppelin deps
         run: |
-          source ~/.cargo/env
-          rustc --version
-          cargo --version
+          # remappings.txt points at lib/openzeppelin-contracts{,-upgradeable}
+          # They are submodules or fetched via forge install; ensure present.
+          if [ ! -d lib/openzeppelin-contracts ]; then
+            forge install OpenZeppelin/openzeppelin-contracts --no-commit
+          fi
+          if [ ! -d lib/openzeppelin-contracts-upgradeable ]; then
+            forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
+          fi
 
       - name: Build
-        run: |
-          source ~/.cargo/env
-          cargo build --workspace
+        run: forge build --sizes
 
-      - name: Test all crates
-        run: |
-          source ~/.cargo/env
-          cargo test --workspace -- --nocapture
+      - name: Test
+        run: forge test -vv
 
-      - name: Clippy
+  # ── Go prover ──────────────────────────────────────────────────────
+  prover:
+    name: Prover (go)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prover
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+          cache-dependency-path: prover/go.sum
+
+      - name: Tidy check
         run: |
-          source ~/.cargo/env
-          rustup component add clippy 2>/dev/null || true
-          cargo clippy --workspace -- -D warnings
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test -race -count=1 ./...
+
+      - name: Vet
+        run: go vet ./...
+
+  # ── Shell scripts ──────────────────────────────────────────────────
+  shell:
+    name: Shell lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Check install/uninstall
+        run: |
+          shellcheck install.sh uninstall.sh
+          shellcheck prover/internal/soaktest/run.sh
+          shellcheck prover/scripts/gen-bindings.sh
+
+      - name: Syntax check
+        run: |
+          bash -n install.sh
+          bash -n uninstall.sh

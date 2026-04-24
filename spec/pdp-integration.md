@@ -1,141 +1,167 @@
-# SPEC-004: PDP Integration Specification
+# SPEC-004: PDP Integration
 
-**Status:** Draft  
-**Author:** Capri  
-**Created:** 2026-03-04
+**Status:** Draft v2
+**Updated:** 2026-04-24
 
 ## 1. Overview
 
-Prova integrates Provable Data Possession (PDP) as its storage verification layer. Unlike sealed PoRep approaches, Prova uses lightweight PDP proofs over raw unsealed data, enabling hot/warm storage with lower overhead.
+Prova uses **Provable Data Possession (PDP)** as its single storage
+verification mechanism. Clients upload content, provers store the raw
+bytes, and the chain periodically challenges provers to supply Merkle
+inclusion proofs against random leaves.
 
-PDP in Prova serves dual purposes:
-1. **Storage verification** — prove that model weights and datasets are stored
-2. **Model integrity** — prove specific model files match their registered weight hashes
+PDP was chosen because:
 
-## 2. CommP Compatibility
+- **Lightweight to onboard** (minutes, not hours).
+- **Cheap to verify on-chain** (O(log N) inclusion proofs, low gas).
+- **Hot/warm friendly** — pieces stay unsealed, retrievable on demand.
+- **Mature** — the underlying cryptography has been deployed at scale.
 
-Prova uses the CommP (Piece Commitment) format for content addressing:
-- SHA-256 truncated to 254 bits (Fr-safe)
-- Binary Merkle tree over 32-byte leaves
-- Piece sizes: powers of 2 from 128 bytes to 64 GiB
+Anything heavier (sealed replicas, SNARK-based proofs, TEE-attested
+storage, proof-of-replication) is **out of scope**. Prova is not a
+Filecoin replacement; it is a thin verifiable-storage layer on Base
+optimized for data that needs to stay retrievable.
 
-### 2.1 Model Storage Format
+## 2. Content Addressing: CommP
 
-A registered model is stored as one or more PDP pieces:
+Content is identified by **CommP** (Piece Commitment):
 
-```
-Model: TinyLlama-1.1B-Q8_0
-├── Piece 0: weights_layer_0-7.bin   (CommP: 0x...)
-├── Piece 1: weights_layer_8-15.bin  (CommP: 0x...)
-├── Piece 2: weights_layer_16-23.bin (CommP: 0x...)
-└── Piece 3: weights_layer_24-31.bin (CommP: 0x...)
-```
+- Multihash: `sha2-256-trunc254-padded` (code `0x1012`)
+- Codec: `piece-commitment` (code `0xf101`)
+- Binary Merkle tree over 32-byte leaves, top 2 bits of each node masked
+  to stay inside the BLS12-381 scalar field (Fr).
+- Piece sizes: powers of 2, 128 bytes to 64 GiB.
 
-The Model Registry stores both:
-- Per-layer weight hashes (for QBP verification)
-- Per-piece CommP roots (for PDP storage proofs)
+CommP is standard across the multicodec registry and compatible with any
+tooling that understands the same codec. Clients can compute CommP
+themselves (see `@prova-network/core`) without trusting the prover.
 
-## 3. Proof Set Management
+## 3. On-Chain Data Model
 
-### 3.1 Registration
+### Data sets
 
-When a storage provider onboards a model:
-
-```
-Provider → Chain: RegisterProofSet(model_id, [CommP_0, ..., CommP_n])
-Chain: Verifies CommPs match model registry
-Chain: Creates proof set, starts proving schedule
-```
-
-### 3.2 Challenge Protocol
-
-Challenges use drand randomness (standard drand-based):
+Each deal creates one **data set** inside the `ProofVerifier` contract.
+A data set is a collection of one or more pieces that the prover is
+responsible for. The `StorageMarketplace` is registered as the
+`PDPListener` for its data sets, so lifecycle callbacks
+(`dataSetCreated`, `possessionProven`, etc.) route through it.
 
 ```
-epoch E:
-  seed = drand_beacon(E)
-  challenges = select_random_roots(proof_set, seed, count=5)
-  
-Provider → Chain: SubmitPDPProof(proof_set_id, [merkle_proofs])
-Chain: Verify all 5 inclusion proofs
+Deal proposed (client)
+  → Marketplace.proposeDeal(prover, commP, pieceSize, duration, payment)
+  → funds locked in escrow
+
+Prover accepts
+  → Prover calls ProofVerifier.createDataSet(marketplace, dealId)
+  → Marketplace.dataSetCreated hook flips deal to Active
 ```
 
-### 3.3 Proving Schedule
+### Proof set state
 
-- **Challenge frequency:** Every 2880 epochs (~24 hours at 30s epochs)
-- **Response window:** 60 epochs (~30 minutes)
-- **Fault tolerance:** 2 consecutive misses before slashing
-- **Grace period:** 10 epochs after challenge for proof submission
-
-## 4. Integration with QBP
-
-PDP and QBP operate on different data but share the model registry:
-
-| Aspect | PDP | QBP |
-|--------|-----|-----|
-| **Proves** | Data is stored | Inference is correct |
-| **Data** | Model weight files | Per-layer activations |
-| **Hash** | CommP (SHA-256/254) | SHA-256 (full) |
-| **Frequency** | Daily | Per-inference |
-| **Cost** | ~140M gas/proof | ~1 on-chain tx + O(log L) bisection rounds |
-
-### 4.1 Cross-Verification
-
-When a QBP dispute reaches the single-layer verification stage:
-1. Verifier needs the model weights for that layer
-2. PDP proof confirms the weight data is available and correct
-3. Verifier re-executes the layer with known weights + input activation
-4. Comparison with claimed output activation determines winner
-
-```
-Dispute Resolution:
-  1. Bisection isolates layer K
-  2. Fetch weight_hash[K] from Model Registry
-  3. PDP proof confirms storage of piece containing layer K weights
-  4. Verifier loads weights, re-executes layer K
-  5. Compare output → determine winner
+```solidity
+mapping(uint256 => uint256) nextChallengeEpoch;   // when next challenge is sampled
+mapping(uint256 => uint256) challengeRange;        // total leaf count
+mapping(uint256 => mapping(uint256 => uint256)) pieceLeafCounts;
 ```
 
-## 5. Staking Integration
+## 4. Challenge Protocol
 
-Storage providers must stake for both PDP and QBP:
+### 4.1 Randomness source
+
+The seed for challenge leaf selection comes from `block.prevrandao`
+(EIP-4399). Base supports it. Real deployments may plug in Chainlink VRF
+for stronger bias resistance; the current path is acceptable for Base
+where the reorg horizon is effectively instant after the L1 batch is
+posted.
+
+### 4.2 Challenge index derivation
+
+For the N challenged leaves of a proving period:
 
 ```
-Total Stake = PDP_Stake + QBP_Stake
-
-PDP_Stake = f(data_stored_bytes)     # Proportional to storage committed
-QBP_Stake = f(inference_throughput)   # Proportional to compute committed
+challengeIndex[i] = keccak256(seed || uint256(dataSetId) || uint64(i)) mod totalLeaves
 ```
 
-### 5.1 Slashing
+Bit-for-bit compatible with the canonical PDP convention. Verified by
+`prover/pkg/challenges` against a reference implementation on multiple
+test vectors.
 
-| Violation | Slash Amount | Cool-down |
-|-----------|-------------|-----------|
-| PDP proof miss (1st) | 0% (warning) | — |
-| PDP proof miss (2nd consecutive) | 5% of PDP stake | 7 days |
-| PDP proof miss (3rd) | 100% of PDP stake | Permanent |
-| QBP dispute lost | 10% of QBP stake | 24 hours |
-| QBP dispute + data unavailable | 50% of total stake | 30 days |
+### 4.3 Proof submission
 
-## 6. Gas Costs (Estimated)
+Prover calls:
 
-Based on empirical PDP network data:
-- Proof set creation (100 roots): ~140M gas
-- Proof set creation (1K roots): ~150M gas
-- Proof set creation (10K roots): ~160M gas
-- **Scaling: logarithmic** — critical for large model storage
+```solidity
+ProofVerifier.provePossession(setId, IPDPTypes.Proof[] proofs)
+```
 
-## 7. Future: Dataset PDP
+Each `Proof` is `{ bytes32 leaf, bytes32[] path }`. The verifier walks
+the path, reconstructs the root, and compares to the on-chain CommP.
+Gas cost is **O(log N)** per proof, which is the key reason PDP scales.
 
-Beyond model weights, PDP can prove storage of:
-- Training datasets (for reproducibility)
-- Fine-tuning data
-- Inference logs (for audit trails)
-- User data (for data availability in decentralized apps)
+### 4.4 Sybil fee
 
-## 8. References
+`createDataSet` and new-dataset `addPieces` charge a flat sybil fee of
+`0.1 ETH` (burned) to deter wasteful on-chain state growth. Regular
+proof submissions carry no protocol fee; only the deal-level economic
+flow (protocol fee on released payment) applies.
 
-- PDP specification (open standard)
-- [SPEC-001: QBP Protocol](./qbp-protocol.md)
-- [SPEC-003: Model Registry](./model-registry.md)
-- Prova Whitepaper §4 (Storage Layer)
+## 5. Proving Schedule
+
+Default parameters (tunable via `StorageMarketplace` admin):
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| Challenge frequency | 1 per deal per day | Enforced via `nextChallengeEpoch` |
+| Max proof gap | 3 days | Anyone can `faultDeal` after this |
+| Unbonding period | 14 days | Prover stake cannot exit faster |
+| Slash per fault | `slashPerFault` (configurable) | Current default: 50 PROVA |
+
+A missed challenge does not slash immediately — the **dispute path** is
+explicit. Anyone can call `StorageMarketplace.faultDeal(dealId)` once
+the `MAX_PROOF_GAP` window elapses; the transaction slashes the prover
+and refunds the client's unreleased escrow.
+
+## 6. Piece Retrieval
+
+Provers that advertise `FEATURE_HTTPS_SERVING` expose:
+
+```
+GET  https://<prover>/piece/<pieceCid>     — stream the bytes
+HEAD https://<prover>/piece/<pieceCid>     — metadata only
+GET  https://<prover>/.well-known/prova    — prover metadata
+GET  https://<prover>/health               — liveness
+```
+
+Retrieval is out-of-band to the on-chain proof flow; it has its own
+rate limiting and pricing (in a future phase). For v1 retrieval is open
+and unpriced.
+
+## 7. Staking and Slashing
+
+Prover stake (`ProverStaking.stake`) is the only economic guarantee.
+`StorageMarketplace` calls `staking.commitBytes(prover, pieceSize)` on
+deal acceptance and `staking.releaseBytes` on completion or fault.
+Minimum stake is proportional to committed bytes; falling below the
+floor blocks new deal acceptance.
+
+## 8. Gas Costs (ballpark on Base)
+
+These are approximate; real deployments will benchmark and tune.
+
+| Operation | Gas | USDC-equivalent on Base |
+|-----------|----:|------------------------:|
+| `createDataSet` (1 piece) | ~400K | ~$0.001 |
+| `createDataSet` (100 pieces) | ~800K | ~$0.002 |
+| `provePossession` (5 challenges) | ~300K | ~$0.001 |
+| `addPieces` (existing dataset) | ~150K | ~$0.0005 |
+
+On Ethereum L1 these numbers are about 100x higher, which is why Prova
+targets Base by default.
+
+## 9. References
+
+- [`contracts/src/ProofVerifier.sol`](../contracts/src/ProofVerifier.sol) — the on-chain verifier
+- [`contracts/src/StorageMarketplace.sol`](../contracts/src/StorageMarketplace.sol) — PDPListener implementation
+- [`prover/pkg/pdptree/`](../prover/pkg/pdptree/) — fr32 + SHA-254 memtree (piece-side Merkle)
+- [`prover/pkg/challenges/`](../prover/pkg/challenges/) — challenge index derivation + proof submission
+- Multicodec registry: <https://github.com/multiformats/multicodec>

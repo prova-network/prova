@@ -63,7 +63,8 @@ contract IntegrationTest is Test {
         // Cache feature constants first so the vm.prank isn't consumed by getters
         uint64 FEATURE_PDP = registry.FEATURE_PDP();
         uint64 FEATURE_HTTPS = registry.FEATURE_HTTPS_SERVING();
-        uint64 FEATURE_TEE = registry.FEATURE_TEE();
+        // Unsupported feature bit (anything outside PDP + HTTPS_SERVING)
+        uint64 UNKNOWN_FEATURE = 1 << 10;
 
         vm.prank(PROVER);
         registry.register(
@@ -77,7 +78,7 @@ contract IntegrationTest is Test {
         assertTrue(registry.isActive(PROVER));
         assertTrue(registry.supportsFeature(PROVER, FEATURE_PDP));
         assertTrue(registry.supportsFeature(PROVER, FEATURE_HTTPS));
-        assertFalse(registry.supportsFeature(PROVER, FEATURE_TEE));
+        assertFalse(registry.supportsFeature(PROVER, UNKNOWN_FEATURE));
     }
 
     function test_Staking_CommitAndRelease() public {

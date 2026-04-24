@@ -1,210 +1,131 @@
-# Security Threat Model — Prova Network
+# SPEC: Security Threat Model — Prova v2
 
-**Status:** Draft v0.1
-**Author:** Capri (for Prova project)
-**Date:** 2026-03-04
+**Status:** Draft v1 (post-pivot)
+**Updated:** 2026-04-24
 
-## 1. Overview
+## 1. Scope
 
-This document enumerates known attack vectors against the Prova network, assesses their severity, and specifies mitigations implemented or planned. It covers consensus, inference verification (QBP), economics, networking, and operational concerns.
+Prova v2 is a set of Solidity contracts on Base + off-chain prover nodes
+that store pieces and answer PDP challenges. This document enumerates
+attacks against that specific system. Base itself (validator set, L1
+finality, bridge security, gas pricing) is out of scope — those are
+inherited from Ethereum/Base and their threat model is well covered by
+the L1/L2 community.
 
-### Threat Classification
+### Threat levels
 
-| Level | Impact | Response Time |
-|-------|--------|---------------|
-| **Critical** | Network halt, total fund loss, consensus break | Immediate hotfix, emergency governance |
-| **High** | Partial fund loss, sustained censorship, proof bypass | Priority fix within 1 epoch cycle |
-| **Medium** | Economic inefficiency, temporary DoS, griefing | Scheduled fix |
-| **Low** | Information leak, UX degradation | Best-effort |
+| Level | Impact | Response |
+|-------|--------|----------|
+| **Critical** | Fund loss, data loss, contract bricking | Emergency upgrade via UUPS + timelock bypass |
+| **High** | Systemic griefing, temporary denial | Priority fix, timelocked upgrade |
+| **Medium** | Economic inefficiency, annoyance | Scheduled fix |
+| **Low** | Info leak, UX issue | Best-effort |
 
-## 2. Consensus & Block Production
+## 2. Contract Layer
 
-### 2.1 Nothing-at-Stake (THREAT-001)
+### T-01. Marketplace fund drain (Critical)
 
-- **Vector:** Validators sign conflicting blocks at the same height to maximize rewards on all forks
-- **Severity:** Critical
-- **Mitigation:** Equivocation slashing — any two signed blocks at the same height from the same validator triggers immediate stake seizure (`stake.rs` slashing logic). Slash amount = 100% of staked collateral.
-- **Residual Risk:** Requires at least one honest observer to submit equivocation proof within the challenge window.
+- **Vector:** A bug in `StorageMarketplace` lets a prover claim payment without completing the deal, or lets a client reclaim escrow after it's already been released.
+- **Mitigation:** Reentrancy guards on all state-changing external calls. Linear streaming release bounded by elapsed time. Deal state machine transitions gated by `onlyProofVerifier` where appropriate. 40+ contract tests covering the happy path and each error branch.
+- **Residual:** Audit before mainnet.
 
-### 2.2 Long-Range Attack (THREAT-002)
+### T-02. Slashing bypass (High)
 
-- **Vector:** Attacker acquires old validator keys (from unstaked validators) and rewrites history from a past checkpoint
-- **Severity:** High
-- **Mitigation:** Weak subjectivity checkpoints — new nodes must sync from a recent trusted checkpoint (< unbonding period). Key deletion after unstaking is recommended but not enforceable.
-- **Residual Risk:** Nodes that have been offline longer than the unbonding period must obtain a fresh checkpoint out-of-band.
+- **Vector:** Prover finds a way to skip challenges without getting slashed — e.g., front-runs `faultDeal` with `completeDeal` somehow, or exits stake before the slashing tx lands.
+- **Mitigation:** 14-day unbonding period on `ProverStaking`. Slashing callable only by authorized controllers (currently `StorageMarketplace`). `MAX_PROOF_GAP` + `faultDeal()` callable by anyone permissionlessly after the gap elapses.
+- **Residual:** Need to verify the state-machine transitions cannot be reordered to the prover's advantage (audit item).
 
-### 2.3 Validator Censorship (THREAT-003)
+### T-03. Upgrade-path abuse (High)
 
-- **Vector:** A majority coalition of validators refuses to include specific transactions (e.g., dispute initiations, slashing proofs)
-- **Severity:** High
-- **Mitigation:** (a) Forced inclusion via proposer rotation — censored txs eventually reach an honest proposer. (b) Mempool gossip ensures transactions propagate to all validators. (c) Governance can forcibly rotate validator sets.
-- **Residual Risk:** >67% colluding validators can censor indefinitely within a governance response window.
+- **Vector:** `ProofVerifier` is UUPS-upgradeable. A compromised owner key pushes a malicious implementation that drains pending sybil fees or rewrites data sets.
+- **Mitigation:** Contract owner should be a Safe multisig (2-of-N) plus a `Timelock` with sufficient delay for operators to notice. `announcePlannedUpgrade` exists for this; deployment config must wire it. Plain EOA ownership on mainnet is a deployment bug.
+- **Residual:** Key management discipline.
 
-### 2.4 Block Withholding (THREAT-004)
+### T-04. Sybil-fee griefing (Low)
 
-- **Vector:** Block proposer publishes header but withholds body, preventing validation
-- **Severity:** Medium
-- **Mitigation:** Timeout-based skip — if block body is not available within `BLOCK_BODY_TIMEOUT` (currently 3 epochs), the slot is skipped and the proposer loses block reward. Repeated withholding triggers reputation penalty.
+- **Vector:** Attacker spams `createDataSet` to waste chain storage, paying 0.1 ETH per call.
+- **Mitigation:** The fee itself is the deterrent. 0.1 ETH per pointless data set is not worth sustaining. Worst case: operator can raise the fee via a proxy upgrade.
 
-## 3. Inference Verification (QBP)
+### T-05. CommP collision (Critical, infeasible)
 
-### 3.1 Lazy Provider — Skip Computation (THREAT-005)
+- **Vector:** Attacker finds two different byte strings with the same CommP hash and uses that to get paid for storing a different object than the one the client requested.
+- **Mitigation:** CommP is SHA-256-based; pre-image + collision resistance are computationally infeasible. Not a realistic threat.
 
-- **Vector:** Provider submits a random or cached activation root without running inference
-- **Severity:** Critical
-- **Mitigation:** Any challenger can initiate a bisection dispute. Lazy providers will fail to produce a valid single-layer re-execution proof. Slash = committed stake + challenger bounty from slashed funds.
-- **Detection Rate:** Any single honest challenger in the network is sufficient.
+## 3. Prover Layer
 
-### 3.2 Challenger Griefing (THREAT-006)
+### T-06. Lazy prover — accept deal, never store (Critical)
 
-- **Vector:** Attacker opens many frivolous disputes to drain honest providers' gas and time
-- **Severity:** Medium
-- **Mitigation:** Challengers must post a dispute bond (currently `MIN_DISPUTE_BOND` = 10× gas cost of full bisection). Bond is slashed if the challenge fails (provider proven correct). Bond returned + bounty if challenge succeeds.
-- **Residual Risk:** A well-funded attacker can still impose latency on honest providers, though at escalating cost.
+- **Vector:** Prover accepts the deal, pockets payment, never actually stores the piece.
+- **Mitigation:** Periodic PDP challenges. Missing challenges past `MAX_PROOF_GAP` triggers `faultDeal` which slashes stake + refunds client. Only remediation for first offense is slash; repeat offenders lose stake quickly.
+- **Detection:** Any single honest watcher can call `faultDeal`.
 
-### 3.3 Determinism Evasion (THREAT-007)
+### T-07. Source URL DoS (Medium)
 
-- **Vector:** Provider uses a subtly different quantization scheme or GPU driver version to produce outputs that differ by <1 ULP, making disputes ambiguous
-- **Severity:** High
-- **Mitigation:** (a) Canonical compute capability pinning per model registration (`ComputeCapability` in model manifest). (b) INT8 quantization with controlled accumulation order (row-major, deterministic reduce). (c) CPU canonical verification path as ultimate arbiter (`canonical_cpu.rs`). (d) Tolerance = 0 bits — exact match required at INT8 precision.
-- **Residual Risk:** New GPU architectures may introduce unexpected non-determinism. Requires ongoing compatibility testing (see `determinism.rs` harness).
+- **Vector:** Client publishes a Source URL that points at a huge file, gets a prover to waste bandwidth downloading it, deal fails on CommP mismatch.
+- **Mitigation:** `Fetcher.MaxBytes` hard limit (32 GiB default). `ValidateSourceURL` rejects private IPs, loopback, userinfo. Client pays for deal up-front; failure burns part of the escrow.
+- **Residual:** First-download cost falls on the prover. Provers can cap accept rate or require a deposit beyond the deal fee for large pieces.
 
-### 3.4 Activation Root Collision (THREAT-008)
+### T-08. Source URL SSRF / exfil (High)
 
-- **Vector:** Attacker finds two different activation tensors producing the same Merkle root
-- **Severity:** Low (theoretical)
-- **Mitigation:** SHA-256 collision resistance (2^128 security). Activation Merkle tree uses domain-separated hashing with layer index prefix.
-- **Residual Risk:** Negligible under standard cryptographic assumptions.
+- **Vector:** Attacker publishes a source URL pointing at internal infrastructure (metadata service, internal APIs) to trick the prover into fetching secrets.
+- **Mitigation:** `ValidateSourceURL` rejects loopback, private, link-local. `$PROVA_PULL_ALLOW_INSECURE` / `[source_url].allow_insecure` must be off in production. Default deny.
+- **Residual:** DNS rebinding is possible; defense-in-depth would add post-resolution IP re-checks. Not implemented in v1.
 
-### 3.5 Bisection Timeout Manipulation (THREAT-009)
+### T-09. Key exfiltration (Critical)
 
-- **Vector:** Dispute participant deliberately delays responses to exhaust opponent's patience or force timeout in their favor
-- **Severity:** Medium
-- **Mitigation:** Strict per-round timeout (`BISECTION_ROUND_TIMEOUT`). Non-responding party auto-loses the round and forfeits bond. Clock is on-chain (epoch-based), not wall-clock.
+- **Vector:** Prover's signing key leaks; attacker uses it to drain staked PROVA.
+- **Mitigation:** Wallet package supports keystore-with-passphrase and env-based loading. Operators should use keystore + `$PROVA_KEYSTORE_PASSPHRASE`. systemd unit has hardened defaults. 14-day unbonding on staking means leaked stake isn't instantly drainable.
+- **Residual:** Key management discipline. Hardware-signer support is a future enhancement.
 
-## 4. Economic Attacks
+### T-10. Prover service denial (Medium)
 
-### 4.1 Stake Grinding (THREAT-010)
+- **Vector:** Attacker spams HTTP retrieval endpoint to exhaust the prover's bandwidth.
+- **Mitigation:** Operators deploy behind a reverse proxy with rate limiting. `Fetcher` already caps inbound downloads. HTTP server is stateless for retrieval.
+- **Residual:** Bandwidth accounting + paid retrieval is a future phase.
 
-- **Vector:** Attacker stakes minimally across many identities (Sybil) to increase probability of being selected as provider/validator
-- **Severity:** High
-- **Mitigation:** (a) Provider selection weighted by stake — splitting stake across N identities gives identical aggregate selection probability. (b) Minimum stake threshold (`MIN_PROVIDER_STAKE`) to impose fixed cost per identity. (c) Reputation system requires history, not just stake.
-- **Residual Risk:** Reputation bootstrapping phase is vulnerable to Sybil flooding.
+## 4. Client Layer
 
-### 4.2 Payment Channel Exhaustion (THREAT-011)
+### T-11. Client refuses to release (Low)
 
-- **Vector:** Payer opens payment channel, consumes inference, then attempts to close channel with stale state (before provider claims)
-- **Severity:** High
-- **Mitigation:** (a) Dispute period on channel closure — provider can submit latest signed state within `CHANNEL_DISPUTE_WINDOW`. (b) Unilateral closure always uses the highest-nonce state seen on-chain. (c) Streaming payment lockup covers worst-case provider exposure.
-- **Residual Risk:** Provider must be online during dispute window or delegate to a watchtower.
+- **Vector:** Client never calls `completeDeal` after the deal duration elapses.
+- **Mitigation:** `completeDeal` is callable by anyone after `endsAt`, not just the client. Prover can call it themselves.
 
-### 4.3 Gas Price Manipulation (THREAT-012)
+### T-12. Client cancels right before acceptance (Low)
 
-- **Vector:** Attacker floods mempool with high-fee transactions to spike the base fee (EIP-1559 style), making disputes economically infeasible for honest challengers
-- **Severity:** Medium
-- **Mitigation:** (a) Base fee adjustment rate is dampened (12.5% max change per block). (b) Dispute transactions get priority lane — disputes and slashing proofs are exempt from base fee (pay only tip). (c) Challenger bond return includes gas reimbursement on successful challenge.
-- **Residual Risk:** Sustained attack can still degrade network throughput for non-dispute transactions.
+- **Vector:** Client proposes a deal, prover starts downloading the piece, client cancels before acceptance, prover has wasted bandwidth.
+- **Mitigation:** Provers should wait until acceptance tx is mined before committing real resources. Small-piece deals absorb the cost; large-piece deals need operator discipline.
 
-### 4.4 Reward Gaming via Self-Challenge (THREAT-013)
+## 5. Chain / Operational
 
-- **Vector:** Provider challenges their own (correct) inference to claim "challenger bounty" from the system
-- **Severity:** Low
-- **Mitigation:** Self-challenges are not profitable: the challenger bond is returned (no bounty) when the challenge fails, and the provider already earned the inference fee. If the provider deliberately produces wrong output to win as challenger, they lose their inference stake (net negative).
+### T-13. RPC censorship (Medium)
 
-## 5. Network & P2P
+- **Vector:** Operator's RPC provider refuses to include the prover's `provePossession` tx, causing missed proofs.
+- **Mitigation:** Multiple RPC endpoints configurable (future). Prover retries with backoff. If the whole Base sequencer censors, that's a Base-level issue.
 
-### 5.1 Eclipse Attack (THREAT-014)
+### T-14. Randomness bias (Low)
 
-- **Vector:** Attacker controls all peer connections of a target node, feeding it a false view of the chain
-- **Severity:** High
-- **Mitigation:** (a) Minimum peer diversity requirement — nodes must maintain connections to peers in ≥3 distinct /16 IP ranges. (b) Peer scoring and rotation (`network.rs` reputation tracking). (c) Checkpoint verification against known validators.
-- **Residual Risk:** Bootstrapping nodes with no prior peer knowledge are most vulnerable. Hardcoded bootstrap nodes provide initial trust anchor.
+- **Vector:** Block proposer biases `block.prevrandao` to skew challenge leaf selection.
+- **Mitigation:** Only affects *which* leaves are challenged. Provers must still hold the entire piece; they can't pre-bias that. Worst-case gives a marginal statistical advantage over the full challenge horizon.
+- **Residual:** Switch to Chainlink VRF or a commit-reveal scheme if the bias becomes meaningful at scale.
 
-### 5.2 Transaction Replay (THREAT-015)
+### T-15. Chain reorg (Low on Base)
 
-- **Vector:** Valid transaction from one context replayed in another (cross-chain, cross-epoch)
-- **Severity:** Medium
-- **Mitigation:** (a) Chain ID in transaction signature domain. (b) Nonce-based replay protection (`state.rs` nonce tracking). (c) Epoch-bounded validity window for time-sensitive operations (disputes, challenges).
+- **Vector:** A Base reorg rewrites a recently-emitted event, temporarily confusing the prover's event poller.
+- **Mitigation:** `BlockLookback` reorg buffer (default 6 blocks on mainnet, 0 on anvil). Watermark advances only after all filters succeed.
+- **Residual:** Base has very short reorg horizons (L2 blocks are final once the L1 batch posts); in practice this is not a concern.
 
-### 5.3 Gossip Amplification DoS (THREAT-016)
+## 6. Out of scope
 
-- **Vector:** Attacker crafts messages that are cheap to produce but expensive to validate, overwhelming honest nodes
-- **Severity:** Medium
-- **Mitigation:** (a) Message size limits per topic. (b) Sender rate limiting in gossip protocol. (c) Signature verification before propagation (invalid messages dropped at first hop). (d) Peer banning on repeated invalid messages.
+- **AI inference proofs** — Prova v2 doesn't do compute verification.
+- **PoRep / sealing** — not part of v2.
+- **TEE attestation** — not part of v2.
+- **Cross-chain bridges** — Prova is single-chain (Base).
+- **Token launch / distribution** — covered separately in `TOKENOMICS-v2.md`.
 
-## 6. Storage & PDP
+## 7. Open items for audit
 
-### 6.1 Data Withholding After Proof (THREAT-017)
-
-- **Vector:** Storage provider passes PDP challenge but deletes data afterward (before next challenge)
-- **Severity:** Medium
-- **Mitigation:** (a) Random challenge timing — provider cannot predict next challenge epoch. (b) Missed proof → fault → progressive slashing. (c) Erasure coding across multiple providers (planned, not yet implemented).
-- **Residual Risk:** Single-provider storage has inherent data loss risk between proof windows.
-
-### 6.2 PDP Proof Outsourcing (THREAT-018)
-
-- **Vector:** Provider doesn't store data locally but retrieves it from another source just-in-time for proofs
-- **Severity:** Low
-- **Mitigation:** Challenge response timeout is calibrated to local-disk latency. Retrieving from remote storage would exceed timeout for large proof sets. This is fundamentally a PDP protocol concern (standard PDP concern).
-
-## 7. Operational & Implementation
-
-### 7.1 Key Compromise (THREAT-019)
-
-- **Vector:** Validator/provider private key stolen
-- **Severity:** Critical
-- **Mitigation:** (a) Key rotation support — operators can migrate to new key with old key's signature. (b) Withdrawal delay (unbonding period) gives time to detect and respond. (c) Governance-triggered emergency key freeze.
-- **Recommendation:** HSM/enclave key storage for production validators.
-
-### 7.2 State Trie Bloat (THREAT-020)
-
-- **Vector:** Attacker creates millions of minimum-balance accounts to bloat state trie, degrading node performance
-- **Severity:** Medium
-- **Mitigation:** (a) Account creation fee (gas cost of state expansion). (b) Minimum account balance (`MIN_ACCOUNT_BALANCE`). (c) State rent (planned) — accounts below threshold are pruned after inactivity period.
-
-### 7.3 Dependency Supply Chain (THREAT-021)
-
-- **Vector:** Compromised or malicious crate injected via build dependencies
-- **Severity:** High
-- **Mitigation:** (a) Minimal dependency surface — only `sha2` and `serde` as external deps. (b) `Cargo.lock` pinning. (c) CI builds with `--locked`. (d) Periodic `cargo audit`.
-- **Status:** Current dep count: 2 external crates. Attack surface is minimal.
-
-## 8. Threat Matrix Summary
-
-| ID | Threat | Severity | Mitigated | Module |
-|----|--------|----------|-----------|--------|
-| 001 | Nothing-at-Stake | Critical | ✅ | stake.rs |
-| 002 | Long-Range Attack | High | ✅ | sync.rs, genesis.rs |
-| 003 | Validator Censorship | High | ⚠️ Partial | block.rs, mempool.rs |
-| 004 | Block Withholding | Medium | ✅ | block.rs |
-| 005 | Lazy Provider | Critical | ✅ | dispute.rs, participant.rs |
-| 006 | Challenger Griefing | Medium | ✅ | dispute.rs |
-| 007 | Determinism Evasion | High | ✅ | determinism.rs, canonical_cpu.rs |
-| 008 | Activation Root Collision | Low | ✅ | merkle.rs |
-| 009 | Bisection Timeout | Medium | ✅ | dispute.rs |
-| 010 | Stake Grinding | High | ✅ | stake.rs, reputation.rs |
-| 011 | Payment Channel Exhaustion | High | ✅ | payment.rs |
-| 012 | Gas Price Manipulation | Medium | ✅ | gas.rs |
-| 013 | Reward Self-Challenge | Low | ✅ | dispute.rs, rewards.rs |
-| 014 | Eclipse Attack | High | ⚠️ Partial | network.rs |
-| 015 | Transaction Replay | Medium | ✅ | state.rs |
-| 016 | Gossip Amplification | Medium | ✅ | network.rs |
-| 017 | Data Withholding | Medium | ⚠️ Partial | pdp.rs |
-| 018 | PDP Proof Outsourcing | Low | ✅ | pdp.rs |
-| 019 | Key Compromise | Critical | ✅ | wallet.rs |
-| 020 | State Trie Bloat | Medium | ⚠️ Partial | state.rs, gas.rs |
-| 021 | Supply Chain | High | ✅ | CI, Cargo.lock |
-
-**Legend:** ✅ = Fully mitigated in current implementation | ⚠️ = Partially mitigated, improvements planned
-
-## 9. Open Items
-
-1. **Erasure coding for multi-provider redundancy** (mitigates THREAT-017 fully)
-2. **State rent implementation** (mitigates THREAT-020 fully)
-3. **Forced transaction inclusion protocol** (strengthens THREAT-003 mitigation)
-4. **Formal verification of bisection game termination** (strengthens THREAT-005/009)
-5. **HSM integration guide** (operational hardening for THREAT-019)
-
----
-
-*This is a living document. Update as new threats are identified or mitigations are implemented.*
+- Formal verification of `StorageMarketplace` state machine.
+- Fuzz testing of `ProofVerifier` proof path.
+- Re-entrancy analysis on every `external payable` entry point.
+- Gas-limit edge cases on `addPieces` with pathological piece counts.
+- Upgrade-path review for `ProofVerifier` UUPS proxy.

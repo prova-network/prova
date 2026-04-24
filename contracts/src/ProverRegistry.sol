@@ -13,7 +13,9 @@ contract ProverRegistry is Ownable {
     // ───── Types ─────────────────────────────────────────────────────────
 
     /// @notice Feature flags a prover advertises.
-    /// @dev bit 0 = PDP (required), bit 1 = HTTPS serving, bit 2 = TEE, bit 3 = QBP (v2)
+    /// @dev bit 0 = PDP (required), bit 1 = HTTPS serving.
+    ///      Bits 2-63 are reserved for future features. A prover MUST
+    ///      not set bits the network does not recognize.
     struct Prover {
         address owner;          // Ethereum address controlling this prover entry
         string endpoint;        // HTTPS URL or multiaddr (provider-controlled)
@@ -31,8 +33,6 @@ contract ProverRegistry is Ownable {
 
     uint64 public constant FEATURE_PDP           = 1 << 0;
     uint64 public constant FEATURE_HTTPS_SERVING = 1 << 1;
-    uint64 public constant FEATURE_TEE           = 1 << 2;
-    uint64 public constant FEATURE_QBP           = 1 << 3;
 
     uint256 public constant MAX_ENDPOINT_LENGTH = 512;
     uint256 public constant MAX_METADATA_LENGTH = 2048;
