@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import "../src/ProvaToken.sol";
-import "../src/ProvaMultiPay.sol";
+import "../../src/ProvaToken.sol";
+import "../../src/legacy/ProvaMultiPay.sol";
 
 contract MockERC20 is ERC20 {
     uint8 private _dec;

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import "../src/ProvaToken.sol";
-import "../src/ProvaVesting.sol";
+import "../../src/ProvaToken.sol";
+import "../../src/legacy/ProvaVesting.sol";
 
 contract ProvaVestingTest is Test {
     ProvaToken token;

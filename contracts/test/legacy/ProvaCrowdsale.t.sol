@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import "../src/ProvaToken.sol";
-import "../src/ProvaCrowdsale.sol";
+import "../../src/ProvaToken.sol";
+import "../../src/legacy/ProvaCrowdsale.sol";
 
 /// @dev Mock USDC with 6 decimals
 contract MockUSDC is ERC20 {
