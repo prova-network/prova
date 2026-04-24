@@ -1,9 +1,0 @@
-[package]
-name = "prova-chain"
-version = "0.1.0"
-edition = "2021"
-description = "Prova chain simulation — commit, challenge, and bisection dispute protocol"
-
-[dependencies]
-sha2 = "0.10"
-serde = { version = "1", features = ["derive"] }
