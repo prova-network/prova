@@ -13,13 +13,14 @@ Tracking work on the Go prover daemon. Each task links to a matching issue or PR
 - [x] Example TOML config
 - [x] ATTRIBUTION.md + README.md
 
-## Phase B — Ethereum client wiring
+## Phase B — Ethereum client wiring ✅
 
-- [ ] `pkg/ethclient/` — thin wrapper over `go-ethereum/ethclient` with retry, tx receipt polling, simulated call helpers
-- [ ] `pkg/contracts/` — run `abigen` against `contracts/out/*.json`, generate Go bindings for all 6 Prova contracts
-- [ ] `pkg/wallet/` — keystore load, privkey load, address derivation, transaction signing
-- [ ] Extend `cmd/provad/status` to actually call `ProverRegistry.getProver()` and print live state
-- [ ] Extend `cmd/provad/register` to call `ProverRegistry.register()` + `ProverStaking.stake()`
+- [x] `pkg/ethclient/` — wrapper over `go-ethereum/ethclient` with chain-ID verification at dial, receipt polling, balance/block helpers, known chain-ID constants
+- [x] `pkg/contracts/` — `scripts/gen-bindings.sh` generates all 6 contract bindings via abigen, each in its own sub-package to avoid struct-name collisions
+- [x] `pkg/wallet/` — `LoadHex` / `LoadKeystore` (+ `$PROVA_KEYSTORE_PASSPHRASE`) / `LoadFromEnv` (`$PROVA_PRIVATE_KEY`). 7 tests pass.
+- [x] `cmd/provad/status` — calls `ProverRegistry.getProver()` and `ProverStaking.getStake()`, prints live block + balance + registration + stake
+- [x] `contracts/script/Deploy.s.sol` — foundry deploy script for the 5 non-proxy contracts (ProofVerifier UUPS proxy deferred)
+- [ ] `cmd/provad/register` — read-only for now; tx submission deliberately deferred so no accidental registration
 
 ## Phase C — Deal lifecycle
 
