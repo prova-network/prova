@@ -3,9 +3,10 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![Ethereum](https://img.shields.io/badge/settles%20on-Ethereum-5F72E6)](https://ethereum.org)
 [![Status](https://img.shields.io/badge/status-pivot%20in%20progress-orange)](./PIVOT.md)
+[![Chain](https://img.shields.io/badge/chain-Base%20L2-0052FF)](https://base.org)
 
 **Verifiable storage for Ethereum.**
-Store websites, AI data, and digital archives with cryptographic proofs of retention. Pay in ETH. Verify on Ethereum. No new chain.
+Store websites, AI data, and digital archives with cryptographic proofs of retention. Pay in ETH. Verify on Base. No new chain.
 
 *Prova* — Latin: "to prove."
 
@@ -89,11 +90,26 @@ S3-with-proofs for any application that needs verifiable storage.
 
 **Pivot in progress.** See [`PIVOT.md`](./PIVOT.md).
 
-- v0.2 codebase (Layer 1 chain implementation): archived at `archive/v1-l1-chain`
+- v0.2 codebase (Layer 1 chain implementation): archived at `v0.2-l1-snapshot` tag and `archive/` directory
 - v2 architecture: designed, see `PROVA-V2-ARCHITECTURE.md`
 - v2 implementation: in progress, see `PROVA-V2-PIVOT-PLAN.md`
-- Public testnet: targeting mid-2026
-- Token launch: deferred until usage and revenue justify it (likely via points-to-token conversion)
+- v2 contracts: PDP verifier forked from `FilOzone/pdp`, FVM coupling swapped for Base, compiles cleanly
+- Public testnet: targeting mid-2026 on Base Sepolia
+- Token launch: deferred until usage and revenue justify it (points-to-token conversion)
+
+### What's done
+- [x] Phase 0: archive branch, tag, pivot branch
+- [x] Phase 1: planning artifacts (audit, architecture, plan, source map)
+- [x] Phase 2: spec cleanup (6 obsolete specs archived)
+- [x] Phase 3 partial: Rust chain code archived (~68K lines)
+- [x] Phase 6 partial: core PDP contracts forked, Base-compatible, builds green
+
+### Next up
+- [ ] Write Prova-specific contracts: `ProverRegistry`, `ProverStaking`, `StorageMarketplace`, `ContentRegistry`
+- [ ] Fork `FilOzone/synapse-sdk` as `sdk/typescript/`
+- [ ] Set up `prover/` as a Go module, port from `filecoin-project/curio`
+- [ ] Deploy contracts to Base Sepolia
+- [ ] First end-to-end: upload file, see proof land on-chain
 
 ## Repository Layout (v2, in progress)
 
