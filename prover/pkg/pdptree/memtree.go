@@ -128,8 +128,9 @@ func BuildMemtree(rawIn io.Reader, rawSize uint64) ([]byte, error) {
 }
 
 // BuildMemtreeFromSnapshot builds a memtree from pre-computed leaf data
-// (typically a snapshot layer from go-fil-commp-hashhash). The data must
-// already be fr32-padded and aligned to leaf boundaries.
+// (typically a snapshot layer emitted by an upstream CommP streaming
+// hasher). The data must already be fr32-padded and aligned to leaf
+// boundaries.
 //
 // Used when a snapshot layer has been saved from a previous CommP
 // computation; avoids re-reading and re-padding the raw piece.
@@ -258,7 +259,7 @@ func computeTotalNodes(nLeaves, arity int64) (int64, []int64) {
 
 // paddedSize returns the fr32-padded piece size for a raw input of rawSize
 // bytes, rounded up to the next power of 2. Matches the Filecoin convention
-// used by go-fil-commp-hashhash.
+// used by the canonical CommP libraries.
 //
 // Minimum valid piece size is 128 bytes (127 raw, fr32-padded).
 func paddedSize(rawSize uint64) uint64 {

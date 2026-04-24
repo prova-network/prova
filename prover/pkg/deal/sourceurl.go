@@ -73,11 +73,11 @@ func commpCIDString(hash [32]byte) (string, error) {
 	if hash == ([32]byte{}) {
 		return "", errors.New("empty commP hash")
 	}
-	// sha2-256-trunc254-padded multihash code = 0x1012
+	// 0x1012 = sha2-256-trunc254-padded multihash (canonical multihash code).
 	mh, err := multihash.Encode(hash[:], 0x1012)
 	if err != nil {
 		return "", err
 	}
-	// fil-commitment-unsealed codec = 0xf101
+	// 0xf101 = piece-commitment codec (canonical multicodec code).
 	return cid.NewCidV1(0xf101, mh).String(), nil
 }

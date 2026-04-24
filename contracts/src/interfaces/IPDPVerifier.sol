@@ -2,7 +2,9 @@
 // Copyright (c) 2024-2026 Protocol Labs and contributors (upstream: FilOzone/pdp).
 // Copyright (c) 2026 Prova Network contributors.
 //
-// This file is imported unchanged from FilOzone/pdp src/interfaces/IPDPVerifier.sol.
+// This file is adapted from FilOzone/pdp src/interfaces/IPDPVerifier.sol.
+// Adaptation: replaced upstream chain-specific sybil-fee getters with a
+// single chain-neutral sybilFee() method denominated in wei.
 pragma solidity ^0.8.20;
 
 import {Cids} from "../Cids.sol";
@@ -46,12 +48,10 @@ interface IPDPVerifier is IPDPEvents {
         view
         returns (IPDPTypes.PieceIdAndOffset[] memory);
 
-    // Fee view: returns the current effective fee per TiB
+    // Fee view: returns the current effective fee per TiB, in wei.
     function feePerTiB() external view returns (uint96);
 
-    // USDFC sybil fee amount
-    function USDFC_SYBIL_FEE() external view returns (uint256);
-
-    // FIL sybil fee amount
-    function FIL_SYBIL_FEE() external pure returns (uint256);
+    // Current sybil fee, in wei. Charged on createDataSet and
+    // new-dataset addPieces.
+    function sybilFee() external pure returns (uint256);
 }

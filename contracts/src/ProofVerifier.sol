@@ -6,19 +6,18 @@
 // (https://github.com/FilOzone/pdp). Originally under Permissive License Stack
 // (Apache-2.0 OR MIT). Attribution preserved per license.
 //
-// Adaptations for Prova (Ethereum-native, Base L2):
-//   - Renamed contract PDPVerifier -> ProofVerifier
-//   - Replaced FVMPay.burn/pay (Filecoin FVM precompiles) with native ETH
-//     send/burn primitives compatible with Base / any EVM chain.
-//   - Replaced FVMRandom.getBeaconRandomness with block.prevrandao (EIP-4399)
-//     which Base supports. Future work: pluggable randomness (Chainlink VRF).
-//   - Stripped USDFC (Filecoin stablecoin) payment path. On Base, fees are
-//     paid in native ETH via msg.value. `PDPFees.sybilFee()` is still
-//     denominated in a constant value (0.1 "FIL" = 0.1 ether), which is
-//     economically sensible on Base too.
-//   - Removed IFilecoinPay integration and PAYMENTS_CONTRACT_ADDRESS.
-//   - `FIL_SYBIL_FEE` public function renamed to `sybilFee` with same
-//     semantics (returns the current sybil fee in wei).
+// Adaptations for Prova (Base L2 / Ethereum-native):
+//   - Renamed contract PDPVerifier -> ProofVerifier.
+//   - Replaced upstream FVM payment precompiles with native ETH send/burn
+//     primitives (dEaD-address burn, low-level call refund).
+//   - Replaced upstream beacon-randomness precompile with block.prevrandao
+//     (EIP-4399). Base supports it. Pluggable randomness (Chainlink VRF)
+//     is future work.
+//   - Stripped the upstream stablecoin + payments-contract sybil-fee path.
+//     On Base we only need the native-ETH sybil fee (0.1 ETH, see
+//     PDPFees.sybilFee()). Protocol economics happen higher in the stack,
+//     via the Prova StorageMarketplace + ProverStaking contracts.
+//   - Renamed the external sybil-fee getter to `sybilFee()`.
 pragma solidity ^0.8.20;
 
 import {BitOps} from "./BitOps.sol";
@@ -170,10 +169,10 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     FeeStatus private feeStatus;
 
-    // (Upstream PDPVerifier also declared USDFC_TOKEN_ADDRESS, USDFC_SYBIL_FEE,
-    // and PAYMENTS_CONTRACT_ADDRESS immutables here for Filecoin-chain USDFC
-    // payment. Prova runs on Base; native ETH via msg.value is the only fee
-    // path, so those fields are removed.)
+    // Upstream PDPVerifier declared stablecoin + payments-contract
+    // immutables here for its chain-specific fee model. Prova does not
+    // need them: fees are paid in native ETH via msg.value only, and
+    // higher-layer economics live in StorageMarketplace + ProverStaking.
 
     // Used for announcing upgrades, packed into one slot
     struct PlannedUpgrade {
@@ -253,13 +252,12 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     // Native-ETH sybil fee enforcer. msg.value must be >= PDPFees.sybilFee();
-    // the fee is burned and any excess refunded to msg.sender.
+    // the fee is burned and any excess is refunded to msg.sender.
     //
-    // Replaces upstream's dual USDFC-or-FIL path (`ensureBurned` +
-    // `_getPaymentsUsdfcBalance`). Prova's economic model charges fees
-    // higher in the stack (`StorageMarketplace` protocol fee) rather than
-    // through a USDFC-style on-chain accounting layer; the sybil fee is
-    // kept solely as a spam deterrent for `createDataSet` / `addPieces`.
+    // Upstream had a dual on-chain-stablecoin-or-native path. Prova only
+    // uses native ETH here: protocol economics live in StorageMarketplace
+    // + ProverStaking, and this sybil fee exists purely as a spam
+    // deterrent on createDataSet / addPieces.
     function _chargeSybilFee() internal {
         uint256 sybilFee = _validateAndBurnSybilFee();
         _refundExcessSybilFee(sybilFee);
@@ -861,9 +859,9 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return block.timestamp >= feeStatus.transitionTime ? feeStatus.nextFeePerTiB : feeStatus.currentFeePerTiB;
     }
 
-    /// @notice Current sybil fee in wei (charged on createDataSet / new-dataset addPieces).
-    /// @dev Upstream named this FIL_SYBIL_FEE; renamed for Prova since fees
-    ///      are denominated in the chain's native asset (ETH on Base).
+    /// @notice Current sybil fee in wei (charged on createDataSet /
+    ///         new-dataset addPieces to deter wasteful on-chain state
+    ///         growth). Fixed at 0.1 ETH.
     function sybilFee() external pure returns (uint256) {
         return PDPFees.sybilFee();
     }
@@ -1111,7 +1109,7 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     /// @notice Proposes a new proof fee with 7-day delay
-    /// @param newFeePerTiB The new fee per TiB in AttoFIL
+    /// @param newFeePerTiB The new fee per TiB in wei
     function updateProofFee(uint256 newFeePerTiB) external onlyOwner {
         // Auto-commit any pending update that has reached its transition time
         if (block.timestamp >= feeStatus.transitionTime) {

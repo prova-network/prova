@@ -423,25 +423,24 @@ func computeCommP(r io.Reader, rawSize uint64) ([32]byte, uint64, error) {
 	return out, padded, nil
 }
 
-// commpCID wraps a 32-byte CommP hash into a CID v1 using the standard
-// Filecoin piece-commitment multicodec.
+// commpCID wraps a 32-byte CommP hash into a CID v1 using the canonical
+// piece-commitment multicodec (codec 0xf101, multihash 0x1012). These
+// identifiers come from the cross-ecosystem multicodec registry
+// (https://github.com/multiformats/multicodec); their names predate and
+// are independent of any specific chain.
 func commpCID(hash [32]byte) (cid.Cid, error) {
-	// Match the "raw commP" CID encoding used by curio/pdp: sha2-256-trunc254-padded multihash, fil-commitment-unsealed codec.
-	// The multihash bytes are: <0x91, 0x20, 0x20, hash...>
-	mh := append([]byte{0x91, 0x20, 0x20}, hash[:]...)
-	_ = mh
 	return cid.Parse(mhToCIDBytes(hash))
 }
 
 // mhToCIDBytes constructs the binary CID v1 bytes for a CommP.
-// Prefix layout:
-//   version(1) || codec(0xf101, varint) || multihash(0x91,0x20 + 0x20 + 32 bytes hash)
-// codec 0xf101 = fil-commitment-unsealed
+//
+// Layout: version(1) || codec(0xf101, varint) || multihash(0x1012 || 0x20 || 32 bytes)
+// Codec 0xf101 and multihash 0x1012 are canonical multicodec / multihash
+// registry entries for piece-commitment CIDs.
 func mhToCIDBytes(hash [32]byte) []byte {
-	// version 1, raw = 0x01. fil-commitment-unsealed codec = 0xf101 (varint: 0x81 0xE2 0x03).
+	// version 1, codec 0xf101 (varint: 0x81 0xE2 0x03).
 	prefix := []byte{0x01, 0x81, 0xe2, 0x03}
 	// multihash: sha2-256-trunc254-padded = 0x1012 (varint: 0x92, 0x20). Length 32 = 0x20.
-	// Note: Curio uses multicodec Sha2_256Trunc254Padded = 0x1012.
 	mh := []byte{0x92, 0x20, 0x20}
 	out := make([]byte, 0, len(prefix)+len(mh)+32)
 	out = append(out, prefix...)

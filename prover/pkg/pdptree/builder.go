@@ -66,14 +66,18 @@ func (b *StoreBackedBuilder) BuildProof(pieceCIDHash [32]byte, challengedLeaf ui
 }
 
 // commpCID constructs a cid.Cid v1 for a 32-byte CommP hash using the
-// fil-commitment-unsealed codec + sha2-256-trunc254-padded multihash.
-// This matches the encoding used by pkg/deal and FilOzone/pdp.
+// canonical piece-commitment multicodec / multihash pair:
+//
+//   multihash code 0x1012 (sha2-256-trunc254-padded, 32 bytes)
+//   codec code     0xf101 (piece-commitment)
+//
+// These identifiers come from the cross-ecosystem multicodec registry
+// (https://github.com/multiformats/multicodec) and are not specific to
+// any one chain.
 func commpCID(hash [32]byte) (cid.Cid, error) {
-	// sha2-256-trunc254-padded multihash code = 0x1012
 	mh, err := multihash.Encode(hash[:], 0x1012)
 	if err != nil {
 		return cid.Undef, fmt.Errorf("encode multihash: %w", err)
 	}
-	// fil-commitment-unsealed codec = 0xf101
 	return cid.NewCidV1(0xf101, mh), nil
 }
