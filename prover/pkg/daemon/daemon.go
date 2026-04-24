@@ -46,17 +46,26 @@ const (
 
 // Daemon supervises the prover's background loops.
 type Daemon struct {
-	cfg     Config
-	engine  *deal.Engine
-	poller  *deal.EventPoller
-	eth     *ethclient.Client
-	http    *httpserver.Server // optional; nil if HTTP serving is disabled
-	metrics *metrics.Collector // optional; nil disables metrics collection
-	mSrv    *metrics.Server    // optional metrics HTTP server
-	logger  *slog.Logger
+	cfg       Config
+	engine    *deal.Engine
+	poller    *deal.EventPoller
+	eth       *ethclient.Client
+	http      *httpserver.Server // optional; nil if HTTP serving is disabled
+	metrics   *metrics.Collector // optional; nil disables metrics collection
+	mSrv      *metrics.Server    // optional metrics HTTP server
+	dashboard DashboardRunner    // optional; nil disables operator WebUI
+	logger    *slog.Logger
 
 	// Runtime state
 	startedAt time.Time
+}
+
+// DashboardRunner is the minimal interface the daemon uses to drive the
+// optional operator dashboard. It's kept as an interface (rather than a
+// concrete *dashboard.Server) so pkg/daemon doesn't depend on pkg/dashboard
+// and remains compilable in isolation.
+type DashboardRunner interface {
+	Start(ctx context.Context) error
 }
 
 // Config holds the knobs the daemon needs.
@@ -90,6 +99,7 @@ type Options struct {
 	HTTP       *httpserver.Server // optional; nil disables HTTP serving
 	Metrics    *metrics.Collector // optional; nil disables metrics
 	MetricsSrv *metrics.Server    // optional metrics server endpoint
+	Dashboard  DashboardRunner    // optional; nil disables operator dashboard
 	Logger     *slog.Logger
 }
 
@@ -120,14 +130,15 @@ func New(opts Options) (*Daemon, error) {
 		opts.Logger = slog.Default()
 	}
 	return &Daemon{
-		cfg:     opts.Config,
-		engine:  opts.Engine,
-		poller:  opts.Poller,
-		eth:     opts.Eth,
-		http:    opts.HTTP,
-		metrics: opts.Metrics,
-		mSrv:    opts.MetricsSrv,
-		logger:  opts.Logger,
+		cfg:       opts.Config,
+		engine:    opts.Engine,
+		poller:    opts.Poller,
+		eth:       opts.Eth,
+		http:      opts.HTTP,
+		metrics:   opts.Metrics,
+		mSrv:      opts.MetricsSrv,
+		dashboard: opts.Dashboard,
+		logger:    opts.Logger,
 	}, nil
 }
 
@@ -190,6 +201,20 @@ func (d *Daemon) Run(ctx context.Context) error {
 			if err := d.mSrv.ListenAndServe(ctx); err != nil {
 				select {
 				case errCh <- fmt.Errorf("metrics server: %w", err):
+				default:
+				}
+			}
+		}()
+	}
+
+	// Dashboard server (optional)
+	if d.dashboard != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := d.dashboard.Start(ctx); err != nil {
+				select {
+				case errCh <- fmt.Errorf("dashboard server: %w", err):
 				default:
 				}
 			}

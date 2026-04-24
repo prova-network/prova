@@ -18,6 +18,7 @@ type Config struct {
 	Storage   StorageConfig   `toml:"storage"`
 	HTTP      HTTPConfig      `toml:"http"`
 	Metrics   MetricsConfig   `toml:"metrics"`
+	Dashboard DashboardConfig `toml:"dashboard"`
 	SourceURL SourceURLPolicy `toml:"source_url"`
 }
 
@@ -98,6 +99,18 @@ type HTTPConfig struct {
 
 // MetricsConfig controls Prometheus metrics export.
 type MetricsConfig struct {
+	Enabled    bool   `toml:"enabled"`
+	ListenAddr string `toml:"listen_addr"`
+}
+
+// DashboardConfig controls the read-only operator WebUI.
+//
+// The dashboard is off by default. When enabled it binds to loopback
+// (127.0.0.1) unless ListenAddr is explicitly set to a non-loopback
+// address, in which case the operator is expected to front it with
+// an authenticating reverse proxy. The dashboard never exposes
+// private keys, passphrases, or keystore contents.
+type DashboardConfig struct {
 	Enabled    bool   `toml:"enabled"`
 	ListenAddr string `toml:"listen_addr"`
 }

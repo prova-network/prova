@@ -25,6 +25,7 @@ import (
 	"github.com/prova-network/prova/prover/pkg/contracts/proverstaking"
 	"github.com/prova-network/prova/prover/pkg/contracts/storagemarketplace"
 	"github.com/prova-network/prova/prover/pkg/daemon"
+	"github.com/prova-network/prova/prover/pkg/dashboard"
 	"github.com/prova-network/prova/prover/pkg/deal"
 	"github.com/prova-network/prova/prover/pkg/ethclient"
 	"github.com/prova-network/prova/prover/pkg/httpserver"
@@ -225,9 +226,12 @@ func cmdStart(ctx context.Context, configPath string) error {
 		AllowInsecure: cfg.SourceURL.AllowInsecure,
 	})
 
+	// Shared deal store so engine, poller, dashboard all see the same state.
+	dealStore := deal.NewMemStore()
+
 	engine, err := deal.NewEngine(deal.EngineOptions{
 		OurAddress: w.Address,
-		Deals:      deal.NewMemStore(),
+		Deals:      dealStore,
 		Pieces:     pieces,
 		Fetcher:    fetcher,
 		Accepter:   accepter,
@@ -267,6 +271,26 @@ func cmdStart(ctx context.Context, configPath string) error {
 		}
 	}
 
+	// Optional dashboard server (read-only operator WebUI + JSON API).
+	var dashSrv daemon.DashboardRunner
+	if cfg.Dashboard.Enabled {
+		dash, derr := dashboard.New(dashboard.Options{
+			Enabled:    true,
+			ListenAddr: cfg.Dashboard.ListenAddr,
+			Store:      dealStore,
+			Metrics:    dashboard.MetricsCollectorAdapter{C: mcol, StartedAt: time.Now().UTC()},
+			// Chain reader is nil for now; a future commit wires a ChainReader
+			// that queries ProverRegistry + ProverStaking for staked/committed
+			// figures. The dashboard degrades gracefully when Chain is nil.
+			Logger: logger,
+		})
+		if derr != nil {
+			return fmt.Errorf("dashboard: %w", derr)
+		}
+		dashSrv = dash
+		dashboard.BuildVersion = version
+	}
+
 	// Optional metrics HTTP server.
 	var mSrv *metrics.Server
 	if cfg.Metrics.Enabled {
@@ -291,6 +315,7 @@ func cmdStart(ctx context.Context, configPath string) error {
 		HTTP:       httpSrv,
 		Metrics:    mcol,
 		MetricsSrv: mSrv,
+		Dashboard:  dashSrv,
 		Logger:     logger,
 	})
 	if err != nil {

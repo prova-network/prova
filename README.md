@@ -96,9 +96,10 @@ The source is [`install.sh`](./install.sh), intentionally readable. Pair with [`
 
 ## For humans
 
-Four short guides cover the common "how do I actually use this?" questions:
+Five short guides cover the common "how do I actually use this?" questions:
 
-- **[Running a prover](./docs/RUNNING-A-PROVER.md)**: hardware, staking, rewards, what happens if you stop, uninstall, everything a new prover operator needs
+- **[Quickstart](./docs/QUICKSTART.md)**: from `git clone` to a running prover with dashboard in 10 minutes on your laptop
+- **[Running a prover](./docs/RUNNING-A-PROVER.md)**: hardware SKUs, staking, rewards, what happens if you stop, uninstall, everything a new prover operator needs
 - **[Building on Prova](./docs/BUILDING-ON-PROVA.md)**: how devs store files, host `.eth` websites, and build platforms on top
 - **[What it looks like on-chain](./docs/ONCHAIN.md)**: six contracts explained, money flows, Basescan events, indexer guide
 - **[Specs](./spec/)**: the canonical protocol specification for deep implementers

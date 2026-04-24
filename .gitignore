@@ -18,6 +18,9 @@ contracts/out/
 node_modules/
 sdk/typescript/**/dist/
 sdk/typescript/**/.wireit/
+prover/webui/dist/
+prover/webui/node_modules/
+prover/webui/.vite/
 sdk/typescript/**/coverage/
 *.tsbuildinfo
 .pnpm-store/
