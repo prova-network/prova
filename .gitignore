@@ -30,3 +30,9 @@ prover/bin/
 prover/**/*.test
 prover/provad
 contracts/broadcast/
+
+# Local SVG preview renders
+.preview/
+
+# Internal planning docs (not for public repo)
+MAKING-MONEY.md
