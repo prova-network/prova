@@ -505,11 +505,12 @@ function ChainPanel({ ov }: { ov: Overview }) {
           value={formatBytes(c.committed_bytes)}
           sub="active deal byte sum"
         />
+        {/* Prover address is information, not status, so tone stays default.
+            Registered/not-registered is carried in the sub line only. */}
         <Stat
           label="Prover address"
           value={shortAddr(c.prover_address)}
           sub={c.prover_registered ? 'registered on-chain' : 'not yet registered'}
-          tone={c.prover_registered ? 'ok' : 'warn'}
         />
       </div>
 
