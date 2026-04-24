@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prova macOS-style app icon. 1024x1024 base. Strokes tuned for Dock
+     size (64-128px) legibility: thicker than the website logo, no small
+     decorative dots, optically recentered to compensate for the
+     right-pointing triangle's visual weight. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Warm deep ink backing. Slight top-light so the icon has
+         dimension on macOS where neighbors often have subtle bevels. -->
+    <radialGradient id="bg" cx="50%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#24201A"/>
+      <stop offset="55%" stop-color="#10100C"/>
+      <stop offset="100%" stop-color="#050403"/>
+    </radialGradient>
+    <!-- Subtle warm glow to pull the eye to the mark -->
+    <radialGradient id="glowGold" cx="48%" cy="50%" r="45%">
+      <stop offset="0%" stop-color="#F0D078" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#C9A84C" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+    <!-- Inner highlight for top-edge sheen -->
+    <linearGradient id="topSheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.08"/>
+      <stop offset="30%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle-ish rounded-rect (electron-builder generates macOS mask separately,
+       so this shape mostly matters for Windows .ico and Linux .png) -->
+  <rect width="1024" height="1024" rx="224" ry="224" fill="url(#bg)"/>
+
+  <!-- Top-edge highlight sheen -->
+  <rect width="1024" height="1024" rx="224" ry="224" fill="url(#topSheen)"/>
+
+  <!-- Ambient gold glow behind the mark. Slightly offset left (48% cx)
+       to optically balance the right-pointing triangle. -->
+  <circle cx="492" cy="512" r="380" fill="url(#glowGold)" filter="url(#soft)"/>
+
+  <!-- Main mark — optically recentered 16px left of geometric center
+       (cx=496 not 512) because the right vertex of the triangle pulls
+       visual weight right. All coordinates shifted accordingly. -->
+  <g transform="translate(-16 0)">
+    <!-- Outer ring, thicker for Dock legibility -->
+    <circle cx="512" cy="512" r="308"
+            fill="none" stroke="#D4AE4F" stroke-width="28"/>
+
+    <!-- Triangle (proof / verification) -->
+    <polygon points="352,260 736,512 352,764"
+             fill="none" stroke="#D4AE4F" stroke-width="28"
+             stroke-linejoin="round" stroke-linecap="round"/>
+
+    <!-- Center dot — larger and brighter. This is the "anchor" that
+         survives at 16px where strokes collapse. -->
+    <circle cx="512" cy="512" r="56" fill="#F0D078"/>
+  </g>
+</svg>

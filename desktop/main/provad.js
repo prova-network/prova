@@ -76,6 +76,14 @@ async function setup (ctx) {
  * @param {Context} ctx
  */
 async function run (ctx) {
+  // Test hook: e2e tests boot the app without a real provad binary.
+  // We want the UI to come up (wallet, dashboard, settings) without the
+  // supervisor trying and failing to spawn. ENOENT would spam the logs.
+  if (process.env.PROVA_DISABLE_DAEMON === '1') {
+    log.info('PROVA_DISABLE_DAEMON=1 set; daemon supervisor disabled')
+    return new Promise(() => {}) // never resolves; caller expects run() to block
+  }
+
   let backoffMs = 1000
   const backoffMax = 30_000
 

@@ -31,8 +31,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [linux, darwin]
-        arch: [amd64, arm64]
+        include:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+          - os: darwin
+            arch: amd64
+          - os: darwin
+            arch: arm64
+          - os: windows
+            arch: amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -52,15 +61,31 @@ jobs:
           TAG="${GITHUB_REF_NAME:-${{ inputs.tag }}}"
           COMMIT="$(git rev-parse --short HEAD)"
           mkdir -p dist
+
+          # Windows needs the .exe extension.
+          BINARY="provad"
+          if [[ "$GOOS" == "windows" ]]; then BINARY="provad.exe"; fi
+
           go build \
             -trimpath \
             -ldflags "-s -w -X main.version=${TAG} -X main.commit=${COMMIT}" \
-            -o dist/provad \
+            -o "dist/${BINARY}" \
             ./cmd/provad
 
-          ASSET="provad-${TAG}-${GOOS}-${GOARCH}.tar.gz"
-          tar -C dist -czf "dist/${ASSET}" provad
+          # Tar/zip for standalone installers.
+          if [[ "$GOOS" == "windows" ]]; then
+            ASSET="provad-${TAG}-${GOOS}-${GOARCH}.zip"
+            (cd dist && zip -q "${ASSET}" "${BINARY}")
+          else
+            ASSET="provad-${TAG}-${GOOS}-${GOARCH}.tar.gz"
+            tar -C dist -czf "dist/${ASSET}" "${BINARY}"
+          fi
           shasum -a 256 "dist/${ASSET}" | awk '{print $1 "  " $2}' | sed "s|dist/||" > "dist/${ASSET}.sha256"
+
+          # Also pack the raw binary for desktop-app bundling (electron-builder
+          # pulls ../prover/dist/<os>-<arch>/ per electron-builder.yml extraResources).
+          mkdir -p "dist/${GOOS}-${GOARCH}"
+          cp "dist/${BINARY}" "dist/${GOOS}-${GOARCH}/${BINARY}"
 
       - uses: actions/upload-artifact@v4
         with:

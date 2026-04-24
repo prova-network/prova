@@ -1,18 +1,27 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) Protocol Labs (original), Prova Network contributors (modifications).
+// Forked from CheckerNetwork/desktop.
+//
+// System tray (macOS menu bar, Windows taskbar, Linux status area).
+// Icon state cycles between:
+//   off           - daemon not running / offline
+//   on            - daemon running, at least one active deal
+//   update-off    - update available, daemon offline
+//   update-on     - update available, daemon online
+// macOS icons are template images (black on transparent) so the system
+// applies light/dark theme colour; Windows/Linux icons are coloured.
+
 'use strict'
 
-const { IS_MAC, STATION_VERSION } = require('./consts')
+const { IS_MAC, APP_VERSION } = require('./consts')
 const { Menu, Tray, app, ipcMain, nativeImage } = require('electron')
 const { ipcMainEvents } = require('./ipc')
 const path = require('path')
 const assert = require('node:assert')
-const checkerNode = require('./checker-node')
-const { formatTokenValue } = require('./utils')
+const provad = require('./provad')
 
 /** @typedef {import('./typings').Context} Context */
 
-// Be warned, this one is pretty ridiculous:
-// Tray must be global or it will break due to.. GC.
-// https://www.electronjs.org/docs/faq#my-apps-tray-disappeared-after-a-few-minutes
 /** @type {Tray | null} */
 let tray = null
 
@@ -23,10 +32,14 @@ const icons = {
   updateOff: icon('update-off')
 }
 
-function icon (/** @type {'on' | 'off' | 'update' | 'update-off'} */ state) {
+/**
+ * @param {'on' | 'off' | 'update' | 'update-off'} state
+ */
+function icon (state) {
   const dir = path.resolve(path.join(__dirname, '../assets/tray'))
   const file = IS_MAC ? `${state}-macos.png` : `${state}.png`
   const image = nativeImage.createFromPath(path.join(dir, file))
+  // On macOS the system will recolour based on the menu bar theme.
   image.setTemplateImage(true)
   return image
 }
@@ -37,80 +50,56 @@ function icon (/** @type {'on' | 'off' | 'update' | 'update-off'} */ state) {
  */
 function getTrayIcon (readyToUpdate, isOnline) {
   return readyToUpdate
-    ? isOnline
-      ? icons.updateOn
-      : icons.updateOff
-    : isOnline
-      ? icons.on
-      : icons.off
-}
-
-const createContextMenu = (/** @type {Context} */ ctx) => {
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: `Filecoin Station v${STATION_VERSION}`,
-      enabled: false
-    },
-    {
-      label: 'Open Station',
-      click: () => ctx.showUI()
-    },
-    { type: 'separator' },
-    {
-      label: `Jobs Completed: ${
-        ctx.getTotalJobsCompleted() || '...'
-      }`,
-      enabled: false
-    },
-    {
-      label:
-        `Wallet Balance: ${
-          formatTokenValue(ctx.getWalletBalance())
-        } FIL`,
-      enabled: false
-    },
-    {
-      label: `Scheduled Rewards: ${
-        formatTokenValue(ctx.getScheduledRewards())
-      } FIL`,
-      enabled: false
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit Station',
-      click: () => app.quit(),
-      accelerator: IS_MAC ? 'Command+Q' : undefined
-    }
-  ])
-  return contextMenu
-}
-
-module.exports = async function (/** @type {Context} */ ctx) {
-  tray = new Tray(getTrayIcon(false, checkerNode.isOnline()))
-
-  const contextMenu = createContextMenu(ctx)
-  tray.setToolTip('Filecoin Station')
-  tray.setContextMenu(contextMenu)
-
-  setupIpcEventListeners(ctx)
+    ? isOnline ? icons.updateOn : icons.updateOff
+    : isOnline ? icons.on : icons.off
 }
 
 /**
  * @param {Context} ctx
  */
-function setupIpcEventListeners (ctx) {
-  ipcMain.on(ipcMainEvents.ACTIVITY_LOGGED, updateTray)
-  ipcMain.on(ipcMainEvents.READY_TO_UPDATE, updateTray)
-  ipcMain.on(ipcMainEvents.JOB_STATS_UPDATED, updateTray)
-  ipcMain.on(ipcMainEvents.BALANCE_UPDATE, updateTray)
-  ipcMain.on(ipcMainEvents.SCHEDULED_REWARDS_UPDATE, updateTray)
+function createContextMenu (ctx) {
+  return Menu.buildFromTemplate([
+    { label: `Prova Desktop v${APP_VERSION}`, enabled: false },
+    { label: 'Open Prova', click: () => ctx.showUI() },
+    { type: 'separator' },
+    {
+      label: `Active deals: ${provad.getTotalDealsActive()}`,
+      enabled: false
+    },
+    {
+      label: `Proofs submitted: ${provad.getTotalProofsSubmitted().toLocaleString()}`,
+      enabled: false
+    },
+    { type: 'separator' },
+    { label: 'Check for updates', click: () => ctx.manualCheckForUpdates() },
+    {
+      label: 'Quit Prova',
+      click: () => app.quit(),
+      accelerator: IS_MAC ? 'Command+Q' : undefined
+    }
+  ])
+}
 
-  function updateTray () {
+module.exports = async function setupTray (/** @type {Context} */ ctx) {
+  tray = new Tray(getTrayIcon(false, provad.isOnline()))
+  tray.setToolTip('Prova Desktop')
+  tray.setContextMenu(createContextMenu(ctx))
+
+  // Re-render on state changes.
+  const updateTray = () => {
     assert(tray)
-    tray.setImage(
-      getTrayIcon(ctx.getUpdaterStatus().readyToUpdate, checkerNode.isOnline())
-    )
-    const contextMenu = createContextMenu(ctx)
-    tray.setContextMenu(contextMenu)
+    const updStatus = (() => {
+      try { return ctx.getUpdaterStatus() } catch { return null }
+    })()
+    const readyToUpdate = updStatus && typeof updStatus === 'object'
+      ? Boolean((updStatus).readyToUpdate)
+      : updStatus === 'ready'
+    tray.setImage(getTrayIcon(readyToUpdate, provad.isOnline()))
+    tray.setContextMenu(createContextMenu(ctx))
   }
+
+  ipcMain.on(ipcMainEvents.ACTIVITY_LOGGED, updateTray)
+  ipcMain.on(ipcMainEvents.PROOF_STATS_UPDATED, updateTray)
+  ipcMain.on(ipcMainEvents.DEALS_ACTIVE_UPDATED, updateTray)
+  ipcMain.on(ipcMainEvents.READY_TO_UPDATE, updateTray)
 }

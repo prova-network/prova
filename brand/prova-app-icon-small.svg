@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prova app icon, small-size variant. Used for 16/24/32/48px renders
+     where the thin-stroke large icon disintegrates. Key changes from
+     prova-app-icon.svg:
+     - Filled triangle instead of stroked outline
+     - Thicker ring (44 vs 28 stroke width)
+     - No center dot (would vanish at 16px anyway)
+     - No soft glow, no top sheen (all detail is wasted pixels)
+     - Smaller inset so the mark fills more of the canvas -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Simpler backing, still rounded -->
+  <rect width="1024" height="1024" rx="224" ry="224" fill="#0A0907"/>
+
+  <!-- Outer ring, fat -->
+  <circle cx="512" cy="512" r="340"
+          fill="none" stroke="#D4AE4F" stroke-width="52"/>
+
+  <!-- SOLID filled triangle for survivability at 16px -->
+  <polygon points="380,300 720,512 380,724"
+           fill="#D4AE4F" stroke="#D4AE4F" stroke-width="20"
+           stroke-linejoin="round"/>
+</svg>

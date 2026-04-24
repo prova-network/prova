@@ -1,6 +1,7 @@
 'use strict'
 
-const Sentry = require('@sentry/node')
+// Sentry removed in the Prova fork; errors are surfaced via electron-log
+// + the in-app log viewer rather than shipped off-device.
 const { BrowserWindow, Notification, app, shell } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const { ipcMain } = require('electron/main')
@@ -118,7 +119,6 @@ function checkForUpdatesInBackground () {
  */
 function onUpdaterError (err) {
   log.error('error', err)
-  Sentry.captureException(err)
 
   if (!checkingManually) { return }
   checkingManually = false

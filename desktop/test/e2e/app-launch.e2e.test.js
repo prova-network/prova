@@ -1,93 +1,121 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) Protocol Labs (original), Prova Network contributors (modifications).
+// Forked from CheckerNetwork/desktop.
+//
+// End-to-end smoke test: launches Electron against a tmp PROVA_ROOT,
+// boots the renderer, and asserts the hero elements show up. Does NOT
+// spawn a real provad (that would require the Go binary + Base RPC).
+// Instead we launch with PROVA_DISABLE_DAEMON=1 so provad.run() is a
+// no-op, and verify the UI handles the "daemon absent" state gracefully.
+
 'use strict'
 
+const path = require('path')
+const tmp = require('tmp')
 const { expect, test } = require('@playwright/test')
 const { _electron: electron } = require('playwright')
-const path = require('path')
 
 const TIMEOUT_MULTIPLIER = process.env.CI ? 10 : 1
 
-const tmp = require('tmp')
-
-// Running test cases one after another
-// More examples: https://playwright.dev/docs/api/class-electron
-test.describe.serial('Application launch', async () => {
-  if (process.env.CI === 'true') test.setTimeout(120_000) // slow CI
+test.describe.serial('Application launch', () => {
+  if (process.env.CI === 'true') test.setTimeout(120_000)
 
   /** @type {import('playwright').ElectronApplication} */
   let electronApp
-
   /** @type {import('playwright').Page} */
   let mainWindow
 
-  test('starts the electron app', async () => {
-    test.slow()
-
-    // Launch Electron app against sandbox fake HOME dir
-    const stationRootDir = tmp.dirSync({
-      prefix: 'station-',
+  test.beforeAll(async () => {
+    const rootDir = tmp.dirSync({
+      prefix: 'prova-e2e-',
       unsafeCleanup: true
     }).name
+
     electronApp = await electron.launch({
       args: [path.join(__dirname, '..', '..', 'main', 'index.js')],
       env: {
         ...process.env,
         NODE_ENV: 'test',
-        STATION_ROOT: stationRootDir,
-        DISABLE_KEYTAR: 'true'
+        PROVA_ROOT: rootDir,
+        PROVA_DISABLE_DAEMON: '1'
       },
       timeout: 30000 * TIMEOUT_MULTIPLIER
     })
 
+    // Surface main-process logs so Playwright failures are debuggable.
     electronApp.process().stdout?.pipe(process.stdout)
     electronApp.process().stderr?.pipe(process.stderr)
 
-    // Get the first window that the app opens, wait if necessary.
     mainWindow = await electronApp.firstWindow()
-    console.log('WebUI location', await mainWindow.url())
 
-    // Direct Electron console to Node terminal.
     mainWindow.on('console', msg => {
-      Promise.all(
-        msg.args().map(arg => arg.jsonValue())
-      ).then(
-        values => {
-          console.log(`[WEBUI:${msg.type()}] ${values[0]}`, ...values.slice(1))
-        },
-        error => {
-          console.log(
-            `[WEBUI:${msg.type()}] %s -- cannot deserialize args.`,
-            msg.text(),
-            error
-          )
-        }
-      )
+      msg.args().length > 0 &&
+        Promise.all(msg.args().map(a => a.jsonValue().catch(() => null)))
+          .then(vals => console.log(`[renderer:${msg.type()}]`, ...vals))
     })
+    mainWindow.on('pageerror', err => { throw err })
 
-    mainWindow.on('pageerror', (err) => { throw err })
-
-    await mainWindow.waitForLoadState()
+    await mainWindow.waitForLoadState('domcontentloaded')
   })
 
   test.afterAll(async () => {
-    // Exit the app
-    electronApp.close()
+    if (electronApp) await electronApp.close()
   })
 
-  test('navigate to dashboard', async () => {
-    await mainWindow.click('button:has-text("Continue")')
-    await mainWindow.click('button:has-text("Continue")')
-    await mainWindow.click('button:has-text("Create Wallet")')
-    expect(new URL(await mainWindow.url()).pathname).toBe('/dashboard')
+  test('renders the Prova Desktop hero', async () => {
+    // The h1 says "Prova Desktop" with "Desktop" highlighted in gold.
+    const heading = mainWindow.locator('h1:has-text("Prova")')
+    await expect(heading).toBeVisible({ timeout: 10000 * TIMEOUT_MULTIPLIER })
   })
 
-  test('renders Dashboard page', async () => {
-    expect(new URL(mainWindow.url()).pathname).toBe('/dashboard')
+  test('shows the four status tiles', async () => {
+    // Stat tiles have the data-test-equivalent of visible labels.
+    for (const label of ['Active deals', 'Proofs submitted', 'Uptime', 'Build']) {
+      await expect(
+        mainWindow.locator(`text=${label}`).first()
+      ).toBeVisible({ timeout: 5000 * TIMEOUT_MULTIPLIER })
+    }
   })
 
-  test('wait for "SPARK started." activity log', async () => {
-    await mainWindow.waitForSelector(
-      'div.activity-log span:has-text("SPARK started")',
-      { timeout: 1000 * TIMEOUT_MULTIPLIER }
+  test('shows the wallet section with an address', async () => {
+    // The Wallet section renders an Address label + the checksummed address
+    // in a .mono span. wallet.setup() completes synchronously during boot
+    // so by the time the DOM settles, the address should be present.
+    await expect(
+      mainWindow.locator('text=Address').first()
+    ).toBeVisible({ timeout: 10000 * TIMEOUT_MULTIPLIER })
+
+    // Poll for a .mono element whose text matches an Ethereum address.
+    // Several .mono spans exist on the page (header pill, address, CommP);
+    // we find the one that matches the full 42-char form.
+    await expect.poll(async () => {
+      const monos = await mainWindow.locator('.mono').all()
+      for (const el of monos) {
+        const t = (await el.textContent()) || ''
+        if (/^0x[a-fA-F0-9]{40}$/.test(t.trim())) return true
+      }
+      return false
+    }, { timeout: 15000 * TIMEOUT_MULTIPLIER, message: 'no 0x-address found' })
+      .toBe(true)
+  })
+
+  test('shows the empty-activity message when no events have fired', async () => {
+    await expect(
+      mainWindow.locator('text=No activity yet').first()
+    ).toBeVisible({ timeout: 10000 * TIMEOUT_MULTIPLIER })
+  })
+
+  test('IPC bridge is exposed and usable', async () => {
+    // From the renderer context we should be able to invoke IPC handlers.
+    const hasBridge = await mainWindow.evaluate(() => {
+      return typeof window.electron === 'object' &&
+        typeof window.electron.getWalletAddress === 'function'
+    })
+    expect(hasBridge).toBe(true)
+
+    const addr = await mainWindow.evaluate(() =>
+      window.electron.getWalletAddress()
     )
+    expect(addr).toMatch(/^0x[a-fA-F0-9]{40}$/)
   })
 })

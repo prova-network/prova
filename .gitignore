@@ -32,6 +32,7 @@ sdk/typescript/**/coverage/
 prover/bin/
 prover/**/*.test
 prover/provad
+prover/dist/
 contracts/broadcast/
 
 # Desktop build artifacts
@@ -40,6 +41,8 @@ desktop/dist/
 desktop/renderer/dist/
 desktop/.vite/
 desktop/out/
+desktop/playwright-report/
+desktop/test-results/
 
 # Local SVG preview renders
 .preview/

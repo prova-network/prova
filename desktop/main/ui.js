@@ -8,7 +8,7 @@ const {
   getTrayOperationExplained,
   setTrayOperationExplained,
   getOnboardingCompleted
-} = require('./station-config')
+} = require('./prova-config')
 const { showDialogSync } = require('./dialog')
 const wallet = require('./wallet')
 
@@ -36,10 +36,7 @@ module.exports = async function (ctx) {
     }
   })
 
-  ui.on('show', () => {
-    ctx.isShowingUI = true
-    wallet.refreshState().catch(console.error)
-  })
+  ui.on('show', () => { ctx.isShowingUI = true })
   ui.on('hide', () => { ctx.isShowingUI = false })
 
   /** @type {import('vite').ViteDevServer} */
