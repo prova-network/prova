@@ -178,8 +178,14 @@ html.js-ready:not(.reduced-motion) h1.hero-title .word-inner{transform:translate
 h1.hero-title em{font-style:italic;color:var(--gold);font-weight:500}
 h1.hero-title em .word-inner{color:var(--gold)}
 
-.hero-sub{font-size:clamp(18px,1.7vw,22px);color:var(--cream-soft);max-width:60ch;margin-bottom:48px}
+.hero-sub{font-size:clamp(18px,1.7vw,22px);color:var(--cream-soft);max-width:60ch;margin-bottom:28px}
 html.js-ready:not(.reduced-motion) .hero-sub{opacity:0;transform:translateY(20px)}
+
+/* Punchline line that sits between paragraph + CTAs. Short declaratives,
+   gold bar, all-caps mono. Intentional rhetorical beat. */
+.hero-kicker{font-family:var(--mono);font-size:clamp(13px,1.1vw,15px);letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:48px;display:flex;align-items:center;gap:16px}
+.hero-kicker .k-bar{width:36px;height:2px;background:var(--gold);flex-shrink:0}
+html.js-ready:not(.reduced-motion) .hero-kicker{opacity:0;transform:translateY(20px)}
 .hero-sub strong{color:var(--cream);font-weight:600}
 
 .hero-actions{display:flex;gap:16px;flex-wrap:wrap}
@@ -435,11 +441,15 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
     </h1>
 
     <p class="hero-sub" id="heroSub">
-      Prova is <strong>verifiable storage on Base</strong>, because Base has cheap gas, fast
-      finality, and the distribution of Ethereum without the mainnet cost. Clients pay in
-      ETH or USDC; provers stake PROVA, serve the data over HTTPS, and submit a fresh
-      cryptographic proof every single day. Miss a proof, get slashed. No trust, no
-      middleman, no new chain to learn.
+      Prova is <strong>verifiable storage on Base</strong>. Cheap gas, fast finality,
+      Ethereum's reach without the mainnet cost.
+      <br><br>
+      Clients pay in ETH or USDC. Provers stake PROVA, serve the bytes over HTTPS, and
+      submit a fresh cryptographic proof every single day. No trust, no middleman, no
+      new chain to learn.
+    </p>
+    <p class="hero-kicker" id="heroKicker">
+      <span class="k-bar" aria-hidden="true"></span>Miss a proof. Get slashed.
     </p>
 
     <div class="hero-actions" id="heroActions">
@@ -1036,7 +1046,7 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
   const gsapTimeout = setTimeout(()=>{
     if(typeof gsap === 'undefined'){
       $$('#heroTitle .word-inner').forEach(e=>{e.style.transform='translateY(0)';e.style.transition='transform 0.8s cubic-bezier(0.22,1,0.36,1)'});
-      ['#heroSub','#heroActions','#ticker'].forEach(s=>{const el=$(s);if(el){el.style.transition='opacity 0.8s, transform 0.8s';el.style.opacity=1;el.style.transform='none'}});
+      ['#heroSub','#heroKicker','#heroActions','#ticker'].forEach(s=>{const el=$(s);if(el){el.style.transition='opacity 0.8s, transform 0.8s';el.style.opacity=1;el.style.transform='none'}});
       const hs=$('#heroScroll');if(hs) hs.style.opacity=0.5;
     }
   }, 2500);
@@ -1086,9 +1096,10 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
     const tl = gsap.timeline({ defaults:{ease:'power3.out'} });
     tl.to(words,{y:0,stagger:0.08,duration:0.9},0.2)
       .to('#heroSub',{opacity:1,y:0,duration:0.8},0.6)
-      .to('#heroActions',{opacity:1,y:0,duration:0.8},0.75)
-      .to('#ticker',{opacity:1,y:0,duration:0.8},0.9)
-      .to('#heroScroll',{opacity:1,duration:0.6},1.2);
+      .to('#heroKicker',{opacity:1,y:0,duration:0.7},0.8)
+      .to('#heroActions',{opacity:1,y:0,duration:0.8},0.9)
+      .to('#ticker',{opacity:1,y:0,duration:0.8},1.05)
+      .to('#heroScroll',{opacity:1,duration:0.6},1.3);
 
     // Count-up for ticker + stat values
     $$('[data-count]').forEach(el=>{
@@ -1303,7 +1314,9 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
   /* ── Redundancy lab (interactive node network) ── */
   const canvas = $('#redundancyCanvas');
   function renderLab(){
-    const N = 5;
+    // 6 provers distributes evenly (60° apart), reads as a snowflake / hexagon
+    // which is visually calmer than a 5-pointed star shape at this scale.
+    const N = 6;
     const W = 800, H = 400;
     const cx = W/2, cy = H/2;
     const r = 150;
@@ -1328,11 +1341,12 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
         out += `<line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="${col}" stroke-width="1.5" ${dash}/>`;
       }
 
-      // Center (client)
-      out += `<circle cx="${cx}" cy="${cy}" r="60" fill="url(#center-grad)"/>`;
-      out += `<circle cx="${cx}" cy="${cy}" r="28" fill="#14110D" stroke="#C9A84C" stroke-width="2"/>`;
-      out += `<text x="${cx}" y="${cy+2}" text-anchor="middle" fill="#F4EFE3" font-family="Fraunces" font-size="13" font-weight="600">client</text>`;
-      out += `<text x="${cx}" y="${cy+18}" text-anchor="middle" fill="#D8D2C4" opacity=".5" font-family="JetBrains Mono" font-size="9">your file</text>`;
+      // Center (client). Larger hit disc + text placed outside the inner circle
+      // so the label can breathe without being clipped.
+      out += `<circle cx="${cx}" cy="${cy}" r="70" fill="url(#center-grad)"/>`;
+      out += `<circle cx="${cx}" cy="${cy}" r="36" fill="#14110D" stroke="#C9A84C" stroke-width="2"/>`;
+      out += `<text x="${cx}" y="${cy-2}" text-anchor="middle" fill="#F4EFE3" font-family="Fraunces" font-size="14" font-weight="600">client</text>`;
+      out += `<text x="${cx}" y="${cy+14}" text-anchor="middle" fill="#C9A84C" opacity=".75" font-family="JetBrains Mono" font-size="9" letter-spacing="0.1em">YOUR FILE</text>`;
 
       // Provers
       for(let i=0;i<N;i++){
