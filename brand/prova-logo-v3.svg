@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prova logo v3: iron-steel chrome on light or dark grounds.
+     Closed ring (v2 had an intentional gap that users read as broken).
+     Triangle is solid-filled at small sizes, stroked at large sizes.
+     Core: cyan-white focal node. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- Iron gradient: bright steel top, dark steel bottom, with a
+         mid-tone highlight band so it reads as a brushed-metal cylinder
+         when curved around the ring. -->
+    <linearGradient id="iron" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#F0F2F6"/>
+      <stop offset="25%" stop-color="#C9D1DD"/>
+      <stop offset="50%" stop-color="#7F8A9E"/>
+      <stop offset="58%" stop-color="#3D4656"/>
+      <stop offset="75%" stop-color="#6B7689"/>
+      <stop offset="100%" stop-color="#2E3542"/>
+    </linearGradient>
+    <!-- Top sheen -->
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65"/>
+      <stop offset="55%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Core: cyan glow pin -->
+    <radialGradient id="core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="40%" stop-color="#7FE3FF"/>
+      <stop offset="100%" stop-color="#2B5CFF" stop-opacity="0.8"/>
+    </radialGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+
+  <!-- Closed outer ring -->
+  <circle cx="100" cy="100" r="78" fill="none" stroke="url(#iron)" stroke-width="9"/>
+  <!-- Sheen on top half only -->
+  <path d="M 22 100 A 78 78 0 0 1 178 100"
+        fill="none" stroke="url(#sheen)" stroke-width="9" opacity="0.95"/>
+
+  <!-- Triangle, closed, same iron gradient -->
+  <polygon points="72,58 140,100 72,142"
+           fill="none" stroke="url(#iron)" stroke-width="9"
+           stroke-linejoin="round"/>
+
+  <!-- Soft glow behind core so it reads as luminous even when ring is dark -->
+  <circle cx="100" cy="100" r="14" fill="url(#core)" opacity="0.5" filter="url(#soft)"/>
+  <circle cx="100" cy="100" r="6" fill="url(#core)"/>
+</svg>

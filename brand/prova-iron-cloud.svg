@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- "Iron cloud" hero visual, v2. Fixes discrete-sphere problem by:
+     1. Merging all puff ellipses into a single silhouette via gooey filter
+        (blur + color-matrix threshold), so they fuse into one mass.
+     2. Applying the material (gradient + horizon + specular) to the
+        merged shape, not each puff individually.
+     3. Breaking the top symmetry (no matching "eye" spheres).
+     4. Making the cyan nodes glow/trail to read as orbiting data packets. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" width="800" height="560">
+  <defs>
+    <!-- Iron material gradient. Cloud silhouette occupies approx y=100 to
+         y=440 in the 560-tall viewBox, so gradient stops are tuned so the
+         horizon band lands mid-cloud (around y=260, gradient stop ~46%). -->
+    <linearGradient id="ironMat" x1="0" y1="100" x2="0" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#FAFBFD"/>
+      <stop offset="14%" stop-color="#D4DBE7"/>
+      <stop offset="32%" stop-color="#8B95A8"/>
+      <stop offset="46%" stop-color="#3C4354"/>
+      <stop offset="52%" stop-color="#15181F"/>
+      <stop offset="60%" stop-color="#1A1E27"/>
+      <stop offset="78%" stop-color="#2A3140"/>
+      <stop offset="100%" stop-color="#050810"/>
+    </linearGradient>
+
+    <!-- Sky reflection: cool blue on upper puffs only -->
+    <linearGradient id="skyTint" x1="0" y1="100" x2="0" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#B8CEE5" stop-opacity="0.55"/>
+      <stop offset="15%" stop-color="#7FE3FF" stop-opacity="0.28"/>
+      <stop offset="35%" stop-color="#2A3140" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Ground bounce: warmer metallic rim light, visible near the bottom
+         edge of the merged cloud silhouette. -->
+    <linearGradient id="groundBounce" x1="0" y1="100" x2="0" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="55%" stop-color="#1C212C" stop-opacity="0"/>
+      <stop offset="78%" stop-color="#8F8176" stop-opacity="0.3"/>
+      <stop offset="92%" stop-color="#C9BDAE" stop-opacity="0.35"/>
+    </linearGradient>
+
+    <!-- Broad speculars on upper lobes (soft-edged, not pinpoint) -->
+    <radialGradient id="broadSpec" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Specular pinpoints -->
+    <radialGradient id="spec" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="25%" stop-color="#FFFFFF" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Ambient back halo -->
+    <radialGradient id="aura" cx="50%" cy="45%" r="55%">
+      <stop offset="0%"  stop-color="#7FE3FF" stop-opacity="0.22"/>
+      <stop offset="55%" stop-color="#2B5CFF" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#2B5CFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Ground shadow -->
+    <radialGradient id="groundShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0F131B" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0F131B" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- MERGE FILTER: makes overlapping shapes fuse into one silhouette.
+         Standard gooey recipe: blur, then aggressive alpha threshold. -->
+    <filter id="cloudMerge" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur"/>
+      <feColorMatrix in="blur" mode="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 32 -16"/>
+    </filter>
+
+    <!-- Soft noise/grain for forged-metal micro-texture -->
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.15 0"/>
+      <feComposite in2="SourceGraphic" operator="in"/>
+    </filter>
+
+    <!-- Used to clip all material overlays to the merged silhouette shape -->
+    <clipPath id="cloudSilhouette">
+      <g filter="url(#cloudMerge)">
+        <ellipse cx="280" cy="340" rx="160" ry="105"/>
+        <ellipse cx="550" cy="345" rx="165" ry="100"/>
+        <ellipse cx="400" cy="280" rx="220" ry="155"/>
+        <ellipse cx="285" cy="245" rx="120" ry="90"/>
+        <ellipse cx="540" cy="225" rx="130" ry="95"/>
+        <ellipse cx="410" cy="195" rx="95" ry="70"/>
+      </g>
+    </clipPath>
+  </defs>
+
+  <!-- Ambient back halo -->
+  <ellipse cx="400" cy="280" rx="360" ry="250" fill="url(#aura)"/>
+
+  <!-- Cloud form: clipped to the merged silhouette, material applied as
+       full-rect gradients so shading is continuous across the whole mass
+       (no per-puff re-gradients). -->
+  <g clip-path="url(#cloudSilhouette)">
+    <!-- Base iron material fills the entire clipped region -->
+    <rect x="0" y="0" width="800" height="560" fill="url(#ironMat)"/>
+    <!-- Sky reflection tint over the top portion -->
+    <rect x="0" y="0" width="800" height="560" fill="url(#skyTint)"/>
+    <!-- Ground bounce light near the bottom rim -->
+    <rect x="0" y="0" width="800" height="560" fill="url(#groundBounce)"/>
+    <!-- Broad speculars on the two upper lobes -->
+    <ellipse cx="400" cy="170" rx="110" ry="55" fill="url(#broadSpec)"/>
+    <ellipse cx="540" cy="200" rx="65" ry="35" fill="url(#broadSpec)"/>
+    <ellipse cx="290" cy="225" rx="50" ry="28" fill="url(#broadSpec)"/>
+    <!-- Grain for forged micro-texture -->
+    <rect x="0" y="0" width="800" height="560" fill="#8A95A8" opacity="0.22" filter="url(#grain)"/>
+  </g>
+
+  <!-- Silhouette outline: very subtle dark edge to define the form against
+       light backgrounds. Uses the merged filter too. -->
+  <g filter="url(#cloudMerge)" opacity="0.22">
+    <ellipse cx="280" cy="340" rx="160" ry="105" fill="#0F131B"/>
+    <ellipse cx="550" cy="345" rx="165" ry="100" fill="#0F131B"/>
+    <ellipse cx="400" cy="280" rx="220" ry="155" fill="#0F131B"/>
+    <ellipse cx="285" cy="245" rx="120" ry="90" fill="#0F131B"/>
+    <ellipse cx="540" cy="225" rx="130" ry="95" fill="#0F131B"/>
+    <ellipse cx="410" cy="195" rx="95" ry="70" fill="#0F131B"/>
+  </g>
+
+  <!-- Pinpoint specular on the very top highlight (asymmetric) -->
+  <circle cx="420" cy="130" r="7" fill="url(#spec)"/>
+  <circle cx="530" cy="155" r="4" fill="url(#spec)"/>
+
+  <!-- Ground shadow -->
+  <ellipse cx="400" cy="490" rx="280" ry="32" fill="url(#groundShadow)"/>
+
+  <!-- Cyan data nodes: 3 around the cloud with glow trails.
+       These represent the "proof packets" orbiting. -->
+  <g>
+    <!-- Node 1 left -->
+    <circle cx="120" cy="250" r="22" fill="#7FE3FF" opacity="0.18"/>
+    <circle cx="120" cy="250" r="10" fill="#7FE3FF" opacity="0.55"/>
+    <circle cx="120" cy="250" r="4" fill="#FFFFFF"/>
+
+    <!-- Node 2 right -->
+    <circle cx="700" cy="180" r="18" fill="#7FE3FF" opacity="0.15"/>
+    <circle cx="700" cy="180" r="8" fill="#7FE3FF" opacity="0.6"/>
+    <circle cx="700" cy="180" r="3.5" fill="#FFFFFF"/>
+
+    <!-- Node 3 bottom-right -->
+    <circle cx="670" cy="420" r="14" fill="#AEEDFF" opacity="0.15"/>
+    <circle cx="670" cy="420" r="7" fill="#AEEDFF" opacity="0.5"/>
+    <circle cx="670" cy="420" r="2.5" fill="#FFFFFF"/>
+  </g>
+</svg>

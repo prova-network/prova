@@ -22,7 +22,6 @@
 (function(){
   try {
     var stored = localStorage.getItem('prova-theme');
-    // Dark-first: iron cloud reads properly on dark. Light mode available via toggle.
     var theme = stored || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
     document.documentElement.setAttribute('data-theme', theme);
   } catch (e) { document.documentElement.setAttribute('data-theme','dark'); }
@@ -31,38 +30,57 @@
 
 <style>
 /* ─── tokens ─────────────────────────────────────────── */
-/* Light-first palette. White/off-white page, iron-steel greys for the
-   3D forms, muted steel-blue for primary actions, soft cyan for data
-   nodes. Inspired by filecoin.io's clean frosted aesthetic. */
-:root, [data-theme="light"] {
-  --bg-0:#FAFBFD; --bg-1:#F2F4F8; --bg-2:#E8ECF2; --bg-3:#D8DDE8;
+:root, [data-theme="dark"] {
+  /* Surfaces: deep space blue with slight warm undertone */
+  --bg-0:#080B14;         /* page */
+  --bg-1:#0E1220;         /* cards */
+  --bg-2:#141A2E;         /* elevated */
+  --bg-3:#1F2742;
 
-  --iron-0:#F6F8FB; --iron-1:#C9D1DD; --iron-2:#7F8A9E; --iron-3:#3D4656; --iron-4:#1A1F2B;
-  --steel-0:#5A6B8E; --steel-1:#3E5080; --steel-2:#2A3958; --steel-3:#1A2540;
+  /* Chrome silver -> cobalt gradient stops */
+  --silver-0:#F2F5FB;
+  --silver-1:#D0DBF0;
+  --silver-2:#9FB3D4;
+  --silver-3:#6C85B8;
 
-  --cyan:#3AA9D1;
-  --cyan-hot:#5DC3E5;
+  --cobalt-0:#5A7BEE;
+  --cobalt-1:#2B5CFF;     /* primary */
+  --cobalt-2:#1F3FB5;
+  --cobalt-3:#112468;
 
-  --fg-0:#0F131B; --fg-1:#2A3140; --fg-2:#5E6879;
-  --fg-dim:rgba(15,19,27,0.55);
+  /* Accent */
+  --cyan:#7FE3FF;
+  --cyan-hot:#AEEDFF;
 
-  --hair:rgba(15,19,27,0.08);
-  --hair-strong:rgba(15,19,27,0.15);
-  --glass:rgba(250,251,253,0.85);
+  /* Text */
+  --fg-0:#F2F5FB;
+  --fg-1:#C8D0E4;
+  --fg-2:#8590B0;
+  --fg-dim:rgba(242,245,251,0.55);
 
-  --grad-primary: linear-gradient(135deg, #7F8A9E 0%, #3E5080 50%, #1A2540 100%);
-  --grad-iron: linear-gradient(180deg,
-    #F6F8FB 0%, #C9D1DD 18%, #7F8A9E 38%, #3D4656 52%,
-    #1A1F2B 58%, #2E3542 72%, #5E6879 88%, #1A1F2B 100%);
-  --grad-cyan: linear-gradient(135deg, #5DC3E5 0%, #3AA9D1 40%, #3E5080 100%);
+  /* Structure */
+  --hair:rgba(159,179,212,0.12);
+  --hair-strong:rgba(159,179,212,0.22);
+  --glass:rgba(14,18,32,0.6);
 
-  /* back-compat aliases for rules elsewhere in the stylesheet */
-  --cobalt-0:var(--steel-0); --cobalt-1:var(--steel-1); --cobalt-2:var(--steel-2); --cobalt-3:var(--steel-3);
-  --silver-0:var(--iron-0); --silver-1:var(--iron-1); --silver-2:var(--iron-2); --silver-3:var(--iron-3);
-  --grad-chrome:var(--grad-iron);
+  --grad-primary: linear-gradient(135deg, #D0DBF0 0%, #5A7BEE 45%, #2B5CFF 100%);
+  /* Real chrome text: achromatic ramp with a hard dark horizon band around
+     the 50-55% stop. Blue only appears as sky reflection up top. This is
+     what separates liquid-metal from flat blue gradient. */
+  --grad-chrome: linear-gradient(180deg,
+    #FFFFFF 0%,
+    #E8ECF0 10%,
+    #A8B5CA 26%,
+    #6B7890 42%,
+    #2A3140 54%,
+    #3E5680 64%,
+    #8FA5C4 80%,
+    #D0DBF0 92%,
+    #3E6BD6 100%);
+  --grad-cyan: linear-gradient(135deg, #AEEDFF 0%, #7FE3FF 40%, #2B5CFF 100%);
 
+  --display:'Instrument Serif', ui-serif, Georgia, serif;
   --sans:'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --display:'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono:'JetBrains Mono', ui-monospace, Menlo, monospace;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -70,32 +88,38 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Dark mode: iron on deep charcoal (not navy). */
-[data-theme="dark"] {
-  --bg-0:#0A0D13; --bg-1:#131820; --bg-2:#1D232E; --bg-3:#2D3544;
+/* Light mode: cream page, inverted ink, darker cobalt for contrast. */
+[data-theme="light"] {
+  --bg-0:#F5F7FC;
+  --bg-1:#EAEFF8;
+  --bg-2:#DDE4F0;
+  --bg-3:#C2CCE0;
 
-  --iron-0:#E8ECF2; --iron-1:#B0BACA; --iron-2:#7F8A9E; --iron-3:#4D5770; --iron-4:#1A1F2B;
-  --steel-0:#8FA0C0; --steel-1:#6B80A8; --steel-2:#4E6080; --steel-3:#2D3958;
+  --silver-0:#3A4668;
+  --silver-1:#4D5B80;
+  --silver-2:#697799;
+  --silver-3:#8893B5;
 
-  --cyan:#5DC3E5;
-  --cyan-hot:#8DDAF0;
+  --cobalt-0:#2B5CFF;
+  --cobalt-1:#1F3FB5;
+  --cobalt-2:#112468;
+  --cobalt-3:#0A164A;
 
-  --fg-0:#F2F5FB; --fg-1:#C8D0E0; --fg-2:#8590A5;
-  --fg-dim:rgba(242,245,251,0.55);
+  --cyan:#0B8FC4;
+  --cyan-hot:#12A8E0;
 
-  --hair:rgba(159,179,212,0.1);
-  --hair-strong:rgba(159,179,212,0.18);
-  --glass:rgba(10,13,19,0.65);
+  --fg-0:#0B1228;
+  --fg-1:#2D3758;
+  --fg-2:#586484;
+  --fg-dim:rgba(11,18,40,0.55);
 
-  --grad-primary: linear-gradient(135deg, #E8ECF2 0%, #6B80A8 50%, #2D3958 100%);
-  --grad-iron: linear-gradient(180deg,
-    #F6F8FB 0%, #C9D1DD 18%, #8FA0C0 38%, #4E6080 52%,
-    #1D2330 58%, #2D3544 72%, #7F8A9E 88%, #2D3544 100%);
-  --grad-cyan: linear-gradient(135deg, #8DDAF0 0%, #5DC3E5 40%, #6B80A8 100%);
+  --hair:rgba(11,18,40,0.1);
+  --hair-strong:rgba(11,18,40,0.18);
+  --glass:rgba(245,247,252,0.85);
 
-  --cobalt-0:var(--steel-0); --cobalt-1:var(--steel-1); --cobalt-2:var(--steel-2); --cobalt-3:var(--steel-3);
-  --silver-0:var(--iron-0); --silver-1:var(--iron-1); --silver-2:var(--iron-2); --silver-3:var(--iron-3);
-  --grad-chrome:var(--grad-iron);
+  --grad-primary: linear-gradient(135deg, #4D5B80 0%, #2B5CFF 50%, #112468 100%);
+  --grad-chrome: linear-gradient(180deg, #697799 0%, #2B5CFF 60%, #112468 100%);
+  --grad-cyan: linear-gradient(135deg, #12A8E0 0%, #0B8FC4 40%, #1F3FB5 100%);
 }
 
 /* ─── base ──────────────────────────────────────────── */
@@ -126,19 +150,21 @@ body::before {
   pointer-events: none;
 }
 
-/* Ambient background: very subtle pale steel glow. Light mode default;
-   dark mode amps the intensity. */
+/* Ambient background gradient mesh — fixed, subtle, always there */
 .bg-mesh {
   position: fixed; inset: 0; z-index: -2; pointer-events: none;
   background:
-    radial-gradient(ellipse 70% 60% at 50% 20%, rgba(62,80,128,0.06), transparent 65%),
-    radial-gradient(ellipse 50% 60% at 85% 80%, rgba(58,169,209,0.05), transparent 65%);
+    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(43,92,255,0.18), transparent 65%),
+    radial-gradient(ellipse 70% 50% at 80% 10%, rgba(127,227,255,0.09), transparent 65%),
+    radial-gradient(ellipse 60% 80% at 70% 80%, rgba(43,92,255,0.12), transparent 65%),
+    radial-gradient(ellipse 50% 60% at 10% 80%, rgba(159,179,212,0.06), transparent 60%);
 }
 
-[data-theme="dark"] .bg-mesh {
+[data-theme="light"] .bg-mesh {
   background:
-    radial-gradient(ellipse 70% 60% at 50% 20%, rgba(143,160,192,0.12), transparent 65%),
-    radial-gradient(ellipse 50% 60% at 85% 80%, rgba(93,195,229,0.08), transparent 65%);
+    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(43,92,255,0.10), transparent 65%),
+    radial-gradient(ellipse 70% 50% at 80% 10%, rgba(43,92,255,0.05), transparent 65%),
+    radial-gradient(ellipse 60% 80% at 70% 80%, rgba(43,92,255,0.08), transparent 65%);
 }
 
 /* Grid overlay */
@@ -153,7 +179,7 @@ body::before {
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important }
-  .iron-cloud, .iron-node, .orbit-dot { animation: none !important }
+  .metaball, .orbit-dot { animation: none !important }
 }
 
 /* ─── layout primitives ─────────────────────────────── */
@@ -243,65 +269,132 @@ nav .inner { display: flex; align-items: center; gap: 28px }
   padding-top: 120px; padding-bottom: 80px; overflow: clip; position: relative;
 }
 
-/* Iron cloud hero visual.
-   Desktop layout (>= 900px): right column of hero, absolute positioned,
-     occupying the right ~55% of the hero area. Text column is constrained
-     to max-width on the left.
-   Mobile (<900px): cloud becomes a background layer behind the text,
-     larger-than-viewport, pushed right so it peeks into the gutter. */
-.iron-cloud {
-  position: absolute; pointer-events: none; z-index: 0;
-  inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 1;
-  animation: cloudFloat 14s ease-in-out infinite;
+/* Metaball stage: 3 chrome blobs that float + merge via SVG gooey filter.
+   Multi-stop chrome gradient (white highlight, silver midtones, deep cobalt
+   shadow, cyan underlight) gives the liquid-mercury look instead of
+   flat blue. The SVG filter in <body> creates the merging effect. */
+.metaballs {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  filter: url(#metaball-merge);
 }
-.iron-cloud svg { width: 85%; height: auto; max-width: 800px }
-/* Light mode: iron cloud was designed for dark bg. In light mode we
-   invert its value range + shift cooler so the dark iron body becomes
-   a subtle blueish-grey form that reads on white. Not ideal, but the
-   primary hero target is dark mode. */
-[data-theme="light"] .iron-cloud {
-  filter: invert(0.88) hue-rotate(180deg) saturate(0.6) contrast(0.95);
-  opacity: 0.85;
+/* Mercury ball-bearing material. Four layered gradients:
+   1. Specular pinpoint (tiny hard white highlight, upper third)
+   2. Horizon stripe (sharp knife-edge transition at ~54%)
+   3. Primary form radial (achromatic, high-contrast)
+   4. Base (near-black sits underneath the whole form)
+   The combination is what separates chrome from glossy plastic. */
+.metaball {
+  position: absolute; border-radius: 50%; will-change: transform;
+  background:
+    /* Specular pinpoint: tiny, hard, near-white */
+    radial-gradient(circle at 30% 20%,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.4) 1.5%,
+      rgba(255, 255, 255, 0) 4%),
+    /* Sharp horizon stripe: crisp dark band at 54%, only 4% wide transition */
+    linear-gradient(180deg,
+      rgba(14, 20, 40, 0) 0%,
+      rgba(14, 20, 40, 0) 50%,
+      rgba(8, 12, 24, 0.95) 54%,
+      rgba(8, 12, 24, 0.9) 58%,
+      rgba(14, 20, 40, 0) 62%,
+      rgba(14, 20, 40, 0) 100%
+    ),
+    /* Sky reflection: cool blue-grey only in top third, fades hard */
+    linear-gradient(180deg,
+      rgba(130, 155, 195, 0.55) 0%,
+      rgba(90, 115, 155, 0.3) 20%,
+      rgba(30, 40, 65, 0) 45%,
+      rgba(0, 0, 0, 0) 100%
+    ),
+    /* Ground bounce light: warm-neutral highlight near bottom */
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0) 65%,
+      rgba(170, 185, 210, 0.35) 85%,
+      rgba(220, 230, 245, 0.5) 94%,
+      rgba(120, 140, 170, 0) 100%
+    ),
+    /* Primary form: high-contrast achromatic radial (near-white -> near-black) */
+    radial-gradient(circle at 32% 22%,
+      #F8F9FB 0%,
+      #B8BFC9 15%,
+      #6A7280 32%,
+      #2E3440 48%,
+      #141822 62%,
+      #0A0D14 80%,
+      #050710 100%);
+  box-shadow:
+    inset -8% -12% 30% rgba(0, 0, 0, 0.8),
+    inset 2% 3% 12% rgba(255, 255, 255, 0.25);
 }
-@keyframes cloudFloat {
-  0%, 100% { transform: translate(0, 0) }
-  50% { transform: translate(-10px, -12px) }
+.metaball.m1 {
+  width: 380px; height: 380px; top: 18%; right: 6%;
+  animation: floatA 18s ease-in-out infinite;
 }
-.iron-node { transform-origin: 400px 280px }
-.iron-node.n1 { animation: node1 12s ease-in-out infinite }
-.iron-node.n2 { animation: node2 16s ease-in-out infinite }
-.iron-node.n3 { animation: node3 14s ease-in-out infinite }
-@keyframes node1 { 0%,100% { transform: translate(0,0) } 50% { transform: translate(18px, -14px) } }
-@keyframes node2 { 0%,100% { transform: translate(0,0) } 50% { transform: translate(-20px, 12px) } }
-@keyframes node3 { 0%,100% { transform: translate(0,0) } 50% { transform: translate(14px, -18px) } }
+.metaball.m2 {
+  width: 240px; height: 240px; top: 52%; right: 20%;
+  animation: floatB 22s ease-in-out infinite;
+}
+.metaball.m3 {
+  width: 170px; height: 170px; top: 10%; right: 30%;
+  /* Same mercury recipe with cyan sky instead of blue-grey */
+  background:
+    radial-gradient(circle at 30% 20%,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.4) 1.5%,
+      rgba(255, 255, 255, 0) 4%),
+    linear-gradient(180deg,
+      rgba(14, 20, 40, 0) 0%,
+      rgba(14, 20, 40, 0) 50%,
+      rgba(8, 12, 24, 0.95) 54%,
+      rgba(8, 12, 24, 0.9) 58%,
+      rgba(14, 20, 40, 0) 62%,
+      rgba(14, 20, 40, 0) 100%
+    ),
+    linear-gradient(180deg,
+      rgba(127, 227, 255, 0.5) 0%,
+      rgba(80, 170, 220, 0.3) 22%,
+      rgba(30, 40, 65, 0) 45%,
+      rgba(0, 0, 0, 0) 100%
+    ),
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0) 65%,
+      rgba(140, 200, 230, 0.35) 85%,
+      rgba(200, 230, 245, 0.5) 94%,
+      rgba(100, 160, 200, 0) 100%
+    ),
+    radial-gradient(circle at 32% 22%,
+      #F8FCFF 0%,
+      #B0D5E5 15%,
+      #5F8498 32%,
+      #203444 48%,
+      #0E1824 62%,
+      #060D14 80%,
+      #040810 100%);
+  animation: floatC 15s ease-in-out infinite;
+}
+@keyframes floatA {
+  0%, 100% { transform: translate(0, 0) scale(1) }
+  33% { transform: translate(-40px, 30px) scale(1.05) }
+  66% { transform: translate(20px, -25px) scale(0.97) }
+}
+@keyframes floatB {
+  0%, 100% { transform: translate(0, 0) scale(1) }
+  50% { transform: translate(40px, -50px) scale(1.1) }
+}
+@keyframes floatC {
+  0%, 100% { transform: translate(0, 0) scale(1) }
+  50% { transform: translate(-50px, 60px) scale(0.9) }
+}
 
 @media (max-width: 900px) {
-  .iron-cloud { opacity: 0.75 }
-  .iron-cloud svg { width: 110vw; max-height: 60vh }
+  .metaballs { opacity: 0.45 }
+  .metaball.m1 { width: 240px; height: 240px }
+  .metaball.m2 { width: 140px; height: 140px }
+  .metaball.m3 { width: 100px; height: 100px }
 }
 
-/* Hero layout: 2-column grid on desktop, iron cloud right, text left.
-   Filecoin.io style: text + object on equal footing, not object-as-bg. */
-.hero-inner {
-  position: relative; z-index: 3; width: 100%;
-  display: flex; flex-direction: column; align-items: flex-start;
-  padding-top: clamp(40px, 14vh, 140px);
-}
-/* Desktop: two-column hero, text left, iron cloud right. */
-@media (min-width: 900px) {
-  .iron-cloud {
-    left: auto; right: -2%; top: -4%; bottom: 0;
-    width: 52%;
-    justify-content: center; align-items: center;
-  }
-  .iron-cloud svg { width: 100%; max-width: 760px; max-height: 90vh }
-  .hero-inner {
-    max-width: 600px;
-    padding-top: clamp(80px, 18vh, 200px);
-  }
-}
+.hero-inner { position: relative; z-index: 3; width: 100% }
 
 .hero-badge {
   display: inline-flex; align-items: center; gap: 10px;
@@ -816,9 +909,24 @@ footer { border-top: 1px solid var(--hair); padding: 56px 0 48px; background: va
 </head>
 <body>
 
-<!-- The merging filter now lives inside the hero iron-cloud SVG as
-     #hcMerge. This stub container is kept empty for any future page-level
-     SVG filters we want to share. -->
+<!-- SVG filter for metaball merging (gooey effect) -->
+<svg style="position:absolute;width:0;height:0" aria-hidden="true">
+  <defs>
+    <filter id="metaball-merge" x="-20%" y="-20%" width="140%" height="140%">
+      <!-- Classic gooey/isosurface filter: blur, then steep alpha threshold
+           creates a crisp merged silhouette that fuses nearby blobs. -->
+      <feGaussianBlur in="SourceGraphic" stdDeviation="18" result="blur"/>
+      <feColorMatrix in="blur" mode="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 28 -14" result="gooey"/>
+      <!-- atop puts the original (sharply detailed) metaball back on top of
+           the blurred+thresholded merged silhouette. -->
+      <feBlend in="SourceGraphic" in2="gooey" mode="normal"/>
+    </filter>
+  </defs>
+</svg>
 
 <div class="bg-mesh" aria-hidden="true"></div>
 <div class="bg-grid" aria-hidden="true"></div>
@@ -829,27 +937,24 @@ footer { border-top: 1px solid var(--hair); padding: 56px 0 48px; background: va
     <a class="brand" href="#top">
       <svg viewBox="0 0 200 200" aria-hidden="true">
         <defs>
-          <linearGradient id="navIron" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#F0F2F6"/>
-            <stop offset="25%" stop-color="#C9D1DD"/>
-            <stop offset="50%" stop-color="#7F8A9E"/>
-            <stop offset="58%" stop-color="#3D4656"/>
-            <stop offset="75%" stop-color="#6B7689"/>
-            <stop offset="100%" stop-color="#2E3542"/>
+          <linearGradient id="navGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#EAF0FA"/>
+            <stop offset="45%" stop-color="#9FB3D4"/>
+            <stop offset="65%" stop-color="#3E6BD6"/>
+            <stop offset="100%" stop-color="#1A3B8F"/>
           </linearGradient>
           <radialGradient id="navCore">
             <stop offset="0%" stop-color="#FFFFFF"/>
-            <stop offset="40%" stop-color="#5DC3E5"/>
-            <stop offset="100%" stop-color="#3E5080" stop-opacity="0.8"/>
+            <stop offset="40%" stop-color="#7FE3FF"/>
+            <stop offset="100%" stop-color="#2B5CFF" stop-opacity="0.8"/>
           </radialGradient>
         </defs>
-        <!-- Closed ring (v3 fix: v2 had a gap that users read as broken) -->
-        <circle cx="100" cy="100" r="78"
-                fill="none" stroke="url(#navIron)" stroke-width="10"/>
+        <path d="M 100 22 A 78 78 0 1 1 155.15 155.15"
+              fill="none" stroke="url(#navGrad)" stroke-width="10" stroke-linecap="round"/>
         <polygon points="72,58 140,100 72,142"
-                 fill="none" stroke="url(#navIron)" stroke-width="10"
+                 fill="none" stroke="url(#navGrad)" stroke-width="10"
                  stroke-linejoin="round" stroke-linecap="round"/>
-        <circle cx="100" cy="100" r="8" fill="url(#navCore)"/>
+        <circle cx="100" cy="100" r="10" fill="url(#navCore)"/>
       </svg>
       <span>Prova</span>
     </a>
@@ -871,90 +976,10 @@ footer { border-top: 1px solid var(--hair); padding: 56px 0 48px; background: va
 
 <!-- ─── HERO ─── -->
 <section class="hero" id="top">
-  <!-- Iron cloud hero visual: voluminous forged-metal cloud silhouette
-       with cyan data nodes orbiting. Positioned absolutely behind the
-       text content; z-index:0 keeps it beneath hero-inner (z-index:3). -->
-  <div class="iron-cloud" aria-hidden="true">
-    <svg viewBox="0 0 800 560" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">
-      <defs>
-        <linearGradient id="hcIron" x1="0" y1="100" x2="0" y2="440" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"  stop-color="#FAFBFD"/>
-          <stop offset="14%" stop-color="#D4DBE7"/>
-          <stop offset="32%" stop-color="#8B95A8"/>
-          <stop offset="46%" stop-color="#3C4354"/>
-          <stop offset="52%" stop-color="#15181F"/>
-          <stop offset="60%" stop-color="#1A1E27"/>
-          <stop offset="78%" stop-color="#2A3140"/>
-          <stop offset="100%" stop-color="#050810"/>
-        </linearGradient>
-        <linearGradient id="hcSky" x1="0" y1="100" x2="0" y2="440" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"  stop-color="#B8CEE5" stop-opacity="0.55"/>
-          <stop offset="15%" stop-color="#7FE3FF" stop-opacity="0.28"/>
-          <stop offset="35%" stop-color="#2A3140" stop-opacity="0"/>
-        </linearGradient>
-        <linearGradient id="hcBounce" x1="0" y1="100" x2="0" y2="440" gradientUnits="userSpaceOnUse">
-          <stop offset="55%" stop-color="#1C212C" stop-opacity="0"/>
-          <stop offset="78%" stop-color="#8F8176" stop-opacity="0.3"/>
-          <stop offset="92%" stop-color="#C9BDAE" stop-opacity="0.35"/>
-        </linearGradient>
-        <radialGradient id="hcSpec" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.55"/>
-          <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.1"/>
-          <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
-        </radialGradient>
-        <radialGradient id="hcAura" cx="50%" cy="45%" r="55%">
-          <stop offset="0%"  stop-color="#5DC3E5" stop-opacity="0.22"/>
-          <stop offset="55%" stop-color="#3E5080" stop-opacity="0.06"/>
-          <stop offset="100%" stop-color="#3E5080" stop-opacity="0"/>
-        </radialGradient>
-        <radialGradient id="hcShadow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#0F131B" stop-opacity="0.25"/>
-          <stop offset="100%" stop-color="#0F131B" stop-opacity="0"/>
-        </radialGradient>
-        <filter id="hcMerge" x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur"/>
-          <feColorMatrix in="blur" mode="matrix"
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 32 -16"/>
-        </filter>
-        <filter id="hcGrain">
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
-          <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.15 0"/>
-          <feComposite in2="SourceGraphic" operator="in"/>
-        </filter>
-        <clipPath id="hcSilhouette">
-          <g filter="url(#hcMerge)">
-            <ellipse cx="280" cy="340" rx="160" ry="105"/>
-            <ellipse cx="550" cy="345" rx="165" ry="100"/>
-            <ellipse cx="400" cy="280" rx="220" ry="155"/>
-            <ellipse cx="285" cy="245" rx="120" ry="90"/>
-            <ellipse cx="540" cy="225" rx="130" ry="95"/>
-            <ellipse cx="410" cy="195" rx="95" ry="70"/>
-          </g>
-        </clipPath>
-      </defs>
-
-      <ellipse cx="400" cy="280" rx="360" ry="250" fill="url(#hcAura)"/>
-
-      <g clip-path="url(#hcSilhouette)">
-        <rect width="800" height="560" fill="url(#hcIron)"/>
-        <rect width="800" height="560" fill="url(#hcSky)"/>
-        <rect width="800" height="560" fill="url(#hcBounce)"/>
-        <ellipse cx="400" cy="170" rx="110" ry="55" fill="url(#hcSpec)"/>
-        <ellipse cx="540" cy="200" rx="65" ry="35" fill="url(#hcSpec)"/>
-        <ellipse cx="290" cy="225" rx="50" ry="28" fill="url(#hcSpec)"/>
-        <rect width="800" height="560" fill="#8A95A8" opacity="0.22" filter="url(#hcGrain)"/>
-      </g>
-
-      <circle cx="420" cy="130" r="7" fill="url(#hcSpec)"/>
-      <circle cx="530" cy="155" r="4" fill="url(#hcSpec)"/>
-
-      <ellipse cx="400" cy="490" rx="280" ry="32" fill="url(#hcShadow)"/>
-
-      <!-- 3 cyan data nodes orbiting, positioned in the negative space -->
-      <g class="iron-node n1"><circle cx="120" cy="250" r="22" fill="#5DC3E5" opacity="0.18"/><circle cx="120" cy="250" r="10" fill="#5DC3E5" opacity="0.55"/><circle cx="120" cy="250" r="4" fill="#FFFFFF"/></g>
-      <g class="iron-node n2"><circle cx="700" cy="180" r="18" fill="#5DC3E5" opacity="0.15"/><circle cx="700" cy="180" r="8" fill="#5DC3E5" opacity="0.6"/><circle cx="700" cy="180" r="3.5" fill="#FFFFFF"/></g>
-      <g class="iron-node n3"><circle cx="670" cy="420" r="14" fill="#8DDAF0" opacity="0.15"/><circle cx="670" cy="420" r="7" fill="#8DDAF0" opacity="0.5"/><circle cx="670" cy="420" r="2.5" fill="#FFFFFF"/></g>
-    </svg>
+  <div class="metaballs" aria-hidden="true">
+    <div class="metaball m1"></div>
+    <div class="metaball m2"></div>
+    <div class="metaball m3"></div>
   </div>
 
   <div class="wrap hero-inner">

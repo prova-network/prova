@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Small-size variant: ≤48px. Solid-fill triangle, thick ring, two-stop iron gradient. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="ironSm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D8DEE8"/>
+      <stop offset="60%" stop-color="#5A6478"/>
+      <stop offset="100%" stop-color="#2E3542"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="82" fill="none" stroke="url(#ironSm)" stroke-width="14"/>
+  <polygon points="74,62 144,100 74,138" fill="url(#ironSm)"/>
+</svg>
