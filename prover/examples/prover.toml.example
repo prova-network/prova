@@ -1,0 +1,50 @@
+# Prova Prover Daemon Configuration
+#
+# Copy this file to /etc/prova/prover.toml (or wherever) and edit.
+# Sensitive values (private_key_hex, passphrase) should ideally come from
+# environment variables; the file form is included here for clarity.
+
+[identity]
+# EITHER point at a go-ethereum keystore file (recommended):
+keystore_path = "/etc/prova/keystore/my-prover.json"
+# passphrase can also be supplied via $PROVA_KEYSTORE_PASSPHRASE
+passphrase = ""
+
+# OR paste a hex private key (testnet only):
+# private_key_hex = "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+[chain]
+# Base Sepolia by default. Swap for Base mainnet once ready.
+rpc_url = "https://sepolia.base.org"
+chain_id = 84532
+poll_interval_seconds = 12
+
+[chain.contracts]
+# These addresses are populated after `forge script Deploy.s.sol` deploys
+# the Prova contract set. Leave as zero-addresses until that happens.
+prova_token         = "0x0000000000000000000000000000000000000000"
+proof_verifier      = "0x0000000000000000000000000000000000000000"
+prover_registry     = "0x0000000000000000000000000000000000000000"
+prover_staking      = "0x0000000000000000000000000000000000000000"
+content_registry    = "0x0000000000000000000000000000000000000000"
+storage_marketplace = "0x0000000000000000000000000000000000000000"
+
+[storage]
+data_dir  = "/var/lib/prova/data"
+# 0 = no soft cap. Set to e.g. 10_000_000_000_000 for 10 TB.
+max_bytes = 0
+# Defaults to <data_dir>/index.sqlite
+# index_path = ""
+
+[http]
+enabled     = true
+listen_addr = ":8443"
+# public_url must match what you advertise in ProverRegistry
+public_url  = "https://prover.example.com"
+# If cert_path and key_path are empty, ACME/Let's Encrypt is used on port 80.
+cert_path = ""
+key_path  = ""
+
+[metrics]
+enabled     = true
+listen_addr = "127.0.0.1:9090"

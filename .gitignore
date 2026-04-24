@@ -24,3 +24,8 @@ sdk/typescript/**/coverage/
 
 # Website preview screenshots (local only)
 .preview/
+
+# Go
+prover/bin/
+prover/**/*.test
+prover/provad
