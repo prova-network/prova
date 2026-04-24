@@ -22,16 +22,16 @@ Tracking work on the Go prover daemon. Each task links to a matching issue or PR
 - [x] `contracts/script/Deploy.s.sol` — foundry deploy script for the 5 non-proxy contracts (ProofVerifier UUPS proxy deferred)
 - [ ] `cmd/provad/register` — read-only for now; tx submission deliberately deferred so no accidental registration
 
-## Phase C — Deal lifecycle
+## Phase C — Deal lifecycle ✅ (memory-backed; SQLite later)
 
-- [ ] `pkg/deal/` — state machine for deals
-  - [ ] Subscribe to `StorageMarketplace.DealProposed` events for deals targeting this prover
-  - [ ] Download piece from client URL (validate HTTPS, follow redirects, size limit)
-  - [ ] Compute local CommP, compare to deal's commpHash
-  - [ ] Accept deal by calling `ProofVerifier.createDataSet(marketplaceAddr, abi.encode(dealId))`
-  - [ ] Register with `ProverRegistry.Content` via marketplace callback chain
-  - [ ] Persist deal state locally (SQLite) for crash resilience
-- [ ] Transplant/adapt `curio/pdp/handlers_pull.go` pull-from-peer logic
+- [x] `pkg/deal/state.go` — Deal struct + Status state machine (Proposed → Downloading → Verifying → Accepting → Active; terminal Completed/Cancelled/Slashed/Failed)
+- [x] `pkg/deal/store.go` — Store interface + MemStore impl with defensive copies and last-seen block watermark
+- [x] `pkg/deal/fetch.go` — Fetcher with `ValidateSourceURL` (rejects http, loopback, private IPs, userinfo); `$PROVA_PULL_ALLOW_INSECURE=1` relaxes for dev
+- [x] `pkg/deal/engine.go` — Tick-based engine advances deals one step per Tick; doDownload fetches + computes CommP + commits to piece store + compares hash; doVerify confirms piece on-disk; doAccept submits via Accepter interface; MarkActive/Cancelled/Completed/Slashed for external chain events
+- [x] `pkg/deal/events.go` — `EventPoller` polls `FilterDealProposed` with prover-address filter, idempotent per watermark, pointer-based `BlockLookback` so 0 is a valid value
+- [x] **Validated against live anvil:** deployed contracts, proposed deal from client EOA, ran EventPoller, ingested into engine. Deal 1 landed with status=proposed, commP matched.
+- [ ] SQLite-backed Store for crash resilience (deferred; MemStore sufficient for Phase D)
+- [ ] Transplant curio/pdp/handlers_pull.go pull-from-peer logic (deferred; HTTPS-only is enough for v1)
 
 ## Phase D — Challenge handling
 

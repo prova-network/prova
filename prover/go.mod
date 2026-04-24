@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/ethereum/go-ethereum v1.17.2
 	github.com/filecoin-project/go-fil-commcid v0.3.1
+	github.com/filecoin-project/go-fil-commp-hashhash v0.2.0
 	github.com/ipfs/go-cid v0.6.1
 	github.com/multiformats/go-multicodec v0.10.0
 	github.com/multiformats/go-multihash v0.2.3
