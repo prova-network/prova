@@ -55,17 +55,17 @@ footer a:hover{color:var(--brass)}
     <a href="index.html" class="logo">PROVA</a>
     <div class="links">
       <a href="index.html">Home</a>
-      <a href="index.html#token">Token</a>
-      <a href="https://github.com/prova-network/prova" target="_blank">GitHub</a>
+      <a href="index.html#thesis">Thesis</a>
+      <a href="index.html#status">Status</a>
     </div>
   </div>
 </nav>
 
 <div class="paper">
   <div class="meta">
-    <h1>PROVA: <span>WHITEPAPER</span></h1>
-    <p class="subtitle">A Verifiable Storage, Compute, and Networking Protocol</p>
-    <p class="info">Version 0.2 — April 2026 — Prova Team</p>
+    <h1>PROVA: <span>NOTES</span></h1>
+    <p class="subtitle">On verifiable, retrievable storage</p>
+    <p class="info">Working draft — 2026</p>
   </div>
 
   <div id="content"></div>
@@ -73,8 +73,8 @@ footer a:hover{color:var(--brass)}
 
 <footer>
   <div class="inner">
-    <div class="copy">© 2026 Prova Team.</div>
-    <a href="index.html">← Back to Home</a>
+    <div class="copy">© 2026 Prova. Research draft.</div>
+    <a href="index.html">← Back</a>
   </div>
 </footer>
 
@@ -90,7 +90,7 @@ fetch('whitepaper-source.md')
     document.getElementById('content').innerHTML = marked.parse(trimmed);
   })
   .catch(() => {
-    document.getElementById('content').innerHTML = '<p>Whitepaper loading failed. <a href="https://github.com/prova-network/prova/blob/main/whitepaper.md">Read on GitHub</a>.</p>';
+    document.getElementById('content').innerHTML = '<p>Failed to load. Please try again later.</p>';
   });
 </script>
 </body>

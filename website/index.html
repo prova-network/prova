@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prova Network</title>
-<meta name="description" content="Verifiable storage, AI compute, and networking. One protocol.">
+<meta name="description" content="Prova is a research project exploring verifiable, retrievable storage.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><circle cx='20' cy='20' r='18' fill='none' stroke='%23C9A84C' stroke-width='2'/><polygon points='14,10 30,20 14,30' fill='none' stroke='%23C9A84C' stroke-width='2' stroke-linejoin='round'/><circle cx='20' cy='20' r='3' fill='%23C9A84C'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -188,12 +188,10 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
     <div class="links">
-      <a href="#tech">Technology</a>
-      <a href="#token">Token</a>
-      <a href="#roadmap">Roadmap</a>
+      <a href="#thesis">Thesis</a>
+      <a href="#approach">Approach</a>
+      <a href="#status">Status</a>
       <a href="whitepaper.html">Paper</a>
-      <a href="https://github.com/prova-network/prova" target="_blank">GitHub</a>
-      <button class="btn-wallet" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
     </div>
   </div>
 </nav>
@@ -201,105 +199,84 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
 <section class="hero">
   <div class="hero-bg" id="heroBg"></div>
   <div class="hero-content">
-    <div class="hero-badge">Layer 1 Protocol</div>
-    <h1>Prove <span class="accent">everything.</span></h1>
-    <p class="sub">Verifiable storage, AI compute, and networking in one protocol. Every byte proven. Every inference verifiable.</p>
-    <div class="metrics">
-      <div class="metric"><div class="num">63K+</div><div class="lab">Lines of Rust</div></div>
-      <div class="metric"><div class="num">1,690</div><div class="lab">Tests passing</div></div>
-      <div class="metric"><div class="num">23</div><div class="lab">Protocol specs</div></div>
-      <div class="metric"><div class="num">0</div><div class="lab">Trust assumptions</div></div>
-    </div>
+    <div class="hero-badge">Research · In development</div>
+    <h1>Prove the <span class="accent">bytes</span> are there.</h1>
+    <p class="sub">Prova is a research project exploring verifiable, retrievable storage backed by cryptographic proofs of data possession.</p>
     <div class="ctas">
-      <a href="#token" class="btn btn-p">Token Sale</a>
-      <a href="https://github.com/prova-network/prova" class="btn btn-s" target="_blank">Read the Code →</a>
+      <a href="#thesis" class="btn btn-p">Read the thesis</a>
+      <a href="whitepaper.html" class="btn btn-s">Paper →</a>
     </div>
   </div>
 </section>
 
 <div class="proof-strip reveal">
   <div class="wrap">
-    <div class="proof-item"><a href="https://github.com/prova-network/prova" target="_blank"><div class="proof-num">108</div><div class="proof-label">Rust source files</div></a></div>
-    <div class="proof-item"><div class="proof-num">4</div><div class="proof-label">Crates</div></div>
-    <div class="proof-item"><div class="proof-num">23</div><div class="proof-label">Protocol specs</div></div>
-    <div class="proof-item"><div class="proof-num">100%</div><div class="proof-label">Open source</div></div>
+    <div class="proof-item"><div class="proof-num">PDP</div><div class="proof-label">Provable Data Possession</div></div>
+    <div class="proof-item"><div class="proof-num">CommP</div><div class="proof-label">Content commitments</div></div>
+    <div class="proof-item"><div class="proof-num">Math</div><div class="proof-label">Trust foundation</div></div>
   </div>
 </div>
 
-<section class="section" id="tech">
+<section class="section" id="thesis">
   <div class="reveal">
-    <div class="label">Technology</div>
-    <h2>Three problems.<br>One protocol.</h2>
-    <p class="desc">Storage networks can't verify compute. Compute networks can't prove storage. Neither can route traffic. Prova solves all three.</p>
+    <div class="label">Thesis</div>
+    <h2>Storage should be <br>verifiable by default.</h2>
+    <p class="desc">Centralized storage requires trust. Decentralized storage without proofs requires hope. Neither is enough for the data that actually matters: archives, research, AI corpora, long-lived records. Prova explores a third option, where possession is continuously provable.</p>
   </div>
   <div class="grid-2">
     <div class="card reveal">
-      <div class="icon purple">⚡</div>
-      <h3>Quantized Bisection Proofs</h3>
-      <p>INT8 quantized inference is deterministic. When nodes disagree, binary search finds the diverging layer in O(log L) steps. Under 2% verification cost.</p>
+      <div class="icon gold">□</div>
+      <h3>Provable possession</h3>
+      <p>Providers respond to random challenges with short Merkle inclusion proofs. Cryptographic, lightweight, and continuous over the lifetime of the stored data.</p>
     </div>
     <div class="card reveal">
-      <div class="icon gold">🛡️</div>
-      <h3>Three-Tier Storage Proofs</h3>
-      <p>PDP for fast onboarding (minutes), TEE for instant storage (seconds), optional PoRep for cold archival. Math is the foundation, hardware the optimization.</p>
+      <div class="icon purple">△</div>
+      <h3>Content-addressed</h3>
+      <p>Every object is identified by its own binary Merkle commitment. Content and identity are one and the same, computable by anyone from the bytes.</p>
     </div>
     <div class="card reveal">
-      <div class="icon green">🌐</div>
-      <h3>Chain-Managed Networking</h3>
-      <p>Real IPv6 addresses for every VM. HTTP/HTTPS over IPv4 via SNI. Bandwidth metering on-chain. Your server is as reachable as one on AWS.</p>
+      <div class="icon green">○</div>
+      <h3>Neutral primitives</h3>
+      <p>No privileged data, no preferred content types, no gatekeepers. One byte is one byte, and one proof means one thing.</p>
     </div>
     <div class="card reveal">
-      <div class="icon blue">⚖️</div>
-      <h3>1 Byte = 1 Byte</h3>
-      <p>No multipliers, no privileged data. Every byte earns equally. Three reward streams split by demand across storage, compute, and network.</p>
+      <div class="icon blue">▢</div>
+      <h3>Defense in depth</h3>
+      <p>Math first. Hardware attestation and replication are optimizations, never the only line of defense. If the primitive fails gracefully, the system fails gracefully.</p>
     </div>
   </div>
 </section>
 
 <div class="section-line"></div>
 
-<section class="section" id="token">
+<section class="section" id="approach">
   <div class="reveal">
-    <div class="label">Token</div>
-    <h2>PROVA</h2>
-    <p class="desc">Stake, pay, challenge, govern, and burn. A working utility token with protocol-level demand.</p>
+    <div class="label">Approach</div>
+    <h2>Quiet work,<br>careful primitives.</h2>
+    <p class="desc">We are building in private while we refine the design. No fundraise is active. No token is offered. When the work is ready to share, it will be shared openly.</p>
   </div>
 
-  <div class="alloc-bar reveal">
-    <div style="width:55%;background:var(--brass)" title="Mining 55%"></div>
-    <div style="width:15%;background:var(--text3)" title="Team 15%"></div>
-    <div style="width:10%;background:var(--purple)" title="Public 10%"></div>
-    <div style="width:10%;background:#2d7a4f" title="Ecosystem 10%"></div>
-    <div style="width:5%;background:#5b8fb9" title="Community 5%"></div>
-    <div style="width:3%;background:var(--text2)" title="Seed 3%"></div>
-    <div style="width:2%;background:var(--brass-light)" title="Liquidity 2%"></div>
+  <div class="grid-2 reveal" style="margin-top:16px">
+    <div class="card">
+      <h3>Open source, open primitives</h3>
+      <p>The cryptographic components are derived from the permissive storage-proofs work published over the past decade by several research communities. We stand on that work, credit it, and contribute back where we can.</p>
+    </div>
+    <div class="card">
+      <h3>No fundraise, no token sale</h3>
+      <p>There is no active ICO, pre-sale, whitelist, or SAFT. If you were directed here expecting one, you were misinformed. Ignore anyone claiming to represent Prova in a fundraising capacity.</p>
+    </div>
+    <div class="card">
+      <h3>Small, deliberate team</h3>
+      <p>Two people, working on this between other commitments. Updates come when the work warrants them, not on a schedule.</p>
+    </div>
+    <div class="card">
+      <h3>Correspondence</h3>
+      <p>For research, collaboration, or serious questions: <code>hello@prova.network</code>. Please do not email about investment.</p>
+    </div>
   </div>
 
-  <div class="token-layout reveal">
-    <table class="spec">
-      <tr><th>Allocation</th><th>%</th></tr>
-      <tr><td>Network mining</td><td>55%</td></tr>
-      <tr><td>Team & founders</td><td>15%</td></tr>
-      <tr><td>Public sale (ICO)</td><td>10%</td></tr>
-      <tr><td>Ecosystem grants</td><td>10%</td></tr>
-      <tr><td>Community & airdrop</td><td>5%</td></tr>
-      <tr><td>Seed round</td><td>3%</td></tr>
-      <tr><td>Liquidity</td><td>2%</td></tr>
-    </table>
-    <table class="spec">
-      <tr><th>Parameter</th><th>Value</th></tr>
-      <tr><td>Total supply</td><td>1,000,000,000</td></tr>
-      <tr><td>Base price</td><td>$0.05</td></tr>
-      <tr><td>FDV at launch</td><td>$50,000,000</td></tr>
-      <tr><td>Team cliff</td><td>18 months</td></tr>
-      <tr><td>TGE unlock</td><td>10%</td></tr>
-      <tr><td>Fee burn</td><td>50%</td></tr>
-      <tr><td>Halvings</td><td>5 (~20 years)</td></tr>
-    </table>
-  </div>
-
-  <!-- SAFT Tiers -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px" class="reveal" id="saftTiers">
+  <!-- hidden: old SAFT tiers removed -->
+  <div style="display:none" class="reveal" id="saftTiers">
     <div class="card" style="position:relative;overflow:visible">
       <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">Tier 1</div>
       <div style="font-size:28px;font-weight:800;color:var(--text);margin-bottom:4px">$0.033</div>
@@ -339,74 +316,41 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
     </div>
   </div>
 
-  <!-- Buy panel -->
-  <div class="buy-panel reveal" id="buyPanel">
-    <h4>Acquire PROVA</h4>
-    <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap" id="tierOpts">
-      <div class="pay-opt" data-tier="1" onclick="selTier(1)">Tier 1 · $0.033</div>
-      <div class="pay-opt on" data-tier="2" onclick="selTier(2)">Tier 2 · $0.040</div>
-      <div class="pay-opt" data-tier="3" onclick="selTier(3)">Tier 3 · $0.050</div>
-    </div>
-    <div class="pay-opts">
-      <div class="pay-opt on" data-t="ETH" onclick="selPay('ETH')">ETH</div>
-      <div class="pay-opt" data-t="USDC" onclick="selPay('USDC')">USDC</div>
-      <div class="pay-opt" data-t="USDT" onclick="selPay('USDT')">USDT</div>
-      <div class="pay-opt" data-t="DAI" onclick="selPay('DAI')">DAI</div>
-      <div class="pay-opt" data-t="WBTC" onclick="selPay('WBTC')">WBTC</div>
-    </div>
-    <div class="input-row">
-      <input type="number" id="payAmt" placeholder="0.0" oninput="calcProva()">
-      <div class="tag" id="paySuf">ETH</div>
-    </div>
-    <div class="output">You receive <b id="provaOut">0</b> PROVA</div>
-    <button class="btn-buy" id="buyBtn" onclick="buyTokens()" disabled>Connect Wallet First</button>
-    <div class="status" id="wStatus"></div>
-  </div>
 </section>
 
 <div class="section-line"></div>
 
-<section class="section" id="roadmap">
+<section class="section" id="status">
   <div class="reveal">
-    <div class="label">Roadmap</div>
-    <h2>Code first.<br>Promises second.</h2>
+    <div class="label">Status</div>
+    <h2>Where we are.</h2>
+    <p class="desc">This section updates when something is worth updating, not on a schedule.</p>
   </div>
   <div class="timeline">
     <div class="phase done reveal"><div class="dot"></div>
-      <div class="time">Q1 2026 — Complete</div>
-      <h3>Foundation</h3>
-      <p>63K lines of Rust across 4 crates. 1,690 tests. 23 protocol specs. QBP designed and validated. PDP integration. GPU determinism confirmed on RTX 5080 and RTX 6000.</p>
+      <div class="time">Earlier research</div>
+      <h3>Design exploration</h3>
+      <p>Several rounds of architecture sketches, threat-model work, and primitive selection. Most of it discarded, which is how it's supposed to go.</p>
     </div>
     <div class="phase done reveal"><div class="dot"></div>
-      <div class="time">Q2 2026 — Active</div>
-      <h3>Token & Community</h3>
-      <p>ERC-20 deployment. Public ICO with multi-token crowdsale. Website and whitepaper v0.2 with networking layer.</p>
+      <div class="time">Current</div>
+      <h3>Narrowing scope</h3>
+      <p>Consolidating around the smallest useful design: verifiable, retrievable storage on commodity infrastructure, priced and settled in existing money. Fewer moving parts. More confidence in each one.</p>
     </div>
     <div class="phase reveal"><div class="dot"></div>
-      <div class="time">Q3 2026</div>
-      <h3>Public Testnet</h3>
-      <p>IPv6 networking layer. Real TCP/QUIC connectivity. Live GPU inference. Developer SDK. Testnet operator program.</p>
-    </div>
-    <div class="phase reveal"><div class="dot"></div>
-      <div class="time">Q4 2026</div>
-      <h3>Security & Hardening</h3>
-      <p>External audit. Formal verification of bisection protocol. TEE enclave prototype. Bug bounty program.</p>
-    </div>
-    <div class="phase reveal"><div class="dot"></div>
-      <div class="time">Q1 2027</div>
-      <h3>Mainnet</h3>
-      <p>Genesis block. All three layers active. 1:1 swap from ERC-20 to native PROVA. Exchange listings. Ecosystem grants.</p>
+      <div class="time">Next</div>
+      <h3>Reference implementation</h3>
+      <p>When it's ready to look at, it will be available to look at. Not before.</p>
     </div>
   </div>
 </section>
 
 <section class="final-cta">
   <div class="reveal">
-    <h2>63,000 lines of working code.<br>Not a pitch deck.</h2>
-    <p>The proofs work. The contracts are auditable. The code is open.</p>
+    <h2>Research, not a product.<br>Not yet.</h2>
+    <p>Check back when the work is ready. There is nothing to buy, hold, or sign up for in the meantime.</p>
     <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
-      <a href="#token" class="btn btn-p">Join the Sale</a>
-      <a href="https://github.com/prova-network/prova" class="btn btn-s" target="_blank">Verify Yourself →</a>
+      <a href="whitepaper.html" class="btn btn-p">Read the paper</a>
     </div>
   </div>
 </section>
@@ -419,27 +363,26 @@ footer .footer-bottom span{font-size:12px;color:var(--text3)}
           <svg class="prova-symbol" width="22" height="22" style="color:var(--brass)"><use href="#prova-mark"/></svg>
           <span style="font-family:var(--mono);font-weight:800;font-size:13px;color:var(--brass);letter-spacing:4px">PROVA</span>
         </a>
-        <span style="font-size:12px;color:var(--text3);display:block;margin-top:8px">Verifiable storage, compute, and networking.</span>
+        <span style="font-size:12px;color:var(--text3);display:block;margin-top:8px">A research project on verifiable storage.</span>
       </div>
       <div class="footer-col">
-        <h5>Protocol</h5>
-        <a href="#tech">Technology</a>
-        <a href="#token">Token</a>
-        <a href="#roadmap">Roadmap</a>
+        <h5>Sections</h5>
+        <a href="#thesis">Thesis</a>
+        <a href="#approach">Approach</a>
+        <a href="#status">Status</a>
       </div>
       <div class="footer-col">
-        <h5>Resources</h5>
-        <a href="whitepaper.html">Whitepaper v0.2</a>
-        <a href="https://github.com/prova-network/prova" target="_blank">GitHub</a>
+        <h5>Read</h5>
+        <a href="whitepaper.html">Paper</a>
       </div>
       <div class="footer-col">
-        <h5>Community</h5>
-        <a href="https://x.com/ProvaNetwork" target="_blank">X / Twitter</a>
+        <h5>Contact</h5>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:1px">hello@prova.network</span>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>&copy; 2026 Prova Network</span>
-      <span>Built with Rust. Verified with math.</span>
+      <span>&copy; 2026 Prova</span>
+      <span>Research in progress.</span>
     </div>
   </div>
 </footer>
@@ -573,43 +516,5 @@ document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
 document.querySelectorAll('.links a').forEach(a=>{a.addEventListener('click',()=>{document.querySelector('.links').classList.remove('open')})});
 </script>
 
-<!-- Wallet + Buy -->
-<script>
-let wallet=null,payToken='ETH',selectedTier=2;
-const tierPrices={1:0.033,2:0.040,3:0.050};
-const ethPrice=3500; // approximate ETH/USD
-function getRates(){const p=tierPrices[selectedTier];return{ETH:ethPrice/p,USDC:1/p,USDT:1/p,DAI:1/p,WBTC:97000/p}}
-function selTier(t){selectedTier=t;document.querySelectorAll('[data-tier]').forEach(e=>e.classList.remove('on'));document.querySelector(`[data-tier="${t}"]`).classList.add('on');calcProva()}
-const CONTRACTS={sale:'0x0000000000000000000000000000000000000000',USDC:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',USDT:'0xdAC17F958D2ee523a2206206994597C13D831ec7',DAI:'0x6B175474E89094C44Da98b954EedeAC495271d0F',WBTC:'0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'};
-
-async function connectWallet(){
-  if(!window.ethereum){window.open('https://metamask.io/download/','_blank');return}
-  try{
-    const a=await window.ethereum.request({method:'eth_requestAccounts'});
-    wallet=a[0];const b=document.getElementById('connectBtn');
-    b.textContent=wallet.slice(0,6)+'...'+wallet.slice(-4);b.classList.add('connected');
-    document.getElementById('buyBtn').disabled=false;document.getElementById('buyBtn').textContent='BUY PROVA';
-    document.getElementById('wStatus').textContent='Connected';
-    window.ethereum.on('accountsChanged',a=>{if(!a.length){wallet=null;b.textContent='Connect Wallet';b.classList.remove('connected');document.getElementById('buyBtn').disabled=true;document.getElementById('buyBtn').textContent='Connect Wallet First'}else{wallet=a[0];b.textContent=wallet.slice(0,6)+'...'+wallet.slice(-4)}});
-  }catch(e){document.getElementById('wStatus').textContent='Failed: '+e.message}
-}
-function selPay(t){payToken=t;document.querySelectorAll('.pay-opt').forEach(e=>e.classList.remove('on'));document.querySelector(`[data-t="${t}"]`).classList.add('on');document.getElementById('paySuf').textContent=t;calcProva()}
-function calcProva(){const v=parseFloat(document.getElementById('payAmt').value)||0;const r=getRates();document.getElementById('provaOut').textContent=(v*(r[payToken]||0)).toLocaleString('en-US',{maximumFractionDigits:0})}
-async function buyTokens(){
-  if(!wallet){connectWallet();return}
-  const amt=parseFloat(document.getElementById('payAmt').value);
-  if(!amt||amt<=0){alert('Enter an amount');return}
-  const btn=document.getElementById('buyBtn'),st=document.getElementById('wStatus');
-  try{btn.disabled=true;btn.textContent='PROCESSING...';
-    if(payToken==='ETH'){const tx=await window.ethereum.request({method:'eth_sendTransaction',params:[{from:wallet,to:CONTRACTS.sale,value:'0x'+BigInt(Math.floor(amt*1e18)).toString(16),gas:'0x30000'}]});st.textContent='TX: '+tx.slice(0,20)+'...';}
-    else{const addr=CONTRACTS[payToken];if(!addr){st.textContent='Not supported';return}
-    const dec=payToken==='WBTC'?8:(payToken==='USDC'||payToken==='USDT'?6:18);const raw=BigInt(Math.floor(amt*(10**dec)));
-    st.textContent='Approving...';await window.ethereum.request({method:'eth_sendTransaction',params:[{from:wallet,to:addr,data:'0x095ea7b3'+CONTRACTS.sale.slice(2).padStart(64,'0')+raw.toString(16).padStart(64,'0'),gas:'0x20000'}]});
-    st.textContent='Buying...';const tx=await window.ethereum.request({method:'eth_sendTransaction',params:[{from:wallet,to:CONTRACTS.sale,data:'0xd96a094a'+raw.toString(16).padStart(64,'0'),gas:'0x50000'}]});st.textContent='Done! TX: '+tx.slice(0,16)+'...';}
-    btn.textContent='BUY PROVA';btn.disabled=false;
-  }catch(e){st.textContent='Failed: '+(e.message||'Rejected');btn.textContent='BUY PROVA';btn.disabled=false}
-}
-if(window.ethereum)window.ethereum.request({method:'eth_accounts'}).then(a=>{if(a.length){wallet=a[0];const b=document.getElementById('connectBtn');b.textContent=wallet.slice(0,6)+'...'+wallet.slice(-4);b.classList.add('connected');document.getElementById('buyBtn').disabled=false;document.getElementById('buyBtn').textContent='BUY PROVA'}});
-</script>
 </body>
 </html>

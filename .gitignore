@@ -21,3 +21,6 @@ sdk/typescript/**/.wireit/
 sdk/typescript/**/coverage/
 *.tsbuildinfo
 .pnpm-store/
+
+# Website preview screenshots (local only)
+.preview/
