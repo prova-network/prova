@@ -19,6 +19,26 @@ import (
 	"github.com/prova-network/prova/prover/pkg/store"
 )
 
+// MetricsSink receives optional telemetry events from the engine. Kept as
+// an interface (not a concrete Prometheus collector) so the engine stays
+// dependency-free from the metrics package.
+type MetricsSink interface {
+	DealIngested()
+	DealFailed()
+	DealCompleted()
+	BytesStored(n uint64)
+}
+
+// noopMetrics is the default sink when none is provided. All methods are
+// no-ops; callers can pass the real Prometheus-backed implementation or
+// leave it nil to get this behavior.
+type noopMetrics struct{}
+
+func (noopMetrics) DealIngested()         {}
+func (noopMetrics) DealFailed()           {}
+func (noopMetrics) DealCompleted()        {}
+func (noopMetrics) BytesStored(_ uint64)  {}
+
 // Engine drives deals through their lifecycle. One instance per prover.
 //
 // The engine is tick-driven: external code calls Tick() periodically (from
@@ -31,6 +51,7 @@ type Engine struct {
 	pieces     store.Store
 	fetcher    *Fetcher
 	accepter   Accepter
+	metrics    MetricsSink
 	logger     *slog.Logger
 }
 
@@ -49,6 +70,7 @@ type EngineOptions struct {
 	Pieces     store.Store
 	Fetcher    *Fetcher
 	Accepter   Accepter
+	Metrics    MetricsSink
 	Logger     *slog.Logger
 }
 
@@ -69,12 +91,16 @@ func NewEngine(opts EngineOptions) (*Engine, error) {
 	if opts.Logger == nil {
 		opts.Logger = slog.Default()
 	}
+	if opts.Metrics == nil {
+		opts.Metrics = noopMetrics{}
+	}
 	return &Engine{
 		ourAddress: opts.OurAddress,
 		deals:      opts.Deals,
 		pieces:     opts.Pieces,
 		fetcher:    opts.Fetcher,
 		accepter:   opts.Accepter,
+		metrics:    opts.Metrics,
 		logger:     opts.Logger,
 	}, nil
 }
@@ -109,6 +135,7 @@ func (e *Engine) Ingest(d *Deal) error {
 	if err := e.deals.Upsert(d); err != nil {
 		return fmt.Errorf("upsert: %w", err)
 	}
+	e.metrics.DealIngested()
 	e.logger.Info("deal ingested",
 		"dealID", uint64(d.ID),
 		"client", d.Client.Hex(),
@@ -173,6 +200,7 @@ func (e *Engine) advance(ctx context.Context, d *Deal) {
 		d.StatusMsg = err.Error()
 		d.UpdatedAt = time.Now().UTC()
 		_ = e.deals.Upsert(d)
+		e.metrics.DealFailed()
 	}
 }
 
@@ -263,6 +291,7 @@ func (e *Engine) doDownload(ctx context.Context, d *Deal) error {
 		if written != uint64(n) {
 			return fmt.Errorf("piece store wrote %d bytes, expected %d", written, n)
 		}
+		e.metrics.BytesStored(written)
 	}
 
 	// Download + verify succeeded; move to Verifying so the next tick
@@ -355,7 +384,11 @@ func (e *Engine) MarkCompleted(id DealID) error {
 	d.Status = StatusCompleted
 	d.StatusMsg = "deal completed"
 	d.UpdatedAt = time.Now().UTC()
-	return e.deals.Upsert(d)
+	if err := e.deals.Upsert(d); err != nil {
+		return err
+	}
+	e.metrics.DealCompleted()
+	return nil
 }
 
 // MarkSlashed transitions a deal to Slashed. Called on DealSlashed.

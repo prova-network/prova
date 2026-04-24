@@ -32,6 +32,7 @@ import (
 	"github.com/prova-network/prova/prover/pkg/deal"
 	"github.com/prova-network/prova/prover/pkg/ethclient"
 	"github.com/prova-network/prova/prover/pkg/httpserver"
+	"github.com/prova-network/prova/prover/pkg/metrics"
 )
 
 // Default tick/poll/status/shutdown timings used when the corresponding
@@ -45,12 +46,14 @@ const (
 
 // Daemon supervises the prover's background loops.
 type Daemon struct {
-	cfg    Config
-	engine *deal.Engine
-	poller *deal.EventPoller
-	eth    *ethclient.Client
-	http   *httpserver.Server // optional; nil if HTTP serving is disabled
-	logger *slog.Logger
+	cfg     Config
+	engine  *deal.Engine
+	poller  *deal.EventPoller
+	eth     *ethclient.Client
+	http    *httpserver.Server // optional; nil if HTTP serving is disabled
+	metrics *metrics.Collector // optional; nil disables metrics collection
+	mSrv    *metrics.Server    // optional metrics HTTP server
+	logger  *slog.Logger
 
 	// Runtime state
 	startedAt time.Time
@@ -80,12 +83,14 @@ type Config struct {
 
 // Options packages the constructor dependencies.
 type Options struct {
-	Config Config
-	Engine *deal.Engine
-	Poller *deal.EventPoller
-	Eth    *ethclient.Client
-	HTTP   *httpserver.Server // optional; nil disables HTTP serving
-	Logger *slog.Logger
+	Config     Config
+	Engine     *deal.Engine
+	Poller     *deal.EventPoller
+	Eth        *ethclient.Client
+	HTTP       *httpserver.Server // optional; nil disables HTTP serving
+	Metrics    *metrics.Collector // optional; nil disables metrics
+	MetricsSrv *metrics.Server    // optional metrics server endpoint
+	Logger     *slog.Logger
 }
 
 // New builds a Daemon.
@@ -115,12 +120,14 @@ func New(opts Options) (*Daemon, error) {
 		opts.Logger = slog.Default()
 	}
 	return &Daemon{
-		cfg:    opts.Config,
-		engine: opts.Engine,
-		poller: opts.Poller,
-		eth:    opts.Eth,
-		http:   opts.HTTP,
-		logger: opts.Logger,
+		cfg:     opts.Config,
+		engine:  opts.Engine,
+		poller:  opts.Poller,
+		eth:     opts.Eth,
+		http:    opts.HTTP,
+		metrics: opts.Metrics,
+		mSrv:    opts.MetricsSrv,
+		logger:  opts.Logger,
 	}, nil
 }
 
@@ -169,6 +176,20 @@ func (d *Daemon) Run(ctx context.Context) error {
 			if err := d.http.ListenAndServe(ctx); err != nil {
 				select {
 				case errCh <- fmt.Errorf("http server: %w", err):
+				default:
+				}
+			}
+		}()
+	}
+
+	// Metrics server (optional)
+	if d.mSrv != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := d.mSrv.ListenAndServe(ctx); err != nil {
+				select {
+				case errCh <- fmt.Errorf("metrics server: %w", err):
 				default:
 				}
 			}
@@ -247,12 +268,24 @@ func (d *Daemon) runPollLoop(ctx context.Context, errCh chan<- error) {
 }
 
 func (d *Daemon) pollOnce(ctx context.Context) error {
+	if d.metrics != nil {
+		d.metrics.ChainPollsTotal.Inc()
+	}
 	current, err := d.eth.BlockNumber(ctx)
 	if err != nil {
+		if d.metrics != nil {
+			d.metrics.ChainPollFailures.Inc()
+		}
 		return fmt.Errorf("block number: %w", err)
+	}
+	if d.metrics != nil {
+		d.metrics.ChainHeadBlockGauge.Set(float64(current))
 	}
 	n, err := d.poller.PollOnce(ctx, current)
 	if err != nil {
+		if d.metrics != nil {
+			d.metrics.ChainPollFailures.Inc()
+		}
 		return fmt.Errorf("poll: %w", err)
 	}
 	if n > 0 {
@@ -325,4 +358,8 @@ func (d *Daemon) logStatus(ctx context.Context) {
 		"deals_completed", counts[deal.StatusCompleted],
 		"deals_failed", counts[deal.StatusFailed],
 	)
+
+	if d.metrics != nil {
+		d.metrics.DealsActiveGauge.Set(float64(counts[deal.StatusActive]))
+	}
 }

@@ -23,12 +23,13 @@ import (
 // resume cleanly after a restart by tracking the last-seen block in the
 // deal store.
 type EventPoller struct {
-	engine       *Engine
-	marketplace  *sm.StorageMarketplace
-	ourAddress   common.Address
-	pollEvery    time.Duration
+	engine        *Engine
+	marketplace   *sm.StorageMarketplace
+	ourAddress    common.Address
+	pollEvery     time.Duration
 	blockLookback uint64
-	logger       *slog.Logger
+	resolver      *SourceURLResolver
+	logger        *slog.Logger
 }
 
 // EventPollerOptions configures a poller.
@@ -43,6 +44,11 @@ type EventPollerOptions struct {
 	// override the default of 6; pass &zero to disable lookback entirely
 	// (useful for local anvil tests where every block is final).
 	BlockLookback *uint64
+
+	// SourceURLResolver derives piece URLs from (client, commP) when the
+	// on-chain event itself carries no URL. Nil disables derivation; deals
+	// without an out-of-band SourceURL will fail at the download step.
+	SourceURLResolver *SourceURLResolver
 }
 
 // NewEventPoller constructs a poller.
@@ -69,6 +75,7 @@ func NewEventPoller(opts EventPollerOptions) (*EventPoller, error) {
 		ourAddress:    opts.OurAddress,
 		pollEvery:     opts.PollEvery,
 		blockLookback: lookback,
+		resolver:      opts.SourceURLResolver,
 		logger:        opts.Logger,
 	}, nil
 }
@@ -124,10 +131,20 @@ func (p *EventPoller) PollOnce(ctx context.Context, currentBlock uint64) (int, e
 		}
 		copy(d.CommPHash[:], evt.CommpHash[:])
 
-		// SourceURL is not part of the v1 DealProposed event. Clients
-		// must advertise it out-of-band or in a future extraData field.
-		// The engine will mark the deal Failed on the next Tick if
-		// SourceURL is empty.
+		// Derive SourceURL from configured template if available. If the
+		// resolver is nil or returns empty, the engine will mark the
+		// deal Failed on the next Tick — deployments without the template
+		// must advertise piece URLs out-of-band.
+		if p.resolver != nil {
+			url, err := p.resolver.Resolve(d.Client, d.CommPHash)
+			if err != nil {
+				p.logger.Warn("source url resolution failed",
+					"dealID", uint64(d.ID),
+					"err", err,
+				)
+			}
+			d.SourceURL = url
+		}
 
 		if err := p.engine.Ingest(d); err != nil {
 			p.logger.Error("ingest deal failed",

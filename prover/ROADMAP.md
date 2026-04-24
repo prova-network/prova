@@ -87,13 +87,15 @@ Tracking work on the Go prover daemon. Each task links to a matching issue or PR
     (expected — v1 event has no SourceURL; clients supply out-of-band)
   * SIGTERM triggers clean shutdown with uptime logged
 
-### Production polish items (still pending; moved to Phase F.2)
+### Production polish items moved to Phase F.2 ✅
 
-- [ ] Prometheus metrics (proofs submitted/failed, bytes stored, deals active)
-- [ ] Health endpoint for orchestrators
-- [ ] Systemd unit file + Docker image
-- [ ] Configurable `BlockLookback` in TOML (currently hardcoded default 6)
-- [ ] SourceURL transport: extraData in DealProposed, or off-chain hint
+- [x] Prometheus metrics (`pkg/metrics/`): 15 prova_* metrics + Go runtime + process collectors. Scraped via `/metrics` on a separate localhost HTTP server. Adapter interfaces (`DealSink`, `HTTPSink`) keep pkg/deal and pkg/httpserver free of Prometheus imports.
+- [x] Health endpoints: `/health` on retrieval server, `/healthz` on metrics server.
+- [x] Systemd unit (`deploy/provad.service`): hardened defaults (NoNewPrivileges, ProtectSystem=strict, MemoryDenyWriteExecute, etc.), bounded Restart, SIGTERM + TimeoutStopSec=60s for graceful drain.
+- [x] Dockerfile: multi-stage build, static CGO-disabled binary, distroless/nonroot runtime, cacert baked in.
+- [x] Configurable `block_lookback` in TOML (`*uint64` so 0 is a valid value; fixes the anvil test footgun).
+- [x] SourceURL transport: `[source_url] template` in TOML + `pkg/deal/sourceurl.go` resolver substitutes {client}/{clientRaw}/{commpHex}/{commpCid}. EventPoller auto-resolves on ingest.
+- [x] Live-validated metrics scrape on anvil: all 12 prova_* counters/gauges exposed, `prova_chain_head_block` updates live, `/healthz` returns 200, graceful shutdown of all 4 daemon goroutines (poll/tick/status/HTTP) + 2 HTTP servers on SIGTERM.
 
 ## Phase G — Transplant audit
 

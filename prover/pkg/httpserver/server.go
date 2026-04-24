@@ -34,14 +34,30 @@ import (
 	"github.com/prova-network/prova/prover/pkg/store"
 )
 
+// HTTPMetrics is the subset of the metrics.Collector used by the HTTP
+// server. Defined as an interface to avoid pulling pkg/metrics into
+// pkg/httpserver's import graph.
+type HTTPMetrics interface {
+	Request(method, path, status string)
+	Duration(path string, seconds float64)
+	BytesServed(n int)
+}
+
+type noopMetrics struct{}
+
+func (noopMetrics) Request(_, _, _ string)  {}
+func (noopMetrics) Duration(_ string, _ float64) {}
+func (noopMetrics) BytesServed(_ int)       {}
+
 // Server exposes piece retrieval over HTTP(S).
 type Server struct {
-	pieces   store.Store
-	address  string
+	pieces    store.Store
+	address   string
 	publicURL string
-	cert     string
-	key      string
-	logger   *slog.Logger
+	cert      string
+	key       string
+	metrics   HTTPMetrics
+	logger    *slog.Logger
 
 	httpSrv *http.Server
 }
@@ -67,6 +83,10 @@ type Options struct {
 	// Default: 5 minutes (large pieces take time to stream).
 	ReadTimeout time.Duration
 
+	// Metrics is optional; nil or a no-op implementation disables metric
+	// emission from HTTP handlers.
+	Metrics HTTPMetrics
+
 	// Logger is optional; defaults to slog.Default().
 	Logger *slog.Logger
 }
@@ -85,12 +105,16 @@ func New(opts Options) (*Server, error) {
 	if opts.Logger == nil {
 		opts.Logger = slog.Default()
 	}
+	if opts.Metrics == nil {
+		opts.Metrics = noopMetrics{}
+	}
 	return &Server{
 		pieces:    opts.Pieces,
 		address:   opts.ListenAddr,
 		publicURL: opts.PublicURL,
 		cert:      opts.CertPath,
 		key:       opts.KeyPath,
+		metrics:   opts.Metrics,
 		logger:    opts.Logger,
 	}, nil
 }
@@ -101,7 +125,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/.well-known/prova", s.handleWellKnown)
 	mux.HandleFunc("/piece/", s.handlePiece)
-	return logMiddleware(s.logger, mux)
+	return logMiddleware(s.logger, s.metrics, mux)
 }
 
 // ListenAndServe blocks until the context is cancelled or the server
@@ -222,21 +246,39 @@ func (s *Server) handlePiece(w http.ResponseWriter, r *http.Request) {
 
 // ───── Middleware ─────────────────────────────────────────────────────
 
-// logMiddleware emits a structured access log per request.
-func logMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
+// logMiddleware emits a structured access log per request and records
+// metric observations.
+func logMiddleware(logger *slog.Logger, m HTTPMetrics, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rw := &statusCapturingWriter{ResponseWriter: w, status: 200}
 		next.ServeHTTP(rw, r)
+		dur := time.Since(start)
+		path := pathKind(r.URL.Path)
 		logger.Info("http",
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", rw.status,
 			"bytes", rw.bytes,
 			"remote", clientIP(r),
-			"duration", time.Since(start).Round(time.Millisecond).String(),
+			"duration", dur.Round(time.Millisecond).String(),
 		)
+		m.Request(r.Method, path, strconv.Itoa(rw.status))
+		m.Duration(path, dur.Seconds())
+		if rw.bytes > 0 {
+			m.BytesServed(rw.bytes)
+		}
 	})
+}
+
+// pathKind reduces arbitrary URL paths to a bounded set of labels so
+// metrics cardinality stays low. /piece/<cid> becomes /piece/; everything
+// else is returned verbatim.
+func pathKind(p string) string {
+	if strings.HasPrefix(p, "/piece/") {
+		return "/piece/"
+	}
+	return p
 }
 
 // statusCapturingWriter records the HTTP status and byte count so we can

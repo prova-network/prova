@@ -1,0 +1,55 @@
+[Unit]
+Description=Prova Network prover daemon
+Documentation=https://github.com/prova-network/prova
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=prova
+Group=prova
+
+# Expect provad installed at /usr/local/bin/provad. Adjust as needed.
+ExecStart=/usr/local/bin/provad --config /etc/prova/prover.toml start
+
+# Load passphrase/keystore secrets from a file the operator manages
+# out-of-band. Leave empty if using keystore_path + passphrase in TOML
+# directly (not recommended in production).
+#EnvironmentFile=-/etc/prova/env
+
+# Restart on failure; bounded so we don't hot-loop on config errors.
+Restart=on-failure
+RestartSec=10s
+StartLimitInterval=60s
+StartLimitBurst=5
+
+# Stop semantics. Daemon handles SIGTERM gracefully with bounded drain
+# (see ShutdownTimeout in pkg/daemon); give it a bit more than that.
+KillSignal=SIGTERM
+TimeoutStopSec=60s
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+
+# Grant write access only to state/data directories.
+ReadWritePaths=/var/lib/prova /var/log/prova
+
+# Conservative resource limits; tune per deployment.
+LimitNOFILE=65536
+TasksMax=8192
+
+[Install]
+WantedBy=multi-user.target

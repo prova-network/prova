@@ -10,7 +10,7 @@ keystore_path = "/etc/prova/keystore/my-prover.json"
 # passphrase can also be supplied via $PROVA_KEYSTORE_PASSPHRASE
 passphrase = ""
 
-# OR paste a hex private key (testnet only):
+# OR paste a hex private key (testnet only; dev only):
 # private_key_hex = "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 [chain]
@@ -19,9 +19,13 @@ rpc_url = "https://sepolia.base.org"
 chain_id = 84532
 poll_interval_seconds = 12
 
+# Block lookback for reorg safety. 6 is a safe default on mainnet/sepolia.
+# Set to 0 on local anvil or other single-proposer testnets where blocks
+# are final immediately.
+# block_lookback = 6
+
 [chain.contracts]
-# These addresses are populated after `forge script Deploy.s.sol` deploys
-# the Prova contract set. Leave as zero-addresses until that happens.
+# Populate after `forge script Deploy.s.sol` deploys the Prova contract set.
 prova_token         = "0x0000000000000000000000000000000000000000"
 proof_verifier      = "0x0000000000000000000000000000000000000000"
 prover_registry     = "0x0000000000000000000000000000000000000000"
@@ -46,5 +50,21 @@ cert_path = ""
 key_path  = ""
 
 [metrics]
+# When true, exposes Prometheus metrics at <listen_addr>/metrics plus a
+# /healthz endpoint. Bind to localhost or an internal VLAN; never expose
+# publicly (metrics can leak operational details).
 enabled     = true
 listen_addr = "127.0.0.1:9090"
+
+[source_url]
+# How the prover derives a piece URL from a DealProposed event (which has
+# no URL field in v1). Substitutions:
+#   {client}     lowercase hex client address with 0x prefix
+#   {clientRaw}  lowercase hex client address without 0x prefix
+#   {commpHex}   64-char hex of the 32-byte commP hash
+#   {commpCid}   full CID string (baga6ea4seaq...)
+#
+# Leave empty to disable derivation; clients must then publish URLs out-of-band.
+# template = "https://clients.example.com/{client}/{commpCid}"
+template       = ""
+allow_insecure = false

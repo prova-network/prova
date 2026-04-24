@@ -13,11 +13,12 @@ import (
 
 // Config is the top-level prover configuration.
 type Config struct {
-	Identity   IdentityConfig   `toml:"identity"`
-	Chain      ChainConfig      `toml:"chain"`
-	Storage    StorageConfig    `toml:"storage"`
-	HTTP       HTTPConfig       `toml:"http"`
-	Metrics    MetricsConfig    `toml:"metrics"`
+	Identity  IdentityConfig  `toml:"identity"`
+	Chain     ChainConfig     `toml:"chain"`
+	Storage   StorageConfig   `toml:"storage"`
+	HTTP      HTTPConfig      `toml:"http"`
+	Metrics   MetricsConfig   `toml:"metrics"`
+	SourceURL SourceURLPolicy `toml:"source_url"`
 }
 
 // IdentityConfig controls prover identity and signing.
@@ -46,6 +47,13 @@ type ChainConfig struct {
 
 	// PollInterval is how often to poll for new events (if not subscribing via websocket).
 	PollIntervalSeconds int `toml:"poll_interval_seconds"`
+
+	// BlockLookback is the reorg-safety margin applied when filtering events.
+	// Events from blocks > (currentBlock - BlockLookback) are not yet
+	// considered final. Use *uint64 so 0 is a valid value (useful on anvil
+	// and other single-proposer testnets where blocks are final immediately).
+	// nil = use default (6).
+	BlockLookback *uint64 `toml:"block_lookback"`
 }
 
 // Contracts holds deployed Prova contract addresses on the target chain.
@@ -92,6 +100,25 @@ type HTTPConfig struct {
 type MetricsConfig struct {
 	Enabled    bool   `toml:"enabled"`
 	ListenAddr string `toml:"listen_addr"`
+}
+
+// SourceURLPolicy controls how the prover discovers piece source URLs
+// given only the on-chain DealProposed event (which does not carry a URL
+// field in v1).
+type SourceURLPolicy struct {
+	// Template, when non-empty, derives a piece URL from the client address
+	// and CommP hash. Supported substitutions:
+	//   {client}     lowercase hex client address with 0x prefix
+	//   {clientRaw}  lowercase hex client address without 0x prefix
+	//   {commpHex}   64-char hex of the 32-byte commP hash
+	//   {commpCid}   the full CID string
+	//
+	// Example: "https://clients.example.com/{client}/{commpCid}"
+	Template string `toml:"template"`
+
+	// AllowInsecure permits http:// and private IP hosts in derived URLs.
+	// Never set this in production.
+	AllowInsecure bool `toml:"allow_insecure"`
 }
 
 // Load reads and validates a config file.

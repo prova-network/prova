@@ -27,6 +27,7 @@ import (
 	"github.com/prova-network/prova/prover/pkg/deal"
 	"github.com/prova-network/prova/prover/pkg/ethclient"
 	"github.com/prova-network/prova/prover/pkg/httpserver"
+	"github.com/prova-network/prova/prover/pkg/metrics"
 	"github.com/prova-network/prova/prover/pkg/store"
 	"github.com/prova-network/prova/prover/pkg/wallet"
 )
@@ -162,6 +163,10 @@ func cmdStart(ctx context.Context, configPath string) error {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
+	// Metrics collector (always built; enabling the HTTP metrics endpoint
+	// is opt-in via config).
+	mcol := metrics.New()
+
 	// Marketplace binding (needed for the event poller)
 	marketAddr, err := parseContractAddress(cfg.Chain.Contracts.StorageMarketplace, "storage_marketplace")
 	if err != nil {
@@ -188,6 +193,7 @@ func cmdStart(ctx context.Context, configPath string) error {
 		Deals:      deal.NewMemStore(),
 		Pieces:     pieces,
 		Accepter:   stubAccepter{logger: logger},
+		Metrics:    metrics.NewDealSink(mcol),
 		Logger:     logger,
 	})
 	if err != nil {
@@ -195,10 +201,12 @@ func cmdStart(ctx context.Context, configPath string) error {
 	}
 
 	poller, err := deal.NewEventPoller(deal.EventPollerOptions{
-		Engine:      engine,
-		Marketplace: market,
-		OurAddress:  w.Address,
-		Logger:      logger,
+		Engine:            engine,
+		Marketplace:       market,
+		OurAddress:        w.Address,
+		BlockLookback:     cfg.Chain.BlockLookback,
+		SourceURLResolver: deal.NewSourceURLResolver(cfg.SourceURL.Template),
+		Logger:            logger,
 	})
 	if err != nil {
 		return fmt.Errorf("poller: %w", err)
@@ -213,10 +221,24 @@ func cmdStart(ctx context.Context, configPath string) error {
 			PublicURL:  cfg.HTTP.PublicURL,
 			CertPath:   cfg.HTTP.CertPath,
 			KeyPath:    cfg.HTTP.KeyPath,
+			Metrics:    metrics.NewHTTPSink(mcol),
 			Logger:     logger,
 		})
 		if err != nil {
 			return fmt.Errorf("http server: %w", err)
+		}
+	}
+
+	// Optional metrics HTTP server.
+	var mSrv *metrics.Server
+	if cfg.Metrics.Enabled {
+		mSrv, err = metrics.NewServer(metrics.Options{
+			Collector:  mcol,
+			ListenAddr: cfg.Metrics.ListenAddr,
+			Logger:     logger,
+		})
+		if err != nil {
+			return fmt.Errorf("metrics server: %w", err)
 		}
 	}
 
@@ -225,11 +247,13 @@ func cmdStart(ctx context.Context, configPath string) error {
 			ProverAddress: w.Address,
 			PollInterval:  time.Duration(cfg.Chain.PollIntervalSeconds) * time.Second,
 		},
-		Engine: engine,
-		Poller: poller,
-		Eth:    cl,
-		HTTP:   httpSrv,
-		Logger: logger,
+		Engine:     engine,
+		Poller:     poller,
+		Eth:        cl,
+		HTTP:       httpSrv,
+		Metrics:    mcol,
+		MetricsSrv: mSrv,
+		Logger:     logger,
 	})
 	if err != nil {
 		return fmt.Errorf("daemon: %w", err)
