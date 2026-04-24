@@ -170,11 +170,17 @@ nav .inner{display:flex;align-items:center;gap:28px}
 .hero-badge .pulse{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 0 var(--gold);animation:pulse 2s ease-out infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(201,168,76,.5)}70%{box-shadow:0 0 0 10px rgba(201,168,76,0)}100%{box-shadow:0 0 0 0 rgba(201,168,76,0)}}
 
-h1.hero-title{font-family:var(--display);font-weight:300;font-size:clamp(48px,9vw,132px);line-height:.92;letter-spacing:-0.045em;color:var(--cream);margin-bottom:28px;font-variation-settings:"opsz" 144}
-h1.hero-title .word{display:inline-block;overflow:hidden;padding:0 .02em;margin-right:.12em;vertical-align:top}
+h1.hero-title{font-family:var(--display);font-weight:300;font-size:clamp(42px,8vw,116px);line-height:.95;letter-spacing:-0.04em;color:var(--cream);margin-bottom:28px;font-variation-settings:"opsz" 144;max-width:17ch}
+/* .word is the reveal mask. It needs enough padding to contain italic
+   swashes on words like "actually" (Fraunces italic has flared descenders
+   and extended terminals). overflow:hidden is only applied while animating
+   so the final state doesn't clip glyphs that overshoot the text box. */
+h1.hero-title .word{display:inline-block;padding:0 .08em 0 .04em;margin-right:.08em;vertical-align:top}
 h1.hero-title .word-inner{display:inline-block;will-change:transform}
-/* Only hide for animation if JS + motion are allowed. Default visible so no-JS / slow networks still see the headline. */
+html.js-ready:not(.reduced-motion) h1.hero-title .word{overflow:hidden}
 html.js-ready:not(.reduced-motion) h1.hero-title .word-inner{transform:translateY(110%)}
+/* Ensure the italic variant has extra right padding to house its terminal flourish */
+h1.hero-title em{padding-right:.08em;margin-right:-.04em;display:inline-block}
 h1.hero-title em{font-style:italic;color:var(--gold);font-weight:500}
 h1.hero-title em .word-inner{color:var(--gold)}
 
@@ -405,6 +411,7 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
       <a href="#redundancy">Resilience</a>
       <a href="#earn">Earn</a>
       <a href="#stats">Stats</a>
+      <a href="./specs">Specs</a>
     </div>
     <a class="nav-cta" href="https://github.com/Reiers/prova" target="_blank" rel="noopener">github →</a>
   </div>
@@ -457,7 +464,7 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
         See how it works
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
       </a>
-      <a class="btn btn-ghost" href="https://github.com/Reiers/prova" target="_blank" rel="noopener">
+      <a class="btn btn-ghost" href="./specs">
         Read the specs
       </a>
       <a class="btn btn-ghost" href="#earn">
