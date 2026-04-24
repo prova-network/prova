@@ -31,6 +31,7 @@ import (
 
 	"github.com/prova-network/prova/prover/pkg/deal"
 	"github.com/prova-network/prova/prover/pkg/ethclient"
+	"github.com/prova-network/prova/prover/pkg/httpserver"
 )
 
 // Default tick/poll/status/shutdown timings used when the corresponding
@@ -48,6 +49,7 @@ type Daemon struct {
 	engine *deal.Engine
 	poller *deal.EventPoller
 	eth    *ethclient.Client
+	http   *httpserver.Server // optional; nil if HTTP serving is disabled
 	logger *slog.Logger
 
 	// Runtime state
@@ -82,6 +84,7 @@ type Options struct {
 	Engine *deal.Engine
 	Poller *deal.EventPoller
 	Eth    *ethclient.Client
+	HTTP   *httpserver.Server // optional; nil disables HTTP serving
 	Logger *slog.Logger
 }
 
@@ -116,6 +119,7 @@ func New(opts Options) (*Daemon, error) {
 		engine: opts.Engine,
 		poller: opts.Poller,
 		eth:    opts.Eth,
+		http:   opts.HTTP,
 		logger: opts.Logger,
 	}, nil
 }
@@ -133,7 +137,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 
 	// errCh collects fatal errors from any goroutine. First error cancels
 	// the shared context; subsequent errors are logged.
-	errCh := make(chan error, 3)
+	errCh := make(chan error, 4)
 	var wg sync.WaitGroup
 
 	// Poller loop
@@ -156,6 +160,20 @@ func (d *Daemon) Run(ctx context.Context) error {
 		defer wg.Done()
 		d.runStatusLoop(ctx)
 	}()
+
+	// HTTP server (optional)
+	if d.http != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := d.http.ListenAndServe(ctx); err != nil {
+				select {
+				case errCh <- fmt.Errorf("http server: %w", err):
+				default:
+				}
+			}
+		}()
+	}
 
 	// Wait for context cancellation or fatal error
 	var fatalErr error

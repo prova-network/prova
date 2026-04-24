@@ -48,15 +48,28 @@ Tracking work on the Go prover daemon. Each task links to a matching issue or PR
   * Full-flow test: store piece → build proof for leaf → reconstruct root via proof path → matches CommP. Same algorithm as on-chain `Proofs.sol`.
 - [ ] Challenge-event poller (subscribes to `NextProvingPeriod` events, triggers Runner per data set, handles retry/backoff).
 
-## Phase E — HTTPS retrieval endpoint
+## Phase E — HTTP retrieval endpoint ✅
 
-- [ ] `pkg/http/`
-  - [ ] TLS termination (ACME or static cert)
-  - [ ] `GET /piece/{commp}` — stream piece to client
-  - [ ] Optional range requests
-  - [ ] Bandwidth accounting for payment
-  - [ ] Rate limiting
-- [ ] Transplant `curio/pdp/handlers.go` upload handler, `handlers_upload.go`
+- [x] `pkg/httpserver/` — stdlib `net/http` server, no framework deps
+- [x] `GET /piece/{pieceCid}` streams content with proper Content-Length, Content-Type, Content-Disposition, X-Prova-Piece-Size header
+- [x] `HEAD /piece/{pieceCid}` returns metadata without body
+- [x] `GET /health` liveness probe
+- [x] `GET /.well-known/prova` JSON metadata (service, version, publicURL, features)
+- [x] TLS config (CertPath/KeyPath); plain HTTP allowed for local/reverse-proxy
+- [x] Structured access logging middleware (method, path, status, bytes, remote, duration)
+- [x] X-Forwarded-For support for deployment behind reverse proxies
+- [x] Graceful shutdown on context cancel (bounded 30s drain)
+- [x] Wired into daemon and `cmdStart` (opt-in via `[http] enabled = true` in config)
+- [x] 10 unit tests: health, well-known, GET/HEAD piece, 404, invalid CID, validation, graceful shutdown, X-Forwarded-For parsing
+- [x] **Live smoke-tested end-to-end:** started daemon with HTTP on, put a piece via store API, curled it back successfully with correct headers. HEAD returns no body. Access log emits per request. Clean shutdown on SIGTERM.
+
+### Deferred to Phase E.2 (when needed)
+
+- [ ] HTTP Range requests (for large-piece streaming)
+- [ ] Rate limiting
+- [ ] Bandwidth accounting (for retrieval payment)
+- [ ] ACME / Let's Encrypt auto-provisioning
+- [ ] Upload endpoint (clients publish piece URLs via the `SourceURL` mechanism; we pull, don't receive pushes)
 
 ## Phase F — Daemon main loop ✅
 

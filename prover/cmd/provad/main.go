@@ -26,6 +26,7 @@ import (
 	"github.com/prova-network/prova/prover/pkg/daemon"
 	"github.com/prova-network/prova/prover/pkg/deal"
 	"github.com/prova-network/prova/prover/pkg/ethclient"
+	"github.com/prova-network/prova/prover/pkg/httpserver"
 	"github.com/prova-network/prova/prover/pkg/store"
 	"github.com/prova-network/prova/prover/pkg/wallet"
 )
@@ -203,6 +204,22 @@ func cmdStart(ctx context.Context, configPath string) error {
 		return fmt.Errorf("poller: %w", err)
 	}
 
+	// Optional HTTP server for piece retrieval.
+	var httpSrv *httpserver.Server
+	if cfg.HTTP.Enabled {
+		httpSrv, err = httpserver.New(httpserver.Options{
+			Pieces:     pieces,
+			ListenAddr: cfg.HTTP.ListenAddr,
+			PublicURL:  cfg.HTTP.PublicURL,
+			CertPath:   cfg.HTTP.CertPath,
+			KeyPath:    cfg.HTTP.KeyPath,
+			Logger:     logger,
+		})
+		if err != nil {
+			return fmt.Errorf("http server: %w", err)
+		}
+	}
+
 	d, err := daemon.New(daemon.Options{
 		Config: daemon.Config{
 			ProverAddress: w.Address,
@@ -211,6 +228,7 @@ func cmdStart(ctx context.Context, configPath string) error {
 		Engine: engine,
 		Poller: poller,
 		Eth:    cl,
+		HTTP:   httpSrv,
 		Logger: logger,
 	})
 	if err != nil {
