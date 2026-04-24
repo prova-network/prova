@@ -310,8 +310,29 @@ func (d *Daemon) runTickLoop(ctx context.Context, errCh chan<- error) {
 				}
 				d.logger.Error("tick failed", "err", err)
 			}
+			// Keep prova_deals_active live on every tick rather than only
+			// on the (much slower) status loop. Cheap: a single ListAll.
+			d.refreshActiveGauge()
 		}
 	}
+}
+
+// refreshActiveGauge updates prova_deals_active from the current deal store.
+func (d *Daemon) refreshActiveGauge() {
+	if d.metrics == nil {
+		return
+	}
+	all, err := d.engine.Deals().ListAll()
+	if err != nil {
+		return
+	}
+	var active int
+	for _, dl := range all {
+		if dl.Status == deal.StatusActive {
+			active++
+		}
+	}
+	d.metrics.DealsActiveGauge.Set(float64(active))
 }
 
 // runStatusLoop periodically logs aggregate state.
