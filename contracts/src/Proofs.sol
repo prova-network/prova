@@ -1,5 +1,13 @@
 // SPDX-License-Identifier: MIT
-// The verification functions are adapted from OpenZeppelin Contracts (last updated v5.0.0) (utils/cryptography/MerkleProof.sol)
+// Copyright (c) 2024-2026 Protocol Labs and contributors (upstream: FilOzone/pdp).
+// Copyright (c) 2024-2026 OpenZeppelin Contracts contributors (primary: MerkleProof.sol).
+// Copyright (c) 2026 Prova Network contributors.
+//
+// This file is imported unchanged from FilOzone/pdp src/Proofs.sol
+// (https://github.com/FilOzone/pdp). The verification functions are
+// themselves adapted by FilOzone from OpenZeppelin Contracts (last
+// updated v5.0.0) utils/cryptography/MerkleProof.sol. Both upstreams are
+// MIT-licensed; attribution preserved per license.
 
 pragma solidity ^0.8.20;
 

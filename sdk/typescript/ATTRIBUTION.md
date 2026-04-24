@@ -61,6 +61,25 @@ copyright is preserved. New Prova-specific work is additively attributed.
 // Permissive License Stack (Apache-2.0 OR MIT).
 ```
 
+## SPDX policy for this package
+
+Upstream `synapse-sdk` ships its license declaration at the repository
+root (`LICENSE.md`) rather than per-file. Prova follows the same
+convention for the TypeScript SDK:
+
+- The root `/LICENSE` declares the dual Apache-2.0 OR MIT license for
+  derived content and MIT for original Prova work.
+- Per-package `package.json` includes `"license": "Apache-2.0 OR MIT"`
+  so consumers tooling (npm, Sonatype, SPDX scanners) sees it.
+- Entry points that we substantively edited (e.g. `sdk/src/prova.ts`)
+  carry explicit SPDX headers + upstream attribution.
+- Deeper internal modules inherit the package-level license declaration
+  per customary JS/TS convention. Any module materially rewritten for
+  Prova should get its own SPDX header.
+
+This matches upstream's licensing practice and keeps attribution
+discoverable without imposing 174 boilerplate headers.
+
 ## Open items before publish
 
 Before publishing `@prova-network/*` packages to npm:

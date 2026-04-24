@@ -1,3 +1,19 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2024-2026 Rod Vagg, FilOzone contributors (upstream: @filoz/synapse-sdk).
+// Copyright (c) 2026 Prova Network contributors.
+//
+// Adapted from FilOzone/synapse-sdk packages/synapse-sdk/src/synapse.ts
+// (https://github.com/FilOzone/synapse-sdk). Originally under Permissive
+// License Stack (Apache-2.0 OR MIT). Attribution preserved per license.
+//
+// Adaptations for Prova:
+//   - Renamed class Synapse -> Prova
+//   - Dropped FilBeamService (Filecoin CDN, not used in Prova v1)
+//   - Renamed warm-storage internals -> storage/marketplace
+//
+// Remaining internal modules retain their upstream structure and are
+// covered by the Apache-2.0 OR MIT header inherited from this file.
+
 import { asChain, type Chain } from '@prova-network/core/chains'
 import type { SessionKeyAccount } from '@prova-network/core/session-key'
 import * as SessionKey from '@prova-network/core/session-key'

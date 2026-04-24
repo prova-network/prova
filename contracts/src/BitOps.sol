@@ -1,4 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2024-2026 Protocol Labs and contributors (upstream: FilOzone/pdp).
+// Copyright (c) 2026 Prova Network contributors.
+//
+// This file is imported unchanged from FilOzone/pdp src/BitOps.sol
+// (https://github.com/FilOzone/pdp). Originally under Permissive License Stack
+// (Apache-2.0 OR MIT). Attribution preserved per license.
 pragma solidity ^0.8.20;
 
 // Library for bit operations.

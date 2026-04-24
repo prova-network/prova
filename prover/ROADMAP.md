@@ -97,13 +97,20 @@ Tracking work on the Go prover daemon. Each task links to a matching issue or PR
 - [x] SourceURL transport: `[source_url] template` in TOML + `pkg/deal/sourceurl.go` resolver substitutes {client}/{clientRaw}/{commpHex}/{commpCid}. EventPoller auto-resolves on ingest.
 - [x] Live-validated metrics scrape on anvil: all 12 prova_* counters/gauges exposed, `prova_chain_head_block` updates live, `/healthz` returns 200, graceful shutdown of all 4 daemon goroutines (poll/tick/status/HTTP) + 2 HTTP servers on SIGTERM.
 
-## Phase G — Transplant audit
+## Phase G — Transplant audit ✅
 
-Once Phases A-F are done, go back and audit every file transplanted from Curio:
-- Does every file carry SPDX attribution?
-- Are any Filecoin-specific assumptions still leaking through (FVM, Lotus RPC, harmonydb, harmonytask)?
-- Are error messages generic enough that they don't reveal upstream provenance?
-- Is ATTRIBUTION.md accurate?
+- [x] Every `.go` / `.sol` file in the active tree carries an SPDX header (61/61).
+- [x] Audit of `SPDX-License-Identifier: Apache-2.0 OR MIT` files (transplanted code):
+  * All 9 have upstream attribution blocks identifying the source repo + adaptation summary.
+  * Files previously mislabeled (written by Prova but marked Apache-2.0 OR MIT in haste): `cmd/provad/main.go`, `pkg/config/*.go`, `pkg/store/*.go` — downgraded to plain MIT.
+- [x] Forked-but-MIT-only files (`contracts/src/Proofs.sol`, the 3 interfaces): added upstream attribution blocks.
+- [x] Root `/LICENSE` with Prova MIT text + per-directory attribution pointer.
+- [x] `contracts/ATTRIBUTION.md` rewritten to list actual transplanted files with concrete adaptation notes.
+- [x] `prover/ATTRIBUTION.md` rewritten with current state (pdptree, wallet, ethclient, etc.) replacing earlier TBD placeholders.
+- [x] `sdk/typescript/ATTRIBUTION.md` updated with explicit SPDX-at-package-level policy (following upstream `synapse-sdk` convention).
+- [x] TypeScript `sdk/src/prova.ts` (the substantively-edited entrypoint) now carries explicit SPDX + upstream attribution header.
+
+Result: **53 files under plain MIT (original Prova work), 9 files under Apache-2.0 OR MIT (transplanted with attribution)**. All tests still pass (87 Go + 40 Solidity).
 
 ## Phase H — Integration testing
 

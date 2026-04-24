@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0 OR MIT
+// SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Prova Network contributors.
 
 // Package config loads and validates the prover daemon configuration.
