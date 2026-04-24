@@ -1,32 +1,22 @@
-'use strict'
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Forked from CheckerNetwork/desktop.
 
-import svgr from 'vite-plugin-svgr'
-import tsconfigPaths from 'vite-tsconfig-paths'
-
-const { defineConfig } = require('vite')
-const react = require('@vitejs/plugin-react').default
-const path = require('node:path')
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'node:path'
 
 const rendererDir = path.resolve(__dirname, 'renderer')
 
-// https://vitejs.dev/config/
 export default defineConfig({
   root: rendererDir,
-  plugins: [tsconfigPaths(), svgr(), react()],
+  plugins: [react()],
+  // Relative base because index.html is served from file:// via electron-serve.
   base: './',
   build: {
+    outDir: path.resolve(rendererDir, 'dist'),
     emptyOutDir: true,
     sourcemap: true,
-    target: 'chrome100'
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-    isolate: true,
-    threads: true,
-    coverage: {
-      reporter: ['text', 'json', 'html']
-    }
+    target: 'chrome120',
+    assetsInlineLimit: 0
   }
 })

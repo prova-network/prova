@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom utilities for subtle brand surfaces. */
+@layer utilities {
+  .surface-card {
+    @apply rounded-xl border border-ink/10 bg-white shadow-sm;
+  }
+  .surface-dark {
+    @apply rounded-xl border border-gold/40 bg-ink text-cream;
+  }
+  .status-dot {
+    @apply inline-block h-2 w-2 rounded-full mr-2 align-middle;
+  }
+
+  /* Electron-specific: make the header draggable (so users can move the
+     window by clicking the dark top band). Buttons inside reset to
+     no-drag so clicks register normally. */
+  .draggable {
+    -webkit-app-region: drag;
+    user-select: none;
+  }
+  .draggable button,
+  .draggable a,
+  .draggable input {
+    -webkit-app-region: no-drag;
+  }
+}
+
+/* Lightweight monospace styling for hex/address/CID values. */
+.mono {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  color: theme('colors.ink.soft');
+  word-break: break-all;
+}
+
+/* Prevent text selection on non-interactive UI chrome. */
+button, .nav-link {
+  -webkit-user-select: none;
+  user-select: none;
+}

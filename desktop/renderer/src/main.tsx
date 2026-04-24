@@ -1,12 +1,13 @@
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
 import App from './App'
-import React from 'react'
-import ReactDOM from 'react-dom/client'
+import './styles.css'
 
-ReactDOM.createRoot(
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  document.getElementById('root')!
-).render(
-  <React.StrictMode>
+const el = document.getElementById('root')
+if (!el) throw new Error('root element missing')
+
+createRoot(el).render(
+  <StrictMode>
     <App />
-  </React.StrictMode>
+  </StrictMode>,
 )
