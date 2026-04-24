@@ -8,6 +8,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"os"
 	"os/signal"
@@ -21,7 +22,11 @@ import (
 	"github.com/prova-network/prova/prover/pkg/config"
 	"github.com/prova-network/prova/prover/pkg/contracts/proverregistry"
 	"github.com/prova-network/prova/prover/pkg/contracts/proverstaking"
+	"github.com/prova-network/prova/prover/pkg/contracts/storagemarketplace"
+	"github.com/prova-network/prova/prover/pkg/daemon"
+	"github.com/prova-network/prova/prover/pkg/deal"
 	"github.com/prova-network/prova/prover/pkg/ethclient"
+	"github.com/prova-network/prova/prover/pkg/store"
 	"github.com/prova-network/prova/prover/pkg/wallet"
 )
 
@@ -148,12 +153,93 @@ func loadWallet(cfg *config.Config) (*wallet.Wallet, error) {
 }
 
 func cmdStart(ctx context.Context, configPath string) error {
-	_, _, cl, err := loadEnvironment(ctx, configPath)
+	cfg, w, cl, err := loadEnvironment(ctx, configPath)
 	if err != nil {
 		return err
 	}
 	defer cl.Close()
-	return fmt.Errorf("start: daemon loop not yet implemented")
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	// Marketplace binding (needed for the event poller)
+	marketAddr, err := parseContractAddress(cfg.Chain.Contracts.StorageMarketplace, "storage_marketplace")
+	if err != nil {
+		return err
+	}
+	market, err := storagemarketplace.NewStorageMarketplace(marketAddr, cl.Raw())
+	if err != nil {
+		return fmt.Errorf("bind StorageMarketplace: %w", err)
+	}
+
+	// Local disk-backed piece store
+	pieces, err := store.NewDiskStore(cfg.Storage.DataDir)
+	if err != nil {
+		return fmt.Errorf("piece store: %w", err)
+	}
+	defer pieces.Close()
+
+	// Deal engine with in-memory store for now (SQLite in a later phase).
+	// Accepter is a stub until Phase D.2 wires the real tx path through
+	// ProofVerifier.createDataSet. A nil-safe placeholder keeps the daemon
+	// runnable without accidentally submitting transactions.
+	engine, err := deal.NewEngine(deal.EngineOptions{
+		OurAddress: w.Address,
+		Deals:      deal.NewMemStore(),
+		Pieces:     pieces,
+		Accepter:   stubAccepter{logger: logger},
+		Logger:     logger,
+	})
+	if err != nil {
+		return fmt.Errorf("engine: %w", err)
+	}
+
+	poller, err := deal.NewEventPoller(deal.EventPollerOptions{
+		Engine:      engine,
+		Marketplace: market,
+		OurAddress:  w.Address,
+		Logger:      logger,
+	})
+	if err != nil {
+		return fmt.Errorf("poller: %w", err)
+	}
+
+	d, err := daemon.New(daemon.Options{
+		Config: daemon.Config{
+			ProverAddress: w.Address,
+			PollInterval:  time.Duration(cfg.Chain.PollIntervalSeconds) * time.Second,
+		},
+		Engine: engine,
+		Poller: poller,
+		Eth:    cl,
+		Logger: logger,
+	})
+	if err != nil {
+		return fmt.Errorf("daemon: %w", err)
+	}
+
+	logger.Info("provad start",
+		"version", version,
+		"commit", commit,
+		"chain", ethclient.ChainName(cfg.Chain.ChainID),
+		"dataDir", cfg.Storage.DataDir,
+	)
+
+	return d.Run(ctx)
+}
+
+// stubAccepter logs but does not actually submit the acceptance tx.
+// Replaced with a real implementation in Phase D.2 once the Merkle
+// builder lands. Keeping the daemon runnable today without risk of
+// submitting broken txs is worth the explicit stub.
+type stubAccepter struct {
+	logger *slog.Logger
+}
+
+func (s stubAccepter) Accept(_ context.Context, id deal.DealID) (uint64, error) {
+	s.logger.Warn("accept stub: real ProofVerifier.createDataSet path is Phase D.2",
+		"dealID", uint64(id),
+	)
+	return 0, fmt.Errorf("acceptance tx not yet wired; see Phase D.2")
 }
 
 func cmdRegister(ctx context.Context, configPath string) error {

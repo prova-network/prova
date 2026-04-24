@@ -53,13 +53,29 @@ Tracking work on the Go prover daemon. Each task links to a matching issue or PR
   - [ ] Rate limiting
 - [ ] Transplant `curio/pdp/handlers.go` upload handler, `handlers_upload.go`
 
-## Phase F — Production polish
+## Phase F — Daemon main loop ✅
 
-- [ ] Metrics (Prometheus): proofs submitted, proofs failed, bytes stored, deals active
-- [ ] Graceful shutdown (SIGTERM handling)
+- [x] `pkg/daemon/` — `Daemon` struct supervising three concurrent loops:
+  poll loop (fetches new events), tick loop (advances deals), status loop
+  (aggregate logging every 60s). Single-goroutine-mutates-store discipline.
+- [x] `cmdStart` wired: load env → bind contracts → build engine + poller → run daemon
+- [x] Structured logging (slog) from day one
+- [x] Graceful shutdown on SIGINT/SIGTERM with bounded drain timeout
+- [x] Validated end-to-end against live anvil:
+  * `provad start` boots, logs version + config
+  * Status loop emits periodic summary
+  * Poller detected real DealProposed event once past lookback window
+  * Engine ingested deal, advanced on tick, reported `deal has no source URL`
+    (expected — v1 event has no SourceURL; clients supply out-of-band)
+  * SIGTERM triggers clean shutdown with uptime logged
+
+### Production polish items (still pending; moved to Phase F.2)
+
+- [ ] Prometheus metrics (proofs submitted/failed, bytes stored, deals active)
 - [ ] Health endpoint for orchestrators
-- [ ] Structured logging (slog)
 - [ ] Systemd unit file + Docker image
+- [ ] Configurable `BlockLookback` in TOML (currently hardcoded default 6)
+- [ ] SourceURL transport: extraData in DealProposed, or off-chain hint
 
 ## Phase G — Transplant audit
 
