@@ -33,14 +33,15 @@ Tracking work on the Go prover daemon. Each task links to a matching issue or PR
 - [ ] SQLite-backed Store for crash resilience (deferred; MemStore sufficient for Phase D)
 - [ ] Transplant curio/pdp/handlers_pull.go pull-from-peer logic (deferred; HTTPS-only is enough for v1)
 
-## Phase D — Challenge handling
+## Phase D — Challenge handling ✅ (orchestration done; Merkle builder stubbed for Phase D.2)
 
-- [ ] `pkg/challenges/`
-  - [ ] Subscribe to challenge events from `ProofVerifier` for our active deals
-  - [ ] For each challenge: load the piece, navigate the Merkle tree to the challenged leaf, build inclusion proof
-  - [ ] Submit proof via `ProofVerifier.provePossession(...)`
-  - [ ] Handle failures: retry, log, alert
-- [ ] Transplant the Merkle tree + proof logic from Curio (`curio/pdp/` uses `go-fil-commcid` + custom tree walkers)
+- [x] `pkg/challenges/challenge.go` — `ChallengeIndex(seed, dataSetID, proofIndex, totalLeaves)` matches Filecoin PDP bit-for-bit (cross-validated against Curio's `generateChallengeIndex` on 6 test vectors). `ChallengeIndices` batch variant, `pad32Left`, `Proof` struct matching on-chain `IPDPTypes.Proof`.
+- [x] `pkg/challenges/submit.go` — `ChainClient` interface (`GetRandomness`, `GetChallengeRange`, `GetNextChallengeEpoch`, `SubmitProof`) + `OnChainClient` wrapping our `proofverifier.ProofVerifier` bindings.
+- [x] `pkg/challenges/runner.go` — `Runner.ProveSet(ctx, dataSetID)` orchestrates read-challenge → compute-indices → lookup-pieces → build-proofs → submit-tx.
+- [x] Interfaces: `PieceLookup` (maps leaf → piece+offset via on-chain `findPieceIds`) and `MerkleBuilder` (builds inclusion proof from piece bytes) keep Merkle tree implementation pluggable.
+- [x] Tests: 17 in this package. Challenge determinism, distribution, bounds, dataset isolation, error propagation, runner orchestration.
+- [ ] **Phase D.2** (deferred): Merkle tree builder (`pkg/pdptree/` planned) — load piece, pad to next power-of-two, construct SHA2-254-trunc254-padded binary tree, navigate to challenged leaf. Can reuse `curio/lib/proof/merkle_sha254_memtree.go` (~400 LOC, MIT).
+- [ ] Challenge-event poller (subscribes to `NextProvingPeriod` events, triggers Runner per data set, handles retry/backoff).
 
 ## Phase E — HTTPS retrieval endpoint
 
