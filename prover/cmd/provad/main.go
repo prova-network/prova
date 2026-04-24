@@ -89,7 +89,7 @@ Usage:
   provad [flags] <subcommand>
 
 Subcommands:
-  start     Run the prover daemon (main mode, not yet implemented)
+  start     Run the prover daemon (main mode)
   register  Register this prover in ProverRegistry on-chain
   status    Print current prover status and exit
   version   Print version info and exit

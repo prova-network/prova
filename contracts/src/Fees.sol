@@ -5,6 +5,12 @@
 // This file is imported unchanged from FilOzone/pdp src/Fees.sol
 // (https://github.com/FilOzone/pdp). Originally under Permissive License Stack
 // (Apache-2.0 OR MIT). Attribution preserved per license.
+//
+// Naming note for Prova: upstream uses FIL/AttoFIL terminology because
+// PDPVerifier originated on Filecoin. On Base we pay fees in ETH/wei,
+// which share the same 1e18 decimal convention as FIL/attoFIL — so the
+// numeric constants work unchanged. We intentionally don't rename the
+// constants (risk of drift from upstream + zero functional benefit).
 pragma solidity ^0.8.20;
 
 /// @title PDPFees

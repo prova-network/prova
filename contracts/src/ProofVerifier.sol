@@ -12,6 +12,13 @@
 //     send/burn primitives compatible with Base / any EVM chain.
 //   - Replaced FVMRandom.getBeaconRandomness with block.prevrandao (EIP-4399)
 //     which Base supports. Future work: pluggable randomness (Chainlink VRF).
+//   - Stripped USDFC (Filecoin stablecoin) payment path. On Base, fees are
+//     paid in native ETH via msg.value. `PDPFees.sybilFee()` is still
+//     denominated in a constant value (0.1 "FIL" = 0.1 ether), which is
+//     economically sensible on Base too.
+//   - Removed IFilecoinPay integration and PAYMENTS_CONTRACT_ADDRESS.
+//   - `FIL_SYBIL_FEE` public function renamed to `sybilFee` with same
+//     semantics (returns the current sybil fee in wei).
 pragma solidity ^0.8.20;
 
 import {BitOps} from "./BitOps.sol";
@@ -23,13 +30,6 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IPDPTypes} from "./interfaces/IPDPTypes.sol";
-
-interface IFilecoinPay {
-    function accounts(address token, address owner)
-        external
-        view
-        returns (uint256 funds, uint256 lockupCurrent, uint256 lockupRate, uint256 lockupLastSettledAt);
-}
 
 /// @title PDPListener
 /// @notice Interface for PDP Service applications managing data storage.
@@ -119,14 +119,17 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     // Network epoch delay between last proof of possession and next
     // randomness sampling for challenge generation.
     //
-    // The purpose of this delay is to prevent SPs from biasing randomness by running forking attacks.
-    // Given a small enough challengeFinality an SP can run several trials of challenge sampling and
-    // fork around samples that don't suit them, grinding the challenge randomness.
-    // For the filecoin L1, a safe value is 150 using the same analysis setting 150 epochs between
-    // PoRep precommit and PoRep provecommit phases.
+    // The purpose of this delay is to prevent provers from biasing randomness
+    // by running forking attacks. Given a small enough challengeFinality a
+    // prover can run several trials of challenge sampling and fork around
+    // samples that don't suit them, grinding the challenge randomness.
     //
-    // We keep this around for future portability to a variety of environments with different assumptions
-    // behind their challenge randomness sampling methods.
+    // For Base L2 (and L2s generally), the reorg horizon is effectively
+    // instant once the batch is posted to L1 and finalized. A value of ~6
+    // (matching default block_lookback in the Prova prover) is ample.
+    // Upstream PDPVerifier on Filecoin uses 150 based on PoRep epoch
+    // analysis, which is overkill on a rollup. Operator tunes via
+    // initialize(). Kept parameterizable for portability.
     uint256 challengeFinality;
 
     // TODO PERF: https://github.com/FILCAT/pdp/issues/16#issuecomment-2329838769
@@ -167,13 +170,10 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     FeeStatus private feeStatus;
 
-    // USDFC sybil fee support
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    address public immutable USDFC_TOKEN_ADDRESS;
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    uint256 public immutable USDFC_SYBIL_FEE;
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    address public immutable PAYMENTS_CONTRACT_ADDRESS;
+    // (Upstream PDPVerifier also declared USDFC_TOKEN_ADDRESS, USDFC_SYBIL_FEE,
+    // and PAYMENTS_CONTRACT_ADDRESS immutables here for Filecoin-chain USDFC
+    // payment. Prova runs on Base; native ETH via msg.value is the only fee
+    // path, so those fields are removed.)
 
     // Used for announcing upgrades, packed into one slot
     struct PlannedUpgrade {
@@ -188,18 +188,9 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     // Methods
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(
-        uint64 _initializerVersion,
-        address _usdfcTokenAddress,
-        uint256 _usdfcSybilFee,
-        address _paymentsContractAddress
-    ) {
+    constructor(uint64 _initializerVersion) {
         _disableInitializers();
-        require(_usdfcSybilFee > 0, "USDFC sybil fee must be greater than 0");
         REINITIALIZER_VERSION = _initializerVersion;
-        USDFC_TOKEN_ADDRESS = _usdfcTokenAddress;
-        USDFC_SYBIL_FEE = _usdfcSybilFee;
-        PAYMENTS_CONTRACT_ADDRESS = _paymentsContractAddress;
     }
 
     function initialize(uint256 _challengeFinality) public initializer {
@@ -261,28 +252,17 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         }
     }
 
-    function ensureBurned(bool usdfcBurned, bool defaultToFilBurn) internal {
-        if (!usdfcBurned) {
-            if (defaultToFilBurn) {
-                uint256 sybilFee = _validateAndBurnSybilFee();
-                _refundExcessSybilFee(sybilFee);
-            } else {
-                revert UsdfcSybilFeeNotMet();
-            }
-        } else {
-            // USDFC burned, refund any FIL sent
-            if (msg.value > 0) {
-                (bool success,) = msg.sender.call{value: msg.value}("");
-                if (!success) revert FilRefundFailed();
-            }
-        }
-    }
-
-    function _getPaymentsUsdfcBalance() internal view returns (uint256) {
-        if (PAYMENTS_CONTRACT_ADDRESS == address(0) || USDFC_TOKEN_ADDRESS == address(0)) return 0;
-        (uint256 funds,,,) =
-            IFilecoinPay(PAYMENTS_CONTRACT_ADDRESS).accounts(USDFC_TOKEN_ADDRESS, PAYMENTS_CONTRACT_ADDRESS);
-        return funds;
+    // Native-ETH sybil fee enforcer. msg.value must be >= PDPFees.sybilFee();
+    // the fee is burned and any excess refunded to msg.sender.
+    //
+    // Replaces upstream's dual USDFC-or-FIL path (`ensureBurned` +
+    // `_getPaymentsUsdfcBalance`). Prova's economic model charges fees
+    // higher in the stack (`StorageMarketplace` protocol fee) rather than
+    // through a USDFC-style on-chain accounting layer; the sybil fee is
+    // kept solely as a spam deterrent for `createDataSet` / `addPieces`.
+    function _chargeSybilFee() internal {
+        uint256 sybilFee = _validateAndBurnSybilFee();
+        _refundExcessSybilFee(sybilFee);
     }
 
     // Returns the current challenge finality value
@@ -616,18 +596,14 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     // Parameters:
     //   - listenerAddr: Address of PDPListener contract to receive callbacks (can be address(0) for no listener)
     //   - extraData: Arbitrary bytes passed to listener's dataSetCreated callback
-    //   - defaultToFilBurn: If true, falls back to FIL burn when USDFC not available. If false, reverts.
-    //   - msg.value: Must include sybil fee (PDPFees.sybilFee()) when using FIL fallback, excess is refunded
+    //   - msg.value: Must include sybil fee (PDPFees.sybilFee()), excess is refunded.
     //
     // Returns: The newly created data set ID
     //
     // Only the storage provider (msg.sender) can call this function.
     function createDataSet(address listenerAddr, bytes calldata extraData) public payable returns (uint256) {
-        uint256 balanceBefore = _getPaymentsUsdfcBalance();
         uint256 setId = _createDataSet(listenerAddr, extraData);
-        uint256 balanceAfter = _getPaymentsUsdfcBalance();
-        bool defaultToFilBurn = msg.value > 0;
-        ensureBurned(balanceAfter >= balanceBefore + USDFC_SYBIL_FEE, defaultToFilBurn);
+        _chargeSybilFee();
         return setId;
     }
 
@@ -683,17 +659,14 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
             require(listenerAddr != address(0), "listener required for new dataset");
 
-            uint256 balanceBefore = _getPaymentsUsdfcBalance();
             uint256 newSetId = _createDataSet(listenerAddr, createPayload);
-            uint256 balanceAfter = _getPaymentsUsdfcBalance();
 
             // Add pieces to the newly created data set (if any)
             if (pieceData.length > 0) {
                 _addPiecesToDataSet(newSetId, pieceData, addPayload);
             }
 
-            bool defaultToFilBurn = msg.value > 0;
-            ensureBurned(balanceAfter >= balanceBefore + USDFC_SYBIL_FEE, defaultToFilBurn);
+            _chargeSybilFee();
             return newSetId;
         } else {
             // Adding to an existing set; no fee should be sent and listenerAddr must be zero
@@ -734,8 +707,6 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     error IndexedError(uint256 idx, string msg);
-    error UsdfcSybilFeeNotMet();
-    error FilRefundFailed();
 
     function addOnePiece(uint256 setId, uint256 callIdx, Cids.Cid calldata piece) internal returns (uint256) {
         (uint256 padding, uint8 height,) = Cids.validateCommPv2(piece);
@@ -890,7 +861,10 @@ contract ProofVerifier is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return block.timestamp >= feeStatus.transitionTime ? feeStatus.nextFeePerTiB : feeStatus.currentFeePerTiB;
     }
 
-    function FIL_SYBIL_FEE() external pure returns (uint256) {
+    /// @notice Current sybil fee in wei (charged on createDataSet / new-dataset addPieces).
+    /// @dev Upstream named this FIL_SYBIL_FEE; renamed for Prova since fees
+    ///      are denominated in the chain's native asset (ETH on Base).
+    function sybilFee() external pure returns (uint256) {
         return PDPFees.sybilFee();
     }
 

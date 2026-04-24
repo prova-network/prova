@@ -97,48 +97,78 @@ S3-with-proofs for any application that needs verifiable storage.
 - Public testnet: targeting mid-2026 on Base Sepolia
 - Token launch: deferred until usage and revenue justify it (points-to-token conversion)
 
-### What's done
-- [x] Phase 0: archive branch, tag, pivot branch
-- [x] Phase 1: planning artifacts (audit, architecture, plan, source map)
-- [x] Phase 2: spec cleanup (6 obsolete specs archived)
-- [x] Phase 3 partial: Rust chain code archived (~68K lines)
-- [x] Phase 6 partial: core PDP contracts forked, Base-compatible, builds green
+### Built so far
+
+- [x] Planning: audit, architecture, migration plan, source map, tokenomics v2
+- [x] Solidity contracts: 6 contracts (ProvaToken, ProofVerifier, ProverRegistry,
+      ProverStaking, ContentRegistry, StorageMarketplace) + MockProofVerifier
+      for local integration. All tests pass.
+- [x] TypeScript SDK: forked from `FilOzone/synapse-sdk`, renamed, repointed.
+      Awaits ABI regeneration against deployed contracts.
+- [x] Go prover daemon (`prover/provad`): full lifecycle works end-to-end
+      locally.
+      See [`prover/ROADMAP.md`](./prover/ROADMAP.md) for phase-by-phase status
+      (A–G complete, H blocked on Base Sepolia deploy).
+- [x] Website rewritten in quiet-research mode (see `website/`).
+- [x] Attribution audit complete (see per-directory `ATTRIBUTION.md`).
 
 ### Next up
-- [ ] Write Prova-specific contracts: `ProverRegistry`, `ProverStaking`, `StorageMarketplace`, `ContentRegistry`
-- [ ] Fork `FilOzone/synapse-sdk` as `sdk/typescript/`
-- [ ] Set up `prover/` as a Go module, port from `filecoin-project/curio`
-- [ ] Deploy contracts to Base Sepolia
-- [ ] First end-to-end: upload file, see proof land on-chain
 
-## Repository Layout (v2, in progress)
+- [ ] Deploy contracts to Base Sepolia (gated on author's exit from
+      existing engagements; target mid-2026)
+- [ ] Regenerate TypeScript SDK ABIs against live deployment
+- [ ] Public testnet launch
+- [ ] Points program goes live
+
+## Repository Layout
 
 ```
-prover/       Rust prover node (PDP engine, blob storage, HTTPS serving)
-aggregator/   Optional aggregator node (proof batching, L1 anchoring)
-sdk/
-  rust/       Rust SDK for prover operators and power users
-  typescript/ Primary TypeScript SDK for applications
-contracts/    Solidity contracts for Ethereum L1
-spec/         Protocol specifications
-docs/         User and developer documentation
-brand/        Brand assets
-website/      Public website source
-archive/      v1 Layer 1 chain code, kept for reference
+contracts/            Solidity contracts (Base-compatible)
+  src/                ProofVerifier, registry, staking, marketplace, ...
+  script/Deploy.s.sol Foundry deploy script
+  test/               Foundry tests
+
+prover/               Go prover daemon
+  cmd/provad/         daemon + CLI binary
+  pkg/                deal lifecycle, challenges, http, metrics, pdptree, ...
+  internal/soaktest/  end-to-end integration scenario (anvil)
+
+sdk/typescript/       TypeScript client SDK
+  core/               @prova-network/core
+  sdk/                @prova-network/sdk
+
+spec/                 Protocol specifications
+website/              Public website source
+docs/                 Project documentation index
+brand/                Brand assets
+
+LICENSE               MIT for original work; per-directory attribution for derived code
+archive/              Pre-pivot artifacts kept for reference
 ```
 
 ## Contributing
 
-Currently closed to external contributors during the v2 pivot. Will open after the first public testnet (target: mid-2026).
+Closed to external contributors while the project is in private development.
+After the first public testnet, contribution guidelines will live in
+`CONTRIBUTING.md`.
 
 ## License
 
-MIT. Much of the storage-proof primitive technology is derived from MIT-licensed Filecoin ecosystem code (Filecoin Project, FoC, PDP research). Proper attribution lives in each source file.
+MIT for original Prova work; portions derived from upstream projects
+([FilOzone/pdp](https://github.com/FilOzone/pdp),
+[FilOzone/synapse-sdk](https://github.com/FilOzone/synapse-sdk),
+[filecoin-project/curio](https://github.com/filecoin-project/curio),
+[filecoin-project/lotus](https://github.com/filecoin-project/lotus))
+under Apache-2.0 OR MIT, with attribution preserved per file and in
+[`LICENSE`](./LICENSE) + per-directory `ATTRIBUTION.md`.
 
 ## Credits
 
-Prova stands on the shoulders of the Filecoin community. PDP, CommP, FoC, storage-proof research — all originated there. We port those primitives to Ethereum as a coexistent network, not a competitor.
+Prova stands on years of storage-proof research by the Filecoin community.
+PDP, CommP, FR32 padding, SHA-254 merkle trees, piece-commitment CIDs —
+all originated there. Prova ports those primitives onto Base as a
+coexistent network.
 
 ---
 
-*Last updated: 2026-04-24*
+*Last updated: 2026-04-24.*

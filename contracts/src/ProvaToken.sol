@@ -6,8 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 /// @title ProvaToken
-/// @notice ERC-20 token for the Prova network. Fixed 1B supply, no minting.
-/// @dev At mainnet launch, holders swap 1:1 for native PROVA.
+/// @notice ERC-20 token for the Prova network. Fixed 1B supply, no minting,
+///         no mainnet swap — this is the canonical PROVA token on Base.
+///         Utility: prover staking collateral, fee discounts on storage
+///         deals, challenger bonds, governance.
 contract ProvaToken is ERC20, ERC20Burnable, ERC20Permit {
     uint256 public constant TOTAL_SUPPLY = 1_000_000_000 ether; // 1B with 18 decimals
 

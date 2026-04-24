@@ -4,10 +4,19 @@ Reference implementation of a Prova Network prover node.
 
 ## Status
 
-**Scaffolding in progress.** Transplanted in phases from upstream:
-- [`filecoin-project/curio`](https://github.com/filecoin-project/curio) — PDP engine, piece CID machinery, blob storage handlers (Apache-2.0 OR MIT)
+See [`ROADMAP.md`](./ROADMAP.md) for the phase-by-phase status. At a glance:
 
-See [`ATTRIBUTION.md`](./ATTRIBUTION.md).
+- Phases A through G complete: full prover binary running locally,
+  contract stack, deal lifecycle, HTTP retrieval, Prometheus metrics,
+  systemd unit, Docker image, transplant audit done.
+- Gate for Phase H (Base Sepolia deploy) is the author's exit from
+  Curio engagements; target mid-2026.
+
+Portions of the PDP engine are transplanted from
+[`filecoin-project/curio`](https://github.com/filecoin-project/curio)
+and [`filecoin-project/lotus`](https://github.com/filecoin-project/lotus)
+under the Permissive License Stack (Apache-2.0 OR MIT).
+See [`ATTRIBUTION.md`](./ATTRIBUTION.md) for the per-file source map.
 
 ## Responsibilities
 
@@ -58,20 +67,27 @@ prover/
 go build ./cmd/provad
 ```
 
-Once scaffolded (not yet). Current state: no runnable binary.
+Or with version info baked in:
 
-## Transplanted from Curio
+```sh
+go build -ldflags "-X main.version=$(git describe --always) -X main.commit=$(git rev-parse --short HEAD)" ./cmd/provad
+```
 
-These packages have been adapted from `filecoin-project/curio` under the
-Apache-2.0 OR MIT dual license. Full upstream attribution preserved at file
-level and in `ATTRIBUTION.md`.
+The Docker recipe (`./Dockerfile`) produces a distroless nonroot image.
 
-| Prover package | Upstream path | Status |
-|----------------|---------------|--------|
-| `pkg/piece` | `curio/pdp/piece_cid.go` | Pending |
-| — | `curio/pdp/handlers.go` (upload + pull) | Pending |
-| — | `curio/pdp/auth.go` | Pending |
-| — | `curio/pdp/indexing.go` | Pending |
+## Transplanted from upstream
+
+See [`ATTRIBUTION.md`](./ATTRIBUTION.md) for the authoritative per-file
+source map and adaptation notes. In summary:
+
+- `pkg/piece/cid.go` — `curio/pdp/piece_cid.go` (imported ~unchanged).
+- `pkg/pdptree/fr32.go` — `lotus/storage/sealer/fr32/fr32.go`
+  (bit-for-bit port of `pad()`).
+- `pkg/pdptree/memtree.go` — three files from
+  `curio/lib/proof/` merged into one self-contained SHA-254 memtree
+  implementation.
+
+All other `prover/pkg/*` packages are Prova-original code.
 
 ## License
 
