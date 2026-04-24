@@ -10,7 +10,7 @@
 <meta property="og:description" content="Rent out disk. Earn ETH. Every byte provable, every day.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><circle cx='20' cy='20' r='18' fill='none' stroke='%23C9A84C' stroke-width='2.5'/><polygon points='20,9 31,29 9,29' fill='none' stroke='%23C9A84C' stroke-width='2.5' stroke-linejoin='round'/><circle cx='20' cy='23' r='2.5' fill='%23C9A84C'/></svg>">
 
-<!-- Fonts: display (Fraunces, serif with character) + body (Space Grotesk) + mono (JetBrains) -->
+<!-- Fonts: display (Instrument Serif, clean + legible) + body (Inter) + mono (JetBrains) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,500&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -19,43 +19,95 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
 
+<!-- Theme bootstrap. Runs synchronously before <body> renders so there's
+     no flash of wrong theme on light-mode reload. Reads localStorage
+     first, then prefers-color-scheme, then defaults to dark. -->
+<script>
+(function(){
+  try{
+    var stored = localStorage.getItem('prova-theme');
+    var theme = stored || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+  }catch(e){ document.documentElement.setAttribute('data-theme','dark'); }
+})();
+</script>
+
 <style>
 /* ─── tokens ─────────────────────────────────────────── */
-:root{
-  /* Deep warm ink palette, not navy */
-  --ink-0:#0A0907;        /* page black */
-  --ink-1:#14110D;        /* cards */
-  --ink-2:#1E1A14;        /* elevated */
-  --ink-3:#2B2419;
+/* Dark theme (default) + light theme below, both via CSS custom properties.
+   JS toggles [data-theme="light"] on <html>; persisted in localStorage. */
+:root,[data-theme="dark"]{
+  --bg-0:#0A0907;         /* page background */
+  --bg-1:#14110D;         /* cards */
+  --bg-2:#1E1A14;         /* elevated */
+  --bg-3:#2B2419;
 
-  /* Brand gold with hand-tuned saturation steps */
   --gold:#C9A84C;
-  --gold-hot:#E8C766;     /* highlight */
-  --gold-deep:#8A7A3A;    /* low-contrast text */
+  --gold-hot:#E8C766;
+  --gold-deep:#8A7A3A;
   --gold-dim:rgba(201,168,76,0.35);
 
-  /* Accent chroma for diagrams */
-  --amber:#E6994A;        /* stage: download */
-  --teal:#4EB8A8;         /* stage: proof */
-  --rose:#D66A6A;         /* stage: slash */
+  --amber:#E6994A;
+  --teal:#4EB8A8;
+  --rose:#D66A6A;
 
-  /* Text */
-  --cream:#F4EFE3;        /* headings */
-  --cream-soft:#D8D2C4;   /* body */
-  --cream-dim:rgba(244,239,227,0.55);
+  --fg-0:#F4EFE3;         /* headings */
+  --fg-1:#D8D2C4;         /* body */
+  --fg-dim:rgba(244,239,227,0.55);
 
   --grid:rgba(201,168,76,0.08);
   --hair:rgba(244,239,227,0.08);
   --glass:rgba(20,17,13,0.6);
 
-  --display:'Fraunces',ui-serif,Georgia,serif;
-  --sans:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  /* Legacy aliases so the rest of the stylesheet doesn't need a giant rename */
+  --ink-0:var(--bg-0);--ink-1:var(--bg-1);--ink-2:var(--bg-2);--ink-3:var(--bg-3);
+  --cream:var(--fg-0);--cream-soft:var(--fg-1);--cream-dim:var(--fg-dim);
+
+  --display:'Instrument Serif',ui-serif,Georgia,serif;
+  --sans:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
   --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
 
   --ease-out:cubic-bezier(0.22,1,0.36,1);
   --ease-in-out:cubic-bezier(0.65,0,0.35,1);
   --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
 }
+
+/* Light theme: warm cream page, deep warm ink text, darker gold for contrast. */
+[data-theme="light"]{
+  --bg-0:#F6F2E8;
+  --bg-1:#ECE7D8;
+  --bg-2:#E0DACA;
+  --bg-3:#CFC8B5;
+
+  /* Deeper antique-gold for stronger presence on cream ground */
+  --gold:#7A5F14;
+  --gold-hot:#946D15;
+  --gold-deep:#5A4610;
+  --gold-dim:rgba(122,95,20,0.35);
+
+  --amber:#A8611D;
+  --teal:#2A7A6B;
+  --rose:#A83C3C;
+
+  --fg-0:#1A1612;
+  --fg-1:#3A342A;
+  --fg-dim:rgba(26,22,18,0.55);
+
+  --grid:rgba(139,111,31,0.08);
+  --hair:rgba(26,22,18,0.1);
+  --glass:rgba(236,231,216,0.85);
+
+  --ink-0:var(--bg-0);--ink-1:var(--bg-1);--ink-2:var(--bg-2);--ink-3:var(--bg-3);
+  --cream:var(--fg-0);--cream-soft:var(--fg-1);--cream-dim:var(--fg-dim);
+}
+
+html{transition:background-color .3s var(--ease-out)}
+
+/* Light-theme-specific component tweaks */
+[data-theme="light"] body::after{opacity:.04}
+[data-theme="light"] nav.scrolled{background:rgba(246,242,232,.85);border-bottom:1px solid rgba(26,22,18,.08)}
+[data-theme="light"] .terminal{box-shadow:0 24px 60px -16px rgba(107,85,22,.15)}
+[data-theme="light"] .flow-diagram{box-shadow:0 40px 80px -20px rgba(107,85,22,.12),inset 0 0 0 1px rgba(139,111,31,.08)}
 
 /* ─── base ──────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -104,9 +156,11 @@ h2.section-title{font-family:var(--display);font-weight:500;font-size:clamp(34px
 .section-intro em{font-style:italic;color:var(--cream);font-family:var(--display);font-weight:500}
 
 /* ─── NAV ───────────────────────────────────────────── */
+/* Nav gradient fades from page-bg at top to transparent. Uses color-mix so it
+   theme-switches automatically (light-mode gets a cream fade, not a dark one). */
 nav{position:fixed;top:0;left:0;right:0;z-index:80;padding:16px 0;transition:all .3s var(--ease-out);
-  background:linear-gradient(to bottom,rgba(10,9,7,.8),rgba(10,9,7,0));backdrop-filter:blur(0)}
-nav.scrolled{background:rgba(10,9,7,.78);backdrop-filter:blur(12px) saturate(140%);border-bottom:1px solid var(--hair)}
+  background:linear-gradient(to bottom,color-mix(in oklab,var(--bg-0) 85%,transparent),transparent);backdrop-filter:blur(0)}
+nav.scrolled{background:color-mix(in oklab,var(--bg-0) 80%,transparent);backdrop-filter:blur(12px) saturate(140%);border-bottom:1px solid var(--hair)}
 nav .inner{display:flex;align-items:center;gap:28px}
 .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--cream);letter-spacing:-0.02em}
 .brand svg{color:var(--gold);transition:transform .3s var(--ease-spring)}
@@ -117,7 +171,17 @@ nav .inner{display:flex;align-items:center;gap:28px}
 .nav-links a::after{content:"";position:absolute;left:0;bottom:-4px;width:0;height:1px;background:var(--gold);transition:width .3s var(--ease-out)}
 .nav-links a:hover::after{width:100%}
 .nav-cta{font-family:var(--mono);font-size:13px;padding:8px 16px;border:1px solid var(--gold-dim);border-radius:999px;color:var(--gold);transition:all .25s var(--ease-out);white-space:nowrap}
-.nav-cta:hover{background:var(--gold);color:var(--ink-0);border-color:var(--gold);transform:translateY(-1px)}
+.nav-cta:hover{background:var(--gold);color:var(--bg-0);border-color:var(--gold);transform:translateY(-1px)}
+
+/* Theme toggle: a small circular icon button in the nav. Shows sun in dark
+   mode (click to go light), moon in light mode (click to go dark). */
+.theme-toggle{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--hair);color:var(--fg-dim);transition:all .25s var(--ease-out);cursor:pointer;background:transparent;flex-shrink:0}
+.theme-toggle:hover{color:var(--gold);border-color:var(--gold-dim);transform:rotate(15deg)}
+.theme-toggle svg{width:16px;height:16px}
+.theme-toggle .sun{display:none}
+.theme-toggle .moon{display:block}
+[data-theme="light"] .theme-toggle .sun{display:block}
+[data-theme="light"] .theme-toggle .moon{display:none}
 @media (max-width:720px){.nav-links{display:none}}
 
 /* ─── HERO ──────────────────────────────────────────── */
@@ -134,7 +198,8 @@ nav .inner{display:flex;align-items:center;gap:28px}
 
 /* Atmospheric proof-orbit rings behind the hero. Positive z-index so they sit
    above the page background but below hero content (which uses z-index:2). */
-.orbit{position:absolute;top:45%;left:65%;transform:translate(-50%,-50%);pointer-events:none;z-index:0;width:min(1200px,120vw);height:min(1200px,120vw);opacity:1;mask-image:radial-gradient(circle,black 45%,transparent 75%);-webkit-mask-image:radial-gradient(circle,black 45%,transparent 75%)}
+/* Pushed right so it stops colliding with the headline text. */
+.orbit{position:absolute;top:50%;left:88%;transform:translate(-50%,-50%);pointer-events:none;z-index:0;width:min(1000px,100vw);height:min(1000px,100vw);opacity:.85;mask-image:radial-gradient(circle,black 40%,transparent 75%);-webkit-mask-image:radial-gradient(circle,black 40%,transparent 75%)}
 @media (max-width:900px){.orbit{left:50%;opacity:.6}}
 .orbit-ring{position:absolute;top:50%;left:50%;border:1.5px dashed rgba(201,168,76,0.35);border-radius:50%;transform:translate(-50%,-50%);animation:orbit-spin var(--d,60s) linear infinite}
 .orbit-ring.r1{width:min(520px,52vw);height:min(520px,52vw);--d:80s;border-color:rgba(201,168,76,.45)}
@@ -158,11 +223,12 @@ nav .inner{display:flex;align-items:center;gap:28px}
 .orbit-ring.r3 .orbit-node.n2{--a:220deg;width:5px;height:5px;opacity:.5}
 @keyframes orbit-spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 
-/* Aurora glow behind the headline */
+/* Aurora glow, now concentrated to the right so the headline column stays
+   on clean background. */
 .hero::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(ellipse 600px 400px at 20% 35%, rgba(201,168,76,.08), transparent 60%),
-    radial-gradient(ellipse 500px 350px at 70% 60%, rgba(78,184,168,.05), transparent 60%);
+    radial-gradient(ellipse 500px 400px at 85% 40%, rgba(201,168,76,.1), transparent 60%),
+    radial-gradient(ellipse 400px 350px at 95% 70%, rgba(78,184,168,.04), transparent 60%);
   opacity:1}
 
 .hero-inner{position:relative;z-index:3;width:100%}
@@ -170,7 +236,9 @@ nav .inner{display:flex;align-items:center;gap:28px}
 .hero-badge .pulse{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 0 var(--gold);animation:pulse 2s ease-out infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(201,168,76,.5)}70%{box-shadow:0 0 0 10px rgba(201,168,76,0)}100%{box-shadow:0 0 0 0 rgba(201,168,76,0)}}
 
-h1.hero-title{font-family:var(--display);font-weight:300;font-size:clamp(42px,8vw,116px);line-height:.95;letter-spacing:-0.04em;color:var(--cream);margin-bottom:28px;font-variation-settings:"opsz" 144;max-width:17ch}
+/* Instrument Serif: single weight (400), clean roman + clean italic.
+   No opsz, no swashes. Big and legible at every size. */
+h1.hero-title{font-family:var(--display);font-weight:400;font-size:clamp(44px,8vw,120px);line-height:1;letter-spacing:-0.02em;color:var(--fg-0);margin-bottom:28px;max-width:18ch}
 /* .word is the reveal mask. It needs enough padding to contain italic
    swashes on words like "actually" (Fraunces italic has flared descenders
    and extended terminals). overflow:hidden is only applied while animating
@@ -179,8 +247,10 @@ h1.hero-title .word{display:inline-block;padding:0 .08em 0 .04em;margin-right:.0
 h1.hero-title .word-inner{display:inline-block;will-change:transform}
 html.js-ready:not(.reduced-motion) h1.hero-title .word{overflow:hidden}
 html.js-ready:not(.reduced-motion) h1.hero-title .word-inner{transform:translateY(110%)}
-/* Ensure the italic variant has extra right padding to house its terminal flourish */
-h1.hero-title em{padding-right:.08em;margin-right:-.04em;display:inline-block}
+/* Emphasis word: gold italic, no underline. Instrument Serif italic is
+   stable enough (unlike Fraunces swashes) to read cleanly, and italic is
+   the rhetorical stress the word needs. */
+h1.hero-title em{font-style:italic;color:var(--gold);display:inline-block;padding-right:.05em}
 h1.hero-title em{font-style:italic;color:var(--gold);font-weight:500}
 h1.hero-title em .word-inner{color:var(--gold)}
 
@@ -413,6 +483,12 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
       <a href="#stats">Stats</a>
       <a href="./specs">Specs</a>
     </div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle color theme" title="Toggle theme">
+      <!-- Moon (shown in dark mode, click to go light) -->
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <!-- Sun (shown in light mode, click to go dark) -->
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    </button>
     <a class="nav-cta" href="https://github.com/Reiers/prova" target="_blank" rel="noopener">github →</a>
   </div>
 </nav>
@@ -569,33 +645,33 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
         <svg viewBox="0 0 1200 560" preserveAspectRatio="xMidYMid meet">
           <defs>
             <linearGradient id="gClient" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stop-color="#2B2419" stop-opacity=".8"/>
-              <stop offset="100%" stop-color="#14110D" stop-opacity=".8"/>
+              <stop offset="0%" stop-color="var(--bg-3)" stop-opacity=".8"/>
+              <stop offset="100%" stop-color="var(--bg-1)" stop-opacity=".8"/>
             </linearGradient>
             <linearGradient id="gProver" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stop-color="#C9A84C" stop-opacity=".25"/>
-              <stop offset="100%" stop-color="#C9A84C" stop-opacity=".05"/>
+              <stop offset="0%" stop-color="var(--gold)" stop-opacity=".22"/>
+              <stop offset="100%" stop-color="var(--gold)" stop-opacity=".04"/>
             </linearGradient>
             <linearGradient id="gBase" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stop-color="#4EB8A8" stop-opacity=".2"/>
-              <stop offset="100%" stop-color="#4EB8A8" stop-opacity=".05"/>
+              <stop offset="0%" stop-color="var(--teal)" stop-opacity=".18"/>
+              <stop offset="100%" stop-color="var(--teal)" stop-opacity=".04"/>
             </linearGradient>
-            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#C9A84C"/>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--gold)"/>
             </marker>
-            <marker id="arrw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#D8D2C4"/>
+            <marker id="arrw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--fg-1)"/>
             </marker>
             <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
           </defs>
 
-          <!-- client box -->
+          <!-- client box (60,120)-(280,440) -->
           <g transform="translate(60,120)">
-            <rect width="220" height="320" rx="14" fill="url(#gClient)" stroke="#D8D2C4" stroke-opacity=".3"/>
-            <text x="110" y="38" text-anchor="middle" fill="#F4EFE3" font-size="18" font-weight="600" font-family="Fraunces">Client</text>
-            <text x="110" y="58" text-anchor="middle" fill="#D8D2C4" opacity=".6" font-size="11" font-family="JetBrains Mono">any app on Base</text>
-            <line x1="20" y1="74" x2="200" y2="74" stroke="#D8D2C4" stroke-opacity=".15"/>
-            <g fill="#D8D2C4" font-family="Space Grotesk" font-size="13">
+            <rect width="220" height="320" rx="14" fill="url(#gClient)" stroke="var(--fg-1)" stroke-opacity=".3"/>
+            <text x="110" y="42" text-anchor="middle" fill="var(--fg-0)" font-size="20" font-weight="500" font-family="Instrument Serif">Client</text>
+            <text x="110" y="60" text-anchor="middle" fill="var(--fg-1)" opacity=".6" font-size="11" font-family="JetBrains Mono">any app on Base</text>
+            <line x1="20" y1="76" x2="200" y2="76" stroke="var(--fg-1)" stroke-opacity=".15"/>
+            <g fill="var(--fg-1)" font-family="Inter" font-size="13">
               <text x="20" y="108">compute CommP</text>
               <text x="20" y="140">pick a prover</text>
               <text x="20" y="172">publish piece URL</text>
@@ -604,29 +680,29 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
             </g>
           </g>
 
-          <!-- prover box -->
-          <g transform="translate(490,100)">
-            <rect width="220" height="360" rx="14" fill="url(#gProver)" stroke="#C9A84C" stroke-opacity=".5"/>
-            <text x="110" y="38" text-anchor="middle" fill="#F4EFE3" font-size="18" font-weight="600" font-family="Fraunces">Prover</text>
-            <text x="110" y="58" text-anchor="middle" fill="#C9A84C" opacity=".7" font-size="11" font-family="JetBrains Mono">off-chain, provad</text>
-            <line x1="20" y1="74" x2="200" y2="74" stroke="#C9A84C" stroke-opacity=".3"/>
-            <g fill="#F4EFE3" font-family="Space Grotesk" font-size="13">
+          <!-- prover box (490,120)-(710,440): same height as client+base for symmetry -->
+          <g transform="translate(490,120)">
+            <rect width="220" height="320" rx="14" fill="url(#gProver)" stroke="var(--gold)" stroke-opacity=".5"/>
+            <text x="110" y="42" text-anchor="middle" fill="var(--fg-0)" font-size="20" font-weight="500" font-family="Instrument Serif">Prover</text>
+            <text x="110" y="60" text-anchor="middle" fill="var(--gold)" opacity=".85" font-size="11" font-family="JetBrains Mono">off-chain, provad</text>
+            <line x1="20" y1="76" x2="200" y2="76" stroke="var(--gold)" stroke-opacity=".3"/>
+            <g fill="var(--fg-0)" font-family="Inter" font-size="13">
               <text x="20" y="108">event poller</text>
-              <text x="20" y="140">deal engine</text>
-              <text x="20" y="172">piece store (disk)</text>
-              <text x="20" y="204">PDP tree + proofs</text>
-              <text x="20" y="236">HTTPS retrieval</text>
-              <text x="20" y="268">metrics</text>
+              <text x="20" y="136">deal engine</text>
+              <text x="20" y="164">piece store</text>
+              <text x="20" y="192">PDP tree + proofs</text>
+              <text x="20" y="220">HTTPS retrieval</text>
+              <text x="20" y="248">metrics</text>
             </g>
           </g>
 
-          <!-- base box -->
+          <!-- base box (920,120)-(1140,440) -->
           <g transform="translate(920,120)">
-            <rect width="220" height="320" rx="14" fill="url(#gBase)" stroke="#4EB8A8" stroke-opacity=".4"/>
-            <text x="110" y="38" text-anchor="middle" fill="#F4EFE3" font-size="18" font-weight="600" font-family="Fraunces">Base L2</text>
-            <text x="110" y="58" text-anchor="middle" fill="#4EB8A8" opacity=".8" font-size="11" font-family="JetBrains Mono">6 contracts, Solidity</text>
-            <line x1="20" y1="74" x2="200" y2="74" stroke="#4EB8A8" stroke-opacity=".3"/>
-            <g fill="#F4EFE3" font-family="Space Grotesk" font-size="13">
+            <rect width="220" height="320" rx="14" fill="url(#gBase)" stroke="var(--teal)" stroke-opacity=".4"/>
+            <text x="110" y="42" text-anchor="middle" fill="var(--fg-0)" font-size="20" font-weight="500" font-family="Instrument Serif">Base L2</text>
+            <text x="110" y="60" text-anchor="middle" fill="var(--teal)" opacity=".9" font-size="11" font-family="JetBrains Mono">6 contracts, Solidity</text>
+            <line x1="20" y1="76" x2="200" y2="76" stroke="var(--teal)" stroke-opacity=".3"/>
+            <g fill="var(--fg-0)" font-family="Inter" font-size="13">
               <text x="20" y="108">ProvaToken</text>
               <text x="20" y="140">ProofVerifier</text>
               <text x="20" y="172">ProverRegistry</text>
@@ -636,37 +712,39 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
             </g>
           </g>
 
-          <!-- static flow arrows (highlighted one-at-a-time by JS) -->
-          <g id="flowArrows" stroke-width="2" fill="none" stroke="#D8D2C4" opacity=".2">
-            <!-- 1 client → base (propose) top arc -->
-            <path id="arc-1" d="M 180 120 C 180 40, 1020 40, 1020 120" marker-end="url(#arr)"/>
-            <!-- 2 base → prover (event) -->
-            <path id="arc-2" d="M 920 180 L 710 180" marker-end="url(#arr)" stroke-dasharray="5 4"/>
-            <!-- 3 client → prover (fetch bytes, gold) -->
-            <path id="arc-3" d="M 280 240 L 490 240" marker-end="url(#arr)"/>
-            <!-- 4 prover → base (accept) -->
-            <path id="arc-4" d="M 710 300 L 920 300" marker-end="url(#arr)"/>
-            <!-- 5 base → prover (challenge dashed) -->
-            <path id="arc-5" d="M 920 360 L 710 360" marker-end="url(#arr)" stroke-dasharray="5 4"/>
-            <!-- 6 prover → base (prove) -->
-            <path id="arc-6" d="M 710 420 L 920 420" marker-end="url(#arr)"/>
-            <!-- 7 prover → client (serve dashed) -->
-            <path id="arc-7" d="M 490 400 L 280 400" marker-end="url(#arrw)" stroke-dasharray="5 4"/>
+          <!-- flow arrows. Endpoints touch box edges exactly (no floating tails).
+               Client right edge = x=280. Prover left edge = x=490, right edge = x=710.
+               Base left edge = x=920. -->
+          <g id="flowArrows" stroke-width="1.8" fill="none" stroke="var(--fg-1)" opacity=".55">
+            <!-- 1 client (top) → base (top) via high arc -->
+            <path id="arc-1" d="M 170 120 C 170 50, 1030 50, 1030 120" marker-end="url(#arr)"/>
+            <!-- 2 base → prover: DealProposed event -->
+            <path id="arc-2" d="M 920 180 L 716 180" marker-end="url(#arr)" stroke-dasharray="5 4"/>
+            <!-- 3 client → prover: fetch piece bytes -->
+            <path id="arc-3" d="M 280 240 L 484 240" marker-end="url(#arr)"/>
+            <!-- 4 prover → base: createDataSet (accept) -->
+            <path id="arc-4" d="M 710 300 L 914 300" marker-end="url(#arr)"/>
+            <!-- 5 base → prover: daily challenge -->
+            <path id="arc-5" d="M 920 360 L 716 360" marker-end="url(#arr)" stroke-dasharray="5 4"/>
+            <!-- 6 prover → base: provePossession -->
+            <path id="arc-6" d="M 710 420 L 914 420" marker-end="url(#arr)"/>
+            <!-- 7 prover → client: retrieve bytes -->
+            <path id="arc-7" d="M 490 400 L 286 400" marker-end="url(#arrw)" stroke-dasharray="5 4"/>
           </g>
 
           <!-- step number pills (JS highlights active) -->
           <g id="flowPills" font-family="JetBrains Mono" font-size="11" font-weight="700">
-            <g class="pill" id="pill-1"><circle cx="600" cy="68" r="14" fill="#0A0907" stroke="#C9A84C" stroke-width="1.5"/><text x="600" y="72" text-anchor="middle" fill="#C9A84C">1</text></g>
-            <g class="pill" id="pill-2"><circle cx="815" cy="170" r="14" fill="#0A0907" stroke="#C9A84C" stroke-width="1.5"/><text x="815" y="174" text-anchor="middle" fill="#C9A84C">2</text></g>
-            <g class="pill" id="pill-3"><circle cx="385" cy="230" r="14" fill="#0A0907" stroke="#C9A84C" stroke-width="1.5"/><text x="385" y="234" text-anchor="middle" fill="#C9A84C">3</text></g>
-            <g class="pill" id="pill-4"><circle cx="815" cy="290" r="14" fill="#0A0907" stroke="#C9A84C" stroke-width="1.5"/><text x="815" y="294" text-anchor="middle" fill="#C9A84C">4</text></g>
-            <g class="pill" id="pill-5"><circle cx="815" cy="350" r="14" fill="#0A0907" stroke="#C9A84C" stroke-width="1.5"/><text x="815" y="354" text-anchor="middle" fill="#C9A84C">5</text></g>
-            <g class="pill" id="pill-6"><circle cx="815" cy="410" r="14" fill="#0A0907" stroke="#C9A84C" stroke-width="1.5"/><text x="815" y="414" text-anchor="middle" fill="#C9A84C">6</text></g>
-            <g class="pill" id="pill-7"><circle cx="385" cy="390" r="14" fill="#0A0907" stroke="#C9A84C" stroke-width="1.5"/><text x="385" y="394" text-anchor="middle" fill="#C9A84C">7</text></g>
+            <g class="pill" id="pill-1"><circle cx="600" cy="76" r="14" fill="var(--bg-0)" stroke="var(--gold)" stroke-width="1.5"/><text x="600" y="80" text-anchor="middle" fill="var(--gold)">1</text></g>
+            <g class="pill" id="pill-2"><circle cx="818" cy="180" r="14" fill="var(--bg-0)" stroke="var(--gold)" stroke-width="1.5"/><text x="818" y="184" text-anchor="middle" fill="var(--gold)">2</text></g>
+            <g class="pill" id="pill-3"><circle cx="382" cy="240" r="14" fill="var(--bg-0)" stroke="var(--gold)" stroke-width="1.5"/><text x="382" y="244" text-anchor="middle" fill="var(--gold)">3</text></g>
+            <g class="pill" id="pill-4"><circle cx="812" cy="300" r="14" fill="var(--bg-0)" stroke="var(--gold)" stroke-width="1.5"/><text x="812" y="304" text-anchor="middle" fill="var(--gold)">4</text></g>
+            <g class="pill" id="pill-5"><circle cx="818" cy="360" r="14" fill="var(--bg-0)" stroke="var(--gold)" stroke-width="1.5"/><text x="818" y="364" text-anchor="middle" fill="var(--gold)">5</text></g>
+            <g class="pill" id="pill-6"><circle cx="812" cy="420" r="14" fill="var(--bg-0)" stroke="var(--gold)" stroke-width="1.5"/><text x="812" y="424" text-anchor="middle" fill="var(--gold)">6</text></g>
+            <g class="pill" id="pill-7"><circle cx="388" cy="400" r="14" fill="var(--bg-0)" stroke="var(--gold)" stroke-width="1.5"/><text x="388" y="404" text-anchor="middle" fill="var(--gold)">7</text></g>
           </g>
 
           <!-- moving packet (animated by JS along active arc) -->
-          <circle id="packet" r="6" fill="#E8C766" filter="url(#glow)" opacity="0"/>
+          <circle id="packet" r="6" fill="var(--gold-hot)" filter="url(#glow)" opacity="0"/>
         </svg>
       </div>
 
@@ -1058,6 +1136,23 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
     }
   }, 2500);
 
+  /* ── Theme toggle ─────────────────────────────────── */
+  const themeBtn = $('#themeToggle');
+  // themeReRender is populated by each diagram component with a function
+  // that re-paints the SVG so var(--color) references resolve against the
+  // new theme's values. Called after toggle.
+  window.themeReRender = [];
+  if(themeBtn){
+    themeBtn.addEventListener('click', ()=>{
+      const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('prova-theme', next); } catch(e) {}
+      // Re-render any canvas that baked CSS vars into serialized SVG strings.
+      window.themeReRender.forEach(fn=>{ try{fn()}catch(e){} });
+    });
+  }
+
   /* ── Live "last proof" ticker (simulated, for pre-mainnet) ───── */
   /* Gives the hero a breathing, alive feeling. Cycles through plausible
      proof timestamps + block heights. Once we have a real testnet indexer
@@ -1175,22 +1270,23 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
     $('#flowDescTitle').textContent = flowDescData[n].t;
     $('#flowDescText').innerHTML = flowDescData[n].b;
 
-    // reset all arrows + pills
-    Object.values(flowArrows).forEach(a=>{a.setAttribute('opacity','.2');a.setAttribute('stroke','#D8D2C4');a.setAttribute('stroke-width','2')});
+    // reset all arrows + pills. Use CSS custom-property references so light/dark
+    // theme switching works correctly without re-querying on every theme change.
+    Object.values(flowArrows).forEach(a=>{a.setAttribute('opacity','.5');a.removeAttribute('stroke');a.setAttribute('stroke-width','1.8')});
     Object.values(pills).forEach(p=>{
       const c = p.querySelector('circle');
-      c.setAttribute('fill','#0A0907');c.setAttribute('stroke','#C9A84C');
-      p.querySelector('text').setAttribute('fill','#C9A84C');
+      c.setAttribute('fill','var(--bg-0)');c.setAttribute('stroke','var(--gold)');
+      p.querySelector('text').setAttribute('fill','var(--gold)');
     });
 
     // highlight active
     const arrow = flowArrows[n];
     arrow.setAttribute('opacity','1');
-    arrow.setAttribute('stroke','#E8C766');
-    arrow.setAttribute('stroke-width','3');
+    arrow.setAttribute('stroke','var(--gold-hot)');
+    arrow.setAttribute('stroke-width','2.5');
     const pill = pills[n];
-    pill.querySelector('circle').setAttribute('fill','#C9A84C');
-    pill.querySelector('text').setAttribute('fill','#0A0907');
+    pill.querySelector('circle').setAttribute('fill','var(--gold)');
+    pill.querySelector('text').setAttribute('fill','var(--bg-0)');
 
     // animate packet along arrow
     if(typeof gsap !== 'undefined' && !reduced){
@@ -1279,7 +1375,7 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
           [0,1].forEach(k=>{
             const c = nodes[L+1][i*2+k];
             const active = path.has(`${L}.${i}`) && path.has(`${L+1}.${i*2+k}`);
-            svg += `<line x1="${p.x}" y1="${p.y}" x2="${c.x}" y2="${c.y}" stroke="${active?'#C9A84C':'rgba(244,239,227,0.1)'}" stroke-width="${active?2:1}"/>`;
+            svg += `<line x1="${p.x}" y1="${p.y}" x2="${c.x}" y2="${c.y}" stroke="${active?'var(--gold)':'var(--hair)'}" stroke-width="${active?2:1}"/>`;
           });
         });
       }
@@ -1291,15 +1387,15 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
           const isHit = isLeaf && i === hit;
           const onPath = path.has(key);
           const r = isLeaf ? 10 : 7;
-          const fill = isHit ? '#E8C766' : onPath ? '#C9A84C' : 'rgba(244,239,227,0.1)';
-          const stroke = onPath ? '#C9A84C' : 'rgba(244,239,227,0.2)';
+          const fill = isHit ? 'var(--gold-hot)' : onPath ? 'var(--gold)' : 'var(--hair)';
+          const stroke = onPath ? 'var(--gold)' : 'var(--hair)';
           const filter = isHit ? 'filter="url(#mg)"' : '';
           svg += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" ${filter}/>`;
           if(L===0){
-            svg += `<text x="${p.x}" y="${p.y-14}" text-anchor="middle" fill="#F4EFE3" font-family="Fraunces" font-size="11" font-style="italic">root</text>`;
+            svg += `<text x="${p.x}" y="${p.y-14}" text-anchor="middle" fill="var(--fg-0)" font-family="Instrument Serif" font-size="12" font-style="italic">root</text>`;
           }
           if(isLeaf){
-            svg += `<text x="${p.x}" y="${p.y+22}" text-anchor="middle" fill="${isHit?'#E8C766':'rgba(216,210,196,0.4)'}" font-family="JetBrains Mono" font-size="9">#${i}</text>`;
+            svg += `<text x="${p.x}" y="${p.y+22}" text-anchor="middle" fill="${isHit?'var(--gold-hot)':'var(--fg-dim)'}" font-family="JetBrains Mono" font-size="9">#${i}</text>`;
           }
         });
       }
@@ -1335,7 +1431,7 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
       let out = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
         <defs>
           <filter id="pulse-glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          <radialGradient id="center-grad"><stop offset="0%" stop-color="#E8C766" stop-opacity=".8"/><stop offset="100%" stop-color="#C9A84C" stop-opacity="0"/></radialGradient>
+          <radialGradient id="center-grad"><stop offset="0%" stop-color="var(--gold-hot)" stop-opacity=".8"/><stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/></radialGradient>
         </defs>`;
 
       // Lines client → provers
@@ -1343,17 +1439,17 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
         const a = (i/N) * Math.PI * 2 - Math.PI/2;
         const px = cx + Math.cos(a) * r;
         const py = cy + Math.sin(a) * r;
-        const col = alive[i] ? 'rgba(78,184,168,0.45)' : 'rgba(214,106,106,0.25)';
+        const col = alive[i] ? 'var(--teal)' : 'var(--rose)';
+        const colOp = alive[i] ? '0.55' : '0.25';
         const dash = alive[i] ? '' : 'stroke-dasharray="4 4"';
-        out += `<line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="${col}" stroke-width="1.5" ${dash}/>`;
+        out += `<line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="${col}" stroke-opacity="${colOp}" stroke-width="1.5" ${dash}/>`;
       }
 
-      // Center (client). Larger hit disc + text placed outside the inner circle
-      // so the label can breathe without being clipped.
+      // Center (client).
       out += `<circle cx="${cx}" cy="${cy}" r="70" fill="url(#center-grad)"/>`;
-      out += `<circle cx="${cx}" cy="${cy}" r="36" fill="#14110D" stroke="#C9A84C" stroke-width="2"/>`;
-      out += `<text x="${cx}" y="${cy-2}" text-anchor="middle" fill="#F4EFE3" font-family="Fraunces" font-size="14" font-weight="600">client</text>`;
-      out += `<text x="${cx}" y="${cy+14}" text-anchor="middle" fill="#C9A84C" opacity=".75" font-family="JetBrains Mono" font-size="9" letter-spacing="0.1em">YOUR FILE</text>`;
+      out += `<circle cx="${cx}" cy="${cy}" r="36" fill="var(--bg-1)" stroke="var(--gold)" stroke-width="2"/>`;
+      out += `<text x="${cx}" y="${cy-2}" text-anchor="middle" fill="var(--fg-0)" font-family="Instrument Serif" font-size="15" font-weight="500">client</text>`;
+      out += `<text x="${cx}" y="${cy+14}" text-anchor="middle" fill="var(--gold)" opacity=".85" font-family="JetBrains Mono" font-size="9" letter-spacing="0.1em">YOUR FILE</text>`;
 
       // Provers
       for(let i=0;i<N;i++){
@@ -1361,13 +1457,13 @@ footer{border-top:1px solid var(--hair);padding:56px 0 48px;background:var(--ink
         const px = cx + Math.cos(a) * r;
         const py = cy + Math.sin(a) * r;
         const a2 = alive[i];
-        const fill = a2 ? 'rgba(78,184,168,0.18)' : 'rgba(214,106,106,0.14)';
-        const stroke = a2 ? '#4EB8A8' : '#D66A6A';
+        const strokeColor = a2 ? 'var(--teal)' : 'var(--rose)';
+        const fillOp = a2 ? '0.15' : '0.1';
         const glow = a2 ? 'filter="url(#pulse-glow)"' : '';
         out += `<g class="prover-node" data-idx="${i}" style="cursor:pointer">`;
-        out += `<circle cx="${px}" cy="${py}" r="30" fill="${fill}" stroke="${stroke}" stroke-width="2" ${glow}/>`;
-        out += `<text x="${px}" y="${py-2}" text-anchor="middle" fill="${a2?'#F4EFE3':'#D66A6A'}" font-family="JetBrains Mono" font-size="11" font-weight="600">P${i+1}</text>`;
-        out += `<text x="${px}" y="${py+14}" text-anchor="middle" fill="${a2?'#4EB8A8':'#D66A6A'}" font-family="JetBrains Mono" font-size="9">${a2?'alive':'down'}</text>`;
+        out += `<circle cx="${px}" cy="${py}" r="30" fill="${strokeColor}" fill-opacity="${fillOp}" stroke="${strokeColor}" stroke-width="2" ${glow}/>`;
+        out += `<text x="${px}" y="${py-2}" text-anchor="middle" fill="${a2?'var(--fg-0)':'var(--rose)'}" font-family="JetBrains Mono" font-size="11" font-weight="600">P${i+1}</text>`;
+        out += `<text x="${px}" y="${py+14}" text-anchor="middle" fill="${strokeColor}" font-family="JetBrains Mono" font-size="9">${a2?'alive':'down'}</text>`;
         out += `</g>`;
       }
 
