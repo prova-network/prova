@@ -61,7 +61,7 @@ for target in "${TARGETS[@]}"; do
 
   branch="split-$target-$$"
   git subtree split --prefix="$subdir" -b "$branch" 2>&1 | tail -1
-  git push "$target" "$branch:main" --force-with-lease 2>&1 | tail -3
+  git push "$target" "$branch:main" --force 2>&1 | tail -3
   git branch -D "$branch" >/dev/null 2>&1
 done
 
