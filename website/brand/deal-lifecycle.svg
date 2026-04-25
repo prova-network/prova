@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 320" width="880" height="320" font-family="ui-sans-serif, system-ui, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#C9A84C"></path>
+    </marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#555"></path>
+    </marker>
+    <marker id="ared" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b84918"></path>
+    </marker>
+  </defs>
+
+  <rect width="880" height="320" fill="#FAFAF9"></rect>
+
+  <text x="440" y="28" text-anchor="middle" font-size="16" font-weight="700" fill="#1a1817">Deal Lifecycle</text>
+  <text x="440" y="46" text-anchor="middle" font-size="12" fill="#666" font-style="italic">From on-chain proposal to active storage (happy path on top, failures at bottom)</text>
+
+  
+  <g font-size="11">
+    <g transform="translate(30, 80)">
+      <rect width="130" height="54" rx="10" fill="#fff" stroke="#C9A84C" stroke-width="1.5"></rect>
+      <text x="65" y="24" text-anchor="middle" font-weight="600" fill="#1a1817">Proposed</text>
+      <text x="65" y="42" text-anchor="middle" font-size="10" fill="#666">on-chain event</text>
+    </g>
+
+    <g transform="translate(190, 80)">
+      <rect width="130" height="54" rx="10" fill="#fff" stroke="#C9A84C" stroke-width="1.5"></rect>
+      <text x="65" y="24" text-anchor="middle" font-weight="600" fill="#1a1817">Downloading</text>
+      <text x="65" y="42" text-anchor="middle" font-size="10" fill="#666">prover fetches URL</text>
+    </g>
+
+    <g transform="translate(350, 80)">
+      <rect width="130" height="54" rx="10" fill="#fff" stroke="#C9A84C" stroke-width="1.5"></rect>
+      <text x="65" y="24" text-anchor="middle" font-weight="600" fill="#1a1817">Verifying</text>
+      <text x="65" y="42" text-anchor="middle" font-size="10" fill="#666">recompute CommP</text>
+    </g>
+
+    <g transform="translate(510, 80)">
+      <rect width="130" height="54" rx="10" fill="#fff" stroke="#C9A84C" stroke-width="1.5"></rect>
+      <text x="65" y="24" text-anchor="middle" font-weight="600" fill="#1a1817">Accepting</text>
+      <text x="65" y="42" text-anchor="middle" font-size="10" fill="#666">tx submitted</text>
+    </g>
+
+    <g transform="translate(670, 80)">
+      <rect width="180" height="54" rx="10" fill="#1a1817" stroke="#C9A84C" stroke-width="1.8"></rect>
+      <text x="90" y="24" text-anchor="middle" font-weight="700" fill="#C9A84C" font-size="12">Active</text>
+      <text x="90" y="42" text-anchor="middle" font-size="10" fill="#ddd">proving + earning</text>
+    </g>
+
+    
+    <g transform="translate(670, 220)">
+      <rect width="180" height="44" rx="8" fill="#ECF5EB" stroke="#71B074" stroke-width="1.2"></rect>
+      <text x="90" y="20" text-anchor="middle" font-weight="600" fill="#2c5c2e" font-size="11">Completed ✓</text>
+      <text x="90" y="36" text-anchor="middle" font-size="10" fill="#2c5c2e">duration reached</text>
+    </g>
+
+    
+    <g transform="translate(30, 220)">
+      <rect width="130" height="44" rx="8" fill="#F0EFED" stroke="#999" stroke-width="1.2"></rect>
+      <text x="65" y="20" text-anchor="middle" font-weight="600" fill="#444" font-size="11">Cancelled</text>
+      <text x="65" y="36" text-anchor="middle" font-size="10" fill="#666">refund to client</text>
+    </g>
+
+    
+    <g transform="translate(270, 220)">
+      <rect width="160" height="44" rx="8" fill="#FBEFEB" stroke="#b84918" stroke-width="1.2"></rect>
+      <text x="80" y="20" text-anchor="middle" font-weight="600" fill="#b84918" font-size="11">Failed</text>
+      <text x="80" y="36" text-anchor="middle" font-size="10" fill="#b84918">never reached Active</text>
+    </g>
+
+    
+    <g transform="translate(460, 220)">
+      <rect width="180" height="44" rx="8" fill="#FBEFEB" stroke="#b84918" stroke-width="1.2"></rect>
+      <text x="90" y="20" text-anchor="middle" font-weight="600" fill="#b84918" font-size="11">Slashed</text>
+      <text x="90" y="36" text-anchor="middle" font-size="10" fill="#b84918">proof missed (MAX_PROOF_GAP)</text>
+    </g>
+  </g>
+
+  
+  <path d="M 160 107 L 185 107" stroke="#C9A84C" stroke-width="1.5" marker-end="url(#a)"></path>
+  <path d="M 320 107 L 345 107" stroke="#C9A84C" stroke-width="1.5" marker-end="url(#a)"></path>
+  <path d="M 480 107 L 505 107" stroke="#C9A84C" stroke-width="1.5" marker-end="url(#a)"></path>
+  <path d="M 640 107 L 665 107" stroke="#C9A84C" stroke-width="1.5" marker-end="url(#a)"></path>
+
+  
+  <path d="M 760 134 L 760 218" stroke="#71B074" stroke-width="1.4" marker-end="url(#a)" style="marker-end:none"></path>
+  <polygon points="755,214 760,222 765,214" fill="#71B074"></polygon>
+  <text x="774" y="180" font-size="10" fill="#2c5c2e">duration reached</text>
+
+  
+  <path d="M 710 134 C 680 180, 600 200, 560 218" fill="none" stroke="#b84918" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ared)"></path>
+  <text x="560" y="180" text-anchor="middle" font-size="10" fill="#b84918">faultDataSet()</text>
+
+  
+  <path d="M 80 134 L 80 218" fill="none" stroke="#555" stroke-width="1.2" marker-end="url(#ab)"></path>
+  <text x="10" y="180" font-size="10" fill="#555">cancelProposedDeal()</text>
+
+  
+  <path d="M 410 134 C 410 170, 360 200, 350 218" fill="none" stroke="#b84918" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ared)"></path>
+  <text x="390" y="180" text-anchor="middle" font-size="10" fill="#b84918">CommP mismatch</text>
+  <text x="390" y="194" text-anchor="middle" font-size="10" fill="#b84918">fetch / timeout</text>
+
+  
+  <g transform="translate(40, 298)">
+    <line x1="0" y1="0" x2="28" y2="0" stroke="#C9A84C" stroke-width="1.5"></line>
+    <text x="34" y="4" font-size="11" fill="#8a7a3a">happy path</text>
+
+    <line x1="140" y1="0" x2="168" y2="0" stroke="#71B074" stroke-width="1.5"></line>
+    <text x="174" y="4" font-size="11" fill="#2c5c2e">successful exit</text>
+
+    <line x1="300" y1="0" x2="328" y2="0" stroke="#b84918" stroke-width="1.5" stroke-dasharray="4 3"></line>
+    <text x="334" y="4" font-size="11" fill="#b84918">fault / failure</text>
+
+    <line x1="460" y1="0" x2="488" y2="0" stroke="#555" stroke-width="1.5"></line>
+    <text x="494" y="4" font-size="11" fill="#555">intentional cancel</text>
+  </g>
+</svg>
