@@ -117,7 +117,7 @@
       uniform vec3 uSunDir;
       uniform vec3 uOceanDeep, uOceanShore, uLandLow, uLandHigh;
       uniform vec3 uRim, uSun;
-      uniform float uAmbient, uRimStrength;
+      uniform float uAmbient, uRimStrength, uNightDim;
       varying vec2 vUv;
       varying vec3 vNormal;
       varying vec3 vWorldNormal;
