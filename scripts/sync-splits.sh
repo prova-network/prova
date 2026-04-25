@@ -2,74 +2,67 @@
 # Sync local monorepo subdirs back to their split repos.
 #
 # Usage:
-#   bash scripts/sync-splits.sh                # sync all 7
-#   bash scripts/sync-splits.sh cli sdk        # sync just listed
+#   bash scripts/sync-splits.sh                 # sync all components
+#   bash scripts/sync-splits.sh cli sdk         # sync just listed
 #
-# How it works:
-#   For each component, we use git subtree split to extract the subdir's
-#   history into a temporary branch, then push it to the matching remote.
-#
-# After this script runs, each split repo's main branch is updated with
-# whatever's currently committed locally for that subdir.
+# Each component is git-subtree-split into a temp branch and force-pushed
+# to its split repo's main. Subtree split preserves per-subdir history.
 
-set -euo pipefail
+set -e
 
-# Map: monorepo subdir → remote name (must match `git remote` config)
-declare -A SPLITS=(
-  [cli]=cli
-  [sdk/typescript]=sdk
-  [contracts]=contracts
-  [prover]=prover
-  [website]=website
-  [desktop]=desktop
-  [brand]=brand
-  [docs-gitbook]=docs
+# Pairs of "subdir|remote" - keeps macOS bash 3.2 happy
+SPLITS=(
+  "cli|cli"
+  "sdk/typescript|sdk"
+  "contracts|contracts"
+  "prover|prover"
+  "website|website"
+  "desktop|desktop"
+  "brand|brand"
+  "docs-gitbook|docs"
 )
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# Check we're on a clean main
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "✗ Working tree dirty. Commit or stash first."
   exit 1
 fi
 
-# Filter to requested components, or all
+# Resolve targets
 TARGETS=("$@")
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
-  TARGETS=(cli sdk contracts prover website desktop brand docs)
+  for pair in "${SPLITS[@]}"; do
+    TARGETS+=("${pair#*|}")
+  done
 fi
 
-for component in "${TARGETS[@]}"; do
-  # Find the source subdir
+for target in "${TARGETS[@]}"; do
   subdir=""
-  for k in "${!SPLITS[@]}"; do
-    if [[ "${SPLITS[$k]}" == "$component" ]]; then
-      subdir="$k"
+  for pair in "${SPLITS[@]}"; do
+    if [[ "${pair#*|}" == "$target" ]]; then
+      subdir="${pair%|*}"
       break
     fi
   done
 
   if [[ -z "$subdir" ]]; then
-    echo "✗ Unknown component: $component"
+    echo "✗ Unknown component: $target"
     continue
   fi
-
   if [[ ! -d "$subdir" ]]; then
     echo "✗ Subdir not found: $subdir"
     continue
   fi
 
   echo ""
-  echo "── $subdir → prova-network/$component ──"
+  echo "── $subdir → prova-network/$target ──"
 
-  branch="split-$component-$$"
+  branch="split-$target-$$"
   git subtree split --prefix="$subdir" -b "$branch" 2>&1 | tail -1
-
-  git push "$component" "$branch:main" --force-with-lease 2>&1 | tail -3
-
-  git branch -D "$branch" 2>/dev/null
+  git push "$target" "$branch:main" --force-with-lease 2>&1 | tail -3
+  git branch -D "$branch" >/dev/null 2>&1
 done
 
 echo ""
