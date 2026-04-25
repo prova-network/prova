@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Prova — Upload</title>
+<meta name="description" content="Drop a file. Get a piece-cid. No wallet, no install." />
+<link rel="icon" type="image/svg+xml" href="../brand/prova-mark-small.svg" />
+<link rel="stylesheet" href="./upload.css?v=1" />
+</head>
+<body data-theme="dark">
+
+<header class="topbar">
+  <a class="lockup" href="https://prova-network.pages.dev/">
+    <svg class="mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <path d="M32 5 L55.5 18.5 L55.5 45.5 L32 59 L8.5 45.5 L8.5 18.5 Z"
+            stroke="currentColor" stroke-width="3" fill="none"
+            stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M22 18 L22 46 M22 18 L37 18 Q44 18 44 26 Q44 34 37 34 L22 34"
+            stroke="currentColor" stroke-width="4.5" fill="none"
+            stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>
+    <span class="wordmark">Prova</span>
+  </a>
+  <a class="back" href="https://prova-network.pages.dev/">← back to prova.network</a>
+</header>
+
+<main>
+  <section class="hero">
+    <p class="kicker"><span class="dot"></span>Upload · no wallet · no install</p>
+    <h1>Drop a file.<br/>Get a <em>piece-cid</em>.</h1>
+    <p class="lead">
+      We pin it across Prova provers, prove it daily, and give you back a permanent
+      retrieval URL. First 100&nbsp;MB free, no signup. Larger files: connect a
+      Base wallet and pay in USDC.
+    </p>
+  </section>
+
+  <!-- ============ DROP ZONE ============ -->
+  <section class="drop-stage">
+    <div id="drop" class="drop">
+      <div class="drop-empty">
+        <svg class="drop-icon" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <path d="M32 8 L32 40 M20 28 L32 40 L44 28" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 48 L10 54 Q10 58 14 58 L50 58 Q54 58 54 54 L54 48" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p class="drop-title">Drop a file here</p>
+        <p class="drop-hint">or <button class="link-btn" id="pick-file">browse</button> · up to 100 MB free</p>
+        <input type="file" id="file-input" hidden />
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROGRESS ============ -->
+  <section id="progress" class="progress hidden">
+    <div class="progress-card">
+      <p class="meta" id="progress-stage">PREPARING</p>
+      <h3 id="progress-name">file.bin</h3>
+      <p class="progress-sub" id="progress-sub">Computing piece-cid…</p>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <ol class="steps" id="steps">
+        <li data-step="hash"><span class="dot"></span><span>Compute piece-cid</span></li>
+        <li data-step="upload"><span class="dot"></span><span>Stage bytes to provers</span></li>
+        <li data-step="propose"><span class="dot"></span><span>Propose deal on Base</span></li>
+        <li data-step="accept"><span class="dot"></span><span>Prover accepts &amp; verifies</span></li>
+        <li data-step="active"><span class="dot"></span><span>Active · proven daily</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ RESULT ============ -->
+  <section id="result" class="result hidden">
+    <div class="result-card">
+      <p class="meta">DEAL ACTIVE · TESTNET</p>
+      <h3>Stored.</h3>
+      <dl class="kv">
+        <div><dt>piece-cid</dt><dd><code id="r-cid">…</code><button class="copy" data-copy="r-cid" title="Copy">⧉</button></dd></div>
+        <div><dt>deal-id</dt><dd><code id="r-deal">…</code></dd></div>
+        <div><dt>size</dt><dd id="r-size">…</dd></div>
+        <div><dt>paid</dt><dd id="r-paid">sponsored (free)</dd></div>
+        <div><dt>retrieval</dt><dd><a id="r-url" href="#" target="_blank" rel="noopener">…</a></dd></div>
+        <div><dt>term</dt><dd id="r-term">30 days</dd></div>
+      </dl>
+      <div class="result-actions">
+        <a class="cta" id="r-download" target="_blank" rel="noopener">Download to verify</a>
+        <button class="cta-quiet" id="r-another">Upload another →</button>
+      </div>
+      <p class="result-note">
+        Want it permanent or longer than 30 days? <a href="#claim" id="claim-link">Claim with a Base wallet →</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ ERROR ============ -->
+  <section id="error" class="error hidden">
+    <div class="error-card">
+      <p class="meta">SOMETHING WENT WRONG</p>
+      <h3 id="error-title">Upload failed</h3>
+      <p id="error-detail">…</p>
+      <button class="cta-quiet" id="error-retry">Try again</button>
+    </div>
+  </section>
+
+  <!-- ============ EXPLAINER ============ -->
+  <section class="explainer">
+    <p class="meta">WHAT JUST HAPPENED</p>
+    <ol>
+      <li>Your file's bytes were hashed in your browser to produce a <code>piece-cid</code>. We never saw the bytes unhashed for any longer than the upload took.</li>
+      <li>The bytes were staged for our sponsor prover on Base Sepolia.</li>
+      <li>A storage deal was proposed on-chain. We paid the gas + the storage fee.</li>
+      <li>The prover fetched the bytes, recomputed the <code>piece-cid</code>, confirmed the match, and posted its first proof.</li>
+      <li>The prover will continue posting a proof every 30 seconds. If a proof is missed, the prover is slashed and the file is re-pinned to a healthy prover.</li>
+    </ol>
+    <p class="explainer-foot">
+      All of this works the same when you bring your own wallet. The CLI is coming. The SDK
+      <a href="https://prova-network.pages.dev/specs.html">already exists</a>.
+    </p>
+  </section>
+</main>
+
+<footer class="site">
+  <span>v0.4.2 · Base Sepolia · sponsored uploads capped at 100 MB / file / 24 h</span>
+  <a href="https://prova-network.pages.dev/">prova.network</a>
+</footer>
+
+<script src="./upload.js?v=1" type="module"></script>
+</body>
+</html>

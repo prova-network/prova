@@ -1,0 +1,12 @@
+name = "prova-network"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "."
+
+[[kv_namespaces]]
+binding = "PROVA_RATE"
+id = "d5eaf1fd8fdd4188a967cf3a9bf9da85"
+
+# R2 binding (enable R2 in the Cloudflare dashboard, then uncomment + redeploy)
+# [[r2_buckets]]
+# binding = "PROVA_PIECES"
+# bucket_name = "prova-pieces"
