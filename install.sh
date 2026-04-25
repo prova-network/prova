@@ -120,7 +120,7 @@ ask()  {
 }
 
 # ─── Config ──────────────────────────────────────────────────────────────
-PROVA_REPO="${PROVA_REPO:-Reiers/prova}"
+PROVA_REPO="${PROVA_REPO:-prova-network/prova}"
 PROVA_BINARY="provad"
 VERSION="${PROVA_VERSION:-latest}"
 PREFIX="${PROVA_PREFIX:-/usr/local}"

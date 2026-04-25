@@ -5,7 +5,7 @@
 # Ethereum-native Prova pivot can be public.
 #
 # What it does:
-#   1. Flips Reiers/prova-docs to public on GitHub
+#   1. Flips prova-network/docs to public on GitHub
 #   2. Adds docs.prova.network DNS CNAME -> hosting.gitbook.io (Cloudflare)
 #   3. Cuts a v0.1.0 GitHub release tag
 #   4. Reminds you of the one required manual step in GitBook UI
@@ -43,7 +43,7 @@ echo ""
 
 # ── Confirmation ──────────────────────────────────────────────────
 echo "This will make the following surfaces PUBLIC:"
-echo "  - github.com/Reiers/prova-docs"
+echo "  - github.com/prova-network/docs"
 echo "  - docs.prova.network"
 echo ""
 read -p "Confirm Nicklas has exited Curio/PL/FilOz [yes/NO]: " CONFIRM
@@ -51,8 +51,8 @@ read -p "Confirm Nicklas has exited Curio/PL/FilOz [yes/NO]: " CONFIRM
 
 # ── 1. Flip GitHub repo to public ─────────────────────────────────
 echo ""
-echo "── 1. Flip Reiers/prova-docs to public ──"
-curl -s -X PATCH "https://api.github.com/repos/Reiers/prova-docs" \
+echo "── 1. Flip prova-network/docs to public ──"
+curl -s -X PATCH "https://api.github.com/repos/prova-network/docs" \
   -H "Authorization: Bearer $GH_PAT" \
   -H "Accept: application/vnd.github+json" \
   -d '{"private":false}' | python3 -c "
@@ -87,7 +87,7 @@ fi
 # ── 3. Cut GitHub release ─────────────────────────────────────────
 echo ""
 echo "── 3. Cut v0.1.0 GitHub release ──"
-EXISTING_RELEASE=$(curl -s "https://api.github.com/repos/Reiers/prova-docs/releases/tags/v0.1.0" \
+EXISTING_RELEASE=$(curl -s "https://api.github.com/repos/prova-network/docs/releases/tags/v0.1.0" \
   -H "Authorization: Bearer $GH_PAT" | python3 -c "
 import sys, json
 d=json.load(sys.stdin)
@@ -96,7 +96,7 @@ print(d.get('id', ''))
 if [[ -n "$EXISTING_RELEASE" ]]; then
   echo "  Release v0.1.0 already exists (id $EXISTING_RELEASE)"
 else
-  curl -s -X POST "https://api.github.com/repos/Reiers/prova-docs/releases" \
+  curl -s -X POST "https://api.github.com/repos/prova-network/docs/releases" \
     -H "Authorization: Bearer $GH_PAT" \
     -H "Accept: application/vnd.github+json" \
     -d '{
@@ -122,7 +122,7 @@ echo ""
 echo "Open: https://app.gitbook.com/o/$GITBOOK_ORG/s/$GITBOOK_SPACE/"
 echo ""
 echo "  a) Sidebar -> Integrations -> GitHub -> Connect"
-echo "  b) Authorize GitBook GitHub App on Reiers/prova-docs (main branch)"
+echo "  b) Authorize GitBook GitHub App on prova-network/docs (main branch)"
 echo "  c) Site settings -> Custom domain -> docs.prova.network -> Save"
 echo ""
 echo "Verification (after the manual step):"

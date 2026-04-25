@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Reiers/prova.git",
+    "url": "git+https://github.com/prova-network/prova.git",
     "directory": "desktop"
   },
   "keywords": [
@@ -36,7 +36,7 @@
   "author": "Prova Network contributors",
   "license": "(Apache-2.0 AND MIT)",
   "bugs": {
-    "url": "https://github.com/Reiers/prova/issues"
+    "url": "https://github.com/prova-network/prova/issues"
   },
   "homepage": "https://prova.network",
   "dependencies": {

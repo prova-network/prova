@@ -8,7 +8,7 @@
   <p>
     <a href="#install"><img src="https://img.shields.io/badge/install-curl%20%7C%20bash-C9A84C?style=flat-square" alt="installer" /></a>
     <a href="https://base.org"><img src="https://img.shields.io/badge/chain-Base%20L2-0052FF?style=flat-square" alt="Base L2" /></a>
-    <a href="https://github.com/Reiers/prova/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/tests-103%20passing-71B074?style=flat-square" alt="tests" /></a>
+    <a href="https://github.com/prova-network/prova/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/tests-103%20passing-71B074?style=flat-square" alt="tests" /></a>
     <a href="./spec/"><img src="https://img.shields.io/badge/specs-v2-1a1817?style=flat-square" alt="specs" /></a>
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-1a1817?style=flat-square" alt="license" /></a>
     <a href="./PIVOT.md"><img src="https://img.shields.io/badge/status-research%20%E2%80%A2%20in%20development-C9A84C?style=flat-square" alt="status" /></a>
