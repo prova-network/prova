@@ -4,15 +4,15 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Prova — Verifiable storage on Ethereum</title>
-<meta name="description" content="Prova is verifiable storage anchored to Ethereum. Continuous cryptographic proofs, daily slashing, retrievable over HTTPS." />
+<meta name="description" content="Prova is verifiable storage anchored to Ethereum. Host websites, datasets, and AI corpora with continuous cryptographic proofs. Pay in USDC. Retrieve over HTTPS." />
 <meta name="theme-color" content="#0a0c0f" />
 <link rel="icon" type="image/svg+xml" href="brand/prova-mark-small.svg" />
-<link rel="stylesheet" href="styles.css?v=10" />
+<link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body data-theme="dark">
 
 <!-- ========================================================================= -->
-<!-- HERO — live WebGL earth, contained in its own 100vh section                -->
+<!-- HERO                                                                       -->
 <!-- ========================================================================= -->
 <section class="hero">
   <canvas id="earth-canvas"></canvas>
@@ -31,25 +31,25 @@
       <span class="wordmark">Prova</span>
     </a>
     <nav>
+      <a href="#use">For clients</a>
       <a href="#how">How it works</a>
       <a href="#redundancy">Resilience</a>
-      <a href="#earn">Earn</a>
-      <a href="#stats">Stats</a>
+      <a href="#earn">Run a node</a>
       <a href="./whitepaper.html">Whitepaper</a>
       <a href="./specs.html">Specs</a>
     </nav>
     <div class="topbar-right">
       <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"></button>
-      <a class="cta-ghost" href="#earn">Run a node →</a>
+      <a class="cta-ghost" href="#use">Start storing →</a>
     </div>
   </header>
 
   <div class="copy">
     <p class="kicker">Verifiable storage anchored to Ethereum</p>
-    <h1>Every artifact, <em>continuously</em> proven —<br/>for as long as it matters.</h1>
+    <h1>Store websites, datasets, and AI corpora —<br/><em>continuously</em> proven, for as long as it matters.</h1>
     <div class="actions">
-      <a class="cta" href="./whitepaper.html">Read the whitepaper</a>
-      <a class="cta-quiet" href="./specs.html">View the specs →</a>
+      <a class="cta" href="#use">Start storing</a>
+      <a class="cta-quiet" href="./whitepaper.html">Read the whitepaper →</a>
     </div>
   </div>
 
@@ -62,9 +62,42 @@
 </section>
 
 <!-- ========================================================================= -->
-<!-- HOW IT WORKS — architecture diagram                                        -->
+<!-- USE — what clients actually do (top of the funnel)                         -->
 <!-- ========================================================================= -->
-<section class="chapter" id="how">
+<section id="use" style="padding: 14vh 0 10vh;">
+  <div class="wrap">
+    <p class="eyebrow">For clients</p>
+    <h2 class="section-title">Three things people store on Prova <em>today</em>.</h2>
+    <p class="section-intro">
+      You give Prova a file. It chunks, replicates, and pins it across N independent
+      provers. Every day, every prover proves the file is still there. You retrieve
+      over HTTPS, IPFS gateway, or libp2p. You pay in USDC on Base. That's the loop.
+    </p>
+
+    <div class="client-flows" id="client-flows"></div>
+
+    <div class="quickstart">
+      <p class="meta">Quickstart · 60 seconds</p>
+      <h3>Upload your first file</h3>
+      <pre><code><span class="cmt"># 1. Install the CLI</span>
+npm i -g @prova/cli
+
+<span class="cmt"># 2. Connect a Base wallet (one-time)</span>
+prova auth
+
+<span class="cmt"># 3. Upload anything</span>
+prova put ./my-site.tar.gz --redundancy 4 --term 1y
+<span class="ok">→ piece-cid: bafy…q4kr</span>
+<span class="ok">→ deal-id : d-0x9c4f</span>
+<span class="ok">→ paid    : 12.40 USDC</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- HOW IT WORKS — animated architecture diagram                               -->
+<!-- ========================================================================= -->
+<section class="chapter alt" id="how">
   <div class="wrap">
     <div>
       <p class="meta">II · How Prova works</p>
@@ -74,23 +107,18 @@
     </div>
     <div>
       <div class="diagram-card">
-        <p class="meta">FLOW · CLIENT → PROVER → ETHEREUM</p>
+        <p class="meta">FLOW · LIVE</p>
         <h3>Architecture</h3>
-        <div class="svg-host" id="diag-architecture">
-          <img src="brand/architecture.svg" alt="Prova architecture diagram" />
-          <div class="pulse-overlay" aria-hidden="true">
-            <svg viewBox="0 0 860 560" preserveAspectRatio="xMidYMid meet"></svg>
-          </div>
-        </div>
+        <div class="svg-host" id="diag-architecture"></div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ========================================================================= -->
-<!-- LIFECYCLE — deal lifecycle diagram                                         -->
+<!-- LIFECYCLE — animated state machine                                         -->
 <!-- ========================================================================= -->
-<section class="chapter alt" id="lifecycle">
+<section class="chapter" id="lifecycle">
   <div class="wrap">
     <div>
       <p class="meta">III · Deal lifecycle</p>
@@ -102,10 +130,7 @@
       <div class="diagram-card">
         <p class="meta">STATES · ON-CHAIN STATE MACHINE</p>
         <h3>Deal lifecycle</h3>
-        <div class="svg-host" id="diag-lifecycle">
-          <img src="brand/deal-lifecycle.svg" alt="Prova deal lifecycle diagram" />
-          <div class="pulse-overlay" aria-hidden="true"></div>
-        </div>
+        <div class="svg-host" id="diag-lifecycle"></div>
       </div>
     </div>
   </div>
@@ -114,7 +139,7 @@
 <!-- ========================================================================= -->
 <!-- REDUNDANCY LAB                                                             -->
 <!-- ========================================================================= -->
-<section id="redundancy" style="padding: 14vh 0 12vh;">
+<section class="alt" id="redundancy" style="padding: 14vh 0 12vh;">
   <div class="wrap">
     <p class="eyebrow">Resilience</p>
     <h2 class="section-title">Your file survives us. <em>Both of us.</em></h2>
@@ -158,9 +183,9 @@
 </section>
 
 <!-- ========================================================================= -->
-<!-- EARN CALCULATOR                                                            -->
+<!-- EARN — for provers                                                         -->
 <!-- ========================================================================= -->
-<section class="alt" id="earn" style="padding: 14vh 0 12vh;">
+<section id="earn" style="padding: 14vh 0 12vh;">
   <div class="wrap">
     <p class="eyebrow">For provers</p>
     <h2 class="section-title">Rent out your disk. <em>Earn ETH every day.</em></h2>
@@ -220,7 +245,7 @@
 <!-- ========================================================================= -->
 <!-- STATS                                                                      -->
 <!-- ========================================================================= -->
-<section id="stats" style="padding: 14vh 0 12vh;">
+<section class="alt" id="stats" style="padding: 14vh 0 12vh;">
   <div class="wrap">
     <p class="eyebrow">The network</p>
     <h2 class="section-title">Small. Verifiable. <em>Growing.</em></h2>
@@ -281,9 +306,10 @@
       <span class="wordmark">Prova</span>
     </a>
     <nav>
+      <a href="#use">For clients</a>
       <a href="#how">How it works</a>
       <a href="#redundancy">Resilience</a>
-      <a href="#earn">Earn</a>
+      <a href="#earn">Run a node</a>
       <a href="#stats">Stats</a>
       <a href="./whitepaper.html">Whitepaper</a>
       <a href="./specs.html">Specs</a>
@@ -292,18 +318,16 @@
   </div>
 </footer>
 
-<!-- ========================================================================= -->
-<!-- SCRIPTS                                                                    -->
-<!-- ========================================================================= -->
 <script src="https://unpkg.com/three@0.160.1/build/three.min.js"></script>
-<script src="earth.js?v=10"></script>
-<script src="lab.js?v=1"></script>
+<script src="earth.js?v=11"></script>
+<script src="diagrams.js?v=11"></script>
+<script src="lab.js?v=11"></script>
 <script>
-  // Theme toggle
   document.getElementById('theme-toggle').addEventListener('click', () => {
     const next = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
     if (window.__applyTheme) window.__applyTheme(next);
     if (window.__renderLab) window.__renderLab();
+    if (window.__renderDiagrams) window.__renderDiagrams();
   });
 </script>
 </body>

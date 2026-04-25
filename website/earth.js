@@ -42,16 +42,16 @@
     },
     light: {
       bg:           [0.892, 0.910, 0.928],
-      ocean_deep:   [0.345, 0.420, 0.495],
-      ocean_shore:  [0.530, 0.598, 0.665],
-      land_low:     [0.685, 0.715, 0.745],
-      land_high:    [0.892, 0.905, 0.918],
-      atmo:         [0.40,  0.52,  0.66 ],
-      rim:          [0.55,  0.66,  0.78 ],
+      ocean_deep:   [0.380, 0.510, 0.640],
+      ocean_shore:  [0.530, 0.640, 0.745],
+      land_low:     [0.745, 0.760, 0.780],
+      land_high:    [0.910, 0.918, 0.925],
+      atmo:         [0.55,  0.68,  0.84 ],
+      rim:          [0.62,  0.74,  0.88 ],
       sun:          [1.00,  0.99,  0.96 ],
-      ambient:      0.38,
-      atmoStrength: 0.30,
-      rimStrength:  0.34,
+      ambient:      0.45,
+      atmoStrength: 0.55,
+      rimStrength:  0.42,
       pulseHex:     0x4a6f8c,
       arcHex:       0x5c7d96,
       arcOpacity:   0.32,
@@ -95,6 +95,7 @@
       uSun:         { value: new T.Color() },
       uAmbient:     { value: 0.18 },
       uRimStrength: { value: 0.72 },
+      uNightDim:    { value: 0.55 },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -148,7 +149,7 @@
         vec3 rim = uRim * fres * uRimStrength;
         vec3 lit = base * (uAmbient + diffuse) * uSun + spec * uSun + rim;
         float night = smoothstep(0.05, -0.15, NdotL);
-        lit = mix(lit, lit * 0.55 + uOceanDeep * 0.35, night * 0.55);
+        lit = mix(lit, lit * 0.55 + uOceanDeep * 0.35, night * uNightDim);
         gl_FragColor = vec4(lit, 1.0);
       }
     `,
@@ -178,7 +179,7 @@
       varying vec3 vViewDir;
       void main() {
         float f = pow(1.0 - max(dot(vNormal, vViewDir), 0.0), 2.6);
-        gl_FragColor = vec4(uAtmo * f * uStrength, f);
+        gl_FragColor = vec4(uAtmo, f * uStrength);
       }
     `,
     transparent: true,
@@ -191,7 +192,7 @@
   const hazeMat = atmoMat.clone();
   hazeMat.uniforms = {
     uAtmo: atmoMat.uniforms.uAtmo,
-    uStrength: { value: 0.14 },
+    uStrength: { value: 0.18 },
   };
 
   // ── Geometry assemblies ───────────────────────────────────────────────────
@@ -428,8 +429,15 @@
     earthMat.uniforms.uSun.value.fromArray(t.sun);
     earthMat.uniforms.uAmbient.value = t.ambient;
     earthMat.uniforms.uRimStrength.value = t.rimStrength;
+    earthMat.uniforms.uNightDim.value = name === 'light' ? 0.18 : 0.55;
     atmoMat.uniforms.uAtmo.value.fromArray(t.atmo);
     atmoMat.uniforms.uStrength.value = t.atmoStrength;
+    // Switch blending: additive on dark (glow), normal-alpha on light (no clip)
+    const blend = name === 'dark' ? T.AdditiveBlending : T.NormalBlending;
+    atmoMat.blending = blend;
+    hazeMat.blending = blend;
+    atmoMat.needsUpdate = true;
+    hazeMat.needsUpdate = true;
     document.body.dataset.theme = name;
     document.body.style.background = `rgb(${t.bg.map(v => Math.round(v*255)).join(',')})`;
     nodes.forEach(s => s.material.color.setHex(t.nodeHex));
