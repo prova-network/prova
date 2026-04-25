@@ -89,12 +89,12 @@ Impact: token theft, file-listing leak, revocation of legitimate tokens.
 **Fix (in order of return):**
 1. Drop the `?token=` query-string fallback. Bearer header only.
 2. Add `Origin` / `Referer` allow-list on the API endpoints. Reject if the
-   request isn't from `https://prova-network.pages.dev` (or the user hasn't
+   request isn't from `https://prova.network` (or the user hasn't
    sent an Origin and isn't a CLI user-agent).
 3. Move the user session into an HttpOnly+Secure+SameSite=Strict cookie for
    the dashboard. The CLI continues to use the bearer header explicitly.
 4. Add a CORS allow-list — currently the worker doesn't set CORS headers at
-   all; we should explicitly allow `prova-network.pages.dev` and reject
+   all; we should explicitly allow `prova.network` and reject
    everything else.
 
 ---
@@ -370,12 +370,12 @@ The worker returns no `Access-Control-Allow-Origin` header. Browsers will
 block cross-origin XHRs to `/api/*` because the response is opaque.
 
 Currently this isn't broken because the dashboard, upload page, and CLI all
-talk to `https://prova-network.pages.dev` from the same origin (or no Origin,
+talk to `https://prova.network` from the same origin (or no Origin,
 in CLI's case).
 
 **Fix:**
 1. Add explicit CORS to all `/api/*`:
-   - `Access-Control-Allow-Origin: https://prova-network.pages.dev`
+   - `Access-Control-Allow-Origin: https://prova.network`
    - `Vary: Origin`
 2. Handle OPTIONS preflight on `/api/upload` (which uses `authorization` +
    `x-filename` custom headers).
@@ -399,7 +399,7 @@ RFC 9116. Quick win, signals seriousness.
 
 ```
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://prova-network.pages.dev; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://prova.network; frame-ancestors 'none'
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff

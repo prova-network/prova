@@ -31,7 +31,7 @@ const HELP = `
 
   prova \x1b[36m--version\x1b[0m
 
-\x1b[2mDocs: https://prova-network.pages.dev/\x1b[0m
+\x1b[2mDocs: https://prova.network/\x1b[0m
 `;
 
 export async function run(argv) {

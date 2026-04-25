@@ -12,7 +12,7 @@
   "scripts": {
     "test": "node --test src/test/*.test.mjs"
   },
-  "homepage": "https://prova-network.pages.dev/",
+  "homepage": "https://prova.network/",
   "repository": {
     "type": "git",
     "url": "https://github.com/prova-network/prova.git",
