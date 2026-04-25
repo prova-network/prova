@@ -10,6 +10,11 @@ interface Env extends TokenEnv {
   PROVA_RATE?: KVNamespace;
   PROVA_FILES?: KVNamespace;
   PROVA_TOKEN_SECRET?: string;
+
+  // Stage server (Hetzner) used as a temporary R2 substitute.
+  // When PROVA_STAGE_URL is set we PUT bytes there instead of (or in addition to) R2.
+  PROVA_STAGE_URL?: string;
+  PROVA_STAGE_KEY?: string;
 }
 
 const SPONSORED_FILE_LIMIT  = 100 * 1024 * 1024;   // 100 MB / file
@@ -21,7 +26,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   const { request: req, env } = ctx;
   if (req.method !== 'POST') return j({ error: 'method_not_allowed' }, 405);
 
-  if (!env.PROVA_PIECES) {
+  // Storage path: prefer R2 if bound, fall back to Hetzner stage server.
+  if (!env.PROVA_PIECES && !env.PROVA_STAGE_URL) {
     return j({
       error: 'storage_offline',
       detail: 'Sponsored upload backend is being provisioned. Please try again in a few minutes, or use the SDK / CLI route.',
@@ -94,19 +100,43 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     }
   }
 
-  // Stash to R2 keyed by cid
-  await env.PROVA_PIECES.put(`pieces/${cid}`, buf, {
-    httpMetadata: {
-      contentType,
-      contentDisposition: `inline; filename="${sanitizeFilename(filename)}"`,
-    },
-    customMetadata: {
-      uploadedAt: new Date().toISOString(),
-      ownerId: authedUser?.id || 'anon',
-      ownerEmail: authedUser?.email || '',
-      filename: sanitizeFilename(filename),
-    },
-  });
+  // Stash bytes. R2 if bound, otherwise to Hetzner stage server.
+  const safeName = sanitizeFilename(filename);
+  if (env.PROVA_PIECES) {
+    await env.PROVA_PIECES.put(`pieces/${cid}`, buf, {
+      httpMetadata: {
+        contentType,
+        contentDisposition: `inline; filename="${safeName}"`,
+      },
+      customMetadata: {
+        uploadedAt: new Date().toISOString(),
+        ownerId: authedUser?.id || 'anon',
+        ownerEmail: authedUser?.email || '',
+        filename: safeName,
+      },
+    });
+  } else if (env.PROVA_STAGE_URL && env.PROVA_STAGE_KEY) {
+    const target = `${env.PROVA_STAGE_URL.replace(/\/+$/, '')}/pieces/${cid}`;
+    const stageRes = await fetch(target, {
+      method: 'PUT',
+      headers: {
+        'authorization': `Bearer ${env.PROVA_STAGE_KEY}`,
+        'content-type': contentType,
+        'content-length': String(buf.byteLength),
+        'x-filename': safeName,
+      },
+      body: buf,
+    });
+    if (!stageRes.ok) {
+      const text = await stageRes.text().catch(() => '');
+      return j({
+        error: 'stage_failed',
+        detail: `stage server rejected upload (${stageRes.status}): ${text || stageRes.statusText}`,
+      }, 502);
+    }
+  } else {
+    return j({ error: 'storage_offline', detail: 'No storage backend bound.' }, 503);
+  }
 
   // Record file ownership for /api/files listing
   if (authedUser && env.PROVA_FILES) {
