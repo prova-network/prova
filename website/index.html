@@ -3,222 +3,307 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Prova — A planetary archive, continuously proven</title>
-<meta name="description" content="Prova is verifiable storage for humanity's most important digital memory. Continuous cryptographic proofs, anchored to Ethereum." />
+<title>Prova — Verifiable storage on Ethereum</title>
+<meta name="description" content="Prova is verifiable storage anchored to Ethereum. Continuous cryptographic proofs, daily slashing, retrievable over HTTPS." />
 <meta name="theme-color" content="#0a0c0f" />
-<link rel="icon" type="image/svg+xml" href="brand/prova-mark.svg" />
-<link rel="stylesheet" href="styles.css?v=3" />
+<link rel="icon" type="image/svg+xml" href="brand/prova-mark-small.svg" />
+<link rel="stylesheet" href="styles.css?v=10" />
 </head>
 <body data-theme="dark">
 
-<!-- Live WebGL Earth -->
-<div class="stage">
+<!-- ========================================================================= -->
+<!-- HERO — live WebGL earth, contained in its own 100vh section                -->
+<!-- ========================================================================= -->
+<section class="hero">
   <canvas id="earth-canvas"></canvas>
-</div>
-
-<div class="foreground">
+  <div class="stage-vignette"></div>
 
   <header class="topbar">
     <a class="lockup" href="#">
-      <svg class="mark" viewBox="0 0 200 200" aria-hidden="true">
-        <circle cx="100" cy="100" r="84" fill="none" stroke="currentColor" stroke-width="14"/>
-        <path d="M76 62 L146 100 L76 138 Z" fill="currentColor"/>
+      <svg class="mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+        <path d="M32 5 L55.5 18.5 L55.5 45.5 L32 59 L8.5 45.5 L8.5 18.5 Z"
+              stroke="currentColor" stroke-width="3" fill="none"
+              stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M22 18 L22 46 M22 18 L37 18 Q44 18 44 26 Q44 34 37 34 L22 34"
+              stroke="currentColor" stroke-width="4.5" fill="none"
+              stroke-linejoin="round" stroke-linecap="round"/>
       </svg>
       <span class="wordmark">Prova</span>
     </a>
     <nav>
-      <a href="#proof">Proof</a>
-      <a href="#architecture">Architecture</a>
-      <a href="#whitepaper">Whitepaper</a>
-      <a href="#specs">Specs</a>
+      <a href="#how">How it works</a>
+      <a href="#redundancy">Resilience</a>
+      <a href="#earn">Earn</a>
+      <a href="#stats">Stats</a>
+      <a href="./whitepaper.html">Whitepaper</a>
+      <a href="./specs.html">Specs</a>
     </nav>
     <div class="topbar-right">
       <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"></button>
-      <a class="cta-ghost" href="#run">Run a node →</a>
+      <a class="cta-ghost" href="#earn">Run a node →</a>
     </div>
   </header>
 
-  <section class="hero">
-    <div class="copy">
-      <p class="kicker">Verifiable storage for humanity's most important digital memory</p>
-      <h1>Every artifact, <em>continuously</em> proven —<br/>for as long as it matters.</h1>
-      <div class="actions">
-        <a class="cta" href="#whitepaper">Read the whitepaper</a>
-        <a class="cta-quiet" href="#proof">View live proofs →</a>
-      </div>
+  <div class="copy">
+    <p class="kicker">Verifiable storage anchored to Ethereum</p>
+    <h1>Every artifact, <em>continuously</em> proven —<br/>for as long as it matters.</h1>
+    <div class="actions">
+      <a class="cta" href="./whitepaper.html">Read the whitepaper</a>
+      <a class="cta-quiet" href="./specs.html">View the specs →</a>
     </div>
+  </div>
 
-    <aside class="ledger" aria-label="Live archive ledger">
-      <div class="ledger-pulse"><span class="dot"></span><span>LIVE · TESTNET</span></div>
-      <dl>
-        <div><dt>Block height</dt><dd data-l="height">4,812,739</dd></div>
-        <div><dt>Last proof</dt><dd data-l="cid">bafy…q4kr</dd></div>
-        <div><dt>Region</dt><dd data-l="region">Reykjavík · IS-1</dd></div>
-        <div><dt>Deal</dt><dd data-l="deal">d-0x9c4f</dd></div>
-        <div><dt>p50 latency</dt><dd data-l="latency">184 ms</dd></div>
-      </dl>
-    </aside>
+  <footer class="footnote">
+    <span>v0.4.2 · Base Sepolia testnet</span>
+    <span class="sep">·</span>
+    <span>Daily proof of storage · 30 s heartbeat · 15 regions reporting</span>
+    <span class="scroll-hint">scroll ↓</span>
+  </footer>
+</section>
 
-    <footer class="footnote">
-      <span>v0.4.2 · Reykjavík testnet</span>
-      <span class="sep">·</span>
-      <span>Continuous PoS · 30 s cadence · 15 of 15 regions reporting</span>
-      <span class="scroll-hint">scroll ↓</span>
-    </footer>
-  </section>
-
-  <!-- ── Chapter II ───────────────────────────────────────────────── -->
-  <section class="chapter" id="proof">
+<!-- ========================================================================= -->
+<!-- HOW IT WORKS — architecture diagram                                        -->
+<!-- ========================================================================= -->
+<section class="chapter" id="how">
+  <div class="wrap">
     <div>
-      <p class="meta">II · Continuous proof of storage</p>
-      <h2>Not stored once.<br/>Proven <em>forever</em>.</h2>
+      <p class="meta">II · How Prova works</p>
+      <h2>Three roles. One <em>cryptographic</em> contract.</h2>
+      <p>Clients pay to store. Provers stake to retain. Ethereum settles, slashes, and pays. No new chain, no bridge, no custody.</p>
+      <p>The protocol is PDP (Provable Data Possession) on Base, plus an ETH/USDC payment rail. That's it. No sealing, no PoRep, no TEE.</p>
     </div>
     <div>
-      <p>Every thirty seconds, every prover in the network re-verifies a fresh cryptographic challenge against your data. A missed proof is an immediate, on-chain economic event.</p>
-      <p>Storage providers stake against the durability of what they hold. Clients pay only for the time the data is provably retrievable.</p>
-      <p>This is not a backup. It is a living guarantee, renewed thousands of times an hour, recorded permanently to a verifiable ledger.</p>
-    </div>
-  </section>
-
-  <!-- ── Chapter III: Architecture diagram (alive) ─────────────────── -->
-  <section class="chapter" id="architecture">
-    <div>
-      <p class="meta">III · Architecture</p>
-      <h2>Three roles.<br/>One <em>cryptographic</em> contract.</h2>
-      <p>Clients store. Provers prove. Ethereum verifies. No new chain. No bridges. No trust.</p>
-    </div>
-    <div>
-      <div class="diagram">
+      <div class="diagram-card">
         <p class="meta">FLOW · CLIENT → PROVER → ETHEREUM</p>
-        <h3>How a deal lives on Prova</h3>
-        <svg viewBox="0 0 760 200" role="img" aria-label="Architecture diagram" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-              <path d="M0 0 L10 5 L0 10 Z" fill="currentColor" class="node-sub"/>
-            </marker>
-          </defs>
-          <!-- Boxes -->
-          <g>
-            <rect class="node-box" x="30"  y="40" width="190" height="110" rx="14"/>
-            <text class="node-label" x="125" y="86" text-anchor="middle">Client</text>
-            <text class="node-sub"   x="125" y="114" text-anchor="middle">stores · pays · verifies</text>
-          </g>
-          <g>
-            <rect class="node-box" x="285" y="40" width="190" height="110" rx="14"/>
-            <text class="node-label" x="380" y="86" text-anchor="middle">Prover</text>
-            <text class="node-sub"   x="380" y="114" text-anchor="middle">stakes · stores · proves</text>
-          </g>
-          <g>
-            <rect class="node-box" x="540" y="40" width="190" height="110" rx="14"/>
-            <text class="node-label" x="635" y="86" text-anchor="middle">Ethereum</text>
-            <text class="node-sub"   x="635" y="114" text-anchor="middle">settles · slashes · pays</text>
-          </g>
-
-          <!-- Connecting lines -->
-          <path class="arrow" d="M220 95 L283 95" marker-end="url(#arrowhead)"/>
-          <path class="arrow" d="M475 95 L538 95" marker-end="url(#arrowhead)"/>
-
-          <!-- Animated pulses -->
-          <path class="pulse-path"          d="M220 95 L285 95 L475 95 L540 95"/>
-          <path class="pulse-path delay-1"  d="M220 95 L285 95 L475 95 L540 95"/>
-          <path class="pulse-path delay-2"  d="M540 95 L475 95 L285 95 L220 95"/>
-
-          <!-- Connection dots -->
-          <circle class="node-dot"         cx="220" cy="95" r="4"/>
-          <circle class="node-dot delay-1" cx="380" cy="95" r="4"/>
-          <circle class="node-dot delay-2" cx="540" cy="95" r="4"/>
-        </svg>
+        <h3>Architecture</h3>
+        <div class="svg-host" id="diag-architecture">
+          <img src="brand/architecture.svg" alt="Prova architecture diagram" />
+          <div class="pulse-overlay" aria-hidden="true">
+            <svg viewBox="0 0 860 560" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
+        </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ── Chapter IV: Deal lifecycle ───────────────────────────────── -->
-  <section class="chapter" id="lifecycle">
+<!-- ========================================================================= -->
+<!-- LIFECYCLE — deal lifecycle diagram                                         -->
+<!-- ========================================================================= -->
+<section class="chapter alt" id="lifecycle">
+  <div class="wrap">
     <div>
-      <p class="meta">IV · Deal lifecycle</p>
+      <p class="meta">III · Deal lifecycle</p>
       <h2>From proposal to <em>permanence</em>.</h2>
-      <p>A deal moves through five observable on-chain states. Every transition is settled in Ethereum. Every proof is public. Every failure is slashable.</p>
+      <p>A deal moves through observable on-chain states. Every transition is settled in Ethereum. Every proof is public. Every missed heartbeat is slashable.</p>
+      <p>Storage providers stake against the durability of what they hold. Clients pay only for the time the data is provably retrievable.</p>
     </div>
     <div>
-      <div class="diagram">
-        <p class="meta">STATES · PROPOSAL → ACTIVE</p>
+      <div class="diagram-card">
+        <p class="meta">STATES · ON-CHAIN STATE MACHINE</p>
         <h3>Deal lifecycle</h3>
-        <svg viewBox="0 0 760 140" role="img" aria-label="Deal lifecycle" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <marker id="arrowhead2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-              <path d="M0 0 L10 5 L0 10 Z" fill="currentColor" class="node-sub"/>
-            </marker>
-          </defs>
-          <g>
-            <g transform="translate(10, 24)">
-              <rect class="node-box" width="140" height="82" rx="12"/>
-              <text class="node-label" x="70" y="38" text-anchor="middle">Proposed</text>
-              <text class="node-sub"   x="70" y="60" text-anchor="middle">on-chain</text>
-            </g>
-            <g transform="translate(166, 24)">
-              <rect class="node-box" width="140" height="82" rx="12"/>
-              <text class="node-label" x="70" y="38" text-anchor="middle">Downloading</text>
-              <text class="node-sub"   x="70" y="60" text-anchor="middle">prover pulls</text>
-            </g>
-            <g transform="translate(322, 24)">
-              <rect class="node-box" width="140" height="82" rx="12"/>
-              <text class="node-label" x="70" y="38" text-anchor="middle">Storing</text>
-              <text class="node-sub"   x="70" y="60" text-anchor="middle">piece-cid</text>
-            </g>
-            <g transform="translate(478, 24)">
-              <rect class="node-box" width="140" height="82" rx="12"/>
-              <text class="node-label" x="70" y="38" text-anchor="middle">Active</text>
-              <text class="node-sub"   x="70" y="60" text-anchor="middle">proof every 30 s</text>
-            </g>
-            <g transform="translate(634, 24)">
-              <rect class="node-box" width="116" height="82" rx="12"/>
-              <text class="node-label" x="58" y="38" text-anchor="middle">Settled</text>
-              <text class="node-sub"   x="58" y="60" text-anchor="middle">finalized</text>
-            </g>
-          </g>
-
-          <!-- arrows -->
-          <path class="arrow" d="M150 65 L164 65" marker-end="url(#arrowhead2)"/>
-          <path class="arrow" d="M306 65 L320 65" marker-end="url(#arrowhead2)"/>
-          <path class="arrow" d="M462 65 L476 65" marker-end="url(#arrowhead2)"/>
-          <path class="arrow" d="M618 65 L632 65" marker-end="url(#arrowhead2)"/>
-
-          <!-- pulses -->
-          <path class="pulse-path"         d="M10 65 L150 65 L166 65 L306 65 L322 65 L462 65 L478 65 L618 65 L634 65 L750 65"/>
-          <path class="pulse-path delay-1" d="M10 65 L150 65 L166 65 L306 65 L322 65 L462 65 L478 65 L618 65 L634 65 L750 65"/>
-          <path class="pulse-path delay-2" d="M10 65 L150 65 L166 65 L306 65 L322 65 L462 65 L478 65 L618 65 L634 65 L750 65"/>
-        </svg>
+        <div class="svg-host" id="diag-lifecycle">
+          <img src="brand/deal-lifecycle.svg" alt="Prova deal lifecycle diagram" />
+          <div class="pulse-overlay" aria-hidden="true"></div>
+        </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <footer class="site">
+<!-- ========================================================================= -->
+<!-- REDUNDANCY LAB                                                             -->
+<!-- ========================================================================= -->
+<section id="redundancy" style="padding: 14vh 0 12vh;">
+  <div class="wrap">
+    <p class="eyebrow">Resilience</p>
+    <h2 class="section-title">Your file survives us. <em>Both of us.</em></h2>
+    <p class="section-intro">
+      A single prover can fail, go on holiday, or refuse to serve you. Pin the same
+      piece to several provers at once. If one dies, retrieval falls through to the
+      next. Click any prover below to take it offline and watch the file stay up.
+    </p>
+
+    <div class="redundancy-lab">
+      <div class="lab-header">
+        <div>
+          <div class="lab-title">Your file, replicated across N provers</div>
+          <div class="lab-hint"><span class="dot"></span>click any prover to simulate it going offline</div>
+        </div>
+        <button class="lab-btn danger" id="labReset">reset all</button>
+      </div>
+
+      <div class="redundancy-canvas" id="redundancyCanvas"></div>
+
+      <div class="lab-status">
+        <div class="lab-stat">
+          <span class="lab-stat-label">Total provers</span>
+          <span class="lab-stat-value" id="statTotal">6</span>
+        </div>
+        <div class="lab-stat">
+          <span class="lab-stat-label">Alive</span>
+          <span class="lab-stat-value alive" id="statAlive">6</span>
+        </div>
+        <div class="lab-stat">
+          <span class="lab-stat-label">Down</span>
+          <span class="lab-stat-value dead" id="statDown">0</span>
+        </div>
+        <div class="lab-stat">
+          <span class="lab-stat-label">Retrieval</span>
+          <span class="lab-stat-value alive" id="statStatus">ONLINE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- EARN CALCULATOR                                                            -->
+<!-- ========================================================================= -->
+<section class="alt" id="earn" style="padding: 14vh 0 12vh;">
+  <div class="wrap">
+    <p class="eyebrow">For provers</p>
+    <h2 class="section-title">Rent out your disk. <em>Earn ETH every day.</em></h2>
+    <p class="section-intro">
+      You have a server with spare TB and a real connection. Prova turns that into a
+      recurring revenue line. Every successful daily proof streams 99% of the day's
+      payment to you, automatically. Pull the sliders.
+    </p>
+
+    <div class="calc-wrap">
+      <div class="calc-controls">
+        <div class="calc-field">
+          <label><span class="name">Capacity committed</span><span class="val"><span id="valTb">20</span> TB</span></label>
+          <input type="range" id="sliderTb" min="0.1" max="100" step="0.1" value="20">
+          <div class="calc-hint"><span>0.1 TB</span><span>100 TB</span></div>
+        </div>
+        <div class="calc-field">
+          <label><span class="name">Network utilization</span><span class="val"><span id="valUtil">75</span>%</span></label>
+          <input type="range" id="sliderUtil" min="5" max="100" step="1" value="75">
+          <div class="calc-hint"><span>5% full</span><span>100% full</span></div>
+        </div>
+        <div class="calc-field">
+          <label><span class="name">Price per TiB-month</span><span class="val">$<span id="valPrice">4.00</span></span></label>
+          <input type="range" id="sliderPrice" min="1" max="10" step="0.1" value="4">
+          <div class="calc-hint"><span>$1 cold</span><span>$10 premium</span></div>
+        </div>
+        <div class="calc-field">
+          <label><span class="name">Proof success rate</span><span class="val"><span id="valUptime">99.5</span>%</span></label>
+          <input type="range" id="sliderUptime" min="90" max="100" step="0.1" value="99.5">
+          <div class="calc-hint"><span>90%</span><span>100%</span></div>
+        </div>
+      </div>
+
+      <div class="calc-out">
+        <div class="calc-out-label">Your take-home</div>
+        <div class="calc-out-big">$<span id="earnMonthly">54</span><span>/mo</span></div>
+        <div class="calc-out-sub">net, after protocol fee + missed-proof drag</div>
+
+        <div class="calc-out-breakdown">
+          <div class="calc-row"><span class="k">Gross billed</span><span class="v">$<span id="earnGross">55</span>/mo</span></div>
+          <div class="calc-row"><span class="k">Protocol fee (1%)</span><span class="v">−$<span id="earnFee">0.55</span></span></div>
+          <div class="calc-row"><span class="k">Missed-proof drag</span><span class="v">−$<span id="earnDrag">0.27</span></span></div>
+          <div class="calc-row"><span class="k">Annualized</span><span class="v">$<span id="earnYear">648</span></span></div>
+          <div class="calc-row"><span class="k">Break-even vs Hetzner AX41</span><span class="v" id="earnBreak">4.5 TB</span></div>
+        </div>
+
+        <div class="calc-note">
+          Assumes 75% retention of advertised price after prover competition, 14-day
+          unbonding kept in reserve, challenges paid in USDC streamed per epoch. Gas
+          is negligible on Base (≈ $1–3/month for a busy prover).
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- STATS                                                                      -->
+<!-- ========================================================================= -->
+<section id="stats" style="padding: 14vh 0 12vh;">
+  <div class="wrap">
+    <p class="eyebrow">The network</p>
+    <h2 class="section-title">Small. Verifiable. <em>Growing.</em></h2>
+    <p class="section-intro">
+      Prova is early. These numbers update from on-chain state once mainnet goes live.
+      Until then they reflect Base Sepolia + local devnet.
+    </p>
+
+    <div class="stats-grid">
+      <div class="stat">
+        <span class="stat-label">Active provers</span>
+        <span class="stat-value">12</span>
+        <span class="stat-sub">testnet · pre-mainnet</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Bytes committed</span>
+        <span class="stat-value">38.4<span class="stat-unit">TiB</span></span>
+        <span class="stat-sub">testnet</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Proofs submitted</span>
+        <span class="stat-value">184,520</span>
+        <span class="stat-sub">and counting</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Proof success rate</span>
+        <span class="stat-value">99.84<span class="stat-unit">%</span></span>
+        <span class="stat-sub">across all provers</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Average proof gas</span>
+        <span class="stat-value">$0.003</span>
+        <span class="stat-sub">Base L2, per challenge</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Mainnet</span>
+        <span class="stat-value" style="color: var(--accent);">soon</span>
+        <span class="stat-sub">audit + launch gated</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- FOOTER                                                                     -->
+<!-- ========================================================================= -->
+<footer class="site">
+  <div class="wrap">
     <a class="lockup" href="#">
-      <svg class="mark" viewBox="0 0 200 200" aria-hidden="true">
-        <circle cx="100" cy="100" r="84" fill="none" stroke="currentColor" stroke-width="14"/>
-        <path d="M76 62 L146 100 L76 138 Z" fill="currentColor"/>
+      <svg class="mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+        <path d="M32 5 L55.5 18.5 L55.5 45.5 L32 59 L8.5 45.5 L8.5 18.5 Z"
+              stroke="currentColor" stroke-width="3" fill="none"
+              stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M22 18 L22 46 M22 18 L37 18 Q44 18 44 26 Q44 34 37 34 L22 34"
+              stroke="currentColor" stroke-width="4.5" fill="none"
+              stroke-linejoin="round" stroke-linecap="round"/>
       </svg>
       <span class="wordmark">Prova</span>
     </a>
     <nav>
-      <a href="#proof">Proof</a>
-      <a href="#architecture">Architecture</a>
-      <a href="#lifecycle">Lifecycle</a>
-      <a href="#whitepaper">Whitepaper</a>
-      <a href="#specs">Specs</a>
-      <a href="#run">Run a node</a>
+      <a href="#how">How it works</a>
+      <a href="#redundancy">Resilience</a>
+      <a href="#earn">Earn</a>
+      <a href="#stats">Stats</a>
+      <a href="./whitepaper.html">Whitepaper</a>
+      <a href="./specs.html">Specs</a>
     </nav>
     <div class="legal">v0.4.2 · Research preview · 2026</div>
-  </footer>
+  </div>
+</footer>
 
-</div>
-
+<!-- ========================================================================= -->
+<!-- SCRIPTS                                                                    -->
+<!-- ========================================================================= -->
 <script src="https://unpkg.com/three@0.160.1/build/three.min.js"></script>
-<script src="earth.js?v=3"></script>
+<script src="earth.js?v=10"></script>
+<script src="lab.js?v=1"></script>
 <script>
+  // Theme toggle
   document.getElementById('theme-toggle').addEventListener('click', () => {
     const next = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
     if (window.__applyTheme) window.__applyTheme(next);
+    if (window.__renderLab) window.__renderLab();
   });
 </script>
 </body>

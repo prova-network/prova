@@ -444,8 +444,11 @@
 
   // ── Resize ────────────────────────────────────────────────────────────────
   function resize() {
-    const w = canvas.clientWidth || window.innerWidth;
-    const h = canvas.clientHeight || window.innerHeight;
+    // Use the parent .hero size, not viewport
+    const parent = canvas.parentElement;
+    const rect = parent.getBoundingClientRect();
+    const w = rect.width || window.innerWidth;
+    const h = rect.height || window.innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -453,54 +456,24 @@
   resize();
   window.addEventListener('resize', resize);
 
-  // ── Telemetry sidebar ─────────────────────────────────────────────────────
-  const ledger = {
-    height:    4_812_739,
-    cid:       'bafy…q4kr',
-    region:    'Reykjavík · IS-1',
-    deal:      'd-0x9c4f',
-    latencyMs: 184,
-  };
-  function tickLedger(node) {
-    ledger.height += 1 + Math.floor(Math.random() * 3);
-    ledger.cid     = 'bafy…' + Math.random().toString(36).slice(2, 6);
-    ledger.region  = node.name + ' · ' + ['IS','EU','NA','SA','AF','AP'][Math.floor(Math.random()*6)] + '-' + (1+Math.floor(Math.random()*4));
-    ledger.deal    = 'd-0x' + Math.random().toString(16).slice(2, 6);
-    ledger.latencyMs = 140 + Math.floor(Math.random() * 160);
-    publishLedger();
-  }
-  function publishLedger() {
-    const set = (k, v) => { const el = document.querySelector(`[data-l=${k}]`); if (el) el.textContent = v; };
-    set('height',  ledger.height.toLocaleString());
-    set('cid',     ledger.cid);
-    set('region',  ledger.region);
-    set('deal',    ledger.deal);
-    set('latency', ledger.latencyMs + ' ms');
-  }
-  publishLedger();
-
   // ── Cadence: client → node pings + occasional proof rings ────────────────
   function pingLoop() {
+    // Pause work when hero is fully scrolled past
+    const r = canvas.getBoundingClientRect();
+    if (r.bottom < 0) {
+      setTimeout(pingLoop, 1500);
+      return;
+    }
     const c = CLIENTS[Math.floor(Math.random() * CLIENTS.length)];
     const n = NODES[Math.floor(Math.random() * NODES.length)];
     spawnPing(c, n, false);
-    // Schedule the return ping (proof / ack) ~half the trip later
     setTimeout(() => {
       spawnPing(c, n, true);
-      tickLedger(n);
-      // Occasional proof ring on the responding node
       if (Math.random() < 0.55) spawnProofRing(n);
     }, 700 + Math.random() * 250);
-
     setTimeout(pingLoop, 900 + Math.random() * 1100);
   }
   setTimeout(pingLoop, 600);
-
-  // ── Scroll reactivity ────────────────────────────────────────────────────
-  let scrollY = 0;
-  window.addEventListener('scroll', () => {
-    scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-  }, { passive: true });
 
   // ── Render loop ──────────────────────────────────────────────────────────
   const start = performance.now();
@@ -508,8 +481,8 @@
     const now = (performance.now() - start) / 1000;
     earthMat.uniforms.uTime.value = now;
 
-    const scrollTurns = Math.min(scrollY / 2000, 1) * 0.6;
-    const baseRot = (now / 180) * Math.PI * 2 + scrollTurns * Math.PI * 2;
+    // Constant slow auto-rotate, no scroll dependency
+    const baseRot = (now / 180) * Math.PI * 2;
     planet.rotation.y = baseRot;
     planet.rotation.z = 0.41 + Math.sin(now / 28) * 0.01;
     planet.rotation.x = Math.sin(now / 20) * 0.03;
@@ -522,12 +495,11 @@
       Math.sin(sa) * 0.85
     ).normalize();
 
-    // Camera breath + scroll pull-in
+    // Camera breath only — hero is contained, scroll doesn't drive the scene
     camera.position.y = Math.sin(now / 14) * 0.04;
     camera.position.x = Math.cos(now / 19) * 0.02;
-    const sf = Math.min(scrollY / 1000, 1);
-    camera.position.z = 4.6 - sf * 0.6;
-    camera.lookAt(0, -sf * 0.35, 0);
+    camera.position.z = 4.6;
+    camera.lookAt(0, 0, 0);
 
     // ── Pings: animate head along arc, fade trail ──────────────────────────
     const tn = performance.now();
