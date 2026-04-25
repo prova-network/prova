@@ -1,6 +1,6 @@
-// Prova — animated, narrated diagrams.
-// Replace the static brand SVGs with inline SVG that walks the user through
-// the actual flow: a deal as a packet, moving through the system.
+// Prova - animated narrated diagrams.
+// Inline SVG that walks the user through the actual flow:
+// a deal as a packet, moving through the system.
 
 (() => {
   const $ = (s, root = document) => root.querySelector(s);
@@ -10,19 +10,17 @@
   const ink    = () => getComputedStyle(document.body).getPropertyValue('--type-loud').trim();
   const inkSoft= () => getComputedStyle(document.body).getPropertyValue('--type-soft').trim();
   const stroke = () => getComputedStyle(document.body).getPropertyValue('--diag-stroke').trim();
-  const bg     = () => getComputedStyle(document.body).getPropertyValue('--diag-bg').trim();
+  const bg     = () => getComputedStyle(document.body).getPropertyValue('--bg').trim();
 
-  // ════════════════════════════════════════════════════════════════════════
-  // ARCHITECTURE — Client → Prover → Ethereum, live
-  // Walks: 1) client uploads piece → 2) prover stores → 3) prover proves →
-  //        4) Ethereum verifies → 5) USDC streams back to prover.
-  // ════════════════════════════════════════════════════════════════════════
+  // ============================================================
+  // ARCHITECTURE: Client -> Prover -> Ethereum, live packet
+  // ============================================================
   function renderArchitecture() {
     const host = $('#diag-architecture');
     if (!host) return;
     host.innerHTML = `
-      <svg viewBox="0 0 760 360" preserveAspectRatio="xMidYMid meet" role="img"
-           aria-label="Animated Prova architecture: client uploads, prover stores and proves, Ethereum settles">
+      <svg viewBox="0 0 760 320" preserveAspectRatio="xMidYMid meet" role="img"
+           aria-label="Animated Prova architecture: client uploads, prover proves, Ethereum settles">
         <defs>
           <marker id="ar-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
             <path d="M0 0 L10 5 L0 10 Z" fill="${inkSoft()}" opacity="0.85"/>
@@ -34,63 +32,87 @@
           </radialGradient>
         </defs>
 
-        <!-- ── Boxes ─────────────────────────────────────────────── -->
-        <g id="ar-boxes">
-          <g class="ar-box" transform="translate(20, 60)">
-            <rect width="180" height="120" rx="14" fill="none" stroke="${stroke()}" stroke-width="1.2"/>
-            <text x="90" y="46" text-anchor="middle" fill="${ink()}" font-family="-apple-system,sans-serif" font-size="18" font-weight="500">Client</text>
-            <text x="90" y="72" text-anchor="middle" fill="${inkSoft()}" font-family="ui-monospace,Menlo,monospace" font-size="11" letter-spacing="0.08em">UPLOAD · PAY · VERIFY</text>
-            <text x="90" y="100" text-anchor="middle" fill="${inkSoft()}" font-family="-apple-system,sans-serif" font-size="12">.eth website · dataset</text>
-          </g>
-          <g class="ar-box" transform="translate(290, 60)">
-            <rect width="180" height="120" rx="14" fill="none" stroke="${stroke()}" stroke-width="1.2"/>
-            <text x="90" y="46" text-anchor="middle" fill="${ink()}" font-family="-apple-system,sans-serif" font-size="18" font-weight="500">Prover</text>
-            <text x="90" y="72" text-anchor="middle" fill="${inkSoft()}" font-family="ui-monospace,Menlo,monospace" font-size="11" letter-spacing="0.08em">STAKE · STORE · PROVE</text>
-            <text x="90" y="100" text-anchor="middle" fill="${inkSoft()}" font-family="-apple-system,sans-serif" font-size="12">disk + bandwidth + bond</text>
-          </g>
-          <g class="ar-box" transform="translate(560, 60)">
-            <rect width="180" height="120" rx="14" fill="none" stroke="${stroke()}" stroke-width="1.2"/>
-            <text x="90" y="46" text-anchor="middle" fill="${ink()}" font-family="-apple-system,sans-serif" font-size="18" font-weight="500">Ethereum</text>
-            <text x="90" y="72" text-anchor="middle" fill="${inkSoft()}" font-family="ui-monospace,Menlo,monospace" font-size="11" letter-spacing="0.08em">VERIFY · SLASH · PAY</text>
-            <text x="90" y="100" text-anchor="middle" fill="${inkSoft()}" font-family="-apple-system,sans-serif" font-size="12">Base L2 settlement</text>
-          </g>
+        <!-- Three role boxes -->
+        <g class="ar-box" transform="translate(20, 60)">
+          <rect width="180" height="120" rx="14" fill="none" stroke="${stroke()}" stroke-width="1.2"/>
+          <text x="90" y="46" text-anchor="middle" fill="${ink()}" font-family="-apple-system,sans-serif" font-size="18" font-weight="500">Client</text>
+          <text x="90" y="72" text-anchor="middle" fill="${inkSoft()}" font-family="ui-monospace,Menlo,monospace" font-size="11" letter-spacing="0.08em">UPLOAD &#183; PAY &#183; VERIFY</text>
+          <text x="90" y="100" text-anchor="middle" fill="${inkSoft()}" font-family="-apple-system,sans-serif" font-size="12">.eth website &#183; dataset</text>
+        </g>
+        <g class="ar-box" transform="translate(290, 60)">
+          <rect width="180" height="120" rx="14" fill="none" stroke="${stroke()}" stroke-width="1.2"/>
+          <text x="90" y="46" text-anchor="middle" fill="${ink()}" font-family="-apple-system,sans-serif" font-size="18" font-weight="500">Prover</text>
+          <text x="90" y="72" text-anchor="middle" fill="${inkSoft()}" font-family="ui-monospace,Menlo,monospace" font-size="11" letter-spacing="0.08em">STAKE &#183; STORE &#183; PROVE</text>
+          <text x="90" y="100" text-anchor="middle" fill="${inkSoft()}" font-family="-apple-system,sans-serif" font-size="12">disk + bandwidth + bond</text>
+        </g>
+        <g class="ar-box" transform="translate(560, 60)">
+          <rect width="180" height="120" rx="14" fill="none" stroke="${stroke()}" stroke-width="1.2"/>
+          <text x="90" y="46" text-anchor="middle" fill="${ink()}" font-family="-apple-system,sans-serif" font-size="18" font-weight="500">Ethereum</text>
+          <text x="90" y="72" text-anchor="middle" fill="${inkSoft()}" font-family="ui-monospace,Menlo,monospace" font-size="11" letter-spacing="0.08em">VERIFY &#183; SLASH &#183; PAY</text>
+          <text x="90" y="100" text-anchor="middle" fill="${inkSoft()}" font-family="-apple-system,sans-serif" font-size="12">Base L2 settlement</text>
         </g>
 
-        <!-- ── Static skeleton arrows ────────────────────────────── -->
+        <!-- Static skeleton arrows -->
         <path d="M200 120 L290 120" stroke="${stroke()}" stroke-width="1.4" fill="none" marker-end="url(#ar-head)" opacity="0.5"/>
         <path d="M470 120 L560 120" stroke="${stroke()}" stroke-width="1.4" fill="none" marker-end="url(#ar-head)" opacity="0.5"/>
         <path d="M650 180 Q650 240 470 240 L290 240 Q200 240 200 180" stroke="${stroke()}" stroke-width="1.4" fill="none" stroke-dasharray="3 4" opacity="0.45"/>
 
-        <!-- ── Step labels ───────────────────────────────────────── -->
-        <g font-family="ui-monospace,Menlo,monospace" font-size="10" letter-spacing="0.16em" fill="${inkSoft()}">
-          <text x="245" y="106" text-anchor="middle">1. UPLOAD</text>
-          <text x="515" y="106" text-anchor="middle">2. PROOF</text>
-          <text x="380" y="232" text-anchor="middle">3. SETTLEMENT · USDC PAYOUT</text>
+        <!-- Subtle stage label only on the bottom return arc (where the
+             pill is hidden because the packet sits below center) -->
+        <g font-family="ui-monospace,Menlo,monospace" font-size="10" letter-spacing="0.16em" fill="${inkSoft()}" opacity="0.6">
+          <text x="380" y="282" text-anchor="middle">SETTLEMENT &#183; USDC PAYOUT</text>
         </g>
 
-        <!-- ── Live packet (animated along the path) ─────────────── -->
+        <!-- Live packet -->
         <g id="ar-packet">
           <circle r="22" fill="url(#ar-pulse)"/>
           <circle r="6" fill="${accent()}"/>
-          <text y="-22" text-anchor="middle" fill="${ink()}" font-family="ui-monospace,Menlo,monospace" font-size="10" letter-spacing="0.12em" id="ar-packet-label">PIECE</text>
+          <g id="ar-packet-pill" transform="translate(0,-26)">
+            <rect x="-34" y="-10" width="68" height="18" rx="9" fill="${bg()}" stroke="${stroke()}" stroke-width="1"/>
+            <text x="0" y="3" text-anchor="middle" fill="${ink()}" font-family="ui-monospace,Menlo,monospace" font-size="9.5" letter-spacing="0.14em" id="ar-packet-label">PIECE</text>
+          </g>
         </g>
       </svg>
     `;
 
     const packet = host.querySelector('#ar-packet');
+    const pill   = host.querySelector('#ar-packet-pill');
     const label  = host.querySelector('#ar-packet-label');
 
-    // Define the path as a series of (x, y, label) waypoints for the packet
+    // Single smooth path. Packet travels from Client to Prover to Ethereum
+    // along the top, then settles back along the bottom return arc.
+    // Stages are only the OUTSIDE-of-box segments. Inside the box the packet
+    // would just sit there, so we skip it via setTimeout gap.
+    // Bezier-shaped path described by control point sets per stage.
+    // Stage 1+2: straight horizontal hops on top connectors.
+    // Stage 3: full curved descent + traversal along the bottom return arc.
+    // Stage 4: traversal on bottom + curve back up into the Client.
     const STAGES = [
-      { from: [200, 120], to: [290, 120], dur: 1500, label: 'PIECE' },         // upload
-      { from: [290, 120], to: [380, 120], dur: 800,  label: 'STORE' },         // settle in prover
-      { from: [380, 120], to: [470, 120], dur: 800,  label: 'STORE' },
-      { from: [470, 120], to: [560, 120], dur: 1500, label: 'PROOF' },         // prove
-      { from: [560, 180], to: [650, 240], dur: 800,  label: 'VERIFY' },        // verify (Ethereum down arc)
-      { from: [650, 240], to: [380, 240], dur: 1500, label: 'SETTLE' },        // settle along bottom
-      { from: [380, 240], to: [200, 240], dur: 1500, label: 'USDC' },          // payout
-      { from: [200, 240], to: [200, 180], dur: 600,  label: '' },              // tuck back into client
+      { type: 'line',  from: [200, 120], to: [290, 120], dur: 1400, label: 'PIECE'  },
+      { type: 'line',  from: [470, 120], to: [560, 120], dur: 1400, label: 'PROOF'  },
+      { type: 'curve',
+        // Match the static dashed path: M650 180 Q650 240 470 240 L290 240 Q200 240 200 180
+        // Animate Eth box bottom-edge -> down -> along bottom past Prover
+        points: [[650, 180], [650, 240], [470, 240], [380, 240]],
+        dur: 1700, label: 'VERIFY' },
+      { type: 'curve',
+        // Continue along bottom -> curve up into Client box
+        points: [[380, 240], [290, 240], [200, 240], [200, 180]],
+        dur: 1500, label: 'USDC' },
     ];
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function bezierAt(pts, t) {
+      // Cubic-ish: if 4 points use cubic; if 2 use linear
+      if (pts.length === 2) {
+        return [lerp(pts[0][0], pts[1][0], t), lerp(pts[0][1], pts[1][1], t)];
+      }
+      // Cubic Bezier (4 control points)
+      const u = 1 - t;
+      const x = u*u*u*pts[0][0] + 3*u*u*t*pts[1][0] + 3*u*t*t*pts[2][0] + t*t*t*pts[3][0];
+      const y = u*u*u*pts[0][1] + 3*u*u*t*pts[1][1] + 3*u*t*t*pts[2][1] + t*t*t*pts[3][1];
+      return [x, y];
+    }
 
     let stageIdx = 0;
     let stageStart = performance.now();
@@ -98,28 +120,40 @@
 
     function tick(now) {
       const stage = STAGES[stageIdx];
-      const t = Math.min(1, (now - stageStart) / stage.dur);
+      const t = Math.min(1, Math.max(0, (now - stageStart) / stage.dur));
       const eased = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
-      const x = stage.from[0] + (stage.to[0] - stage.from[0]) * eased;
-      const y = stage.from[1] + (stage.to[1] - stage.from[1]) * eased;
+      let x, y;
+      if (stage.type === 'curve') {
+        [x, y] = bezierAt(stage.points, eased);
+      } else {
+        x = stage.from[0] + (stage.to[0] - stage.from[0]) * eased;
+        y = stage.from[1] + (stage.to[1] - stage.from[1]) * eased;
+      }
       packet.setAttribute('transform', `translate(${x}, ${y})`);
-      if (stage.label) label.textContent = stage.label;
-      packet.style.opacity = stage.label === '' ? Math.max(0, 1 - t * 1.4) : 1;
+
+      // Hide the pill when packet enters a box (avoids overlap with box text)
+      const overBox =
+        (x >= 20  && x <= 200 && y < 180) ||
+        (x >= 290 && x <= 470 && y < 180) ||
+        (x >= 560 && x <= 740 && y < 180);
+      pill.style.opacity = overBox ? '0' : '1';
+      pill.style.transition = 'opacity 0.25s ease';
 
       if (t >= 1) {
         stageIdx = (stageIdx + 1) % STAGES.length;
-        stageStart = now + (stageIdx === 0 ? 600 : 80);
-        if (stageIdx === 0) packet.style.opacity = 1;
+        stageStart = now + 350;
+        label.textContent = STAGES[stageIdx].label;
       }
       raf = requestAnimationFrame(tick);
     }
     cancelAnimationFrame(raf);
+    label.textContent = STAGES[0].label;
     raf = requestAnimationFrame(tick);
   }
 
-  // ════════════════════════════════════════════════════════════════════════
-  // LIFECYCLE — deal moves through 5 states; current state pulses
-  // ════════════════════════════════════════════════════════════════════════
+  // ============================================================
+  // LIFECYCLE: deal walks through 5 states, current pulses
+  // ============================================================
   function renderLifecycle() {
     const host = $('#diag-lifecycle');
     if (!host) return;
@@ -185,9 +219,9 @@
     step();
   }
 
-  // ════════════════════════════════════════════════════════════════════════
-  // CLIENT FLOWS — three small animated cards: .eth website, dataset, AI corpus
-  // ════════════════════════════════════════════════════════════════════════
+  // ============================================================
+  // CLIENT FLOW CARDS
+  // ============================================================
   function renderClientFlows() {
     const host = $('#client-flows');
     if (!host) return;
@@ -205,7 +239,7 @@
         </div>
         <div class="cf-meta">.eth website</div>
         <h4>Host a censorship-resistant site</h4>
-        <p>Build a static site, drop the bundle into the Prova CLI, get back a <code>piece-cid</code>. Point your ENS contenthash at it. Now your site lives across Prova provers, served over HTTPS, proven daily.</p>
+        <p>Build a static site, drop the bundle into the Prova CLI, get back a piece-cid. Point your ENS contenthash at it. Now your site lives across Prova provers, served over HTTPS, proven daily.</p>
         <pre><code>npx prova upload ./dist
 ens set-content vitalik.eth ipfs://&lt;cid&gt;</code></pre>
       </div>
@@ -244,9 +278,6 @@ ens set-content vitalik.eth ipfs://&lt;cid&gt;</code></pre>
     `;
   }
 
-  // ════════════════════════════════════════════════════════════════════════
-  // Boot + theme reactivity
-  // ════════════════════════════════════════════════════════════════════════
   function renderAll() {
     renderArchitecture();
     renderLifecycle();

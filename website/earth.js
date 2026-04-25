@@ -463,6 +463,11 @@
   }
   resize();
   window.addEventListener('resize', resize);
+  window.addEventListener('load', () => setTimeout(resize, 50));
+  // Recover from a context-loss by retrying resize on visibility change
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) setTimeout(resize, 50);
+  });
 
   // ── Cadence: client → node pings + occasional proof rings ────────────────
   function pingLoop() {
