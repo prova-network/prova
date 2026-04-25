@@ -1,21 +1,26 @@
-// Cloudflare Pages Function: POST /api/upload?cid=<piece-cid>
-// Body is the file bytes. Stages to R2, returns synthetic deal info.
+// POST /api/upload?cid=<piece-cid>
+// Stages bytes to R2. Two auth modes:
+//   - Bearer pk_live_… token (CLI / SDK / app)
+//   - No auth (browser drag-drop) -> sponsored tier with IP rate limit
 
-interface Env {
+import { authenticateRequest, checkQuota, recordUsage, type TokenEnv } from '../_shared/tokens';
+
+interface Env extends TokenEnv {
   PROVA_PIECES?: R2Bucket;
   PROVA_RATE?: KVNamespace;
+  PROVA_FILES?: KVNamespace;
+  PROVA_TOKEN_SECRET?: string;
 }
 
-const FREE_LIMIT = 100 * 1024 * 1024;
-const DAILY_LIMIT_PER_IP = 200 * 1024 * 1024;
+const SPONSORED_FILE_LIMIT  = 100 * 1024 * 1024;   // 100 MB / file
+const SPONSORED_DAILY_LIMIT = 200 * 1024 * 1024;   // 200 MB / IP / 24h
+const AUTHED_FILE_LIMIT     = 5 * 1024 * 1024 * 1024;  // 5 GiB / file with token
 const RETENTION_DAYS = 30;
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const { request: req, env } = ctx;
   if (req.method !== 'POST') return j({ error: 'method_not_allowed' }, 405);
 
-  // R2 enablement gate. Until R2 is enabled on the account and bound,
-  // we cannot store bytes. Surface a helpful message rather than 500ing.
   if (!env.PROVA_PIECES) {
     return j({
       error: 'storage_offline',
@@ -29,21 +34,22 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     return j({ error: 'invalid_cid', detail: 'cid query param is required' }, 400);
   }
 
-  const ip = req.headers.get('cf-connecting-ip') || 'unknown';
-  const rateKey = `r:${ip}:${todayUTC()}`;
-  const used = env.PROVA_RATE
-    ? parseInt((await env.PROVA_RATE.get(rateKey)) || '0', 10)
-    : 0;
-  if (used >= DAILY_LIMIT_PER_IP) {
-    return j({
-      error: 'rate_limited',
-      detail: `Daily free quota of ${DAILY_LIMIT_PER_IP / 1024 / 1024} MB used. Try again tomorrow.`,
-    }, 429);
+  // Try bearer auth. If no token, fall back to sponsored mode.
+  let authedUser: { id: string; email: string; quotaMb: number } | null = null;
+  if (req.headers.get('authorization') || url.searchParams.get('token')) {
+    const auth = await authenticateRequest(req, env);
+    if (!auth.ok) return j({ error: auth.error, detail: auth.detail }, auth.status);
+    if (!auth.payload.scopes.includes('put')) {
+      return j({ error: 'insufficient_scope', detail: 'Token lacks put scope.' }, 403);
+    }
+    authedUser = { id: auth.payload.sub, email: auth.payload.email, quotaMb: auth.payload.quotaMb };
   }
 
+  // Size cap depending on tier
+  const limit = authedUser ? AUTHED_FILE_LIMIT : SPONSORED_FILE_LIMIT;
   const contentLength = parseInt(req.headers.get('content-length') || '0', 10);
-  if (contentLength > FREE_LIMIT) {
-    return j({ error: 'too_large', detail: `Free tier capped at ${FREE_LIMIT / 1024 / 1024} MB.` }, 413);
+  if (contentLength > limit) {
+    return j({ error: 'too_large', detail: `Capped at ${limit / 1024 / 1024} MB on this tier.` }, 413);
   }
 
   if (!req.body) return j({ error: 'no_body' }, 400);
@@ -51,12 +57,44 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   const filename = req.headers.get('x-filename') || cid;
   const contentType = req.headers.get('content-type') || 'application/octet-stream';
 
-  const buf = await readWithLimit(req.body, FREE_LIMIT + 1);
-  if (buf.byteLength > FREE_LIMIT) {
-    return j({ error: 'too_large', detail: `Free tier capped at ${FREE_LIMIT / 1024 / 1024} MB.` }, 413);
+  // Read and enforce hard size limit
+  const buf = await readWithLimit(req.body, limit + 1);
+  if (buf.byteLength > limit) {
+    return j({ error: 'too_large', detail: `Capped at ${limit / 1024 / 1024} MB on this tier.` }, 413);
   }
   if (buf.byteLength === 0) return j({ error: 'empty_body' }, 400);
 
+  // Daily quota check
+  if (authedUser) {
+    const auth = await authenticateRequest(req, env);
+    if (auth.ok) {
+      const q = await checkQuota(auth.payload, buf.byteLength, env);
+      if (!q.ok) {
+        return j({
+          error: 'quota_exceeded',
+          detail: `Daily quota of ${authedUser.quotaMb} MB reached.`,
+          used: q.used,
+          limit: q.limit,
+        }, 429);
+      }
+    }
+  } else {
+    // Sponsored: per-IP daily cap
+    const ip = req.headers.get('cf-connecting-ip') || 'unknown';
+    const rateKey = `r:${ip}:${todayUTC()}`;
+    if (env.PROVA_RATE) {
+      const used = parseInt((await env.PROVA_RATE.get(rateKey)) || '0', 10);
+      if (used + buf.byteLength > SPONSORED_DAILY_LIMIT) {
+        return j({
+          error: 'rate_limited',
+          detail: `Sponsored tier capped at ${SPONSORED_DAILY_LIMIT / 1024 / 1024} MB / IP / 24h. Sign up for a free token to lift the cap.`,
+        }, 429);
+      }
+      await env.PROVA_RATE.put(rateKey, String(used + buf.byteLength), { expirationTtl: 60 * 60 * 26 });
+    }
+  }
+
+  // Stash to R2 keyed by cid
   await env.PROVA_PIECES.put(`pieces/${cid}`, buf, {
     httpMetadata: {
       contentType,
@@ -64,13 +102,33 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     },
     customMetadata: {
       uploadedAt: new Date().toISOString(),
-      ip,
+      ownerId: authedUser?.id || 'anon',
+      ownerEmail: authedUser?.email || '',
       filename: sanitizeFilename(filename),
     },
   });
 
-  if (env.PROVA_RATE) {
-    await env.PROVA_RATE.put(rateKey, String(used + buf.byteLength), { expirationTtl: 60 * 60 * 26 });
+  // Record file ownership for /api/files listing
+  if (authedUser && env.PROVA_FILES) {
+    await env.PROVA_FILES.put(
+      `f:${authedUser.id}:${cid}`,
+      JSON.stringify({
+        cid,
+        size: buf.byteLength,
+        filename: sanitizeFilename(filename),
+        contentType,
+        uploadedAt: new Date().toISOString(),
+        term: `${RETENTION_DAYS} days`,
+        sponsored: false,
+      }),
+      { expirationTtl: 60 * 60 * 24 * (RETENTION_DAYS + 1) }
+    );
+  }
+
+  // Record per-user usage
+  if (authedUser) {
+    const auth = await authenticateRequest(req, env);
+    if (auth.ok) await recordUsage(auth.payload, buf.byteLength, env);
   }
 
   const dealId = synthesizeDealId(cid, buf.byteLength);
@@ -82,7 +140,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     size: buf.byteLength,
     retrievalUrl,
     term: `${RETENTION_DAYS} days`,
-    sponsored: true,
+    sponsored: !authedUser,
+    owner: authedUser?.email || null,
   });
 };
 

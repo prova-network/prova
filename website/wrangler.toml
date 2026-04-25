@@ -6,6 +6,18 @@ pages_build_output_dir = "."
 binding = "PROVA_RATE"
 id = "d5eaf1fd8fdd4188a967cf3a9bf9da85"
 
+[[kv_namespaces]]
+binding = "PROVA_USERS"
+id = "9a8aefd521f84c0fa6f695295da21bd1"
+
+[[kv_namespaces]]
+binding = "PROVA_TOKENS"
+id = "29dbd49120294ca18eaf8f708d16be7b"
+
+[[kv_namespaces]]
+binding = "PROVA_FILES"
+id = "a9b8b545e32d4a90b2eb429fe604b5e5"
+
 # R2 binding (enable R2 in the Cloudflare dashboard, then uncomment + redeploy)
 # [[r2_buckets]]
 # binding = "PROVA_PIECES"

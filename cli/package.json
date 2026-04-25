@@ -1,0 +1,21 @@
+{
+  "name": "@prova-network/cli",
+  "version": "0.1.0",
+  "description": "Prova CLI — store websites, datasets, and AI corpora on Prova in one command.",
+  "license": "Apache-2.0 OR MIT",
+  "type": "module",
+  "bin": {
+    "prova": "./bin/prova.mjs"
+  },
+  "files": ["bin", "src", "README.md"],
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node --test src/test/*.test.mjs"
+  },
+  "homepage": "https://prova-network.pages.dev/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prova-network/prova.git",
+    "directory": "cli"
+  }
+}

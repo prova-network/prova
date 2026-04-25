@@ -1,0 +1,335 @@
+/* App-specific styles, layered on top of /upload/upload.css */
+
+.hidden { display: none !important; }
+
+.app-main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px clamp(20px, 4vw, 48px) 80px;
+}
+
+/* ── Top nav ─────────────────────────────────────────────────────────────── */
+.app-nav {
+  display: flex; gap: 24px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.app-nav a {
+  color: var(--type-soft);
+  text-decoration: none;
+  padding: 6px 0;
+  border-bottom: 1.5px solid transparent;
+}
+.app-nav a.active, .app-nav a:hover {
+  color: var(--type-loud);
+  border-bottom-color: var(--accent);
+}
+.who-email {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--type-soft);
+  margin-right: 12px;
+}
+
+/* ── Sign-in card ────────────────────────────────────────────────────────── */
+.signin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+.signin-card {
+  background: var(--diag-bg);
+  border: 1px solid var(--diag-stroke);
+  border-radius: 22px;
+  padding: 40px;
+  max-width: 480px;
+  width: 100%;
+}
+.signin-card h2 {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 36px;
+  letter-spacing: -0.022em;
+  color: var(--type-loud);
+  margin: 8px 0 16px;
+}
+.signin-card h2 em {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+}
+.signin-card .lead {
+  color: var(--type-soft);
+  font-size: 14.5px;
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+.signin-card form {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.signin-card label {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.signin-card label > span {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ash-1);
+}
+.signin-card input {
+  background: var(--ink-1);
+  border: 1px solid var(--hair-strong);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--type-loud);
+  font-family: var(--mono);
+  font-size: 14px;
+  outline: none;
+}
+.signin-card input:focus { border-color: var(--accent); }
+.signin-foot {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ash-1);
+  margin: 16px 0 0;
+}
+
+/* ── App body ────────────────────────────────────────────────────────────── */
+.app-body { display: flex; flex-direction: column; gap: 32px; }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 720px) { .stats-row { grid-template-columns: 1fr; } }
+.stat-card {
+  background: var(--diag-bg);
+  border: 1px solid var(--diag-stroke);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.stat-big {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  color: var(--type-loud);
+  font-variant-numeric: tabular-nums;
+}
+.stat-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--type-soft);
+}
+.quota-bar {
+  height: 4px;
+  background: var(--hair);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.quota-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  border-radius: 999px;
+  transition: width 0.4s var(--ease-out);
+}
+
+/* ── Panels ──────────────────────────────────────────────────────────────── */
+.panel {
+  background: var(--diag-bg);
+  border: 1px solid var(--diag-stroke);
+  border-radius: 18px;
+  padding: 24px 28px;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap; gap: 8px;
+}
+.panel-head h3 {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--type-loud);
+  margin: 0;
+}
+.empty {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--type-soft);
+  margin: 12px 0 4px;
+}
+
+/* ── Files list ──────────────────────────────────────────────────────────── */
+.files-list { display: flex; flex-direction: column; }
+.file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto auto;
+  gap: 14px;
+  padding: 12px 0;
+  align-items: center;
+  border-bottom: 1px solid var(--hair);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.file-row:last-child { border-bottom: none; }
+.file-name {
+  color: var(--type-loud);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.file-cid {
+  color: var(--accent);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.file-size { color: var(--type-soft); text-align: right; }
+.file-actions { display: flex; gap: 8px; }
+.file-actions a {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--type-soft);
+  text-decoration: none;
+  padding: 6px 10px;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+}
+.file-actions a:hover { color: var(--type-loud); border-color: var(--type-loud); }
+
+/* ── Tokens list ─────────────────────────────────────────────────────────── */
+.tokens-list { display: flex; flex-direction: column; }
+.token-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 12px 0;
+  align-items: center;
+  border-bottom: 1px solid var(--hair);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.token-row:last-child { border-bottom: none; }
+.token-label { color: var(--type-loud); }
+.token-meta { color: var(--type-soft); font-size: 11px; }
+.token-actions button {
+  background: none; border: 1px solid var(--hair-strong); border-radius: 999px;
+  padding: 6px 12px; cursor: pointer;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--type-soft);
+}
+.token-actions button:hover { color: #e06464; border-color: #e06464; }
+.token-actions button.is-current { color: var(--accent); border-color: var(--accent); cursor: default; }
+
+.current-token {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 18px;
+}
+.current-token h4 { color: var(--type-loud); margin: 0 0 8px; }
+.token-display {
+  display: flex; gap: 12px; align-items: center;
+  background: var(--ink-1);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+.token-display code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--type-loud);
+  white-space: nowrap;
+}
+.snippet {
+  margin: 8px 0 0;
+  padding: 12px 16px;
+  background: var(--ink-1);
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--type-loud);
+}
+.snippet .cmt { color: var(--ash-2); }
+
+/* ── Usage chart ─────────────────────────────────────────────────────────── */
+.usage-chart {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  align-items: end;
+  height: 160px;
+  margin-top: 8px;
+}
+.usage-bar {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  height: 100%;
+}
+.usage-bar-fill {
+  width: 100%;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  min-height: 2px;
+  transition: height 0.4s var(--ease-out);
+}
+.usage-bar-day {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--type-soft);
+}
+.usage-bar-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--type-loud);
+}
+
+/* ── API grid ────────────────────────────────────────────────────────────── */
+.api-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+@media (max-width: 900px) { .api-grid { grid-template-columns: 1fr; } }
+.api-card {
+  background: var(--ink-1);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  padding: 20px;
+}
+.api-card h4 {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--type-loud);
+  margin: 6px 0 12px;
+}
+.api-card pre {
+  margin: 0;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--type-soft);
+  overflow-x: auto;
+}
+.api-card pre .ok { color: var(--accent); }
+
+.lead {
+  color: var(--type-soft);
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0 0 12px;
+}
