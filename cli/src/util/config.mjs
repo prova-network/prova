@@ -6,7 +6,7 @@ import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
 const CONFIG_DIR  = join(homedir(), '.prova');
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 
-export const DEFAULT_API = process.env.PROVA_API || 'https://prova-network.pages.dev';
+export const DEFAULT_API = process.env.PROVA_API || 'https://prova.network';
 
 export async function loadConfig() {
   try {
