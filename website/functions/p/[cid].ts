@@ -19,9 +19,17 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     return serveR2(req, obj, cid);
   }
 
-  // Hetzner stage fallback
+  // Hetzner stage fallback. Cloudflare Workers can't fetch raw-IP
+  // hostnames (error 1003), so when PROVA_STAGE_URL points at one we
+  // 302 the client there directly. Once we have a CF-routed hostname
+  // we'll switch back to a transparent proxy.
   if (env.PROVA_STAGE_URL) {
-    const target = `${env.PROVA_STAGE_URL.replace(/\/+$/, '')}/p/${encodeURIComponent(cid)}`;
+    const base = env.PROVA_STAGE_URL.replace(/\/+$/, '');
+    const target = `${base}/p/${encodeURIComponent(cid)}`;
+    const looksLikeRawIp = /^https?:\/\/(\d{1,3}\.){3}\d{1,3}(:\d+)?/.test(base);
+    if (looksLikeRawIp) {
+      return Response.redirect(target, 302);
+    }
     const upstream = await fetch(target, {
       method: req.method,
       headers: { 'user-agent': 'prova-pages-fn/1' },
