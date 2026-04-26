@@ -1,0 +1,141 @@
+/* Prova Spec — brand-aligned VitePress overrides.
+   Visual reference: spec.filecoin.io's structured-spec aesthetic. */
+
+:root {
+  --vp-c-brand-1:        #2EC4B6;
+  --vp-c-brand-2:        #5DC3E5;
+  --vp-c-brand-3:        #0F4C5C;
+  --vp-c-brand-soft:     rgba(46, 196, 182, 0.14);
+
+  --vp-c-brand:          var(--vp-c-brand-1);
+  --vp-c-brand-light:    var(--vp-c-brand-2);
+  --vp-c-brand-lighter:  #7DD0DE;
+  --vp-c-brand-dark:     var(--vp-c-brand-3);
+  --vp-c-brand-darker:   #08222B;
+
+  --vp-home-hero-name-color:           transparent;
+  --vp-home-hero-name-background:      linear-gradient(135deg, #5DC3E5 0%, #2EC4B6 55%, #0F4C5C 100%);
+
+  --vp-button-brand-bg:           var(--vp-c-brand-1);
+  --vp-button-brand-hover-bg:     var(--vp-c-brand-2);
+  --vp-button-brand-active-bg:    var(--vp-c-brand-3);
+  --vp-button-brand-border:       var(--vp-c-brand-1);
+  --vp-button-brand-hover-border: var(--vp-c-brand-2);
+  --vp-button-brand-active-border:var(--vp-c-brand-3);
+  --vp-button-brand-text:         #ffffff;
+  --vp-button-brand-hover-text:   #ffffff;
+  --vp-button-brand-active-text:  #ffffff;
+}
+
+.dark {
+  --vp-home-hero-name-background: linear-gradient(135deg, #7DD0DE 0%, #41D5C7 55%, #5DC3E5 100%);
+}
+
+/* Teal nav wordmark */
+.VPNavBarTitle .title span,
+.VPNavBarTitle .title.has-sidebar span {
+  background: linear-gradient(135deg, #5DC3E5 0%, #2EC4B6 55%, #0F4C5C 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.dark .VPNavBarTitle .title span,
+.dark .VPNavBarTitle .title.has-sidebar span {
+  background: linear-gradient(135deg, #7DD0DE 0%, #41D5C7 55%, #5DC3E5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.VPNavBarTitle img.logo { height: 24px; }
+
+/* ── Spec metadata badges (drawn from filecoin.io style) ─────────────── */
+
+.spec-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--vp-c-text-2);
+  margin: 8px 0 22px;
+  padding: 10px 0;
+  border-top: 1px solid var(--vp-c-divider);
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+.spec-meta .label {
+  color: var(--vp-c-text-3);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-right: 4px;
+}
+.spec-meta .badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.badge.state-stable      { background: rgba(46, 196, 182, 0.14); color: #0a6c83; }
+.badge.state-reliable    { background: rgba(46, 196, 182, 0.10); color: #0a6c83; }
+.badge.state-draft       { background: rgba(255, 169, 64, 0.14); color: #b86b00; }
+.badge.state-wip         { background: rgba(255, 169, 64, 0.14); color: #b86b00; }
+.badge.state-incorrect   { background: rgba(220, 53, 69, 0.14);  color: #b3001b; }
+.badge.state-missing     { background: rgba(120, 120, 120, 0.14); color: #5b6470; }
+.badge.audit-yes         { background: rgba(46, 196, 182, 0.14); color: #0a6c83; }
+.badge.audit-wip         { background: rgba(255, 169, 64, 0.14); color: #b86b00; }
+.badge.audit-na          { background: rgba(120, 120, 120, 0.14); color: #5b6470; }
+
+.dark .badge.state-stable,
+.dark .badge.state-reliable    { background: rgba(46, 196, 182, 0.20); color: #7DD0DE; }
+.dark .badge.state-draft,
+.dark .badge.state-wip         { background: rgba(255, 169, 64, 0.18); color: #ffba66; }
+.dark .badge.state-incorrect   { background: rgba(220, 53, 69, 0.18);  color: #ff7a8a; }
+.dark .badge.state-missing,
+.dark .badge.audit-na          { background: rgba(120, 120, 120, 0.20); color: #aab3ba; }
+
+/* Status overview table — Filecoin-style spec-status grid */
+.spec-status-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin: 24px 0;
+}
+.spec-status-table th {
+  text-align: left;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--vp-c-divider);
+}
+.spec-status-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  vertical-align: top;
+}
+.spec-status-table td.section-num {
+  color: var(--vp-c-text-3);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+  width: 80px;
+}
+.spec-status-table td.section-title a {
+  color: var(--vp-c-brand-1);
+  font-weight: 500;
+}
+.spec-status-table td.section-title a:hover { color: var(--vp-c-brand-2); }
+.spec-status-table td.state,
+.spec-status-table td.audit { width: 130px; }
+
+/* Numbered headers (1.1, 2.3.4) — give h2/h3 an unobtrusive section number */
+.vp-doc h2 { scroll-margin-top: 80px; }
+.vp-doc h3 { scroll-margin-top: 80px; }

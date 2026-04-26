@@ -61,3 +61,8 @@ TOKEN-MODEL-V2-2026-04-26.md
 docs-gitbook/node_modules/
 docs-gitbook/.vitepress/dist/
 docs-gitbook/.vitepress/cache/
+
+# spec-site build artifacts
+spec-site/node_modules/
+spec-site/.vitepress/dist/
+spec-site/.vitepress/cache/
