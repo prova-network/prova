@@ -80,7 +80,7 @@ bootstrap step (manual email verify) before they unlock quota. Existing
 
 ---
 
-### F-02 · High · 🟡 partial (2026-04-26 re-review) · No CSRF protection on token endpoints
+### F-02 · High · 🟢 fixed (commit `649ac5e`, 2026-04-26 round 3) · No CSRF protection on token endpoints
 
 **Files:** `tokens/revoke.ts`, `tokens/list.ts`, `usage.ts`, `files.ts`, `upload.ts`
 
@@ -742,13 +742,13 @@ raw header bytes when decoding fails.
 
 ## Re-review summary
 
-Post-2026-04-26 status (after both rounds of fixes shipped to
-`prova-network/website` commits `7d3c231` and `3fdabc1`):
+Post-2026-04-26 status (after three rounds of fixes shipped to
+`prova-network/website` commits `7d3c231`, `3fdabc1`, and `649ac5e`):
 
 | Severity | Count |
 | --- | --- |
 | Critical (newly identified, all fixed) | 2 |
-| High (5 fixed, 1 still present — NEW-5 CSP) | 6 |
+| High (5 fixed, 1 partial — F-03 stage server, 1 still present — NEW-5 CSP) | 7 |
 | Medium (5 fixed-or-partial, 4 still present) | 9 |
 | Low (4 fixed, 1 still present — F-11 alias) | 5 |
 | Informational (2 fixed, 1 partial) | 3 |
@@ -769,7 +769,7 @@ Post-2026-04-26 status (after both rounds of fixes shipped to
 - ~~NEW-6~~ 🟢 IPv6 rate-limit bypass — fixed
 - ~~NEW-7~~ 🟢 R2 content-type forwarding XSS — fixed (round 2)
 - ~~NEW-8~~ 🟢 `*.pages.dev` subdomain takeover surface — fixed (round 2)
-- F-02 🟡 origin allow-list still missing on the bearer-auth token endpoints (`/api/tokens/*`, `/api/files`, `/api/usage`)
+- ~~F-02~~ 🟢 origin allow-list on bearer-auth endpoints — fixed (round 3)
 - F-03 🟡 stage server side not re-verifiable here
 - F-15 / NEW-5 🔴 CSP `'unsafe-inline'` still permitted (mitigated in practice by NEW-4, NEW-7, and NEW-8 fixes; full removal is a refactor of every inline `<script>` block, tracked separately)
 - F-16 🟡 retrieval-time blocked-CID gate missing
