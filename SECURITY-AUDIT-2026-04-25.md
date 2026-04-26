@@ -372,7 +372,7 @@ free quota.
 
 ---
 
-### F-13 · Low · 🔴 still present (2026-04-26 re-review, 3/3 confirmed) · CORS not set anywhere
+### F-13 · Low · 🟢 fixed (commit `3fdabc1`, 2026-04-26 round 2) · CORS not set anywhere
 
 **Files:** all `functions/`
 
@@ -393,7 +393,7 @@ in CLI's case).
 
 ---
 
-### F-14 · Informational · 🔴 still present (2026-04-26 re-review) · No /robots.txt or /security.txt
+### F-14 · Informational · 🟢 fixed (commit `3fdabc1`, 2026-04-26 round 2) · No /robots.txt or /security.txt
 
 **Fix:** Add `/security.txt` with a contact (`security@prova.network`),
 preferred-languages, encryption (PGP key fingerprint optional), policy URL.
@@ -635,38 +635,52 @@ stable `'no-ip'` bucket rather than `0.0.0.0`. Trade-off: CGNAT users
 still share a per-IPv4 bucket, but that's an upstream protocol issue
 and far better than the previous shared-`0.0.0.0` collapse.
 
-### NEW-7 · High · 🔴 still present · Stored-XSS via R2 retrieval `Content-Type` forwarding
+### NEW-7 · High · 🟢 fixed (commit `3fdabc1`, 2026-04-26 round 2) · Stored-XSS via R2 retrieval `Content-Type` forwarding
 
-**`website/functions/p/[cid].ts:9-58`**
+**`website/functions/p/[cid].ts:9-58`** (pre-fix)
 
-`/p/{cid}` proxy preserves the upstream `content-type` and CSP headers
-verbatim. An authenticated user can upload an HTML file containing
+`/p/{cid}` proxy preserved the upstream `content-type` and CSP headers
+verbatim. An authenticated user could upload an HTML file containing
 malicious JS, then trick a victim into opening `/p/<cid>`. The browser
-renders it as HTML with full access to the `prova.network` origin,
+rendered it as HTML with full access to the `prova.network` origin,
 including any `localStorage` token.
 
 **Caught by:** Opus (1/3).
 
-**Fix not yet shipped.** Will require either (a) forcing every retrieval
-response to `content-type: application/octet-stream` + `content-disposition: attachment`,
-or (b) a strict allow-list of MIME types that can be served inline.
-Option (a) is safer; option (b) is more useful for `.eth` website
-hosting which is a stated use case. Tracked for follow-up PR.
+**Fix shipped:** every retrieval response now forces
+`content-type: application/octet-stream`,
+`content-disposition: attachment; filename="<cid>"`,
+`content-security-policy: sandbox; default-src 'none'`,
+and `x-content-type-options: nosniff`, on both the R2 and the
+stage-server fallback paths. Upstream attacker-controlled headers are
+no longer propagated. In-browser preview of `.eth` static sites or
+images now needs a separate isolated origin (planned:
+`prova-content.network`) where the headers can be relaxed deliberately
+and where no auth state lives. The main domain is download-only.
 
-### NEW-8 · High · 🔴 still present · Subdomain takeover surface via `*.prova-network.pages.dev`
+### NEW-8 · High · 🟢 fixed (commit `3fdabc1`, 2026-04-26 round 2) · Subdomain takeover surface via `*.prova-network.pages.dev`
 
-**`website/functions/api/auth/start.ts:142-149`**, `verify.ts:158`
+**`website/functions/api/auth/start.ts:142-149`**, `verify.ts:158` (pre-fix)
 
-`isProvaOrigin()` accepts any subdomain of `prova-network.pages.dev`
+`isProvaOrigin()` accepted any subdomain of `prova-network.pages.dev`
 (Cloudflare Pages preview deployments). A PR-preview branch with
-untrusted code can call production `/auth/*` endpoints with the
-production `PROVA_TOKEN_SECRET`, since they share the same env binding.
+untrusted code could call production `/auth/*` endpoints with the
+production `PROVA_TOKEN_SECRET`, since they shared the same env binding.
 
 **Caught by:** Opus (1/3).
 
-**Fix not yet shipped.** Will require either separating preview-env
-secrets from production, or tightening `isProvaOrigin()` to reject
-preview subdomains for auth endpoints. Tracked for follow-up PR.
+**Fix shipped:** the origin allow-list helper has been split into
+two tiers in a new `functions/_shared/origin.ts`:
+  - `isProvaProductionOrigin()` accepts only `prova.network` and
+    `www.prova.network`. Used by `/auth/start` and `/auth/verify` —
+    the endpoints that touch `PROVA_TOKEN_SECRET` and mint or consume
+    tokens.
+  - `isProvaAnyOrigin()` adds `*.prova-network.pages.dev` for
+    non-auth endpoints where preview-deployment access is acceptable.
+
+Preview branches that need to test the auth flow get their own
+scoped secret + origin entry. The wildcard `*.pages.dev` pattern can
+no longer be used to mint tokens with the production secret.
 
 ### NEW-9 · Medium · 🟢 best-effort fix shipped (commit `7d3c231`) · Magic-link replay race
 
@@ -728,45 +742,46 @@ raw header bytes when decoding fails.
 
 ## Re-review summary
 
-Post-2026-04-26 status:
+Post-2026-04-26 status (after both rounds of fixes shipped to
+`prova-network/website` commits `7d3c231` and `3fdabc1`):
 
 | Severity | Count |
 | --- | --- |
 | Critical (newly identified, all fixed) | 2 |
-| High (3 fixed, 3 still present) | 6 |
+| High (5 fixed, 1 still present — NEW-5 CSP) | 6 |
 | Medium (5 fixed-or-partial, 4 still present) | 9 |
-| Low (3 fixed, 2 still present) | 5 |
-| Informational (1 partial, 2 still present) | 3 |
+| Low (4 fixed, 1 still present — F-11 alias) | 5 |
+| Informational (2 fixed, 1 partial) | 3 |
 | **Total tracked** | **25** |
 
 ## Updated pre-testnet checklist
 
 **Must fix before public testnet:**
 - ~~F-01~~ 🟢 fixed
-- ~~F-12~~ 🟢 fixed
 - ~~F-10~~ 🟢 fixed
+- ~~F-12~~ 🟢 fixed
+- ~~F-13~~ 🟢 CORS — fixed (round 2)
+- ~~F-14~~ 🟢 security.txt / robots.txt — fixed (round 2)
 - ~~NEW-1~~ 🟢 installer shell injection — fixed
 - ~~NEW-2~~ 🟢 magic-link brute-force — fixed
 - ~~NEW-3~~ 🟢 pk_test_ fail-open — fixed
 - ~~NEW-4~~ 🟢 challenge in response body — fixed
 - ~~NEW-6~~ 🟢 IPv6 rate-limit bypass — fixed
-- F-02 🟡 origin allow-list still missing on token endpoints
+- ~~NEW-7~~ 🟢 R2 content-type forwarding XSS — fixed (round 2)
+- ~~NEW-8~~ 🟢 `*.pages.dev` subdomain takeover surface — fixed (round 2)
+- F-02 🟡 origin allow-list still missing on the bearer-auth token endpoints (`/api/tokens/*`, `/api/files`, `/api/usage`)
 - F-03 🟡 stage server side not re-verifiable here
-- F-13 🔴 CORS still missing
-- F-15 / NEW-5 🔴 CSP `'unsafe-inline'` still present
+- F-15 / NEW-5 🔴 CSP `'unsafe-inline'` still permitted (mitigated in practice by NEW-4, NEW-7, and NEW-8 fixes; full removal is a refactor of every inline `<script>` block, tracked separately)
 - F-16 🟡 retrieval-time blocked-CID gate missing
-- NEW-7 🔴 R2 content-type forwarding XSS
-- NEW-8 🔴 `*.pages.dev` subdomain takeover surface
 
 **Pre-mainnet:**
 - F-05 🔴 CLI plaintext token
 - F-06 🔴 token JTI predictability
 - F-07 🔴 quota TOCTOU race — needs Durable Objects / D1
 - F-08 🟡 stage server timeout / slowloris re-verification
-- F-09 🟡 `innerHTML` rendering refactor
+- F-09 🟡 `innerHTML` rendering refactor in `app/app.js`
 - F-11 🔴 email `+` alias normalization decision
-- F-14 🔴 `security.txt` / `robots.txt`
-- NEW-9 🟡 atomic challenge consume via Durable Objects
+- NEW-9 🟡 atomic challenge consume via Durable Objects (best-effort fix shipped, full atomic CAS pending)
 - NEW-10 🔴 streaming upload to bound worker memory
 
 **Out of scope (separate audit):**
