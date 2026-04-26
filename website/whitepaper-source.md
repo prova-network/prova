@@ -37,7 +37,7 @@ We avoid inventing cryptography. Everything below is either standard or a port o
 
 ### 2.1 Piece-CIDs (CommP)
 
-Each object is identified by its piece-CID, a binary Merkle root computed over the Fr32-padded bytes of the object using SHA-256. Inner-node hashing zeroes the top two bits of the parent before re-hashing, keeping every digest inside the BLS12-381 scalar field. The root is encoded as CIDv1 with the `fil-commitment-unsealed` codec and `sha2-256-trunc254-padded` multihash. The leading multibase byte is `b`; the canonical printable form is `bafy…`.
+Each object is identified by its piece-CID, a binary Merkle root computed over the Fr32-padded bytes of the object using SHA-256. Inner-node hashing zeroes the top two bits of the parent before re-hashing, keeping every digest inside the BLS12-381 scalar field. The root is encoded as CIDv1 with the `fil-commitment-unsealed` codec and `sha2-256-trunc254-padded` multihash. The leading multibase byte is `b`; the canonical printable form is `baga…`.
 
 Two important properties:
 
