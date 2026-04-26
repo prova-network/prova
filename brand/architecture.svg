@@ -1,76 +1,195 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" role="img" aria-label="Prova architecture: Client, Prover, Ethereum">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 560" width="860" height="560" font-family="ui-sans-serif, system-ui, sans-serif">
   <defs>
-    <linearGradient id="provaTeal" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%"  stop-color="#5DC3E5"/>
-      <stop offset="55%" stop-color="#2EC4B6"/>
-      <stop offset="100%" stop-color="#0F4C5C"/>
+    <linearGradient id="goldFade" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#C9A84C" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#C9A84C" stop-opacity="0.04"/>
     </linearGradient>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
-      <path d="M0 0 L10 5 L0 10 z" fill="#0F4C5C" opacity="0.65"/>
+    <linearGradient id="baseFade" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0052FF" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="clientFade" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#3a3a3a" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#3a3a3a" stop-opacity="0.02"/>
+    </linearGradient>
+    <marker id="arrowBlack" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333"/>
+    </marker>
+    <marker id="arrowGold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#C9A84C"/>
     </marker>
   </defs>
 
-  <!-- Background -->
-  <rect width="800" height="360" fill="#ffffff"/>
+  <rect width="860" height="560" fill="#FAFAF9"/>
 
-  <!-- Three role boxes -->
-  <g font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif">
-    <!-- Client -->
-    <g transform="translate(40, 80)">
-      <rect width="200" height="140" rx="16" fill="#fbfcfd" stroke="#cdd5dd" stroke-width="1.2"/>
-      <text x="100" y="42" text-anchor="middle" fill="#0F1419" font-size="20" font-weight="500">Client</text>
-      <text x="100" y="68" text-anchor="middle" fill="#5b6470" font-family="ui-monospace, 'SF Mono', monospace" font-size="11" letter-spacing="0.1em">UPLOAD · PAY · VERIFY</text>
-      <text x="100" y="100" text-anchor="middle" fill="#5b6470" font-size="13">.eth website</text>
-      <text x="100" y="118" text-anchor="middle" fill="#5b6470" font-size="13">dataset · AI corpus</text>
+  <!-- Title block -->
+  <text x="430" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1817">Prova Architecture</text>
+  <text x="430" y="54" text-anchor="middle" font-size="12" fill="#8a7a3a" font-style="italic">No sealing, no PoRep, no TEE, no AI. PDP on Base, that's it.</text>
+
+  <!-- (Step legend moved to bottom with main legend) -->
+
+  <!-- ── Client ──────────────────────────────── -->
+  <g transform="translate(40, 110)">
+    <rect width="180" height="360" rx="12" fill="url(#clientFade)" stroke="#1a1817" stroke-width="1.5"/>
+    <text x="90" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1817">Client</text>
+    <text x="90" y="44" text-anchor="middle" font-size="10" fill="#666" font-style="italic">any app on Base</text>
+    <line x1="20" y1="56" x2="160" y2="56" stroke="#1a1817" stroke-width="1" stroke-opacity="0.2"/>
+
+    <g transform="translate(15, 70)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#1a1817" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">compute CommP</text>
     </g>
-
-    <!-- Prover -->
-    <g transform="translate(300, 80)">
-      <rect width="200" height="140" rx="16" fill="#fbfcfd" stroke="#cdd5dd" stroke-width="1.2"/>
-      <text x="100" y="42" text-anchor="middle" fill="#0F1419" font-size="20" font-weight="500">Prover</text>
-      <text x="100" y="68" text-anchor="middle" fill="#5b6470" font-family="ui-monospace, 'SF Mono', monospace" font-size="11" letter-spacing="0.1em">STAKE · STORE · PROVE</text>
-      <text x="100" y="100" text-anchor="middle" fill="#5b6470" font-size="13">disk + bandwidth</text>
-      <text x="100" y="118" text-anchor="middle" fill="#5b6470" font-size="13">USDC stake bond</text>
+    <g transform="translate(15, 108)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#1a1817" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">pick prover</text>
     </g>
-
-    <!-- Ethereum / Base -->
-    <g transform="translate(560, 80)">
-      <rect width="200" height="140" rx="16" fill="#fbfcfd" stroke="#cdd5dd" stroke-width="1.2"/>
-      <text x="100" y="42" text-anchor="middle" fill="#0F1419" font-size="20" font-weight="500">Ethereum</text>
-      <text x="100" y="68" text-anchor="middle" fill="#5b6470" font-family="ui-monospace, 'SF Mono', monospace" font-size="11" letter-spacing="0.1em">VERIFY · SLASH · PAY</text>
-      <text x="100" y="100" text-anchor="middle" fill="#5b6470" font-size="13">Base L2 settlement</text>
-      <text x="100" y="118" text-anchor="middle" fill="#5b6470" font-size="13">USDC · ENS</text>
+    <g transform="translate(15, 146)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#1a1817" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">publish piece URL</text>
     </g>
-
-    <!-- Top arrows: Client → Prover → Ethereum -->
-    <g stroke="#0F4C5C" stroke-width="1.6" fill="none" opacity="0.55">
-      <path d="M240 130 L300 130" marker-end="url(#arrow)"/>
-      <path d="M500 130 L560 130" marker-end="url(#arrow)"/>
+    <g transform="translate(15, 184)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#1a1817" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">propose deal</text>
     </g>
-
-    <!-- Bottom return arc: Ethereum → Prover → Client (settlement) -->
-    <path d="M650 220 Q650 285 500 285 L300 285 Q150 285 150 220"
-          fill="none" stroke="#0F4C5C" stroke-width="1.6"
-          stroke-dasharray="4 5" opacity="0.45"
-          marker-end="url(#arrow)"/>
-
-    <!-- Top arrow labels -->
-    <g fill="#0F4C5C" font-size="10.5" font-family="ui-monospace, 'SF Mono', monospace" letter-spacing="0.12em" text-anchor="middle">
-      <text x="270" y="118">PIECE</text>
-      <text x="530" y="118">PROOF</text>
+    <g transform="translate(15, 222)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#1a1817" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">lock payment</text>
     </g>
-
-    <!-- Bottom arc label -->
-    <text x="400" y="313" text-anchor="middle" fill="#5b6470"
-          font-size="10.5" font-family="ui-monospace, 'SF Mono', monospace" letter-spacing="0.16em">
-      SETTLEMENT · USDC PAYOUT · SLASHING
-    </text>
-
-    <!-- Title strip -->
-    <text x="40" y="48" fill="#0F4C5C" font-size="11" font-weight="600" letter-spacing="0.16em" font-family="ui-monospace, 'SF Mono', monospace">
-      PROVA · ARCHITECTURE
-    </text>
-    <line x1="40" y1="56" x2="200" y2="56" stroke="url(#provaTeal)" stroke-width="2"/>
+    <g transform="translate(15, 260)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#1a1817" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">retrieve bytes</text>
+    </g>
+    <text x="90" y="340" text-anchor="middle" font-size="10" fill="#666">TypeScript SDK · viem</text>
   </g>
+
+  <!-- ── Prover (off-chain) ───────────────────── -->
+  <g transform="translate(340, 110)">
+    <rect width="180" height="360" rx="12" fill="url(#goldFade)" stroke="#C9A84C" stroke-width="1.5"/>
+    <text x="90" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1817">Prover</text>
+    <text x="90" y="44" text-anchor="middle" font-size="10" fill="#8a7a3a" font-style="italic">off-chain · one Go binary</text>
+    <line x1="20" y1="56" x2="160" y2="56" stroke="#C9A84C" stroke-width="1" stroke-opacity="0.4"/>
+
+    <g transform="translate(15, 70)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#C9A84C" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">event poller</text>
+    </g>
+    <g transform="translate(15, 108)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#C9A84C" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">deal engine</text>
+    </g>
+    <g transform="translate(15, 146)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#C9A84C" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">piece store (disk)</text>
+    </g>
+    <g transform="translate(15, 184)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#C9A84C" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">PDP tree + proofs</text>
+    </g>
+    <g transform="translate(15, 222)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#C9A84C" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">HTTPS retrieval</text>
+    </g>
+    <g transform="translate(15, 260)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#C9A84C" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">Prometheus metrics</text>
+    </g>
+    <text x="90" y="340" text-anchor="middle" font-size="10" fill="#8a7a3a">provad · Go 1.25 · distroless</text>
+  </g>
+
+  <!-- ── Base L2 (on-chain) ──────────────────── -->
+  <g transform="translate(640, 110)">
+    <rect width="180" height="360" rx="12" fill="url(#baseFade)" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="90" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1817">Base L2</text>
+    <text x="90" y="44" text-anchor="middle" font-size="10" fill="#0052FF" font-style="italic">on-chain · 6 contracts</text>
+    <line x1="20" y1="56" x2="160" y2="56" stroke="#0052FF" stroke-width="1" stroke-opacity="0.4"/>
+
+    <g transform="translate(15, 70)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#0052FF" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">ProvaToken</text>
+    </g>
+    <g transform="translate(15, 108)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#0052FF" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">ProofVerifier</text>
+    </g>
+    <g transform="translate(15, 146)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#0052FF" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">ProverRegistry</text>
+    </g>
+    <g transform="translate(15, 184)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#0052FF" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">ProverStaking</text>
+    </g>
+    <g transform="translate(15, 222)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#0052FF" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">ContentRegistry</text>
+    </g>
+    <g transform="translate(15, 260)">
+      <rect width="150" height="30" rx="6" fill="#fff" stroke="#0052FF" stroke-width="1"/>
+      <text x="75" y="20" text-anchor="middle" font-size="11" fill="#1a1817" font-weight="600">StorageMarketplace</text>
+    </g>
+    <text x="90" y="340" text-anchor="middle" font-size="10" fill="#0052FF">Solidity 0.8.30 · UUPS upgradeable</text>
+  </g>
+
+  <!-- ── Numbered flow arrows ────────────────── -->
+  <!-- 1. Client → Base: propose deal + payment (arc ABOVE all 3 columns) -->
+  <path d="M 130 110 C 130 78, 730 78, 730 110" fill="none" stroke="#333" stroke-width="1.4" marker-end="url(#arrowBlack)"/>
+  <circle cx="430" cy="82" r="11" fill="#1a1817"/>
+  <text x="430" y="86" text-anchor="middle" font-size="10" font-weight="700" fill="#FAFAF9">1</text>
+  <text x="430" y="100" text-anchor="middle" font-size="10" fill="#1a1817" font-weight="600">proposeDeal + lock payment</text>
+
+  <!-- 2. Base → Prover: DealProposed event -->
+  <path d="M 640 190 C 580 190, 540 190, 525 190" fill="none" stroke="#333" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arrowBlack)"/>
+  <circle cx="585" cy="180" r="11" fill="#1a1817"/>
+  <text x="585" y="184" text-anchor="middle" font-size="10" font-weight="700" fill="#FAFAF9">2</text>
+  <text x="585" y="205" text-anchor="middle" font-size="10" fill="#1a1817">DealProposed event</text>
+
+  <!-- 3. Client → Prover: fetch piece bytes (prover pulls from client's URL) -->
+  <path d="M 220 250 C 260 250, 300 250, 340 250" fill="none" stroke="#C9A84C" stroke-width="1.4" marker-end="url(#arrowGold)"/>
+  <circle cx="280" cy="240" r="11" fill="#C9A84C"/>
+  <text x="280" y="244" text-anchor="middle" font-size="10" font-weight="700" fill="#1a1817">3</text>
+  <text x="280" y="266" text-anchor="middle" font-size="10" fill="#8a7a3a">prover fetches piece bytes</text>
+
+  <!-- 4. Prover → Base: createDataSet (accept) -->
+  <path d="M 520 300 C 570 300, 600 300, 640 300" fill="none" stroke="#333" stroke-width="1.4" marker-end="url(#arrowBlack)"/>
+  <circle cx="580" cy="290" r="11" fill="#1a1817"/>
+  <text x="580" y="294" text-anchor="middle" font-size="10" font-weight="700" fill="#FAFAF9">4</text>
+  <text x="580" y="316" text-anchor="middle" font-size="10" fill="#1a1817">createDataSet (accept)</text>
+
+  <!-- 5. Base → Prover: periodic challenge -->
+  <path d="M 640 360 C 580 360, 545 360, 525 360" fill="none" stroke="#333" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arrowBlack)"/>
+  <circle cx="580" cy="350" r="11" fill="#1a1817"/>
+  <text x="580" y="354" text-anchor="middle" font-size="10" font-weight="700" fill="#FAFAF9">5</text>
+  <text x="580" y="376" text-anchor="middle" font-size="10" fill="#1a1817">challenge (daily)</text>
+
+  <!-- 6. Prover → Base: provePossession -->
+  <path d="M 520 400 C 570 400, 600 400, 640 400" fill="none" stroke="#333" stroke-width="1.4" marker-end="url(#arrowBlack)"/>
+  <circle cx="580" cy="390" r="11" fill="#1a1817"/>
+  <text x="580" y="394" text-anchor="middle" font-size="10" font-weight="700" fill="#FAFAF9">6</text>
+  <text x="580" y="416" text-anchor="middle" font-size="10" fill="#1a1817">provePossession + get paid</text>
+
+  <!-- 7. Prover → Client: serve bytes on retrieval -->
+  <path d="M 340 450 C 290 450, 260 450, 225 450" fill="none" stroke="#C9A84C" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arrowGold)"/>
+  <circle cx="280" cy="440" r="11" fill="#C9A84C"/>
+  <text x="280" y="444" text-anchor="middle" font-size="10" font-weight="700" fill="#1a1817">7</text>
+  <text x="280" y="466" text-anchor="middle" font-size="10" fill="#8a7a3a">retrieve anytime (HTTPS)</text>
+
+  <!-- Legend at the bottom -->
+  <g transform="translate(80, 510)">
+    <line x1="0" y1="0" x2="30" y2="0" stroke="#333" stroke-width="1.4"/>
+    <text x="38" y="4" font-size="11" fill="#555">on-chain call</text>
+
+    <line x1="140" y1="0" x2="170" y2="0" stroke="#333" stroke-width="1.4" stroke-dasharray="4 3"/>
+    <text x="178" y="4" font-size="11" fill="#555">chain → off-chain event or response</text>
+
+    <line x1="420" y1="0" x2="450" y2="0" stroke="#C9A84C" stroke-width="1.4"/>
+    <text x="458" y="4" font-size="11" fill="#8a7a3a">bytes flow (HTTPS)</text>
+
+    <line x1="600" y1="0" x2="630" y2="0" stroke="#C9A84C" stroke-width="1.4" stroke-dasharray="4 3"/>
+    <text x="638" y="4" font-size="11" fill="#8a7a3a">bytes response</text>
+  </g>
+
+  <text x="430" y="540" text-anchor="middle" font-size="10" fill="#999" font-style="italic">
+    One client app, one prover binary, six contracts. Nothing else.
+  </text>
 </svg>
