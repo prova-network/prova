@@ -55,3 +55,7 @@ website/index.v1.html
 reference/
 website/screenshots/
 docs-gitbook/
+
+# Private legal staging — held until Curio exit unlocks public sharing (2026-05-15)
+legal/private/
+TOKEN-MODEL-V2-2026-04-26.md

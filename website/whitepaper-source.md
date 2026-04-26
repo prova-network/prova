@@ -148,25 +148,25 @@ Pricing is set by the prover and discoverable on-chain. The marketplace does not
 
 The marketplace contract takes a 1% fee on every payment stream and routes it to a treasury multisig. The treasury subsidizes the free tier and pays for development. There are no investor allocations, no presale, and no airdrop.
 
-### 4.4 Token role (Amendment 1, 2026-04-26)
+### 4.4 Token role (Amendment 2, 2026-04-26)
 
-*The original v0.9 of this section argued that there should be no token at all. The position has been amended below; the original text is preserved at the end of this section for the historical record.*
+*The original v0.9 of this section argued there should be no token. Amendment 1 introduced an off-protocol equity-style token. Amendment 2 supersedes both: PROVA is now the protocol's stake and governance token, with an in-protocol economic role. The original v0.9 paragraph is preserved at the end of this section.*
 
-Prova does not have a **protocol** token. Storage deals settle in USDC, provers stake in USDC, and slashing burns USDC. The protocol does not need a token in any of those roles, and a token would only add learning cost and speculation surface to a primitive that benefits from being boring.
+Prova has a single token, **PROVA**, deployed as a standard ERC-20 on Base. It does three things in the protocol:
 
-The **org** that builds and operates Prova does have an equity-style token, **PROVA**, deployed as a standard ERC-20 on Base. PROVA does three things and no more:
+1. **Prover stake.** Provers register and bond PROVA to gate their storage capacity. Slashing destroys a fixed fraction of the offending prover's PROVA, removing it from supply. The minimum stake includes a USDC-equivalent floor read from a Chainlink oracle, with a 7-day grace window to top up if PROVA price falls.
+2. **Fee burn.** The marketplace's 1% fee on USDC client payments routes to a permissionless [`FeeRouter`](https://github.com/prova-network/contracts/blob/main/src/FeeRouter.sol) contract that swaps USDC → PROVA on Uniswap V3 and burns the PROVA. Anyone can trigger the swap; slippage is bounded per call. Network revenue → permanent supply reduction.
+3. **Governance.** PROVA-weighted vote on bounded parameters (fee tier, slash fraction, minimum stake multiplier, prover-registry rules, upgrade authority on `ProofVerifier`), with 2-day timelock on parameters and 7-day on contract upgrades.
 
-- **Captures fee flow.** The marketplace contract takes a 1% fee on every USDC payment stream. The fee accrues to a public treasury, which uses it for buy-back-and-burn against PROVA on a published schedule, ecosystem grants paid in PROVA, and operational expenses of the org.
-- **Governs a bounded set of protocol parameters.** Token-weighted vote on the fee tier (currently 1%, hard-capped at 3%), slash fraction (currently 10%, hard-capped at 25%), minimum stake multiplier, prover-registry admission rules, and upgrade authority for the `ProofVerifier` UUPS proxy.
-- **Earns an optional fee discount.** Holders who lock PROVA into a fee-discount pool get a proportional reduction on their protocol fee. This is a routing-layer benefit; it is not required to use the protocol.
+PROVA is **not** required to be a client — client payments are USDC, prover settlements are USDC, and the day-to-day storage UX never needs to touch PROVA. PROVA is **not** the gas token; Base ETH is gas. PROVA is the alignment instrument between honest provers, the operating org, and PROVA holders.
 
-PROVA is **not** used as gas, **not** used as payment, and **not** required to participate in the protocol as a client or as a prover. The protocol would function identically if PROVA did not exist.
+Full allocation, vesting, compliance posture, and detailed economic mechanism in [`TOKENOMICS-2026.md`](https://github.com/prova-network/prova/blob/main/TOKENOMICS-2026.md).
 
-Full allocation, vesting, and compliance posture in [`TOKENOMICS-2026.md`](https://github.com/prova-network/prova/blob/main/TOKENOMICS-2026.md).
+This is a meaningful shift from v0.9. The shift is forced by two operating realities. First, we need runway, and a token sale produces useful runway in a way a small equity round does not for an L2-native infrastructure project. Second, without a slashable stake denominated in something other than the payment currency, prover misbehavior costs only forfeited revenue — weaker than a slashable PROVA bond that compounds the financial cost of dishonesty with a reputational and supply-deflationary one.
 
-We acknowledge the tension between the v0.9 framing and this amendment. The v0.9 arguments were aimed at the protocol's economic surface, and they remain true: the protocol does not need a token. What v0.9 did not say but should have, was that the org needs a way to pay the people who build the protocol. PROVA is that way. The line between "protocol token" and "org token" is real, and we draw it deliberately.
+We acknowledge that v0.9 took the cleaner position. v2 is the more honest position now that the project has reached the point where building it requires real funding.
 
-We reserve the right to change our minds again. We do not reserve the right to be quiet about it: any change here would land in a further numbered amendment to this document.
+We reserve the right to change our minds again. Any change here would land in a further numbered amendment to this document.
 
 ---
 
