@@ -39,8 +39,11 @@ jobs:
         with:
           version: stable
 
-      - name: Install OpenZeppelin deps
+      - name: Install foundry deps
         run: |
+          if [ ! -d lib/forge-std ]; then
+            forge install foundry-rs/forge-std
+          fi
           if [ ! -d lib/openzeppelin-contracts ]; then
             forge install OpenZeppelin/openzeppelin-contracts
           fi
@@ -78,8 +81,11 @@ jobs:
         with:
           version: stable
 
-      - name: Install OpenZeppelin deps
+      - name: Install foundry deps
         run: |
+          if [ ! -d lib/forge-std ]; then
+            forge install foundry-rs/forge-std
+          fi
           if [ ! -d lib/openzeppelin-contracts ]; then
             forge install OpenZeppelin/openzeppelin-contracts
           fi
@@ -114,8 +120,11 @@ jobs:
         with:
           version: stable
 
-      - name: Install OpenZeppelin deps
+      - name: Install foundry deps
         run: |
+          if [ ! -d lib/forge-std ]; then
+            forge install foundry-rs/forge-std
+          fi
           if [ ! -d lib/openzeppelin-contracts ]; then
             forge install OpenZeppelin/openzeppelin-contracts
           fi
@@ -155,8 +164,11 @@ jobs:
         with:
           version: stable
 
-      - name: Install OpenZeppelin deps
+      - name: Install foundry deps
         run: |
+          if [ ! -d lib/forge-std ]; then
+            forge install foundry-rs/forge-std
+          fi
           if [ ! -d lib/openzeppelin-contracts ]; then
             forge install OpenZeppelin/openzeppelin-contracts
           fi

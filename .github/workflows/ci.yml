@@ -26,10 +26,13 @@ jobs:
         with:
           version: stable
 
-      - name: Install OpenZeppelin deps
+      - name: Install foundry deps
         run: |
-          # remappings.txt points at lib/openzeppelin-contracts{,-upgradeable}
-          # They are submodules or fetched via forge install; ensure present.
+          # forge-std and the OpenZeppelin libs are pulled via forge install
+          # so a fresh runner without committed submodule state still builds.
+          if [ ! -d lib/forge-std ]; then
+            forge install foundry-rs/forge-std
+          fi
           if [ ! -d lib/openzeppelin-contracts ]; then
             forge install OpenZeppelin/openzeppelin-contracts
           fi
