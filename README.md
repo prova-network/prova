@@ -1,219 +1,141 @@
 <div align="center">
-  <img src="brand/prova-logo.svg" alt="Prova" width="96" height="96" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://prova.network/brand/prova-mark-dark.svg">
+    <img src="https://prova.network/brand/prova-mark-light.svg" alt="Prova" width="96" height="96">
+  </picture>
 
   <h1>Prova</h1>
 
-  <p><strong>Verifiable storage on Base.</strong> Upload a piece, pay in ETH, and get continuous on-chain proofs that your data is actually there.</p>
+  <p><strong>Verifiable storage anchored to Ethereum.</strong> Upload a file, pay in USDC on Base, get continuous on-chain proofs that your data is actually stored.</p>
 
   <p>
-    <a href="#install"><img src="https://img.shields.io/badge/install-curl%20%7C%20bash-C9A84C?style=flat-square" alt="installer" /></a>
+    <a href="https://prova.network"><img src="https://img.shields.io/badge/site-prova.network-2EC4B6?style=flat-square" alt="site" /></a>
+    <a href="https://docs.prova.network"><img src="https://img.shields.io/badge/docs-docs.prova.network-2EC4B6?style=flat-square" alt="docs" /></a>
+    <a href="https://spec.prova.network"><img src="https://img.shields.io/badge/spec-spec.prova.network-2EC4B6?style=flat-square" alt="spec" /></a>
     <a href="https://base.org"><img src="https://img.shields.io/badge/chain-Base%20L2-0052FF?style=flat-square" alt="Base L2" /></a>
-    <a href="https://github.com/prova-network/prova/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/tests-103%20passing-71B074?style=flat-square" alt="tests" /></a>
-    <a href="./spec/"><img src="https://img.shields.io/badge/specs-v2-1a1817?style=flat-square" alt="specs" /></a>
-    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-1a1817?style=flat-square" alt="license" /></a>
-    <a href="./PIVOT.md"><img src="https://img.shields.io/badge/status-research%20%E2%80%A2%20in%20development-C9A84C?style=flat-square" alt="status" /></a>
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-0F4C5C?style=flat-square" alt="license" /></a>
+    <a href="./STATUS.md"><img src="https://img.shields.io/badge/status-pre--testnet%20%E2%80%A2%20iterating-5DC3E5?style=flat-square" alt="status" /></a>
   </p>
 </div>
 
 ---
 
-Prova is a thin, honest slice of storage technology. It takes the parts of the Filecoin ecosystem that are lightweight and have been proven at scale (PDP, CommP, the FoC marketplace pattern) and runs them on Base. No sealing. No SNARKs. No AI. No separate chain. Just verifiable, retrievable storage, priced in ETH, backed by prover stake.
+Prova is a thin storage primitive that puts the smallest useful unit of *"I have your bytes, I can prove it"* on Base. Deals are USDC-denominated. Provers stake PROVA. Slashing burns the stake. The 1% protocol fee on USDC streams auto-burns PROVA from market revenue. Boring economics, sharp guarantees.
 
-> **Upload a piece.** Prover picks it up from your URL and stores the bytes.<br>
-> **Wait 30 seconds.** The deal lands on Base and the prover starts getting challenged on-chain every day.<br>
-> **Retrieve any time.** Pull the bytes back over HTTPS, verified against the CommP you computed yourself.
+> **Upload a file.** A prover picks it up, recomputes the piece-CID, and stores the bytes.<br>
+> **Wait 30 seconds.** The deal lands on Base and the prover starts getting challenged on-chain.<br>
+> **Retrieve any time.** Pull the bytes back over HTTPS, verified against the piece-CID you computed yourself.
 
 ---
 
 ## Why Prova
 
-Most storage projects compete on cryptographic ambition. Prova wins by doing the opposite.
-
-- 📦 **One storage primitive, done well.** Provable Data Possession, nothing else.
+- 📦 **One storage primitive, done well.** Provable Data Possession (PDP), nothing else. No sealing, no PoRep, no SNARKs, no AI, no new chain.
 - ⚡ **Cheap on-chain cost.** Merkle inclusion proofs verify in O(log N) gas on Base. About $0.001 per proof.
-- 🔐 **Honest economics.** Provers stake PROVA, clients lock ETH, fees stream in 1% to treasury, 99% to the prover. Fail to prove and you get slashed, no nuance.
-- 🌐 **Base-native.** ETH for gas, USDC for stable pricing, ENS for naming, the existing Ethereum tooling. No new chain to learn.
-- 🧰 **Single Go binary.** `provad` runs the whole prover. Systemd unit, Prometheus metrics, hardened Docker image, SIGTERM graceful shutdown. Boring on purpose.
-- 🤝 **Standing on Filecoin's shoulders, not competing with them.** PDP is MIT-licensed, so is the CommP stack. We credit the origins and we keep the math.
+- 💰 **Stablecoin payments, token-aligned provers.** Clients pay USDC. Provers earn USDC + PROVA emission. Provers stake slashable PROVA.
+- 🔥 **Deflationary by design.** Every USDC fee swaps to PROVA on Uniswap V3 and burns. Network revenue → permanent supply reduction.
+- 🌐 **Base-native.** USDC is canonical. ENS works natively. No bridge, no custody, no new chain to learn.
+- 🧰 **Single Go binary for provers.** `provad` is the whole prover. Disk-bound, not GPU-bound. Boring on purpose.
+- 🤝 **Standing on Filecoin's shoulders.** PDP, CommP, Fr32: MIT-licensed, battle-tested. We credit and reuse.
 
 ---
 
-## Architecture
+## The org
 
-<div align="center">
-  <img src="brand/architecture.svg" alt="Prova architecture" width="820" />
-</div>
+This is the umbrella repo. The implementation is split across the [prova-network](https://github.com/prova-network) org:
 
-Three actors: **client**, **prover** (off-chain), **Base** (on-chain). Client computes CommP from the bytes, picks a prover, calls `StorageMarketplace.proposeDeal` on Base with payment locked up. Prover sees the event, pulls the bytes from the client's URL, recomputes CommP, stores the piece, and calls `ProofVerifier.createDataSet` to accept. After that, Base challenges the prover periodically and the prover submits Merkle inclusion proofs. Each successful proof releases a slice of the client's locked payment.
+| Repo | Purpose |
+| --- | --- |
+| [`prova-network/contracts`](https://github.com/prova-network/contracts) | Solidity contracts: `ProvaToken`, `ProvaVesting`, `ProverRewards`, `FeeRouter`, `StorageMarketplace`, `ProverStaking`, `ProverRegistry`, `ContentRegistry`, `ProofVerifier` |
+| [`prova-network/prover`](https://github.com/prova-network/prover) | Go `provad` daemon — the prover-side software |
+| [`prova-network/cli`](https://github.com/prova-network/cli) | `@prova-network/cli` — the `prova` command-line tool |
+| [`prova-network/sdk`](https://github.com/prova-network/sdk) | `@prova-network/sdk` + `@prova-network/core` — TypeScript SDK |
+| [`prova-network/website`](https://github.com/prova-network/website) | The [prova.network](https://prova.network) site (Pages + Functions) |
+| [`prova-network/docs`](https://github.com/prova-network/docs) | Public documentation rendered at [docs.prova.network](https://docs.prova.network) |
+| [`prova-network/desktop`](https://github.com/prova-network/desktop) | Electron desktop wrapper for `provad` |
+| [`prova-network/brand`](https://github.com/prova-network/brand) | Logos, diagrams, brand assets |
 
-Every step is a standard EVM transaction. The whole thing is 6 Solidity contracts and one Go binary.
+This umbrella repo holds the cross-cutting docs:
+
+- [`STATUS.md`](./STATUS.md) — current state + scope-of-work for collaborators
+- [`TOKENOMICS-2026.md`](./TOKENOMICS-2026.md) — full token economics reference
+- [`spec/`](./spec/) — protocol specifications (rendered at [spec.prova.network](https://spec.prova.network))
+- [`SECURITY-AUDIT-2026-04-25.md`](./SECURITY-AUDIT-2026-04-25.md) — internal pre-deployment audit log
+- [`FILECOIN-SOURCE-MAP.md`](./FILECOIN-SOURCE-MAP.md) — upstream attribution
+- [`graphify-out/`](./graphify-out/) — knowledge-graph snapshot of the codebase
+- [`scripts/`](./scripts/) — operational scripts (deploy helpers, sync-splits, graph)
 
 ---
 
-## Deal lifecycle
+## How the token works (one paragraph)
 
-<div align="center">
-  <img src="brand/deal-lifecycle.svg" alt="Deal lifecycle state machine" width="820" />
-</div>
+There is **one token, PROVA**, an ERC-20 on Base with a fixed total supply of **100,000,000**. PROVA plays three roles inside the protocol: provers post slashable PROVA stake to gate their committed-byte capacity (`minStakePerGiB × committedGiB`); the marketplace's 1% USDC fee routes to a permissionless `FeeRouter` that swaps USDC → PROVA on Uniswap V3 and burns the PROVA; and PROVA-weighted governance votes set bounded parameters (fee tier, slash fraction, redundancy cap) with a 2-day timelock. **50%** of total supply (50M) is reserved for **prover emission** over 8 years on a declining curve, paid out weekly per byte proven, gated by anti-gaming protections (no self-dealing, per-piece redundancy cap, 30-day vesting buffer, quality multiplier). Clients never need to hold PROVA. Storage payments are entirely in USDC.
 
-The prover advances deals through four intermediate states (Proposed → Downloading → Verifying → Accepting) before handing off to the chain, which owns the terminal transitions (Active → Completed, or Slashed if a proof is missed past `MAX_PROOF_GAP`).
+Full economic specification: [`TOKENOMICS-2026.md`](./TOKENOMICS-2026.md) and [spec.prova.network/token-economics](https://spec.prova.network/token-economics).
 
 ---
 
-## Install
+## Three ways to use Prova
 
-When the first public release lands, the prover will install with:
+### 1. Browser, no install
+
+[**prova.network/upload**](https://prova.network/upload/) — drag a file in, get a piece-cid. First 100 MB free, sponsored.
+
+### 2. CLI
 
 ```bash
-curl -fsSL https://get.prova.network | bash
+curl -fsSL https://get.prova.network | sh
+prova auth
+prova put ./dist.tar.gz
 ```
 
-Detects your platform (linux or darwin, amd64 or arm64), verifies the SHA-256 checksum of the release tarball against the published `checksums.txt`, drops the binary into `/usr/local/bin/provad`, writes an example config, and on Linux offers to install a hardened systemd unit.
+Three commands, one piece-cid back. See the [CLI docs](https://docs.prova.network/cli/auth).
 
-**Supported systems:**
+### 3. SDK
 
-- **Linux:** Ubuntu 22.04+, Debian 12+, Fedora 39+, anything with systemd 249+
-- **macOS:** 13 (Ventura) or newer
-- **Arches:** amd64, arm64
-- **Windows:** not supported natively (use WSL2 at your own risk)
-
-**Host dependencies** (already present on every modern Linux/macOS): `bash`, `curl`, `tar`, `install`, `sha256sum` (or `shasum` on macOS), and `sudo` + `systemctl` if you opt into the Linux service unit. The Prova binary itself is statically compiled; no Go, libssl, or glibc compatibility surprises.
-
-**Env var overrides:**
-
-```bash
-PROVA_VERSION=v0.1.0          # pin a specific release (default: latest)
-PROVA_PREFIX=$HOME/.local     # user-local install instead of /usr/local
-PROVA_CONFIG=/etc/prova       # where to drop prover.toml.example
-PROVA_NO_SYSTEMD=1            # skip systemd unit setup on Linux
-PROVA_DRY_RUN=1               # print what would happen, don't do it
-PROVA_YES=1                   # answer yes to all prompts, for CI
+```ts
+import { Prova } from '@prova-network/sdk'
+const prova = Prova.create({ account, chain: base })
+const { cid, dealId } = await prova.storage.upload(bytes)
 ```
 
-The source is [`install.sh`](./install.sh), intentionally readable. Pair with [`uninstall.sh`](./uninstall.sh) to remove.
-
----
-
-## For humans
-
-Five short guides cover the common "how do I actually use this?" questions:
-
-- **[Quickstart](./docs/QUICKSTART.md)**: from `git clone` to a running prover with dashboard in 10 minutes on your laptop
-- **[Running a prover](./docs/RUNNING-A-PROVER.md)**: hardware SKUs, staking, rewards, what happens if you stop, uninstall, everything a new prover operator needs
-- **[Building on Prova](./docs/BUILDING-ON-PROVA.md)**: how devs store files, host `.eth` websites, and build platforms on top
-- **[What it looks like on-chain](./docs/ONCHAIN.md)**: six contracts explained, money flows, Basescan events, indexer guide
-- **[Specs](./spec/)**: the canonical protocol specification for deep implementers
+For programmatic / on-chain workflows. See the [SDK docs](https://docs.prova.network/sdk/).
 
 ---
 
 ## Status
 
-**Phase A to H plus post-phase hardening: done.** See [`prover/ROADMAP.md`](./prover/ROADMAP.md) for the per-phase history.
+| Component | State |
+| --- | --- |
+| Solidity contracts | 8 contracts, **81 unit tests passing**, full deal lifecycle (happy + fault) verified on local anvil |
+| Go prover (`provad`) | 13 packages, end-to-end validated against local anvil |
+| TypeScript SDK | forked from FilOzone/synapse-sdk, renamed to Prova, building |
+| CLI | `@prova-network/cli` — single Node binary, zero deps |
+| Web (drag-drop + dashboard + API) | live at prova.network |
+| Docs site | live at docs.prova.network |
+| Spec site | live at spec.prova.network (per-section state + audit metadata) |
+| Stage server (testnet R2 substitute) | live at p.prova.network (Hetzner) |
+| Base Sepolia deploy | in progress |
+| External audit | post-Sepolia, pre-mainnet |
+| Mainnet | post-audit, target H2 2026 |
 
-| | |
-|---|---|
-| Solidity contracts | 6 contracts, 14 tests passing, UUPS upgrade path for the verifier |
-| Go prover | 13 packages, 89 tests passing, end-to-end validated against local anvil |
-| One-line install | `install.sh` ready, pending first tagged release |
-| CI | Foundry + Go + shellcheck on every push |
-| Release | GitHub Actions builds linux/darwin x amd64/arm64 tarballs on every `v*` tag |
-| Base Sepolia deploy | Gated on author's exit from existing engagements, target mid-2026 |
-| Points program | Ready to launch with public testnet |
-| TGE | Usage-triggered, not calendar-triggered. See [`TOKENOMICS-v2.md`](./TOKENOMICS-v2.md) |
-
----
-
-## Repository layout
-
-```
-contracts/                Solidity contracts (Base-compatible)
-  src/                    ProofVerifier, registry, staking, marketplace
-  script/Deploy.s.sol     Foundry deploy script
-  test/                   Foundry tests (Integration, ProvaToken)
-
-prover/                   Go prover daemon (one binary)
-  cmd/provad/             Daemon + CLI entry point
-  pkg/                    deal lifecycle, challenges, httpserver, metrics,
-                          pdptree, piece, wallet, ethclient, config, store
-  internal/soaktest/      End-to-end integration scenario on anvil
-  deploy/provad.service   Hardened systemd unit
-  Dockerfile              Multi-stage, distroless/nonroot
-
-sdk/typescript/           TypeScript client SDK (forked from synapse-sdk)
-  core/                   @prova-network/core
-  sdk/                    @prova-network/sdk
-
-spec/                     v2 protocol specifications
-brand/                    Logo + architecture diagrams
-website/                  Public-facing website source
-install.sh, uninstall.sh  One-liner installer and its companion
-archive/                  Pre-pivot v1 code + docs, preserved for history
-```
-
----
-
-## Building locally
-
-```bash
-# Contracts
-cd contracts
-forge build
-forge test
-
-# Prover
-cd ../prover
-go build ./cmd/provad
-go test ./...
-
-# Full end-to-end against anvil
-cd internal/soaktest
-./run.sh
-```
-
-The soak test spins up anvil, deploys the whole contract set, registers a prover, proposes 3 deals from 3 clients, starts `provad`, waits for all 3 deals to reach `Active`, asserts the metrics, and shuts down cleanly. Runs in about 10 seconds.
-
----
-
-## Specs
-
-The [`spec/`](./spec/) directory has the authoritative v2 protocol specifications:
-
-- [PDP integration](./spec/pdp-integration.md) (the only storage proof Prova uses)
-- [Marketplace](./spec/marketplace.md) (deal lifecycle and settlement)
-- [Checkpoint anchoring](./spec/checkpoint-anchoring.md)
-- [Data availability](./spec/data-availability.md)
-- [Security threat model](./spec/security-threat-model.md) and [audit checklist](./spec/security-audit-checklist.md)
-
-Higher-level project docs at the repo root:
-
-- [`TOKENOMICS-2026.md`](./TOKENOMICS-2026.md), the canonical token model (100M PROVA, 45/50/5 split, prover emission, fee burn)
-- [`SECURITY-AUDIT-2026-04-25.md`](./SECURITY-AUDIT-2026-04-25.md), the internal audit log
-- [`FILECOIN-SOURCE-MAP.md`](./FILECOIN-SOURCE-MAP.md), upstream attribution
-- [`STATUS.md`](./STATUS.md), current state + scope-of-work for collaborators (read this if you're an AI agent or new contributor before touching anything)
+For a current scope-of-work breakdown (what the maintainer is actively touching, where contributors should focus), see [`STATUS.md`](./STATUS.md).
 
 ---
 
 ## Credits
 
-Prova stands on years of storage-proof research by the Filecoin community. PDP, CommP, Fr32 padding, SHA-254 Merkle trees, piece-commitment CIDs; all originated there. Prova ports those primitives onto Base as a coexistent network.
+Prova reuses the cryptographic primitives and patterns the Filecoin community has refined over years of production use: PDP, CommP, Fr32 padding, sha2-256-trunc254-padded multihashing, piece-commitment CIDs. Prova ports them onto Base as a separate, coexistent network with stablecoin-denominated client payments and PROVA-denominated prover stake.
 
-Key upstreams:
+Key upstreams (all permissively licensed):
 
-- [`FilOzone/pdp`](https://github.com/FilOzone/pdp) for the on-chain verifier contracts
-- [`FilOzone/synapse-sdk`](https://github.com/FilOzone/synapse-sdk) for the TypeScript client SDK
-- [`filecoin-project/curio`](https://github.com/filecoin-project/curio) for the PDP engine and piece CID machinery
-- [`filecoin-project/lotus`](https://github.com/filecoin-project/lotus) for FR32 padding
+- [`filecoin-project/specs`](https://github.com/filecoin-project/specs) — foundational specs
+- [`FilOzone/pdp`](https://github.com/FilOzone/pdp) — Solidity PDP verifier
+- [`FilOzone/synapse-sdk`](https://github.com/FilOzone/synapse-sdk) — TypeScript SDK ancestry
+- [`filecoin-project/curio`](https://github.com/filecoin-project/curio) — Go prover patterns
 
-Per-file attribution lives in SPDX headers and per-directory `ATTRIBUTION.md`.
-
----
+Full source map at [`FILECOIN-SOURCE-MAP.md`](./FILECOIN-SOURCE-MAP.md).
 
 ## License
 
-MIT for original Prova work. Portions derived from upstream projects under Apache-2.0 OR MIT, with attribution preserved per file and in [`LICENSE`](./LICENSE).
-
----
-
-<div align="center">
-  <sub>Built slowly, shipped quietly, verified cryptographically.</sub>
-</div>
+Dual-licensed: [MIT](./LICENSE), or Apache-2.0 by way of the [Permissive License Stack](https://protocol.ai/blog/announcing-the-permissive-license-stack/). Forked components retain upstream attribution.

@@ -1,11 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prova mark for LIGHT backgrounds (GitHub default + most websites).
+     Gradient stays in the deeper end of the teal palette so the mark
+     stays high-contrast on white. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
   <defs>
     <linearGradient id="provaTealLight" x1="20%" y1="0%" x2="80%" y2="100%">
-      <stop offset="0%" stop-color="#0F7B7B"/>
-      <stop offset="55%" stop-color="#0F4C5C"/>
-      <stop offset="100%" stop-color="#08222B"/>
+      <stop offset="0%"  stop-color="#1F8FA3"/>
+      <stop offset="55%" stop-color="#0F6E7E"/>
+      <stop offset="100%" stop-color="#0A3F4D"/>
     </linearGradient>
   </defs>
-  <path d="M100 16 L173 58 L173 142 L100 184 L27 142 L27 58 Z" fill="none" stroke="url(#provaTealLight)" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
-  <path d="M70 56 L70 144 M70 56 L116 56 Q138 56 138 80 Q138 104 116 104 L70 104" fill="none" stroke="url(#provaTealLight)" stroke-width="15" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- Hexagonal seal -->
+  <path d="M100 16 L173 58 L173 142 L100 184 L27 142 L27 58 Z"
+        fill="none" stroke="url(#provaTealLight)" stroke-width="9"
+        stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- The P -->
+  <path d="M70 56 L70 144 M70 56 L116 56 Q138 56 138 80 Q138 104 116 104 L70 104"
+        fill="none" stroke="url(#provaTealLight)" stroke-width="15"
+        stroke-linejoin="round" stroke-linecap="round"/>
 </svg>
