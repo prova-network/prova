@@ -177,7 +177,7 @@ This is ~80% of what our `sdk/typescript/` needs. The Synapse SDK is essentially
 
 ### 7. `filecoin-project/curio` — Storage Provider Software (🔥 CROWN JEWEL for prover binary)
 
-We already have this cloned at `/Users/reiers/.openclaw/workspace/curio`.
+This is the production Filecoin SP software stack.
 
 **PDP/market/FoC-related code:**
 - `pdp/` — **27 Go files, 20,338 lines**. Storage provider PDP integration.
