@@ -36,16 +36,20 @@ contract DeployVesting is Script {
         console2.log("ProvaVesting deployed at:", address(vesting));
 
         console2.log("--");
-        console2.log("Allocation table (allocations are managed off-chain until vesting schedules are created):");
-        console2.log("  Public sale at TGE (8%):              8,000,000 PROVA");
-        console2.log("  Private SAFT round (17%):            17,000,000 PROVA");
-        console2.log("  Team and core engineers (18%):       18,000,000 PROVA");
-        console2.log("  Advisors / BD / sales / design (7%):  7,000,000 PROVA");
-        console2.log("  Ecosystem grants (10%):              10,000,000 PROVA");
-        console2.log("  Liquidity (DEX seeding) (5%):         5,000,000 PROVA");
-        console2.log("  Treasury / community (20%):          20,000,000 PROVA");
-        console2.log("  Protocol incentives (15%):           15,000,000 PROVA");
-        console2.log("  Total:                              100,000,000 PROVA");
+        console2.log("Allocation table (v2 — supply-side heavy):");
+        console2.log("  GENESIS DISTRIBUTION (45M, 45%, vested):");
+        console2.log("    Public sale at TGE / LBP (6%):          6,000,000 PROVA");
+        console2.log("    Private SAFT round (12%):              12,000,000 PROVA");
+        console2.log("    Team and core engineers (14%):         14,000,000 PROVA");
+        console2.log("    Advisors / BD / sales / design (4%):    4,000,000 PROVA");
+        console2.log("    Treasury / community (6%):              6,000,000 PROVA");
+        console2.log("    Liquidity (DEX seeding) (3%):           3,000,000 PROVA");
+        console2.log("  PROVER EMISSION (50M, 50%, 8-year curve):");
+        console2.log("    Distributed by ProverRewards.sol");
+        console2.log("  ECOSYSTEM + COMMUNITY (5M, 5%):");
+        console2.log("    Ecosystem grants (3%):                  3,000,000 PROVA");
+        console2.log("    Community / referrals (2%):             2,000,000 PROVA");
+        console2.log("  TOTAL:                                  100,000,000 PROVA");
 
         vm.stopBroadcast();
     }

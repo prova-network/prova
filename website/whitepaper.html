@@ -493,6 +493,12 @@ body { background: var(--paper); color: var(--ink); }
   marked.setOptions({ headerIds: true, mangle: false, gfm: true, breaks: false });
   paperEl.innerHTML = marked.parse(trimmed);
 
+  // Replace the allocation-pie placeholder with a real SVG pie chart.
+  const pieHost = paperEl.querySelector('[data-allocation], .allocation-pie');
+  if (pieHost) {
+    pieHost.innerHTML = renderAllocationPie();
+  }
+
   // Number H2s and slug them, then build TOC
   const headings = paperEl.querySelectorAll('h2, h3');
   let h2 = 0;
@@ -537,6 +543,72 @@ body { background: var(--paper); color: var(--ink); }
   }, { rootMargin: '-30% 0px -55% 0px', threshold: 0 });
   headings.forEach(h => obs.observe(h));
 })();
+
+function renderAllocationPie() {
+  // Allocation slices. Order matters for visual coherence.
+  // Genesis = teal-ish, Emission = brand teal, Ecosystem = warm.
+  const slices = [
+    // Genesis (45%)
+    { name: 'Public sale (LBP)',      pct: 6,  color: '#7DD0DE', layer: 'Genesis' },
+    { name: 'Private SAFT',           pct: 12, color: '#5DC3E5', layer: 'Genesis' },
+    { name: 'Team & core',            pct: 14, color: '#41A8B8', layer: 'Genesis' },
+    { name: 'Advisors / BD / sales',  pct: 4,  color: '#5BA9C2', layer: 'Genesis' },
+    { name: 'Treasury / community',   pct: 6,  color: '#387384', layer: 'Genesis' },
+    { name: 'Liquidity (DEX)',        pct: 3,  color: '#6FB7C7', layer: 'Genesis' },
+    // Prover emission (50%) — the brand teal block
+    { name: 'Prover emission (8y)',   pct: 50, color: '#2EC4B6', layer: 'Emission' },
+    // Ecosystem + community (5%)
+    { name: 'Ecosystem grants',       pct: 3,  color: '#0F4C5C', layer: 'Ecosystem' },
+    { name: 'Community / referrals',  pct: 2,  color: '#1A6D80', layer: 'Ecosystem' },
+  ];
+
+  const size = 320;
+  const cx = size / 2, cy = size / 2;
+  const r = 130, rInner = 64;
+  let acc = 0;
+  const total = slices.reduce((s, x) => s + x.pct, 0);
+
+  function arcPath(startAngle, endAngle, outerR, innerR) {
+    const x1 = cx + outerR * Math.cos(startAngle);
+    const y1 = cy + outerR * Math.sin(startAngle);
+    const x2 = cx + outerR * Math.cos(endAngle);
+    const y2 = cy + outerR * Math.sin(endAngle);
+    const x3 = cx + innerR * Math.cos(endAngle);
+    const y3 = cy + innerR * Math.sin(endAngle);
+    const x4 = cx + innerR * Math.cos(startAngle);
+    const y4 = cy + innerR * Math.sin(startAngle);
+    const large = (endAngle - startAngle) > Math.PI ? 1 : 0;
+    return [
+      `M ${x1.toFixed(2)} ${y1.toFixed(2)}`,
+      `A ${outerR} ${outerR} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`,
+      `L ${x3.toFixed(2)} ${y3.toFixed(2)}`,
+      `A ${innerR} ${innerR} 0 ${large} 0 ${x4.toFixed(2)} ${y4.toFixed(2)}`,
+      'Z',
+    ].join(' ');
+  }
+
+  let svg = `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="PROVA allocation pie chart" style="max-width:320px;display:block;margin:24px auto;">`;
+
+  for (const s of slices) {
+    const start = (acc / total) * Math.PI * 2 - Math.PI / 2;
+    const end   = ((acc + s.pct) / total) * Math.PI * 2 - Math.PI / 2;
+    svg += `<path d="${arcPath(start, end, r, rInner)}" fill="${s.color}" stroke="#ffffff" stroke-width="1.6"><title>${s.name}: ${s.pct}%</title></path>`;
+    acc += s.pct;
+  }
+  // Center label — total supply
+  svg += `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="24" font-weight="600" fill="#0F1419">100M</text>`;
+  svg += `<text x="${cx}" y="${cy + 16}" text-anchor="middle" font-family="ui-monospace,SF Mono,Menlo,monospace" font-size="10" letter-spacing="0.12em" fill="#5b6470">PROVA</text>`;
+  svg += `</svg>`;
+
+  // Legend
+  let legend = '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px 18px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:12.5px;color:#39424c;max-width:560px;margin:0 auto 24px;">';
+  for (const s of slices) {
+    legend += `<div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${s.color};flex-shrink:0;"></span><span style="flex:1;">${s.name}</span><span style="font-family:ui-monospace,SF Mono,Menlo,monospace;color:#0F4C5C;font-weight:500;">${s.pct}%</span></div>`;
+  }
+  legend += '</div>';
+
+  return svg + legend;
+}
 </script>
 
 </body>

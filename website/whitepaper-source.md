@@ -139,11 +139,12 @@ All three surfaces ultimately call the same on-chain contracts and the same prov
 
 PROVA is a standard ERC-20 deployed on Base. Fixed total supply: **100,000,000 PROVA** (100M). 18 decimals. No mint authority post-genesis. Burnable via the standard `ERC20Burnable` extension; the protocol's burn happens via the FeeRouter.
 
-PROVA plays three roles in the protocol:
+PROVA plays four roles in the protocol:
 
 1. **Prover stake.** Provers post slashable PROVA bonds. Capacity is gated by stake: `minStakePerGiB × committedGiB`. Slashing destroys a fixed fraction of the offending prover's PROVA, removing it from supply.
-2. **Fee burn.** The marketplace's 1% USDC fee routes to the FeeRouter, which swaps USDC → PROVA on Uniswap V3 and burns the PROVA. Network revenue → permanent supply reduction.
-3. **Governance.** PROVA-weighted vote on a bounded set of protocol parameters (fee tier, slash fraction, minimum stake multiplier, prover-registry rules, upgrade authority on `ProofVerifier`), with a 2-day timelock on parameter changes and 7-day on contract upgrades.
+2. **Prover emission.** Half of the total supply (50M PROVA) is paid out to provers over 8 years on a declining curve, proportional to bytes-proven-time, with anti-gaming protections built into [`ProverRewards`](https://github.com/prova-network/contracts/blob/main/src/ProverRewards.sol). The supply-side gets the largest share of the network's tokens, paid out as they prove they are storing.
+3. **Fee burn.** The marketplace's 1% USDC fee routes to the FeeRouter, which swaps USDC → PROVA on Uniswap V3 and burns the PROVA. Network revenue → permanent supply reduction.
+4. **Governance.** PROVA-weighted vote on a bounded set of protocol parameters (fee tier, slash fraction, minimum stake multiplier, prover-registry rules, upgrade authority on `ProofVerifier`), with a 2-day timelock on parameter changes and 7-day on contract upgrades.
 
 PROVA is **not** required to be a client. Clients pay in USDC. Provers earn in USDC. The day-to-day storage UX never has to touch PROVA. PROVA is the alignment instrument between honest provers, the protocol's economic flow, and PROVA holders.
 
@@ -159,18 +160,51 @@ If PROVA price drops sharply, provers have a 7-day grace window to top up stake 
 
 ### 4.3 Allocation
 
-| Bucket | Share | Tokens (PROVA) | Vesting |
-| --- | ---: | ---: | --- |
-| Public sale (TGE / LBP) | 8% | 8,000,000 | Unlocked at TGE |
-| Private SAFT round | 17% | 17,000,000 | 12-month cliff, 24-month linear thereafter |
-| Team and core engineers | 18% | 18,000,000 | 12-month cliff, 36-month linear |
-| Advisors / BD / sales / design | 7% | 7,000,000 | 12-month cliff, 36-month linear |
-| Ecosystem grants | 10% | 10,000,000 | 5-year drip, multisig-administered |
-| Liquidity (DEX seeding) | 5% | 5,000,000 | LP tokens locked 24 months |
-| Treasury / community | 20% | 20,000,000 | 5-year linear release to multisig |
-| Protocol incentives (provers / users) | 15% | 15,000,000 | Released as the protocol uses them |
+The supply splits across three layers: **genesis distribution** (45%), **prover emission over 8 years** (50%), and **ecosystem + community** (5%).
 
-All vesting is enforced on-chain by `ProvaVesting`. The off-chain memoranda (vesting agreements, SAFT contracts) memorialise the legal grant; the on-chain schedule is the source of truth for what vests when.
+<div class="allocation-pie" data-allocation>
+  <!-- Rendered as an inline SVG pie by whitepaper.html. The data table below is the source of truth. -->
+</div>
+
+| Layer / Bucket | Share | Tokens (PROVA) | Vesting |
+| --- | ---: | ---: | --- |
+| **GENESIS DISTRIBUTION** | **45%** | **45,000,000** | (mostly vested) |
+| Public sale (TGE / LBP) | 6% | 6,000,000 | Unlocked at TGE |
+| Private SAFT round | 12% | 12,000,000 | 12-month cliff, 24-month linear thereafter |
+| Team and core engineers | 14% | 14,000,000 | 12-month cliff, 36-month linear |
+| Advisors / BD / sales / design | 4% | 4,000,000 | 12-month cliff, 36-month linear |
+| Treasury / community | 6% | 6,000,000 | 5-year linear release to multisig |
+| Liquidity (DEX seeding) | 3% | 3,000,000 | LP tokens locked 24 months |
+| **PROVER EMISSION (8-year curve)** | **50%** | **50,000,000** | Distributed by `ProverRewards` |
+| Year 1 | 12.5% | 12,500,000 | weekly per-epoch |
+| Year 2 | 11.0% | 11,000,000 | weekly |
+| Year 3 | 9.0% | 9,000,000 | weekly |
+| Year 4 | 7.0% | 7,000,000 | weekly |
+| Year 5 | 5.0% | 5,000,000 | weekly |
+| Year 6 | 3.0% | 3,000,000 | weekly |
+| Year 7 | 1.5% | 1,500,000 | weekly |
+| Year 8 | 1.0% | 1,000,000 | weekly |
+| **ECOSYSTEM + COMMUNITY** | **5%** | **5,000,000** | (multi-year) |
+| Ecosystem grants | 3% | 3,000,000 | Released as merit-based grants by the treasury multisig |
+| Community / referral program | 2% | 2,000,000 | Released for client-acquisition referrals and early-tester rewards |
+
+Insider allocation (SAFT + team + advisors) is **30%** — below the 35% line that triggers CEX listing concerns. Supply-side allocation (provers) is **50%** — half of the network's tokens go to the people who actually run the storage, paid out as they prove they are storing it.
+
+Genesis schedules are enforced on-chain by `ProvaVesting`. Prover emission is paid by `ProverRewards`. The off-chain memoranda (vesting agreements, SAFT contracts) memorialise the legal grant; the on-chain schedules are the source of truth for what vests when.
+
+#### Anti-gaming rules baked into prover emission
+
+The 50M emission bucket only flows to provers who actually prove bytes for real clients. The `ProverRewards` contract enforces:
+
+- **No self-dealing.** A prover that's also the client of the same deal earns no emission for that deal (`prover != client` check).
+- **No sponsored-tier farming.** Free-tier sponsored uploads (no client wallet) don't generate emission.
+- **Redundancy cap.** A given piece-cid earns emission for at most N (default 4) provers per epoch. Beyond that, additional copies don't earn additional emission.
+- **Per-epoch single-counting.** A prover earns at most once per `(piece, epoch)` regardless of how many times they re-post a proof.
+- **Vesting buffer.** Emission for epoch E is only claimable 30 days after E ends, so a prover who signs up, takes a few deals, and disappears earns nothing.
+- **Quality multiplier.** A prover with > 5% missed-proof rate in trailing 30 days has emission halved. Slashed in last 90 days → zero emission.
+- **Identity attestation tiers.** Hobby provers (≤ 100 TB) register pseudonymously. Prosumer (100 TB – 5 PB) requires lightweight ENS / EAS attestation. Enterprise (> 5 PB) requires full KYB + master agreement.
+
+The combined effect: **the only way to earn more PROVA is to honestly store more bytes for longer**. Sybil and wash-trade strategies against this design are economically dominated by simply running an honest prover.
 
 ### 4.4 Pricing and protocol fee
 

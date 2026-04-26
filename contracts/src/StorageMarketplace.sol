@@ -12,6 +12,14 @@ import {ProverRegistry} from "./ProverRegistry.sol";
 import {ProverStaking} from "./ProverStaking.sol";
 import {ContentRegistry} from "./ContentRegistry.sol";
 
+/// @dev Minimal interface of the ProverRewards emission contract.
+///      We use only recordProof / recordMiss so the marketplace can
+///      ping it on proof events without depending on the full ABI.
+interface IProverRewards {
+    function recordProof(address prover, address client, bytes32 pieceCid, uint256 bytesProven) external;
+    function recordMiss(address prover) external;
+}
+
 /// @dev Minimal subset of the ProofVerifier listener interface we implement.
 ///      Matches the `PDPListener` defined inside ProofVerifier.sol.
 interface IPDPListener {
@@ -125,6 +133,12 @@ contract StorageMarketplace is IPDPListener, Ownable, ReentrancyGuard {
     /// @notice The content registry.
     ContentRegistry public immutable contentRegistry;
 
+    /// @notice The prover-rewards (PROVA emission) contract. Optional;
+    ///         when set, the marketplace pings it on every successful
+    ///         proof so emission can accrue. Settable by owner so existing
+    ///         deployments can opt in without redeploying the marketplace.
+    address public proverRewards;
+
     // ───── Events ────────────────────────────────────────────────────────
 
     event DealProposed(
@@ -144,6 +158,7 @@ contract StorageMarketplace is IPDPListener, Ownable, ReentrancyGuard {
     event ProtocolFeeChanged(uint256 oldBps, uint256 newBps);
     event TreasuryChanged(address indexed oldTreasury, address indexed newTreasury);
     event SlashPerFaultChanged(uint256 oldValue, uint256 newValue);
+    event ProverRewardsSet(address indexed previous, address indexed next);
 
     // ───── Errors ────────────────────────────────────────────────────────
 
@@ -193,6 +208,11 @@ contract StorageMarketplace is IPDPListener, Ownable, ReentrancyGuard {
         require(newBps <= 1000, "fee too high"); // cap at 10%
         emit ProtocolFeeChanged(protocolFeeBps, newBps);
         protocolFeeBps = newBps;
+    }
+
+    function setProverRewards(address newProverRewards) external onlyOwner {
+        emit ProverRewardsSet(proverRewards, newProverRewards);
+        proverRewards = newProverRewards;
     }
 
     function setTreasury(address newTreasury) external onlyOwner {
@@ -357,6 +377,19 @@ contract StorageMarketplace is IPDPListener, Ownable, ReentrancyGuard {
         d.proofCount += 1;
         d.lastProofAt = block.timestamp;
 
+        // PROVA emission hook (optional): record proof for the prover.
+        // Wrapped in try/catch so a misconfigured rewards contract can
+        // never block a payment. The marketplace's job is to pay USDC;
+        // emission is a bonus.
+        if (proverRewards != address(0)) {
+            try IProverRewards(proverRewards).recordProof(
+                d.prover,
+                d.client,
+                d.commpHash,
+                d.pieceSize
+            ) {} catch {}
+        }
+
         // Streaming release: payment proportional to time elapsed since last
         // release, capped at total duration. Simple linear release.
         uint256 released = _computeStreamingRelease(d);
@@ -464,6 +497,12 @@ contract StorageMarketplace is IPDPListener, Ownable, ReentrancyGuard {
         proverStaking.slash(d.prover, slashPerFault, bytes32(uint256(dealId)));
         proverStaking.releaseBytes(d.prover, d.pieceSize);
         contentRegistry.clearActiveDeal(d.commpHash, dealId);
+
+        // PROVA emission hook: record the miss so the prover's quality
+        // multiplier reflects the slashing event.
+        if (proverRewards != address(0)) {
+            try IProverRewards(proverRewards).recordMiss(d.prover) {} catch {}
+        }
 
         emit DealSlashed(dealId, d.prover, slashPerFault, refund);
     }

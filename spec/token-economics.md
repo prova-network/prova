@@ -22,19 +22,32 @@ The Prova network uses a native token, **PROVA**, for prover staking, fee burn, 
 
 ## 3. Allocation
 
-| Bucket | % | Tokens (PROVA) | Vesting |
+Three layers: **genesis** (45%), **prover emission over 8 years** (50%), **ecosystem + community** (5%).
+
+| Layer / Bucket | % | Tokens (PROVA) | Vesting |
 |---|---:|---:|---|
-| Public sale (TGE / LBP) | 8% | 8,000,000 | 100% at TGE, no lock |
-| Private SAFT round | 17% | 17,000,000 | 12-month cliff, 24-month linear thereafter |
-| Team and core engineers | 18% | 18,000,000 | 12-month cliff, 36-month linear |
-| Advisors / BD / sales / design | 7% | 7,000,000 | 12-month cliff, 36-month linear |
-| Ecosystem grants | 10% | 10,000,000 | 5-year drip, multisig-administered |
-| Liquidity (DEX seeding) | 5% | 5,000,000 | LP tokens locked 24 months |
-| Treasury / community | 20% | 20,000,000 | 5-year linear release to multisig |
-| Protocol incentives (provers / users) | 15% | 15,000,000 | Released as the protocol uses them |
+| **GENESIS** | **45%** | **45,000,000** | (mostly vested) |
+| Public sale (TGE / LBP) | 6% | 6,000,000 | 100% at TGE, no lock |
+| Private SAFT round | 12% | 12,000,000 | 12-month cliff, 24-month linear thereafter |
+| Team and core engineers | 14% | 14,000,000 | 12-month cliff, 36-month linear |
+| Advisors / BD / sales / design | 4% | 4,000,000 | 12-month cliff, 36-month linear |
+| Treasury / community | 6% | 6,000,000 | 5-year linear release to multisig |
+| Liquidity (DEX seeding) | 3% | 3,000,000 | LP tokens locked 24 months |
+| **PROVER EMISSION** | **50%** | **50,000,000** | 8-year declining curve via `ProverRewards` |
+| Year 1 | 12.5% | 12,500,000 | weekly per-epoch |
+| Year 2 | 11.0% | 11,000,000 | weekly |
+| Year 3 | 9.0% | 9,000,000 | weekly |
+| Year 4 | 7.0% | 7,000,000 | weekly |
+| Year 5 | 5.0% | 5,000,000 | weekly |
+| Year 6 | 3.0% | 3,000,000 | weekly |
+| Year 7 | 1.5% | 1,500,000 | weekly |
+| Year 8 | 1.0% | 1,000,000 | weekly |
+| **ECOSYSTEM + COMMUNITY** | **5%** | **5,000,000** | (multi-year) |
+| Ecosystem grants | 3% | 3,000,000 | Released as merit-based grants |
+| Community / referrals | 2% | 2,000,000 | Released for referral program + early-tester rewards |
 | **Total** | **100%** | **100,000,000** | |
 
-All vesting enforced on-chain by [`ProvaVesting.sol`](https://github.com/prova-network/contracts/blob/main/src/ProvaVesting.sol).
+Genesis schedules enforced on-chain by [`ProvaVesting.sol`](https://github.com/prova-network/contracts/blob/main/src/ProvaVesting.sol). Prover emission paid by [`ProverRewards.sol`](https://github.com/prova-network/contracts/blob/main/src/ProverRewards.sol).
 
 ## 4. Economic mechanism
 
@@ -87,7 +100,39 @@ FeeRouter modes:
 
 `process(minProvaOut)` is **permissionless**. Slippage is bounded by the caller-supplied `minProvaOut`. The owner sets `maxSwapPerCall` to bound per-call market impact.
 
-### 4.5 Governance
+### 4.5 Prover emission (`ProverRewards.sol`)
+
+The 50M PROVA emission bucket is held by `ProverRewards.sol` and paid out per epoch (7 days) based on actual bytes-proven contributions, on the schedule in §3.
+
+Reward formula:
+
+```
+reward(prover, epoch) = epoch_emission × (provenBytes(prover) / totalProvenBytes) × qualityMultiplier
+```
+
+where `epoch_emission` = `yearlyEmission[year(epoch)] × (EPOCH_DURATION / 365 days)`.
+
+#### 4.5.1 Anti-gaming protections
+
+| Vector | Mitigation |
+|---|---|
+| Self-dealing (prover == client) | `recordProof` reverts with `SelfDealing` |
+| Sponsored / free-tier farming | `client == address(0)` skips emission accounting |
+| Replication double-claim | Per-piece per-epoch redundancy cap (default `redundancyCap = 4`) |
+| Per-epoch double-counting | `(piece, prover, epoch)` deduped in `countedInEpoch` |
+| Fast-churn | 30-day vesting buffer between epoch end and claimability |
+| Quality regression | If trailing-30d miss-rate > `qualityCutoffBps` (5%), `qualityMultiplier = 0.5` |
+| Sybil identities | Tier-gated identity attestation (hobby ≤ 100 TB pseudonymous; prosumer ENS/EAS; enterprise KYB) |
+
+#### 4.5.2 Governance-tunable parameters
+
+- `redundancyCap` (default 4, max 16) — max provers earning per piece per epoch
+- `qualityCutoffBps` (default 500 = 5%, max 5000 = 50%) — miss-rate cutoff for the quality multiplier
+- `marketplace` — the authorized recorder address
+
+All changes go through the standard 2-day timelock.
+
+### 4.6 Governance
 
 PROVA-weighted vote (one-PROVA-one-vote at v1) over:
 
@@ -107,7 +152,7 @@ A 5-of-9 multisig holds emergency pause authority. The pause cannot redirect fun
 ### 5.1 SAFT round (private, pre-TGE)
 
 - Target raise: $1.5M – $3M USDC
-- Target tokens: 17,000,000 PROVA (17%)
+- Target tokens: 12,000,000 PROVA (12%)
 - Vesting: 12-month cliff, 24-month linear thereafter
 - Compliance: Reg D 506(c) for US accredited investors; Reg S for non-US; private placement carve-out under MiCA
 - Counsel: outside firm engaged for SAFT template, securities-law opinion, MiCA white paper
@@ -115,7 +160,7 @@ A 5-of-9 multisig holds emergency pause authority. The pause cannot redirect fun
 ### 5.2 Public sale at TGE
 
 - Mechanism: Liquidity Bootstrapping Pool (LBP) on a Base launchpad
-- Tokens: 8,000,000 PROVA (8%)
+- Tokens: 6,000,000 PROVA (6%)
 - Pricing: dynamic, weighted-pool decay over 24-72 hours
 - Listing: Kraken targeted within 3-6 months of TGE; Coinbase / Binance only after demonstrated organic volume
 

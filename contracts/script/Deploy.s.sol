@@ -12,6 +12,7 @@ import {ContentRegistry} from "../src/ContentRegistry.sol";
 import {StorageMarketplace} from "../src/StorageMarketplace.sol";
 import {MockProofVerifier} from "../src/MockProofVerifier.sol";
 import {FeeRouter} from "../src/FeeRouter.sol";
+import {ProverRewards} from "../src/ProverRewards.sol";
 
 /// @title Deploy
 /// @notice Deploys the Prova contract set and wires the cross-contract
@@ -52,6 +53,7 @@ contract DeployScript is Script {
         address marketplace;
         address verifier;
         address feeRouter;
+        address proverRewards;
     }
 
     function run() external returns (Addresses memory out) {
@@ -114,6 +116,27 @@ contract DeployScript is Script {
         staking.setAuthorizedController(address(marketplace), true);
         content.setMarketplace(address(marketplace));
 
+        // 9. ProverRewards: holds the 50M PROVA emission bucket and pays
+        //    provers per epoch based on bytes-proven contributions.
+        ProverRewards proverRewards = new ProverRewards(
+            IERC20(address(token)),
+            treasury,                  // owner = treasury multisig
+            uint64(block.timestamp)    // genesis = now
+        );
+        console2.log("ProverRewards deployed at:     ", address(proverRewards));
+
+        // 10. Wire the marketplace to ping ProverRewards on proofs/misses
+        marketplace.setProverRewards(address(proverRewards));
+
+        // 11. Authorize the marketplace as the recorder on ProverRewards
+        //     (this requires owner = treasury, which is the same address
+        //     in this script when PROVA_TREASURY isn't overridden).
+        if (treasury == deployer) {
+            proverRewards.setMarketplace(address(marketplace));
+        } else {
+            console2.log("NOTE: ProverRewards.setMarketplace must be called by the treasury multisig");
+        }
+
         vm.stopBroadcast();
 
         out = Addresses({
@@ -123,7 +146,8 @@ contract DeployScript is Script {
             content: address(content),
             marketplace: address(marketplace),
             verifier: address(verifier),
-            feeRouter: address(feeRouter)
+            feeRouter: address(feeRouter),
+            proverRewards: address(proverRewards)
         });
 
         console2.log("---");
@@ -134,5 +158,6 @@ contract DeployScript is Script {
         console2.log("StorageMarketplace =", out.marketplace);
         console2.log("MockProofVerifier  =", out.verifier);
         console2.log("FeeRouter          =", out.feeRouter);
+        console2.log("ProverRewards      =", out.proverRewards);
     }
 }
