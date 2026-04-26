@@ -44,34 +44,74 @@ async function api(path, opts = {}) {
   return body;
 }
 
-// ── Sign-in flow ────────────────────────────────────────────────────────────
+// ── Sign-in flow (magic link) ───────────────────────────────────────────────
+let pendingSignin = null; // { email, challenge }
+
 $('#signin-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = e.target.email.value.trim().toLowerCase();
   if (!email) return;
   const btn = e.target.querySelector('button[type=submit]');
   btn.disabled = true;
-  btn.textContent = 'Minting…';
+  btn.textContent = 'Sending…';
   try {
-    const res = await api('/api/auth/signup', {
+    const res = await api('/api/auth/start', {
       method: 'POST',
-      json: { email, label: 'web-app' },
+      json: { email, label: 'web-app', returnUrl: '/app/' },
     });
-    setToken(res.token);
-
-    // Show the freshly-minted token once
-    $('#full-token').textContent = res.token;
-    $('#full-token-snippet').textContent = res.token;
-    $('#current-token-card').classList.remove('hidden');
-
-    showApp(res.email);
-    await refreshAll();
+    pendingSignin = { email: res.email, challenge: res.challenge };
+    showCodePrompt(res.email);
   } catch (err) {
     btn.disabled = false;
-    btn.textContent = 'Mint my token';
-    alert('Sign-in failed: ' + err.message);
+    btn.textContent = 'Email me a sign-in link';
+    alert('Could not send sign-in email: ' + (err.body && err.body.detail || err.message));
   }
 });
+
+function showCodePrompt(email) {
+  // Replace the email form with the code prompt
+  const form = $('#signin-form');
+  if (!form) return;
+  form.innerHTML = `
+    <p class="sub">Sent a sign-in link + 6-digit code to <strong>${escapeHtml(email)}</strong>.</p>
+    <p class="sub">Click the link in the email, or paste the code here.</p>
+    <input type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" name="code" placeholder="123456" required style="font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;letter-spacing:0.18em;text-align:center;font-size:20px;" />
+    <button type="submit">Sign in</button>
+    <p class="sub"><a href="#" id="resend-link">Use a different email</a></p>
+  `;
+  form.querySelector('input[name=code]').focus();
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const code = e.target.code.value.trim();
+    if (!/^[0-9]{6}$/.test(code)) return;
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Verifying…';
+    try {
+      const res = await api('/api/auth/verify', {
+        method: 'POST',
+        json: { email: pendingSignin.email, code, label: 'web-app' },
+      });
+      setToken(res.token);
+      $('#full-token').textContent = res.token;
+      $('#full-token-snippet').textContent = res.token;
+      $('#current-token-card').classList.remove('hidden');
+      showApp(res.email);
+      await refreshAll();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      alert('Verify failed: ' + (err.body && err.body.error || err.message));
+    }
+  };
+  form.querySelector('#resend-link').onclick = (e) => { e.preventDefault(); location.reload(); };
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
 
 $('#logout-btn').addEventListener('click', () => {
   if (!confirm('Sign out? This clears the token from this browser. Your tokens stay valid until revoked.')) return;
@@ -195,17 +235,17 @@ $('#new-token-btn').addEventListener('click', async () => {
   const email = $('#who-email').textContent;
   if (!email) return alert('Sign in first.');
   const label = prompt('Label for the new token (e.g. "ci", "laptop"):', 'cli') || 'unlabeled';
+  // For minting additional tokens we re-run the magic-link flow rather than
+  // letting an authed session mint without re-verification, so a stolen
+  // session can't quietly issue 1-year tokens.
   try {
-    const res = await api('/api/auth/signup', {
+    await api('/api/auth/start', {
       method: 'POST',
-      json: { email, label },
+      json: { email, label, returnUrl: '/app/' },
     });
-    $('#full-token').textContent = res.token;
-    $('#full-token-snippet').textContent = res.token;
-    $('#current-token-card').classList.remove('hidden');
-    await refreshTokens();
+    alert(`Sent a sign-in link to ${email}. Click it (or paste the code) to mint the new "${label}" token.`);
   } catch (err) {
-    alert('Token mint failed: ' + err.message);
+    alert('Could not send: ' + (err.body && err.body.detail || err.message));
   }
 });
 

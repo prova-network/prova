@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sign in · Prova</title>
+<meta name="description" content="Verify your Prova sign-in." />
+<link rel="icon" type="image/svg+xml" href="/brand/prova-mark-small.svg" />
+<style>
+  :root {
+    --teal-cyan: #5DC3E5;
+    --teal-mint: #2EC4B6;
+    --teal-deep: #0F4C5C;
+    --ink: #0F1419;
+    --ink-soft: #39424c;
+    --ink-mute: #6b7480;
+    --paper: #f6f8fa;
+    --line: #e6eaef;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+  .card {
+    width: 100%;
+    max-width: 460px;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(15, 76, 92, 0.08), 0 12px 40px rgba(15, 76, 92, 0.06);
+    padding: 36px 36px 30px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--teal-deep);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .brand img { width: 22px; height: 22px; display: block; }
+  h1 { margin: 4px 0 6px; font-size: 24px; line-height: 1.25; font-weight: 600; }
+  p  { margin: 8px 0; font-size: 15px; line-height: 1.55; color: var(--ink-soft); }
+  .status {
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f3f6f8;
+    font-size: 14px;
+    color: var(--ink-soft);
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    word-break: break-all;
+  }
+  .status.ok    { background: #ecfaf2; color: #0a6e3f; }
+  .status.err   { background: #fdecec; color: #a4231a; }
+  .row { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+  a.btn {
+    display: inline-block;
+    background: var(--teal-deep);
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 0;
+    cursor: pointer;
+  }
+  a.btn.ghost {
+    background: transparent;
+    color: var(--teal-deep);
+    border: 1px solid var(--line);
+  }
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid transparent;
+    border-top-color: var(--teal-deep);
+    border-right-color: var(--teal-mint);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand">
+    <img src="/brand/prova-mark-small.svg" alt="" />
+    <span>Prova</span>
+  </div>
+  <h1 id="title">Verifying your sign-in…</h1>
+  <p id="lede"><span class="spinner"></span>One moment, finishing the magic-link.</p>
+  <div id="status" class="status" hidden></div>
+  <div id="actions" class="row" hidden>
+    <a id="continue" class="btn" href="/app/">Continue to dashboard →</a>
+    <a class="btn ghost" href="/">Back home</a>
+  </div>
+</main>
+
+<script type="module">
+  const params = new URLSearchParams(location.search);
+  const challenge = params.get('challenge') || '';
+  const ret = params.get('return') || '/app/';
+
+  const titleEl = document.getElementById('title');
+  const ledeEl  = document.getElementById('lede');
+  const statusEl= document.getElementById('status');
+  const actions = document.getElementById('actions');
+  const cont    = document.getElementById('continue');
+
+  function fail(msg, detail) {
+    titleEl.textContent = 'We couldn\u2019t finish signing you in';
+    ledeEl.textContent  = msg;
+    if (detail) {
+      statusEl.textContent = detail;
+      statusEl.classList.remove('ok'); statusEl.classList.add('err');
+      statusEl.hidden = false;
+    }
+    actions.hidden = false;
+    cont.textContent = 'Back to sign-in';
+    cont.href = '/app/';
+  }
+
+  function ok(token, email, returnUrl) {
+    try {
+      localStorage.setItem('prova:token', token);
+      if (email) localStorage.setItem('prova:email', email);
+    } catch {}
+    titleEl.textContent = 'You\u2019re signed in';
+    ledeEl.textContent  = 'Welcome back. Redirecting you now…';
+    statusEl.textContent = email ? `Signed in as ${email}` : 'Signed in';
+    statusEl.classList.remove('err'); statusEl.classList.add('ok');
+    statusEl.hidden = false;
+    const target = (returnUrl && returnUrl.startsWith('/')) ? returnUrl : ret;
+    cont.href = target;
+    actions.hidden = false;
+    setTimeout(() => { location.href = target; }, 900);
+  }
+
+  if (!/^[a-f0-9]{64}$/.test(challenge)) {
+    fail('That link is missing or malformed.', 'Try the sign-in flow again from /app/.');
+  } else {
+    fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ challenge }),
+    }).then(r => r.json().then(d => ({ ok: r.ok, status: r.status, body: d })))
+      .then(res => {
+        if (res.ok && res.body && res.body.token) {
+          ok(res.body.token, res.body.email, res.body.returnUrl);
+        } else if (res.body && res.body.error === 'expired_or_unknown') {
+          fail('That link expired or has already been used.', 'Magic links last 15 minutes and only work once.');
+        } else if (res.body && res.body.error === 'too_many_attempts') {
+          fail('Too many attempts on that link.', 'Start a new sign-in.');
+        } else {
+          fail('Something went wrong while verifying.', JSON.stringify(res.body || {}));
+        }
+      }).catch(err => fail('Network error during verify.', String(err)));
+  }
+</script>
+</body>
+</html>

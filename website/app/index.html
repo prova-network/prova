@@ -38,17 +38,18 @@
       <p class="meta">SIGN IN · OR CREATE ACCOUNT</p>
       <h2>Manage your <em>Prova</em>.</h2>
       <p class="lead">
-        One email. We mint an API token tied to it. No password. The token unlocks
-        bigger files, longer terms, and a CLI / SDK that won't rate-limit you.
+        One email. We send a magic-link with a 6-digit code. No password. The
+        token your browser receives unlocks bigger files, longer terms, and a
+        CLI / SDK that won't rate-limit you.
       </p>
       <form id="signin-form">
         <label>
           <span>Email</span>
-          <input type="email" name="email" placeholder="you@example.com" required />
+          <input type="email" name="email" placeholder="you@example.com" required autocomplete="email" />
         </label>
-        <button class="cta" type="submit">Mint my token</button>
+        <button class="cta" type="submit">Email me a sign-in link</button>
       </form>
-      <p class="signin-foot">By signing in you agree to our reasonable-use policy. We won't email you anything.</p>
+      <p class="signin-foot">We email a one-time link + code. The code expires in 15 minutes.</p>
     </div>
   </section>
 

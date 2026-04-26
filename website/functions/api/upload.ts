@@ -41,8 +41,9 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   }
 
   // Try bearer auth. If no token, fall back to sponsored mode.
+  // F-02: only honor Authorization header; query-param tokens are gone.
   let authedUser: { id: string; email: string; quotaMb: number } | null = null;
-  if (req.headers.get('authorization') || url.searchParams.get('token')) {
+  if (req.headers.get('authorization')) {
     const auth = await authenticateRequest(req, env);
     if (!auth.ok) return j({ error: auth.error, detail: auth.detail }, auth.status);
     if (!auth.payload.scopes.includes('put')) {

@@ -88,9 +88,12 @@ export async function authenticateRequest(req: Request, env: TokenEnv): Promise<
 } | {
   ok: false; status: number; error: string; detail: string;
 }> {
+  // F-02 fix: bearer header only. The old `?token=` query fallback leaked
+  // tokens into Referer headers, server logs, browser history, and was a
+  // CSRF amplifier. We deliberately do NOT consume url.searchParams.token
+  // any more.
   const authHeader = req.headers.get('authorization') || '';
-  const queryToken = new URL(req.url).searchParams.get('token') || '';
-  const raw = authHeader.replace(/^Bearer\s+/i, '').trim() || queryToken;
+  const raw = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!raw) {
     return { ok: false, status: 401, error: 'no_token', detail: 'Authorization: Bearer pk_live_… header required.' };
   }
