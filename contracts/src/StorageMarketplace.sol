@@ -374,13 +374,38 @@ contract StorageMarketplace is IPDPListener, Ownable, ReentrancyGuard {
         Deal storage d = deals[dealId];
         if (d.status != DealStatus.Active) return;
 
+        // ── CEI order: state, internal effects, external interactions ──
+        // 1. State: bump proof counters
         d.proofCount += 1;
         d.lastProofAt = block.timestamp;
 
-        // PROVA emission hook (optional): record proof for the prover.
-        // Wrapped in try/catch so a misconfigured rewards contract can
-        // never block a payment. The marketplace's job is to pay USDC;
-        // emission is a bonus.
+        // 2. State: compute and accrue the streaming release before any
+        //    external calls. This closes a slither-flagged reentrancy where
+        //    the rewards-contract callback could re-enter the marketplace
+        //    while paidOut was still stale.
+        uint256 released = _computeStreamingRelease(d);
+        uint256 fee = 0;
+        uint256 proverShare = 0;
+        if (released > 0) {
+            d.paidOut += released;
+            fee = (released * protocolFeeBps) / BPS_DENOMINATOR;
+            proverShare = released - fee;
+        }
+
+        // 3. Interactions: USDC transfers and rewards hook. State is fully
+        //    settled by this point; reentrancy can read but not exploit
+        //    inconsistent intermediate state.
+        if (released > 0) {
+            if (fee > 0 && treasury != address(0)) {
+                paymentToken.safeTransfer(treasury, fee);
+            }
+            paymentToken.safeTransfer(d.prover, proverShare);
+        }
+
+        // PROVA emission hook (optional). Wrapped in try/catch so a
+        // misconfigured or hostile rewards contract can never block a
+        // payment. The marketplace's job is to pay USDC; emission is a
+        // bonus that runs after all financial state has settled.
         if (proverRewards != address(0)) {
             try IProverRewards(proverRewards).recordProof(
                 d.prover,
@@ -390,25 +415,7 @@ contract StorageMarketplace is IPDPListener, Ownable, ReentrancyGuard {
             ) {} catch {}
         }
 
-        // Streaming release: payment proportional to time elapsed since last
-        // release, capped at total duration. Simple linear release.
-        uint256 released = _computeStreamingRelease(d);
-        if (released > 0) {
-            d.paidOut += released;
-
-            // Protocol fee
-            uint256 fee = (released * protocolFeeBps) / BPS_DENOMINATOR;
-            uint256 proverShare = released - fee;
-
-            if (fee > 0 && treasury != address(0)) {
-                paymentToken.safeTransfer(treasury, fee);
-            }
-            paymentToken.safeTransfer(d.prover, proverShare);
-
-            emit ProofRecorded(dealId, d.proofCount, released);
-        } else {
-            emit ProofRecorded(dealId, d.proofCount, 0);
-        }
+        emit ProofRecorded(dealId, d.proofCount, released);
     }
 
     function nextProvingPeriod(

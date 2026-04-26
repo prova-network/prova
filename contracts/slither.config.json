@@ -1,0 +1,8 @@
+{
+  "filter_paths": "lib/|test/|script/|src/MockProofVerifier.sol|src/MockUSDC.sol|src/MockPriceOracle.sol|src/Proofs.sol|src/ProofVerifier.sol|src/Cids.sol|src/Fees.sol|src/BitOps.sol",
+  "exclude_dependencies": true,
+  "exclude_informational": true,
+  "exclude_low": true,
+  "exclude_optimization": true,
+  "detectors_to_exclude": "naming-convention,solc-version,assembly,timestamp,incorrect-exp,divide-before-multiply,incorrect-equality,unused-return"
+}

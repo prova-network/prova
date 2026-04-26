@@ -1,0 +1,184 @@
+name: Contracts CI
+
+# Runs the full contract pipeline whenever Solidity / config files change.
+# Faster + more thorough than the catch-all CI, and used as the canonical
+# status check on contract PRs.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/contracts-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/contracts-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+defaults:
+  run:
+    working-directory: contracts
+
+jobs:
+  # ── Build + format check ─────────────────────────────────────────────
+  build:
+    name: Build + format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install OpenZeppelin deps
+        run: |
+          if [ ! -d lib/openzeppelin-contracts ]; then
+            forge install OpenZeppelin/openzeppelin-contracts --no-commit
+          fi
+          if [ ! -d lib/openzeppelin-contracts-upgradeable ]; then
+            forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
+          fi
+
+      - name: forge fmt --check
+        run: forge fmt --check
+        continue-on-error: true   # not yet enforced; treat as advisory
+
+      - name: forge build --sizes
+        run: forge build --sizes
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-out
+          path: |
+            contracts/out
+            contracts/cache
+          retention-days: 1
+
+  # ── Test (full suite + gas snapshots) ────────────────────────────────
+  test:
+    name: Test (forge)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install OpenZeppelin deps
+        run: |
+          if [ ! -d lib/openzeppelin-contracts ]; then
+            forge install OpenZeppelin/openzeppelin-contracts --no-commit
+          fi
+          if [ ! -d lib/openzeppelin-contracts-upgradeable ]; then
+            forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
+          fi
+
+      - name: forge test
+        run: forge test -vv
+
+      - name: forge snapshot --check
+        run: |
+          if [ -f .gas-snapshot ]; then
+            forge snapshot --check
+          else
+            echo "::notice::No .gas-snapshot baseline yet; skipping diff."
+            forge snapshot
+          fi
+        continue-on-error: true   # advisory until we commit a baseline
+
+  # ── Coverage ─────────────────────────────────────────────────────────
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install OpenZeppelin deps
+        run: |
+          if [ ! -d lib/openzeppelin-contracts ]; then
+            forge install OpenZeppelin/openzeppelin-contracts --no-commit
+          fi
+          if [ ! -d lib/openzeppelin-contracts-upgradeable ]; then
+            forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
+          fi
+
+      - name: forge coverage (lcov)
+        run: |
+          forge coverage --report lcov --report summary > coverage-summary.txt 2>&1 || true
+          tail -40 coverage-summary.txt
+          if [ -f lcov.info ]; then
+            mv lcov.info coverage.lcov
+          fi
+        continue-on-error: true
+
+      - name: Upload lcov
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: contracts/coverage.lcov
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ── Slither static analysis ──────────────────────────────────────────
+  slither:
+    name: Slither
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install OpenZeppelin deps
+        run: |
+          if [ ! -d lib/openzeppelin-contracts ]; then
+            forge install OpenZeppelin/openzeppelin-contracts --no-commit
+          fi
+          if [ ! -d lib/openzeppelin-contracts-upgradeable ]; then
+            forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
+          fi
+
+      - name: Build (so slither sees out/)
+        run: forge build
+
+      - uses: crytic/slither-action@v0.4.0
+        id: slither
+        with:
+          target: contracts/
+          slither-config: contracts/slither.config.json
+          fail-on: high
+          slither-args: --exclude-dependencies --exclude-informational --exclude-low
+          sarif: slither-results.sarif
+
+      - name: Upload SARIF
+        if: always() && steps.slither.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
+        continue-on-error: true
