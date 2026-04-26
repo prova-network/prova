@@ -27,15 +27,15 @@ jobs:
 
       - uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Install OpenZeppelin deps
         run: |
           if [ ! -d lib/openzeppelin-contracts ]; then
-            forge install OpenZeppelin/openzeppelin-contracts --no-commit
+            forge install OpenZeppelin/openzeppelin-contracts
           fi
           if [ ! -d lib/openzeppelin-contracts-upgradeable ]; then
-            forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
+            forge install OpenZeppelin/openzeppelin-contracts-upgradeable
           fi
 
       - name: forge fmt --check
@@ -56,15 +56,15 @@ jobs:
 
       - uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Install OpenZeppelin deps
         run: |
           if [ ! -d lib/openzeppelin-contracts ]; then
-            forge install OpenZeppelin/openzeppelin-contracts --no-commit
+            forge install OpenZeppelin/openzeppelin-contracts
           fi
           if [ ! -d lib/openzeppelin-contracts-upgradeable ]; then
-            forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
+            forge install OpenZeppelin/openzeppelin-contracts-upgradeable
           fi
 
       - name: forge test
@@ -91,15 +91,15 @@ jobs:
 
       - uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Install OpenZeppelin deps
         run: |
           if [ ! -d lib/openzeppelin-contracts ]; then
-            forge install OpenZeppelin/openzeppelin-contracts --no-commit
+            forge install OpenZeppelin/openzeppelin-contracts
           fi
           if [ ! -d lib/openzeppelin-contracts-upgradeable ]; then
-            forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
+            forge install OpenZeppelin/openzeppelin-contracts-upgradeable
           fi
 
       - name: forge coverage (lcov + summary)
@@ -131,15 +131,15 @@ jobs:
 
       - uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Install OpenZeppelin deps
         run: |
           if [ ! -d lib/openzeppelin-contracts ]; then
-            forge install OpenZeppelin/openzeppelin-contracts --no-commit
+            forge install OpenZeppelin/openzeppelin-contracts
           fi
           if [ ! -d lib/openzeppelin-contracts-upgradeable ]; then
-            forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
+            forge install OpenZeppelin/openzeppelin-contracts-upgradeable
           fi
 
       - name: Build for slither
