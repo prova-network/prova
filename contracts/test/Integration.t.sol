@@ -44,14 +44,14 @@ contract IntegrationTest is Test {
     uint256 constant ONE_TOKEN     = 1e18;
     uint256 constant CLIENT_USDC   = 100_000 * 1e18;
     uint256 constant PROVER_PROVA  = 1_000_000 * 1e18; // 1M PROVA = 1% of supply
-    uint256 constant MIN_STAKE_GIB = 100 * 1e18;       // 100 PROVA per GiB
+    uint256 constant MIN_STAKE_TIB = 0.1 ether;        // 0.1 PROVA per TiB (v2 default)
 
     function setUp() public {
         prova = new ProvaToken(address(this));
         usdc  = new MockUSDC();
 
         registry = new ProverRegistry();
-        staking  = new ProverStaking(IERC20(address(prova)), MIN_STAKE_GIB);
+        staking  = new ProverStaking(IERC20(address(prova)), MIN_STAKE_TIB);
         content  = new ContentRegistry();
 
         market = new StorageMarketplace(

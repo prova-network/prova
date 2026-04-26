@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -31,11 +32,24 @@ contract ProverStaking is Ownable, ReentrancyGuard {
     /// @notice Unbonding period (slashable window after unstake request).
     uint256 public constant UNBONDING_PERIOD = 14 days;
 
-    /// @notice Minimum stake required per GiB committed.
-    /// @dev Default: 1 token (in 1e18 units). Adjustable by owner via setMinStakePerGib.
+    /// @notice Legacy minStakePerGib (kept as 0 in v2). Always-zero for storage layout safety.
     uint256 public minStakePerGib;
 
+    /// @notice Minimum PROVA stake per TiB committed. Soft floor in token units.
+    uint256 public minStakePerTiB;
+
+    /// @notice Minimum stake per TiB in 8-decimal USD (Chainlink convention).
+    ///         Binding when the oracle is set; e.g. $3.00 / TiB = 300_000_000.
+    uint256 public minStakeUsdPerTiB;
+
+    /// @notice Optional PROVA/USD price oracle. address(0) disables the USD floor.
+    IPriceOracle public priceOracle;
+
+    /// @notice Maximum staleness of an oracle answer before it falls back to PROVA-floor.
+    uint256 public oracleStalenessSeconds = 1 hours;
+
     uint256 public constant GIB = 1024 * 1024 * 1024;
+    uint256 public constant TIB = 1024 * GIB;
 
     // ───── State ─────────────────────────────────────────────────────────
 
@@ -66,6 +80,10 @@ contract ProverStaking is Ownable, ReentrancyGuard {
     event CommittedBytesChanged(address indexed prover, uint256 newCommittedBytes);
     event AuthorizedControllerSet(address indexed controller, bool authorized);
     event MinStakePerGibChanged(uint256 oldValue, uint256 newValue);
+    event MinStakePerTiBChanged(uint256 oldValue, uint256 newValue);
+    event MinStakeUsdPerTiBChanged(uint256 oldValue, uint256 newValue);
+    event PriceOracleChanged(address indexed oldOracle, address indexed newOracle);
+    event OracleStalenessChanged(uint256 oldValue, uint256 newValue);
     event SlashedPoolWithdrawn(address indexed to, uint256 amount);
 
     // ───── Errors ────────────────────────────────────────────────────────
@@ -80,9 +98,11 @@ contract ProverStaking is Ownable, ReentrancyGuard {
 
     // ───── Construction ──────────────────────────────────────────────────
 
-    constructor(IERC20 _token, uint256 _minStakePerGib) Ownable(msg.sender) {
+    constructor(IERC20 _token, uint256 _minStakePerTiB) Ownable(msg.sender) {
         token = _token;
-        minStakePerGib = _minStakePerGib;
+        // legacy field always 0 in v2
+        minStakePerGib = 0;
+        minStakePerTiB = _minStakePerTiB;
     }
 
     // ───── Admin ─────────────────────────────────────────────────────────
@@ -93,9 +113,30 @@ contract ProverStaking is Ownable, ReentrancyGuard {
         emit AuthorizedControllerSet(controller, authorized);
     }
 
-    function setMinStakePerGib(uint256 newValue) external onlyOwner {
-        emit MinStakePerGibChanged(minStakePerGib, newValue);
-        minStakePerGib = newValue;
+    function setMinStakePerGib(uint256 /*newValue*/) external view onlyOwner {
+        revert("setMinStakePerGib: deprecated; use setMinStakePerTiB");
+    }
+
+    function setMinStakePerTiB(uint256 newValue) external onlyOwner {
+        emit MinStakePerTiBChanged(minStakePerTiB, newValue);
+        minStakePerTiB = newValue;
+    }
+
+    /// @param newValue 8-decimal USD per TiB. $3.00 = 300_000_000.
+    function setMinStakeUsdPerTiB(uint256 newValue) external onlyOwner {
+        emit MinStakeUsdPerTiBChanged(minStakeUsdPerTiB, newValue);
+        minStakeUsdPerTiB = newValue;
+    }
+
+    function setPriceOracle(IPriceOracle newOracle) external onlyOwner {
+        emit PriceOracleChanged(address(priceOracle), address(newOracle));
+        priceOracle = newOracle;
+    }
+
+    function setOracleStalenessSeconds(uint256 newValue) external onlyOwner {
+        require(newValue >= 60 && newValue <= 1 days, "staleness out of range");
+        emit OracleStalenessChanged(oracleStalenessSeconds, newValue);
+        oracleStalenessSeconds = newValue;
     }
 
     /// @notice [REMOVED in v2] Slashed PROVA is now burned at slash time;
@@ -222,11 +263,14 @@ contract ProverStaking is Ownable, ReentrancyGuard {
     }
 
     /// @notice How much additional bytes this prover could commit with current stake.
+    /// @dev    Returns an UPPER BOUND based on the PROVA-only floor. If the USD
+    ///         floor is binding (price low) the actual capacity is less.
+    ///         Callers SHOULD verify with `canCommit(prover, bytesNeeded)`.
     function availableCapacityBytes(address prover) external view returns (uint256) {
         StakeInfo storage s = stakes[prover];
-        if (minStakePerGib == 0) return type(uint256).max;
-        uint256 gibCapacity = s.staked / minStakePerGib;
-        uint256 byteCapacity = gibCapacity * GIB;
+        if (minStakePerTiB == 0) return type(uint256).max;
+        uint256 tibCapacity = s.staked / minStakePerTiB;
+        uint256 byteCapacity = tibCapacity * TIB;
         if (byteCapacity <= s.committedBytes) return 0;
         return byteCapacity - s.committedBytes;
     }
@@ -246,9 +290,29 @@ contract ProverStaking is Ownable, ReentrancyGuard {
     // ───── Internal ──────────────────────────────────────────────────────
 
     function _requiredStake(uint256 committedBytes) internal view returns (uint256) {
-        if (minStakePerGib == 0 || committedBytes == 0) return 0;
-        // Ceiling division: any fraction of a GiB requires a full GiB of stake
-        uint256 gibRequired = (committedBytes + GIB - 1) / GIB;
-        return gibRequired * minStakePerGib;
+        if (committedBytes == 0) return 0;
+        uint256 tibRequired = (committedBytes + TIB - 1) / TIB;
+
+        // PROVA-only floor (always available)
+        uint256 provaFloor = tibRequired * minStakePerTiB;
+
+        // Without an oracle (or USD floor disabled), return PROVA-floor.
+        if (address(priceOracle) == address(0) || minStakeUsdPerTiB == 0) {
+            return provaFloor;
+        }
+
+        // Read oracle. If stale or non-positive answer, fall back safely.
+        (, int256 answer, , uint256 updatedAt,) = priceOracle.latestRoundData();
+        if (answer <= 0 || block.timestamp > updatedAt + oracleStalenessSeconds) {
+            return provaFloor;
+        }
+
+        // USD-equivalent: required PROVA = (usdPerTiB * tibRequired * 1e18) / pricePerProva
+        // minStakeUsdPerTiB has 8 decimals; oracle answer has 8 decimals.
+        // (1e8 * 1 * 1e18) / 1e8 = 1e18 PROVA wei per TiB at $1 oracle answer.
+        uint256 usdFloor = (minStakeUsdPerTiB * tibRequired * 1e18) / uint256(answer);
+
+        // Higher floor binds.
+        return provaFloor >= usdFloor ? provaFloor : usdFloor;
     }
 }

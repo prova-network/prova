@@ -48,19 +48,22 @@ Genesis schedules MUST be enforced on-chain by `ProvaVesting.sol`. Prover emissi
 A prover MUST register with `ProverRegistry.sol` and post a stake to `ProverStaking.sol` before accepting deals. The stake denomination is PROVA. Capacity is gated by stake:
 
 ```
-maxCommittedBytes(prover) = staked(prover) / minStakePerGiB
+maxCommittedBytes(prover) ~ staked(prover) / minStakePerTiB
 ```
 
-`minStakePerGiB` is governance-tunable. Initial value at TGE: **100 PROVA per GiB**.
+The floor has **two components**, both governance-tunable:
 
-### USDC-equivalent floor
+- `minStakePerTiB` — the PROVA-only soft floor in token units. Default: **0.1 PROVA per TiB** committed. Always applies, even when the oracle is unavailable.
+- `minStakeUsdPerTiB` + `priceOracle` — the USD-equivalent hard floor. Default: **$3 per TiB** committed (8-decimal USD) with a Chainlink-style PROVA/USD oracle. Binding when the oracle is set, healthy, and yields a higher PROVA-equivalent than the soft floor.
 
-To protect honest provers from a PROVA price drop, the effective minimum stake includes a USDC floor read from a Chainlink PROVA/USD oracle:
+### USD-equivalent floor
+
+To protect the protocol's slashable economic value from PROVA price swings, the effective minimum stake combines both floors:
 
 ```
-minStake_effective(GiB) = max(
-    minStakePerGiB × GiB,
-    targetUSD(GiB) / oracle_PROVA_USD
+minStake_effective(TiB) = max(
+    minStakePerTiB × TiB,                                     // PROVA-only soft floor
+    (minStakeUsdPerTiB × TiB × 1e18) / oracle_PROVA_USD       // USD-equivalent hard floor
 )
 ```
 
@@ -134,7 +137,7 @@ PROVA-weighted vote (one-PROVA-one-vote at v1) over:
 | --- | --- | --- |
 | `protocolFeeBps` | 300 (3%) | 2 days |
 | `slashFraction` | 2500 (25%) | 2 days |
-| `minStakePerGiB` | governance-set | 2 days |
+| `minStakePerTiB`, `minStakeUsdPerTiB`, `priceOracle` | governance-set | 2 days |
 | Prover registry admission rules | n/a | 2 days |
 | `ProofVerifier` UUPS upgrade authority | n/a | 7 days |
 | `FeeRouter.mode` and `burnShareBps` | n/a | 2 days |

@@ -81,11 +81,15 @@ contract DeployScript is Script {
         ProverRegistry registry = new ProverRegistry();
         console2.log("ProverRegistry deployed at:    ", address(registry));
 
-        // 3. Prover staking - PROVA-denominated bond.
-        //    100 PROVA per GiB committed = 0.1% of total supply per 1000 GiB,
-        //    a sensible early-network floor. Governance-tunable.
-        uint256 minStakePerGib = 100 ether; // 100 PROVA per GiB
-        ProverStaking staking = new ProverStaking(IERC20(address(token)), minStakePerGib);
+        // 3. Prover staking — PROVA-denominated bond.
+        //    Default floor: 0.1 PROVA per TiB committed (PROVA-only floor).
+        //    Governance MAY also set the USD-equivalent floor + oracle for the
+        //    real binding constraint. Without an oracle, only the PROVA floor
+        //    applies.
+        //    100 TB → ~10 PROVA stake (PROVA-only); with $3/TiB USD floor
+        //    at $0.10 PROVA: ~3,000 PROVA stake at 100 TB.
+        uint256 minStakePerTiB = 0.1 ether; // 0.1 PROVA per TiB
+        ProverStaking staking = new ProverStaking(IERC20(address(token)), minStakePerTiB);
         console2.log("ProverStaking deployed at:     ", address(staking));
 
         // 4. Content registry
