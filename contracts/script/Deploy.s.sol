@@ -11,8 +11,10 @@ import {ProverStaking} from "../src/ProverStaking.sol";
 import {ContentRegistry} from "../src/ContentRegistry.sol";
 import {StorageMarketplace} from "../src/StorageMarketplace.sol";
 import {MockProofVerifier} from "../src/MockProofVerifier.sol";
+import {ProofVerifier} from "../src/ProofVerifier.sol";
 import {FeeRouter} from "../src/FeeRouter.sol";
 import {ProverRewards} from "../src/ProverRewards.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title Deploy
 /// @notice Deploys the Prova contract set and wires the cross-contract
@@ -90,9 +92,29 @@ contract DeployScript is Script {
         ContentRegistry content = new ContentRegistry();
         console2.log("ContentRegistry deployed at:   ", address(content));
 
-        // 5. Mock ProofVerifier (replace with production UUPS proxy before mainnet)
-        MockProofVerifier verifier = new MockProofVerifier();
-        console2.log("MockProofVerifier deployed at: ", address(verifier));
+        // 5. ProofVerifier. Two paths:
+        //    - PROVA_USE_MOCK_VERIFIER=1: deploy MockProofVerifier (fast, used
+        //      by anvil smoke tests; rubber-stamps proofs).
+        //    - default: deploy the real ProofVerifier (forked from FilOzone/pdp)
+        //      behind an ERC1967 UUPS proxy, initialized with challengeFinality=150.
+        bool useMock = vm.envOr("PROVA_USE_MOCK_VERIFIER", false);
+        address verifier;
+        if (useMock) {
+            MockProofVerifier mock = new MockProofVerifier();
+            verifier = address(mock);
+            console2.log("MockProofVerifier deployed at: ", verifier);
+        } else {
+            // Deploy implementation
+            ProofVerifier impl = new ProofVerifier(1);
+            console2.log("ProofVerifier impl at:         ", address(impl));
+            // Deploy UUPS proxy with initialize(challengeFinality)
+            uint256 challengeFinality = vm.envOr("PROVA_CHALLENGE_FINALITY", uint256(150));
+            bytes memory initCalldata = abi.encodeCall(ProofVerifier.initialize, (challengeFinality));
+            ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initCalldata);
+            verifier = address(proxy);
+            console2.log("ProofVerifier (proxy) at:      ", verifier);
+            console2.log("  challengeFinality:           ", challengeFinality);
+        }
 
         // 6. FeeRouter holds the marketplace's USDC fees, swaps to PROVA, burns.
         //    Defaults to HOLD mode until the swap router is configured.
@@ -102,7 +124,7 @@ contract DeployScript is Script {
         // 7. StorageMarketplace - clients pay USDC, treasury is the FeeRouter.
         uint256 slashPerFault = 50 ether; // PROVA slashed per fault
         StorageMarketplace marketplace = new StorageMarketplace(
-            address(verifier),
+            verifier,
             IERC20(usdc),       // payment token = USDC
             registry,
             staking,
