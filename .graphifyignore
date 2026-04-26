@@ -1,46 +1,41 @@
-# Generated build artifacts
+# Build artifacts and caches
 node_modules/
-.vitepress/dist/
-.vitepress/cache/
 target/
 out/
 cache/
+.preview/
+.wrangler/
+.DS_Store
 
-# Don't index private legal staging
-legal/private/
-
-# Don't index forge artifacts
+# Solidity / Foundry build artifacts
 contracts/cache/
 contracts/out/
 contracts/lib/
 contracts/broadcast/
 contracts/foundry.lock
 
-# Don't index the spec-site/docs-gitbook node_modules
-spec-site/node_modules/
+# VitePress build artifacts
+docs-gitbook/.vitepress/dist/
+docs-gitbook/.vitepress/cache/
 docs-gitbook/node_modules/
+spec-site/.vitepress/dist/
+spec-site/.vitepress/cache/
+spec-site/node_modules/
 
-# Don't index secrets / preview / wrangler caches
-.preview/
-.wrangler/
-.DS_Store
+# Internal / private
+legal/private/
 
-# Don't index sub-archives
+# Sub-archives that don't represent the current codebase
 archive/
 website-v2-archive/
 website-v3-logos/
 
-# Add: vendored fork code with low signal-to-noise
+# Vendored fork code that hurts signal-to-noise
 reference/
 sdk/typescript/core/
 sdk/typescript/sdk/
 
-# Audio/video assets aren't worth Whisper-ing
+# Binary assets
 **/*.mp3
 **/*.mp4
 **/*.wav
-
-# Build artifacts
-docs-gitbook/.vitepress/
-spec-site/.vitepress/dist/
-spec-site/.vitepress/cache/

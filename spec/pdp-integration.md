@@ -1,167 +1,103 @@
-# SPEC-004: PDP Integration
+# 2.1 PDP integration
 
-**Status:** Draft v2
-**Updated:** 2026-04-24
+Prova's storage proof primitive is **Provable Data Possession** (PDP). This section specifies how PDP integrates with Prova's deal lifecycle and how piece-CIDs are computed and verified.
 
-## 1. Overview
+The cryptographic primitive is identical to Filecoin's PDP construction. Prova reuses the math and ports it to Base. We do not invent cryptography.
 
-Prova uses **Provable Data Possession (PDP)** as its single storage
-verification mechanism. Clients upload content, provers store the raw
-bytes, and the chain periodically challenges provers to supply Merkle
-inclusion proofs against random leaves.
+## 2.1.1 Piece-CID (CommP) {#piece-cid}
 
-PDP was chosen because:
+Each object stored on Prova is identified by its **piece-CID**, a binary Merkle root computed over the Fr32-padded bytes of the object using SHA-256 with truncation at every internal node.
 
-- **Lightweight to onboard** (minutes, not hours).
-- **Cheap to verify on-chain** (O(log N) inclusion proofs, low gas).
-- **Hot/warm friendly** — pieces stay unsealed, retrievable on demand.
-- **Mature** — the underlying cryptography has been deployed at scale.
+### Format
 
-Anything heavier (sealed replicas, SNARK-based proofs, TEE-attested
-storage, proof-of-replication) is **out of scope**. Prova is not a
-Filecoin replacement; it is a thin verifiable-storage layer on Base
-optimized for data that needs to stay retrievable.
+A piece-CID is encoded as **CIDv1** with:
 
-## 2. Content Addressing: CommP
+- **Multibase**: `b` (base32, lowercase, no padding)
+- **Codec**: `0xf101` (`fil-commitment-unsealed`), varint-encoded as `0x81 0xe2 0x03`
+- **Multihash function**: `0x1012` (`sha2-256-trunc254-padded`), varint `0x91 0x20`
+- **Digest length**: `0x20` (32 bytes)
+- **Digest**: 32-byte CommP root
 
-Content is identified by **CommP** (Piece Commitment):
+The printable form for fil-commitment-unsealed CIDs MUST begin with `baga…`.
 
-- Multihash: `sha2-256-trunc254-padded` (code `0x1012`)
-- Codec: `piece-commitment` (code `0xf101`)
-- Binary Merkle tree over 32-byte leaves, top 2 bits of each node masked
-  to stay inside the BLS12-381 scalar field (Fr).
-- Piece sizes: powers of 2, 128 bytes to 64 GiB.
+### Computation
 
-CommP is standard across the multicodec registry and compatible with any
-tooling that understands the same codec. Clients can compute CommP
-themselves (see `@prova-network/core`) without trusting the prover.
+Given an input byte string `data`:
 
-## 3. On-Chain Data Model
+1. **Fr32 pre-pad**: insert two zero bits after every 254 input bits. Practically: every 127 input bytes expand to 128 padded bytes.
+2. **Round up**: pad the leaf count to the next power of two by appending zeroed leaves. Minimum 4 leaves (128-byte padded piece).
+3. **Merkle hash up**: build a binary tree where each internal node is `SHA-256(left || right)` with the **top two bits of the digest's last byte cleared** (the `trunc254` step).
+4. **Encode**: wrap the 32-byte root in CIDv1 framing as above and base32-encode.
 
-### Data sets
+### Reference implementations
 
-Each deal creates one **data set** inside the `ProofVerifier` contract.
-A data set is a collection of one or more pieces that the prover is
-responsible for. The `StorageMarketplace` is registered as the
-`PDPListener` for its data sets, so lifecycle callbacks
-(`dataSetCreated`, `possessionProven`, etc.) route through it.
+Three independent implementations MUST produce byte-identical CIDs for the same input:
 
-```
-Deal proposed (client)
-  → Marketplace.proposeDeal(prover, commP, pieceSize, duration, payment)
-  → funds locked in escrow
+| Implementation | File |
+| --- | --- |
+| Browser (TypeScript) | [`website/upload/piece-cid.js`](https://github.com/prova-network/website/blob/main/upload/piece-cid.js) |
+| Node CLI | [`cli/src/util/hash.mjs`](https://github.com/prova-network/cli/blob/main/src/util/hash.mjs) |
+| Stage server (Python) | [`prova-stage-server.py`](https://github.com/prova-network/prova/blob/main/scripts/prova-stage-server.py) |
 
-Prover accepts
-  → Prover calls ProofVerifier.createDataSet(marketplace, dealId)
-  → Marketplace.dataSetCreated hook flips deal to Active
-```
+Conformance test vectors are in [`spec/test-vectors/piece-cid.json`](https://github.com/prova-network/prova/blob/main/spec/test-vectors/piece-cid.json) (when published).
 
-### Proof set state
+### Properties
 
-```solidity
-mapping(uint256 => uint256) nextChallengeEpoch;   // when next challenge is sampled
-mapping(uint256 => uint256) challengeRange;        // total leaf count
-mapping(uint256 => mapping(uint256 => uint256)) pieceLeafCounts;
-```
+- **Self-describing**: codec + multihash give the algorithm; verifiers do not need out-of-band agreement.
+- **Recomputable**: anyone holding the bytes can recompute and check.
+- **Field-valid leaves**: the truncation keeps every digest inside the BLS12-381 scalar field.
 
-## 4. Challenge Protocol
+## 2.1.2 Provable Data Possession
 
-### 4.1 Randomness source
+The prover holds the Fr32-padded bytes and the full Merkle tree. A verifier issues a **challenge** — an index `i` into the leaf array, derived from a verifiable on-chain randomness source.
 
-The seed for challenge leaf selection comes from `block.prevrandao`
-(EIP-4399). Base supports it. Real deployments may plug in Chainlink VRF
-for stronger bias resistance; the current path is acceptable for Base
-where the reorg horizon is effectively instant after the L1 batch is
-posted.
+The prover responds with:
 
-### 4.2 Challenge index derivation
+- The leaf at index `i` (32 bytes)
+- The `O(log N)` sibling hashes along the inclusion path
 
-For the N challenged leaves of a proving period:
+The verifier recomputes the root from the challenge response and compares it against the committed piece-CID. The proof passes iff they match.
 
-```
-challengeIndex[i] = keccak256(seed || uint256(dataSetId) || uint64(i)) mod totalLeaves
-```
+### Soundness
 
-Bit-for-bit compatible with the canonical PDP convention. Verified by
-`prover/pkg/challenges` against a reference implementation on multiple
-test vectors.
+The probability that a prover holding only fraction `(1 − δ)` of the bytes can answer a uniformly-random challenge is `1 − δ`. Repeated challenges over time compound this: the protocol detects sustained data loss with probability approaching 1 within a small number of challenges.
 
-### 4.3 Proof submission
+We rely solely on this primitive. We do not separately commit to a unique encoding of the data per replica; we do not require uniqueness or non-malleability beyond what content-addressing already provides.
 
-Prover calls:
+## 2.1.3 Challenges and randomness
 
-```solidity
-ProofVerifier.provePossession(setId, IPDPTypes.Proof[] proofs)
-```
+Challenges MUST use verifiable randomness derived from a recent block hash on Base. The prover MUST NOT be able to predict the challenge before it is issued.
 
-Each `Proof` is `{ bytes32 leaf, bytes32[] path }`. The verifier walks
-the path, reconstructs the root, and compares to the on-chain CommP.
-Gas cost is **O(log N)** per proof, which is the key reason PDP scales.
+### Challenge cadence
 
-### 4.4 Sybil fee
+The default challenge interval is **30 seconds** at v1. If chain congestion makes this expensive at scale, governance MAY vote to change the cadence to 5 minutes or block-aligned. Cadence is set per-deal at acceptance time and MUST NOT be modified mid-deal.
 
-`createDataSet` and new-dataset `addPieces` charge a flat sybil fee of
-`0.1 ETH` (burned) to deter wasteful on-chain state growth. Regular
-proof submissions carry no protocol fee; only the deal-level economic
-flow (protocol fee on released payment) applies.
+### Challenge response window
 
-## 5. Proving Schedule
+A prover MUST respond to a challenge within `responseWindow` seconds (default: 600). Failure to respond within the window counts as a missed challenge, contributing to slashing thresholds.
 
-Default parameters (tunable via `StorageMarketplace` admin):
+## 2.1.4 Prover obligations
 
-| Parameter | Value | Notes |
-|-----------|-------|-------|
-| Challenge frequency | 1 per deal per day | Enforced via `nextChallengeEpoch` |
-| Max proof gap | 3 days | Anyone can `faultDeal` after this |
-| Unbonding period | 14 days | Prover stake cannot exit faster |
-| Slash per fault | `slashPerFault` (configurable) | Current default: 50 PROVA |
+A prover that has accepted a deal MUST:
 
-A missed challenge does not slash immediately — the **dispute path** is
-explicit. Anyone can call `StorageMarketplace.faultDeal(dealId)` once
-the `MAX_PROOF_GAP` window elapses; the transaction slashes the prover
-and refunds the client's unreleased escrow.
+1. Recompute the piece-CID from the bytes received from the client. If it disagrees with the committed CID, the prover MUST refuse the deal before posting `acceptDeal`. This protects honest provers from clients who would commit to bytes they do not actually intend to upload.
+2. Store the Fr32-padded bytes locally with sufficient redundancy that a single-disk failure does not cause a missed challenge.
+3. Respond to every challenge within the response window.
+4. Serve retrievals over HTTPS at `/piece/{cid}` with `x-prova-piece-cid` and `x-prova-verified` response headers.
 
-## 6. Piece Retrieval
+## 2.1.5 Verifier obligations
 
-Provers that advertise `FEATURE_HTTPS_SERVING` expose:
+The on-chain `ProofVerifier` MUST:
 
-```
-GET  https://<prover>/piece/<pieceCid>     — stream the bytes
-HEAD https://<prover>/piece/<pieceCid>     — metadata only
-GET  https://<prover>/.well-known/prova    — prover metadata
-GET  https://<prover>/health               — liveness
-```
+1. Accept proof submissions only from registered provers active in the deal at hand.
+2. Recompute the Merkle root from the challenge response and compare to the committed piece-CID.
+3. Emit a `ProofVerified(dataSetId, prover, challengeIndex)` event on success or `ProofFailed(dataSetId, prover, reason)` on failure.
+4. Forward the result to the listener (the `StorageMarketplace`) via the listener interface.
 
-Retrieval is out-of-band to the on-chain proof flow; it has its own
-rate limiting and pricing (in a future phase). For v1 retrieval is open
-and unpriced.
+## 2.1.6 Forks and upgrades
 
-## 7. Staking and Slashing
+`ProofVerifier` is UUPS-upgradeable. An upgrade requires a 7-day governance timelock. Upgrades MUST NOT change the semantics of existing accepted proofs (i.e., a proof valid under v1 of the verifier MUST remain valid under v2). A breaking change requires a new contract address and a deal-migration plan.
 
-Prover stake (`ProverStaking.stake`) is the only economic guarantee.
-`StorageMarketplace` calls `staking.commitBytes(prover, pieceSize)` on
-deal acceptance and `staking.releaseBytes` on completion or fault.
-Minimum stake is proportional to committed bytes; falling below the
-floor blocks new deal acceptance.
+## 2.1.7 Attribution
 
-## 8. Gas Costs (ballpark on Base)
-
-These are approximate; real deployments will benchmark and tune.
-
-| Operation | Gas | USDC-equivalent on Base |
-|-----------|----:|------------------------:|
-| `createDataSet` (1 piece) | ~400K | ~$0.001 |
-| `createDataSet` (100 pieces) | ~800K | ~$0.002 |
-| `provePossession` (5 challenges) | ~300K | ~$0.001 |
-| `addPieces` (existing dataset) | ~150K | ~$0.0005 |
-
-On Ethereum L1 these numbers are about 100x higher, which is why Prova
-targets Base by default.
-
-## 9. References
-
-- [`contracts/src/ProofVerifier.sol`](../contracts/src/ProofVerifier.sol) — the on-chain verifier
-- [`contracts/src/StorageMarketplace.sol`](../contracts/src/StorageMarketplace.sol) — PDPListener implementation
-- [`prover/pkg/pdptree/`](../prover/pkg/pdptree/) — fr32 + SHA-254 memtree (piece-side Merkle)
-- [`prover/pkg/challenges/`](../prover/pkg/challenges/) — challenge index derivation + proof submission
-- Multicodec registry: <https://github.com/multiformats/multicodec>
+PDP integration is forked from [`FilOzone/pdp`](https://github.com/FilOzone/pdp) under the Permissive License Stack (Apache-2.0 OR MIT). Filecoin-specific FVM bindings are replaced with Base EVM equivalents; the cryptographic core is unchanged.

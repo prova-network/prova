@@ -1,40 +1,46 @@
 # Prova Protocol Specifications
 
-Formal specifications for the Prova Network v2 protocol.
+Formal specifications for the Prova protocol.
 
-## Active specs
+The **canonical rendered version** is at [spec.prova.network](https://spec.prova.network).
+This directory holds the markdown source. Each file here corresponds to a
+section of the published spec; see [`status`](https://spec.prova.network/status)
+for state and audit metadata per section.
 
-- [`pdp-integration.md`](./pdp-integration.md) — Provable Data Possession, the single storage proof mechanism used by Prova.
-- [`marketplace.md`](./marketplace.md) — Storage deal lifecycle, escrow, and settlement.
-- [`checkpoint-anchoring.md`](./checkpoint-anchoring.md) — Proof batch anchoring to Base.
-- [`data-availability.md`](./data-availability.md) — DA sampling for retrievability challenges.
-- [`api-gateway.md`](./api-gateway.md) — Client-facing REST surface.
-- [`network-protocol.md`](./network-protocol.md) — Prover-to-prover HTTPS conventions.
-- [`event-schema.md`](./event-schema.md) — Canonical on-chain event shapes.
-- [`governance.md`](./governance.md) — Protocol parameter change process.
-- [`token-economics.md`](./token-economics.md) — PROVA token utility summary (see also [TOKENOMICS-v2.md](../TOKENOMICS-v2.md) for the authoritative tokenomics).
-- [`security-audit-checklist.md`](./security-audit-checklist.md) — Pre-deployment review surface.
-- [`security-threat-model.md`](./security-threat-model.md) — Attack vectors + mitigations.
+## Sections
 
-## Archived (pre-pivot)
+| § | Spec | File |
+| --- | --- | --- |
+| 2.1 | PDP integration | [`pdp-integration.md`](./pdp-integration.md) |
+| 2.2 | Checkpoint anchoring | [`checkpoint-anchoring.md`](./checkpoint-anchoring.md) |
+| 2.3 | Data availability | [`data-availability.md`](./data-availability.md) |
+| 3.1 | Marketplace | [`marketplace.md`](./marketplace.md) |
+| 3.2 | Event schema | [`event-schema.md`](./event-schema.md) |
+| 4.1 | Network protocol | [`network-protocol.md`](./network-protocol.md) |
+| 4.2 | API gateway | [`api-gateway.md`](./api-gateway.md) |
+| 5.1 | Token economics | [`token-economics.md`](./token-economics.md) |
+| 5.2 | Governance | [`governance.md`](./governance.md) |
+| 6.1 | Security threat model | [`security-threat-model.md`](./security-threat-model.md) |
+| 6.2 | Audit checklist | [`security-audit-checklist.md`](./security-audit-checklist.md) |
 
-The following v1 specs describe the old Prova Layer 1 design (standalone
-chain + AI compute proofs + sealed storage tiers). They are preserved for
-historical reference but do not describe the current project. See
-[`../archive/specs-v1/`](../archive/specs-v1/):
+## Source-of-truth order
 
-- `qbp-protocol.md` — Quantized Bisection Proofs (AI inference verification)
-- `model-registry.md` — On-chain model registry for QBP
-- `activation-merkle-tree.md` — Per-layer activation hashing for QBP
-- `confidential-inference.md` — TEE-attested inference
-- `tee-storage-proofs.md` — TEE-attested storage fast path
-- `audit-protocol.md` — Audit protocol for QBP disputes
-- `validator-set.md`, `delegation-staking.md`, `bridge-security.md`,
-  `light-client.md`, `account-abstraction.md`, `streaming-payments.md`
-  (archived in an earlier pass; see `spec/archive/`)
+When this spec, the public documentation, and the deployed contracts
+disagree, the order of authority is:
 
-## Scope of Prova v2
+1. **Deployed contracts** (Base mainnet, then Base Sepolia)
+2. **Source code** in `prova-network/contracts`
+3. **This spec** (rendered at spec.prova.network)
+4. **The whitepaper** at prova.network/whitepaper
+5. **Marketing / docs site copy**
 
-Prova v2 is deliberately narrow: a verifiable-storage network backed by
-**PDP alone**. No sealing, no PoRep, no TEE fast-path, no AI inference
-proofs. PDP is the lightweight choice; anything heavier is out of scope.
+## Contributing
+
+To propose changes, edit a file in this directory and open a PR. The
+spec.prova.network site rebuilds automatically from this directory on
+merge to `main`.
+
+If you're touching a section that's marked **Draft / WIP** at
+[spec.prova.network/status](https://spec.prova.network/status) — go
+ahead, those are explicitly open. For sections marked **Reliable** or
+**Stable**, please open an issue first.

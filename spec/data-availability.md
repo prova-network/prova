@@ -1,226 +1,62 @@
-# Data Availability Specification
+# 2.3 Data availability
 
-**Status:** Draft  
-**Authors:** Prova Team  
-**Created:** 2026-03-04  
-**Implements:** SPEC-019
+PDP (§2.1) proves that a prover **has** the bytes. This section addresses a separate question: are the bytes **retrievable by clients**? A prover that holds bytes but refuses to serve them is a different failure mode from a prover that has lost the bytes.
 
-## 1. Overview
+This spec is **draft** because the on-chain enforcement story is still being designed. The retrieval HTTP path (§4.2) is reliable; the *economic* enforcement of retrievability is what's WIP.
 
-Prova's data availability (DA) layer ensures that inference inputs, outputs, and model activations committed on-chain are retrievable by any validator or challenger. Without DA guarantees, the dispute system cannot function — a malicious provider could commit results but withhold the underlying data, making challenges impossible.
+## 2.3.1 The problem
 
-Prova uses **Data Availability Sampling (DAS)** with erasure coding to provide probabilistic DA guarantees with O(√n) sample overhead for O(n) data, combined with **blob transactions** that embed data references directly in the chain.
+A prover passes PDP challenges by holding the bytes locally. The bytes might still be unreachable to clients due to:
 
-## 2. Threat Model
+- Misconfigured firewall
+- Saturated upstream link
+- Deliberate refusal to serve specific clients (censorship)
+- TLS misconfiguration
 
-| Threat | Impact | Mitigation |
-|--------|--------|------------|
-| Data withholding | Dispute system unusable | DAS with multi-round sampling |
-| Selective withholding | Only some chunks missing | Erasure coding (50% redundancy) |
-| Collusion among validators | False confirmation | Minimum validator quorum + independent sampling |
-| Late availability | Data published after challenge window | Response deadline with penalty |
-| Blob spam | Chain bloat, storage exhaustion | Blob-specific fee market, size limits, pruning |
+PDP doesn't catch any of this. We need a separate retrievability check.
 
-## 3. Erasure Coding
+## 2.3.2 Retrievability sampling (proposed)
 
-### 3.1 Scheme
-
-Data is split into `ORIGINAL_CHUNKS` (64) chunks, then extended to `TOTAL_CHUNKS` (128) via parity chunks (XOR-based Reed-Solomon simulation). This provides **2× extension factor** — any 64 of 128 chunks can reconstruct the original data.
-
-### 3.2 Chunk Structure
+A network of independent **samplers** periodically requests random pieces from random provers and reports success/failure. Each sample produces:
 
 ```
-Original data (arbitrary bytes)
-  → Split into 64 equal-sized chunks (zero-padded if needed)
-  → Erasure-encode to 128 chunks
-  → Each chunk hashed: H("das-leaf:" || index_le || data)
-  → Merkle tree built: H("das-node:" || left || right)
-  → Root = data_root committed on-chain
-```
-
-### 3.3 Parameters
-
-| Parameter | Value | Rationale |
-|-----------|-------|-----------|
-| `TOTAL_CHUNKS` | 128 | Balances proof size vs reconstruction threshold |
-| `ORIGINAL_CHUNKS` | 64 | 50% redundancy — tolerates up to 50% missing |
-| Max chunk size | 256 KiB | Keeps P2P messages manageable |
-| Max blob size | 16 MiB (64 × 256 KiB) | Sufficient for model activations |
-
-## 4. DAS Protocol
-
-### 4.1 Commitment Phase
-
-1. Provider erasure-encodes data into 128 chunks
-2. Builds Merkle tree over chunk hashes → `data_root`
-3. Submits `DasCommitment { blob_id, provider, data_root, chunk_count }` on-chain
-4. Status: `Pending`
-
-### 4.2 Sampling Phase
-
-For each pending commitment, validators execute `REQUIRED_ROUNDS` (3) sampling rounds:
-
-1. **Challenge generation:** Using epoch randomness + round number, derive `SAMPLES_PER_ROUND` (16) pseudo-random chunk indices:
-   ```
-   For i in 0..16:
-     h = SHA256(randomness || round_le || i_le)
-     index = u64_le(h[0..8]) % chunk_count
-   ```
-
-2. **Request:** Validators send P2P `SampleRequest` to the provider for the selected indices
-
-3. **Response:** Provider must return `ChunkProof { index, data, merkle_proof }` for each index within `RESPONSE_WINDOW` (5 epochs)
-
-4. **Verification:** Validator checks each proof:
-   - Compute `leaf_hash = H("das-leaf:" || index_le || data)`
-   - Verify Merkle inclusion against `data_root`
-   - All proofs valid → round passes
-
-5. After `REQUIRED_ROUNDS` successful rounds → status transitions to `Confirmed`
-
-### 4.3 Failure Handling
-
-- **Timeout:** If provider fails to respond within `RESPONSE_WINDOW`, any validator can call `check_expired_challenges()` → status transitions to `Failed`, provider penalized `DAS_PENALTY` (500 stake units)
-- **Invalid proof:** Merkle verification failure → round fails, provider must be re-challenged
-- **Negative quorum:** `NEGATIVE_QUORUM` (3) independent validators must report timeout before penalizing (prevents single malicious validator from triggering false penalties)
-
-### 4.4 Probabilistic Guarantees
-
-With 16 samples per round and 3 rounds (48 total samples from 128 chunks):
-
-- Probability of missing a withholding attack where ≥50% of chunks are unavailable: `(0.5)^48 ≈ 3.5 × 10⁻¹⁵`
-- Even with 25% withholding: `(0.75)^48 ≈ 6.6 × 10⁻⁷`
-
-This provides overwhelming confidence that confirmed blobs are fully reconstructable.
-
-## 5. Blob Transactions
-
-### 5.1 Purpose
-
-Blob transactions are a first-class transaction type that allows submitting data references alongside inference commits. They link inference execution to verifiable data roots.
-
-### 5.2 Transaction Format
-
-```rust
-BlobTransaction {
-    sender: Address,
-    nonce: u64,
-    blob_id: BlobId,           // SHA-256 of original data
-    data_root: Hash,           // Merkle root of erasure-coded chunks
-    blob_size: u64,            // Original data size in bytes
-    chunk_count: usize,        // Number of erasure-coded chunks
-    reference: Option<Hash>,   // Optional: commit hash this blob supports
-    max_fee: u128,             // Maximum blob fee willing to pay
+struct RetrievabilitySample {
+    address sampler;
+    address prover;
+    bytes32 pieceCid;
+    uint64  attemptedAt;
+    bool    success;
+    uint16  latencyMs;     // first-byte latency
+    bytes32 evidence;      // hash of the response or failure code
 }
 ```
 
-### 5.3 Blob Fee Market
+Samplers MAY be:
 
-Blob fees are separate from execution gas to prevent DA costs from affecting regular transactions:
+- Other provers (reciprocal monitoring)
+- A protocol-funded set of geographically distributed sampler nodes
+- Anonymous public clients (with rate limits)
 
-| Parameter | Value | Rationale |
-|-----------|-------|-----------|
-| `BASE_BLOB_FEE` | 100 | Minimum fee per blob submission |
-| `FEE_PER_CHUNK` | 10 | Scales with data size |
-| `MAX_BLOBS_PER_BLOCK` | 8 | Prevents block bloat |
-| `BLOB_FEE_ADJUSTMENT` | 12.5% | EIP-1559 style adjustment per block |
-| `TARGET_BLOBS_PER_BLOCK` | 4 | Target utilization for fee stability |
+## 2.3.3 Aggregation and slashing
 
-Total blob fee = `BASE_BLOB_FEE + chunk_count × FEE_PER_CHUNK × multiplier`
+Samples are aggregated per-prover per-epoch. A prover with retrievability success rate below `retrievabilityThreshold` (proposed: 95% in trailing 30 days) over a sample population of at least `minSampleCount` (proposed: 100) MAY be slashed.
 
-Where `multiplier` adjusts based on recent blob utilization (exponential moving average).
+The slashing path requires:
 
-### 5.4 Lifecycle
+1. Sample evidence aggregated and signed by ≥ N independent samplers.
+2. The prover gets a 24-hour window to dispute.
+3. If undisputed, the marketplace's `markRetrievabilityFault(prover)` is callable.
 
-1. Sender submits `BlobTransaction` → enters mempool (sorted by fee)
-2. Block producer includes up to `MAX_BLOBS_PER_BLOCK` blob txs
-3. On execution: creates `DasCommitment`, charges fee, emits `BlobSubmitted` event
-4. DAS sampling begins automatically
-5. Once `Confirmed`: blob data can be referenced by disputes, inference verifications
-6. Blob data pruned after `BLOB_RETENTION_EPOCHS` (configurable, default 100,800 = ~14 days)
+## 2.3.4 What we won't promise
 
-### 5.5 Validation Rules
+- We do not promise SLA-grade retrieval latency. Provers MAY be slow; sampling thresholds use binary success/failure with a generous timeout (default 30 seconds first byte).
+- We do not promise censorship-resistance against state-level pressure on individual provers. The redundancy parameter (deal-level N copies) is the mitigation.
+- We do not promise CDN-grade throughput. Prova is for archival and verifiable retrieval, not page-load.
 
-A blob transaction is invalid if:
-- `blob_size` is 0 or exceeds 16 MiB
-- `chunk_count` doesn't match expected `ceil(blob_size / chunk_size) × 2`
-- `max_fee < BASE_BLOB_FEE + chunk_count × FEE_PER_CHUNK × current_multiplier`
-- Sender balance insufficient for fee
-- Duplicate `blob_id` already committed
-- Block already contains `MAX_BLOBS_PER_BLOCK` blobs
+## 2.3.5 Open questions
 
-## 6. Provider Responsibilities
+- **Sampler economics**: who pays the samplers? Protocol-funded samplers create a centralization risk; anonymous samplers create a Sybil risk. Hybrid models are under consideration.
+- **False-positive risk**: a prover may legitimately be down for maintenance. The 24-hour dispute window is the current mitigation; longer windows reduce false-positive risk but also slow down legitimate slashing.
+- **On-chain cost**: aggregating thousands of samples per prover per epoch is expensive. We are evaluating zk-aggregation similar to checkpoint anchoring (§2.2).
 
-Providers MUST:
-1. Store all erasure-coded chunks for committed blobs
-2. Respond to DAS sample requests within `RESPONSE_WINDOW`
-3. Serve chunk data to any requesting validator over P2P
-4. Maintain chunks until `BLOB_RETENTION_EPOCHS` after confirmation
-
-Providers SHOULD:
-- Pre-distribute chunks to multiple peers for redundancy
-- Prioritize DAS responses over regular P2P traffic
-
-## 7. Validator Responsibilities
-
-Validators MUST:
-- Monitor new `DasCommitment` events
-- Schedule and execute sampling rounds
-- Report timeout/invalid responses on-chain
-- Participate in negative quorum voting before penalization
-
-The `DasValidator` component (NODE-028) automates this:
-- `MAX_CONCURRENT_VALIDATIONS`: 32 simultaneous blob validations
-- `SAMPLE_RETRY_LIMIT`: 3 retries per sample request
-- `SAMPLING_MARGIN`: Start sampling 2 epochs before deadline
-
-## 8. Integration Points
-
-### 8.1 Dispute System
-
-When a dispute is opened, the challenger references a `blob_id`. The dispute system verifies:
-- Blob status is `Confirmed` (data is available)
-- Challenger can reconstruct data from available chunks
-- Bisection game operates over data referenced by confirmed blobs
-
-### 8.2 Inference Commits
-
-Inference commit transactions can include a `blob_reference` field linking to a blob transaction. This creates an on-chain proof that the inference data was available at commit time.
-
-### 8.3 PDP Integration
-
-For long-term storage (beyond `BLOB_RETENTION_EPOCHS`), blob data can be migrated to PDP proof sets on Ethereum L1, providing persistent storage guarantees.
-
-## 9. Security Analysis
-
-### 9.1 Adaptive Adversary
-
-An adversary who sees sample indices before responding could selectively withhold. Mitigation: indices derived from future-epoch drand randomness (unpredictable at commitment time).
-
-### 9.2 Network-Level Attacks
-
-Eclipse attacks could prevent validators from receiving sample responses. Mitigation: negative quorum requirement — multiple independent validators must confirm unavailability.
-
-### 9.3 Long-Range Data Attacks
-
-After pruning window, data is no longer available on the DA layer. Mitigation: critical data migrated to PDP/L1 for permanent storage; dispute windows close before pruning begins.
-
-## 10. Constants Summary
-
-| Constant | Value | Module |
-|----------|-------|--------|
-| `TOTAL_CHUNKS` | 128 | `chain/das` |
-| `ORIGINAL_CHUNKS` | 64 | `chain/das` |
-| `SAMPLES_PER_ROUND` | 16 | `chain/das` |
-| `REQUIRED_ROUNDS` | 3 | `chain/das` |
-| `RESPONSE_WINDOW` | 5 epochs | `chain/das` |
-| `DAS_PENALTY` | 500 | `chain/das` |
-| `MAX_CONCURRENT_VALIDATIONS` | 32 | `node/das_validator` |
-| `SAMPLE_RETRY_LIMIT` | 3 | `node/das_validator` |
-| `SAMPLING_MARGIN` | 2 epochs | `node/das_validator` |
-| `NEGATIVE_QUORUM` | 3 | `node/das_validator` |
-| `BASE_BLOB_FEE` | 100 | `chain/blob_tx` |
-| `FEE_PER_CHUNK` | 10 | `chain/blob_tx` |
-| `MAX_BLOBS_PER_BLOCK` | 8 | `chain/blob_tx` |
-| `TARGET_BLOBS_PER_BLOCK` | 4 | `chain/blob_tx` |
-| `BLOB_RETENTION_EPOCHS` | 100,800 | `chain/blob_tx` |
+This section will be promoted from Draft to Reliable when the sampler protocol is implemented and tested on Base Sepolia.

@@ -1,145 +1,87 @@
-# SPEC-007: Network Protocol Specification
+# 4.1 Network protocol
 
-**Status:** Draft  
-**Author:** Capri  
-**Created:** 2026-03-04
+How provers talk to each other and to clients off-chain. This section is **draft** because we expect the conventions to evolve as we run the testnet at scale.
 
-## 1. Overview
+## 4.1.1 Transport
 
-Prova uses a gossip-based P2P network for propagating commits, challenges, proofs, and blocks. The protocol is designed for low-latency dispute handling and efficient proof dissemination.
+All Prova network traffic is **HTTPS over TCP**, no exceptions. We do not use libp2p, gRPC, or QUIC at v1. Provers MUST present a valid TLS 1.2+ certificate from a publicly-trusted CA. Self-signed certificates are not accepted.
 
-## 2. Message Types
+Rationale: Prova clients are commodity software (browsers, curl, the CLI). HTTPS is the only transport every client speaks. We do not need pubsub or peer discovery; the on-chain registry IS the discovery layer.
 
-### 2.1 Gossip Messages
+## 4.1.2 Endpoint registration
 
-| Message | Size (approx) | Priority | TTL |
-|---------|---------------|----------|-----|
-| `InferenceCommit` | ~256 bytes | Normal | 60s |
-| `Challenge` | ~320 bytes | High | 30s |
-| `BisectionResponse` | ~128 bytes | High | 15s |
-| `PDPProof` | ~2-8 KB | Normal | 120s |
-| `AuditReport` | ~256 bytes | Normal | 60s |
-| `Block` | ~100 KB-1 MB | Critical | 300s |
+A prover MUST register an HTTPS endpoint via `ProverRegistry.register(endpoint, features, capacity, region, attestation)`. The endpoint MUST:
 
-### 2.2 Request/Response
+- Resolve to a hostname under the prover's control
+- Serve TLS 1.2 or 1.3
+- Be reachable from at least one third-party probe (we run a small probe network and publish results)
+- Respond to `GET /healthz` with `200 {"ok": true}` within 5 seconds
 
-| Request | Response | Use |
-|---------|----------|-----|
-| `GetActivation(commit_id, layer)` | `Activation(hash, proof)` | Dispute verification |
-| `GetModel(model_id)` | `ModelManifest` | Model discovery |
-| `GetPeers` | `PeerList` | Peer discovery |
-| `GetBlock(height)` | `Block` | Chain sync |
+A prover MAY register multiple endpoints under the same registry entry by using comma-separated URLs. The first reachable URL is used by retrieval clients.
 
-## 3. Peer Discovery
-
-### 3.1 Bootstrap Nodes
-Hard-coded seed nodes for initial connection:
-```
-/dns4/boot1.prova.network/tcp/30333/p2p/<peer-id>
-/dns4/boot2.prova.network/tcp/30333/p2p/<peer-id>
-```
-
-### 3.2 Kademlia DHT
-After bootstrap, peers discover each other via Kademlia:
-- Bucket size: 20
-- Refresh interval: 300s
-- Peer ID: SHA-256 of public key
-
-## 4. Topic Subscriptions
-
-Gossipsub topics:
-```
-/prova/1/commits       — inference commits
-/prova/1/challenges    — dispute challenges
-/prova/1/bisection     — bisection game messages
-/prova/1/proofs        — PDP proofs
-/prova/1/audits        — audit reports
-/prova/1/blocks        — new blocks
-```
-
-Nodes subscribe to topics based on their role:
-- **Provider:** all topics
-- **Challenger/Verifier:** commits, challenges, bisection, audits
-- **Light client:** blocks only
-
-## 5. Block Propagation
-
-### 5.1 Block Structure
-```
-Block {
-    header: BlockHeader {
-        height: u64,
-        parent_hash: Hash,
-        state_root: Hash,
-        timestamp: u64,
-        proposer: Address,
-    },
-    body: BlockBody {
-        commits: Vec<InferenceCommit>,
-        challenges: Vec<Challenge>,
-        bisection_responses: Vec<BisectionResponse>,
-        pdp_proofs: Vec<PDPProof>,
-        audit_reports: Vec<AuditReport>,
-        payments: Vec<PaymentTx>,
-    },
-}
-```
-
-### 5.2 Block Time
-Target: 30 seconds (calibrated for network stability).
-
-### 5.3 Block Size
-Soft limit: 1 MB. Hard limit: 5 MB. Priority ordering:
-1. Bisection responses (time-sensitive)
-2. Challenges (time-sensitive)
-3. Commits
-4. PDP proofs
-5. Payments
-6. Audit reports
-
-## 6. Consensus
-
-Prova uses **dual-weighted Proof of Stake**:
-- Storage weight: proportional to PDP-verified storage
-- Compute weight: proportional to verified inference throughput
+## 4.1.3 Retrieval
 
 ```
-total_power(node) = α × storage_power + (1-α) × compute_power
+GET https://{prover-endpoint}/piece/{cid}
 ```
 
-Where `α` is a governance parameter (initial: 0.5).
+The prover MUST respond with the raw bytes of the piece, with these headers:
 
-Block proposer selection uses VRF (Verifiable Random Function) weighted by total power.
+| Header | Value |
+| --- | --- |
+| `content-type` | as committed in the deal's metadata, defaulting to `application/octet-stream` |
+| `content-length` | piece size in bytes |
+| `x-prova-piece-cid` | the requested CID |
+| `x-prova-verified` | `1` if the prover recomputed the CID at intake; `0` otherwise |
+| `cache-control` | `public, max-age=3600` |
+| `content-security-policy` | `default-src 'none'; sandbox` (for non-image/audio/video MIME types) |
+| `x-content-type-options` | `nosniff` |
+| `content-disposition` | `attachment; filename="{cid}"` for non-renderable types |
+| `access-control-allow-origin` | `*` |
 
-## 7. Security
+`HEAD /piece/{cid}` MUST return the same headers without a body.
 
-### 7.1 Eclipse Resistance
-- Minimum peer connections: 8
-- Maximum peer connections: 50
-- Peer rotation: 10% per hour
-- Outbound-only connections: at least 4
+Rate limiting MAY be applied per source IP. Provers SHOULD return `429` with a `Retry-After` header when rate-limited rather than dropping the connection.
 
-### 7.2 DoS Protection
-- Rate limiting: 100 messages/second per peer
-- Message deduplication: bloom filter (10-minute window)
-- Ban score: peers accumulate penalty for invalid messages
+## 4.1.4 Range requests
 
-### 7.3 Sybil Resistance
-All meaningful actions (commit, challenge, audit) require on-chain stake. Network-level sybil attacks don't grant voting power.
+Retrieval MUST support HTTP range requests:
 
-## 8. Sync Protocol
+```
+Range: bytes=0-1048575
+```
 
-### 8.1 Fast Sync
-New nodes can sync via:
-1. Download block headers from genesis
-2. Download state snapshot at recent checkpoint
-3. Apply blocks from checkpoint to head
+The prover MUST respond with `206 Partial Content`, `Content-Range: bytes 0-1048575/{total}`, and the requested byte range.
 
-### 8.2 Checkpoint Frequency
-Every 2880 epochs (~24 hours). Checkpoints include full state root + proof.
+Range requests are how SDKs stream large files without buffering the whole piece in memory.
 
-## 9. References
+## 4.1.5 Verification at the client
 
-- [libp2p Gossipsub](https://docs.libp2p.io/concepts/pubsub/overview/)
-- [Kademlia DHT](https://en.wikipedia.org/wiki/Kademlia)
-- Ethereum network protocol (for timing reference)
+A retrieval client SHOULD recompute the piece-CID over the received bytes and compare to the requested CID. The CLI's `prova get` does this by default; the SDK exposes `verify: true` as a config option (default `true`).
+
+If the recomputed CID does not match, the client MUST treat the response as invalid. The client MAY:
+
+- Retry against another prover holding the same piece
+- Submit a `markRetrievabilityFault` call once the off-chain dispute window opens
+
+## 4.1.6 Prover-to-prover replication
+
+When a deal is replicated across multiple provers (deal redundancy parameter > 1), one prover MAY pull the bytes from another prover holding the same piece, rather than requiring the client to upload N copies.
+
+The pull request format:
+
+```
+GET https://{source-endpoint}/piece/{cid}?replicate-for={destination-prover-address}
+```
+
+The source prover MAY honor or refuse this request based on its own policy. There is NO protocol-level requirement to honor it; it's a courtesy that helps the network bootstrap.
+
+## 4.1.7 Sponsored upload path
+
+For the protocol's sponsored / free-tier uploads (browser drag-drop), the upload flow uses the centralized stage server at `p.prova.network`. The stage server's role is documented in [§4.2 API gateway](/api-gateway).
+
+## 4.1.8 Open questions
+
+- **CDN integration**: provers SHOULD be free to put a CDN in front of `/piece/{cid}` for retrieval performance. We have not specified how the CDN bypass affects `x-prova-verified` (the CDN won't have recomputed the CID). Currently we recommend setting `x-prova-verified: 1` only when the origin proxy verified.
+- **WebTransport / HTTP/3**: a future amendment may permit HTTP/3 for retrieval. Not required at v1.
+- **Reciprocal sampling protocol**: see [§2.3 Data availability](/data-availability).

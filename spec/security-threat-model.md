@@ -1,131 +1,119 @@
-# SPEC: Security Threat Model — Prova v2
+# 6.1 Threat model
 
-**Status:** Draft v1 (post-pivot)
-**Updated:** 2026-04-24
+The set of attacks Prova considers in scope, the mitigations, and the residual risks we knowingly accept.
 
-## 1. Scope
+## 6.1.1 Adversary model
 
-Prova v2 is a set of Solidity contracts on Base + off-chain prover nodes
-that store pieces and answer PDP challenges. This document enumerates
-attacks against that specific system. Base itself (validator set, L1
-finality, bridge security, gas pricing) is out of scope — those are
-inherited from Ethereum/Base and their threat model is well covered by
-the L1/L2 community.
+We assume an adversary who can:
 
-### Threat levels
+- Deploy and operate one or more provers under arbitrary identities (Sybil-capable up to a budget)
+- Buy and sell PROVA freely on a public DEX
+- Run the full open-source CLI / SDK / `provad` against the public API and contracts
+- Submit valid Base transactions
+- Observe all on-chain state and all public network traffic
 
-| Level | Impact | Response |
-|-------|--------|----------|
-| **Critical** | Fund loss, data loss, contract bricking | Emergency upgrade via UUPS + timelock bypass |
-| **High** | Systemic griefing, temporary denial | Priority fix, timelocked upgrade |
-| **Medium** | Economic inefficiency, annoyance | Scheduled fix |
-| **Low** | Info leak, UX issue | Best-effort |
+We do NOT assume the adversary has:
 
-## 2. Contract Layer
+- Access to a private key they don't control (i.e., no key extraction from honest provers)
+- Control over a majority of Base validators (i.e., the L2 itself is honest)
+- The ability to break SHA-256, BLS12-381, or HMAC-SHA-256
 
-### T-01. Marketplace fund drain (Critical)
+## 6.1.2 In-scope attacks
 
-- **Vector:** A bug in `StorageMarketplace` lets a prover claim payment without completing the deal, or lets a client reclaim escrow after it's already been released.
-- **Mitigation:** Reentrancy guards on all state-changing external calls. Linear streaming release bounded by elapsed time. Deal state machine transitions gated by `onlyProofVerifier` where appropriate. 40+ contract tests covering the happy path and each error branch.
-- **Residual:** Audit before mainnet.
+### A1. Prover misbehavior — failure to store
 
-### T-02. Slashing bypass (High)
+The protocol's central concern. A prover claims to store bytes but doesn't.
 
-- **Vector:** Prover finds a way to skip challenges without getting slashed — e.g., front-runs `faultDeal` with `completeDeal` somehow, or exits stake before the slashing tx lands.
-- **Mitigation:** 14-day unbonding period on `ProverStaking`. Slashing callable only by authorized controllers (currently `StorageMarketplace`). `MAX_PROOF_GAP` + `faultDeal()` callable by anyone permissionlessly after the gap elapses.
-- **Residual:** Need to verify the state-machine transitions cannot be reordered to the prover's advantage (audit item).
+**Mitigation**: PDP challenges every 30 seconds. A dishonest prover holding fraction `1 − δ` of the bytes fails challenges with probability `δ`. After `MAX_PROOF_GAP` of consecutive failures, the deal is faulted, the client is refunded from the unspent USDC escrow, and `slashPerFault` PROVA is burned from the prover's stake.
 
-### T-03. Upgrade-path abuse (High)
+**Residual risk**: a prover with very high stake might absorb a single slashing event and continue. Mitigated by the `slashFraction` cap (governance-tunable, default 10% per event) plus the off-chain reputation effects of public slashing events.
 
-- **Vector:** `ProofVerifier` is UUPS-upgradeable. A compromised owner key pushes a malicious implementation that drains pending sybil fees or rewrites data sets.
-- **Mitigation:** Contract owner should be a Safe multisig (2-of-N) plus a `Timelock` with sufficient delay for operators to notice. `announcePlannedUpgrade` exists for this; deployment config must wire it. Plain EOA ownership on mainnet is a deployment bug.
-- **Residual:** Key management discipline.
+### A2. Self-dealing
 
-### T-04. Sybil-fee griefing (Low)
+A prover stores their own data and earns the protocol's prover-emission for it.
 
-- **Vector:** Attacker spams `createDataSet` to waste chain storage, paying 0.1 ETH per call.
-- **Mitigation:** The fee itself is the deterrent. 0.1 ETH per pointless data set is not worth sustaining. Worst case: operator can raise the fee via a proxy upgrade.
+**Mitigation**: `ProverRewards.recordProof` reverts with `SelfDealing` when `prover == client`.
 
-### T-05. CommP collision (Critical, infeasible)
+**Residual risk**: a coordinated attacker uses a separate-on-paper EOA to sign as the client. The protocol cannot tell two distinct addresses controlled by the same person apart. Mitigated by the redundancy cap (a single piece earns up to N=4 provers' worth of emission), making it expensive to scale this attack.
 
-- **Vector:** Attacker finds two different byte strings with the same CommP hash and uses that to get paid for storing a different object than the one the client requested.
-- **Mitigation:** CommP is SHA-256-based; pre-image + collision resistance are computationally infeasible. Not a realistic threat.
+### A3. Replication double-claim
 
-## 3. Prover Layer
+Multiple provers all store the same piece and claim the redundancy fee.
 
-### T-06. Lazy prover — accept deal, never store (Critical)
+**Mitigation**: per-piece per-epoch redundancy cap in `ProverRewards`. Beyond `redundancyCap` (default 4), additional copies don't earn additional emission.
 
-- **Vector:** Prover accepts the deal, pockets payment, never actually stores the piece.
-- **Mitigation:** Periodic PDP challenges. Missing challenges past `MAX_PROOF_GAP` triggers `faultDeal` which slashes stake + refunds client. Only remediation for first offense is slash; repeat offenders lose stake quickly.
-- **Detection:** Any single honest watcher can call `faultDeal`.
+**Residual risk**: at exactly the cap, all copies could be from a single physical replica behind multiple addresses. The economic cost of running independent infrastructure (separate IPs, separate stake, separate identity attestation above 100 TB) is the deterrent. We accept that a sophisticated attacker can collude up to `N` ways for a given piece; this is by design.
 
-### T-07. Source URL DoS (Medium)
+### A4. Sybil identity
 
-- **Vector:** Client publishes a Source URL that points at a huge file, gets a prover to waste bandwidth downloading it, deal fails on CommP mismatch.
-- **Mitigation:** `Fetcher.MaxBytes` hard limit (32 GiB default). `ValidateSourceURL` rejects private IPs, loopback, userinfo. Client pays for deal up-front; failure burns part of the escrow.
-- **Residual:** First-download cost falls on the prover. Provers can cap accept rate or require a deposit beyond the deal fee for large pieces.
+One operator runs many provers from the same hardware to capture more emission.
 
-### T-08. Source URL SSRF / exfil (High)
+**Mitigation**: tier-gated identity attestation. Below 100 TB committed, a prover registers pseudonymously. Above 100 TB, lightweight ENS / EAS attestation is required. Above 5 PB, full KYB. Lower-tier provers are individually limited in capacity, capping the per-Sybil emission share.
 
-- **Vector:** Attacker publishes a source URL pointing at internal infrastructure (metadata service, internal APIs) to trick the prover into fetching secrets.
-- **Mitigation:** `ValidateSourceURL` rejects loopback, private, link-local. `$PROVA_PULL_ALLOW_INSECURE` / `[source_url].allow_insecure` must be off in production. Default deny.
-- **Residual:** DNS rebinding is possible; defense-in-depth would add post-resolution IP re-checks. Not implemented in v1.
+**Residual risk**: an attacker willing to register many ENS subdomains and many EAS attestations could climb the ladder. The cost of doing so at scale (per-subdomain registration costs, attestation gas) puts a floor on the attack.
 
-### T-09. Key exfiltration (Critical)
+### A5. Wash uploads
 
-- **Vector:** Prover's signing key leaks; attacker uses it to drain staked PROVA.
-- **Mitigation:** Wallet package supports keystore-with-passphrase and env-based loading. Operators should use keystore + `$PROVA_KEYSTORE_PASSPHRASE`. systemd unit has hardened defaults. 14-day unbonding on staking means leaked stake isn't instantly drainable.
-- **Residual:** Key management discipline. Hardware-signer support is a future enhancement.
+A client repeatedly uploads the same piece to inflate metrics or keep emission flowing.
 
-### T-10. Prover service denial (Medium)
+**Mitigation**: per-(piece, prover, epoch) single-counting in `ProverRewards`. Re-uploading the same `pieceCid` to the same prover within an epoch counts only once.
 
-- **Vector:** Attacker spams HTTP retrieval endpoint to exhaust the prover's bandwidth.
-- **Mitigation:** Operators deploy behind a reverse proxy with rate limiting. `Fetcher` already caps inbound downloads. HTTP server is stateless for retrieval.
-- **Residual:** Bandwidth accounting + paid retrieval is a future phase.
+**Residual risk**: a client uploads the same piece across many prover addresses. The redundancy cap (A3) catches this.
 
-## 4. Client Layer
+### A6. Free-tier exploitation
 
-### T-11. Client refuses to release (Low)
+The sponsored upload path (no auth required, 100 MB free) is used to inflate emission.
 
-- **Vector:** Client never calls `completeDeal` after the deal duration elapses.
-- **Mitigation:** `completeDeal` is callable by anyone after `endsAt`, not just the client. Prover can call it themselves.
+**Mitigation**: `recordProof` skips emission accounting when `client == address(0)`. Sponsored deals don't count.
 
-### T-12. Client cancels right before acceptance (Low)
+**Residual risk**: low. We accept the sponsored-tier cost as the price of low-friction onboarding.
 
-- **Vector:** Client proposes a deal, prover starts downloading the piece, client cancels before acceptance, prover has wasted bandwidth.
-- **Mitigation:** Provers should wait until acceptance tx is mined before committing real resources. Small-piece deals absorb the cost; large-piece deals need operator discipline.
+### A7. Fast-churn
 
-## 5. Chain / Operational
+A prover signs up, takes a cohort of deals, fails them, and disappears with the rewards.
 
-### T-13. RPC censorship (Medium)
+**Mitigation**: `ProverRewards` has a 30-day vesting buffer between epoch end and claim eligibility. A prover whose quality drops below the cutoff in the 30-day window has their emission halved or zeroed before they can claim.
 
-- **Vector:** Operator's RPC provider refuses to include the prover's `provePossession` tx, causing missed proofs.
-- **Mitigation:** Multiple RPC endpoints configurable (future). Prover retries with backoff. If the whole Base sequencer censors, that's a Base-level issue.
+**Residual risk**: an attacker willing to commit 30+ days of honest operation before turning malicious can still claim early-window emission. Mitigated by the slashing on the actual misbehavior, which destroys their stake in addition to denying future emission.
 
-### T-14. Randomness bias (Low)
+### A8. CID poisoning
 
-- **Vector:** Block proposer biases `block.prevrandao` to skew challenge leaf selection.
-- **Mitigation:** Only affects *which* leaves are challenged. Provers must still hold the entire piece; they can't pre-bias that. Worst-case gives a marginal statistical advantage over the full challenge horizon.
-- **Residual:** Switch to Chainlink VRF or a commit-reveal scheme if the bias becomes meaningful at scale.
+A client commits a piece-CID that doesn't match the bytes they actually upload.
 
-### T-15. Chain reorg (Low on Base)
+**Mitigation**: the prover MUST recompute the piece-CID at intake and refuse the deal on mismatch. The stage server (for sponsored uploads) does the same and returns 422 `cid_mismatch`.
 
-- **Vector:** A Base reorg rewrites a recently-emitted event, temporarily confusing the prover's event poller.
-- **Mitigation:** `BlockLookback` reorg buffer (default 6 blocks on mainnet, 0 on anvil). Watermark advances only after all filters succeed.
-- **Residual:** Base has very short reorg horizons (L2 blocks are final once the L1 batch posts); in practice this is not a concern.
+**Residual risk**: a buggy prover that skips CID verification accepts the wrong bytes and fails its challenges later. The slashing path catches this; the buggy prover bears the cost, not the protocol.
 
-## 6. Out of scope
+### A9. Token-secret theft (gateway)
 
-- **AI inference proofs** — Prova v2 doesn't do compute verification.
-- **PoRep / sealing** — not part of v2.
-- **TEE attestation** — not part of v2.
-- **Cross-chain bridges** — Prova is single-chain (Base).
-- **Token launch / distribution** — covered separately in `TOKENOMICS-v2.md`.
+An attacker who steals `PROVA_TOKEN_SECRET` from the gateway can mint arbitrary API tokens.
 
-## 7. Open items for audit
+**Mitigation**: the secret is stored as a Cloudflare Pages secret (encrypted at rest, never exposed to the runtime as plaintext outside the function context). Rotation invalidates all issued tokens at once.
 
-- Formal verification of `StorageMarketplace` state machine.
-- Fuzz testing of `ProofVerifier` proof path.
-- Re-entrancy analysis on every `external payable` entry point.
-- Gas-limit edge cases on `addPieces` with pathological piece counts.
-- Upgrade-path review for `ProofVerifier` UUPS proxy.
+**Residual risk**: a Cloudflare-side breach. We accept this as the platform's risk model.
+
+### A10. Smart-contract bugs
+
+A bug in `StorageMarketplace`, `ProverStaking`, `ProverRewards`, or `FeeRouter` that allows unauthorized fund movement.
+
+**Mitigation**: 81 automated tests covering the happy path and the named error paths. External audit before mainnet (in progress). UUPS upgrade authority is gated by a 7-day timelock and a 5-of-9 multisig pause.
+
+**Residual risk**: unknown bugs. Mitigated by the audit, the bug-bounty (planned post-mainnet), and the multisig pause.
+
+## 6.1.3 Out-of-scope
+
+We do NOT defend against:
+
+- **The L2 going down.** Base liveness is assumed.
+- **The USDC peg breaking.** This is a global-financial event; the protocol behaves the same as any USDC-denominated contract.
+- **A break of SHA-256 or BLS12-381.** Same.
+- **The prover's hosting provider seizing data.** Provers run on commodity infrastructure; nation-state pressure on a single prover takes that prover offline. The deal-redundancy parameter mitigates but does not eliminate.
+- **Adversarial RPC providers.** Clients SHOULD verify the data they retrieve against the on-chain CID; the SDK does this by default.
+
+## 6.1.4 Bug bounty
+
+A bug-bounty program will be active from mainnet onward. Tiers and payouts will be published in [`prova-network/prova/SECURITY.md`](https://github.com/prova-network/prova/blob/main/SECURITY.md) (when finalized). Pre-launch, security disclosures should be sent to [security@prova.network](mailto:security@prova.network).
+
+## 6.1.5 Disclosure policy
+
+We follow a 90-day coordinated disclosure window. A reporter who finds a vulnerability sends it to security@prova.network; we acknowledge within 48 hours, fix within 60 days, and disclose publicly at 90 days (or sooner if mutually agreed).

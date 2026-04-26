@@ -1,74 +1,78 @@
-# SPEC-011: Governance Specification
+# 5.2 Governance
 
-**Status:** Draft  
-**Authors:** Capri (autonomous)  
-**Created:** 2026-03-04
+PROVA-weighted on-chain governance over a bounded set of protocol parameters, with multisig-held emergency pause. This section is **draft** because the on-chain governor contract has not yet been deployed; the parameter space and timelock policy are stable but the voting mechanism is TBD.
 
-## 1. Overview
+## 5.2.1 Scope
 
-Prova uses on-chain governance for protocol parameter changes, treasury spending, and model registry policy. Governance is token-weighted: 1 staked PROVA = 1 vote. Only staked tokens vote (aligns governance power with security commitment).
+Governance MAY change:
 
-## 2. Proposal Types
+| Parameter | Hard cap | Timelock | Where |
+| --- | --- | --- | --- |
+| `protocolFeeBps` | 300 (3%) | 2 days | StorageMarketplace |
+| `slashFraction` | 2500 (25%) | 2 days | StorageMarketplace |
+| `slashPerFault` | governance-set | 2 days | StorageMarketplace |
+| `MAX_PROOF_GAP` | governance-set | 2 days | StorageMarketplace |
+| `minStakePerGiB` | governance-set | 2 days | ProverStaking |
+| `unbondingPeriod` | 30 days | 2 days | ProverStaking |
+| Prover registry admission rules | n/a | 2 days | ProverRegistry |
+| `redundancyCap` | 16 | 2 days | ProverRewards |
+| `qualityCutoffBps` | 5000 (50%) | 2 days | ProverRewards |
+| `FeeRouter.mode` | n/a | 2 days | FeeRouter |
+| `burnShareBps` | 10000 | 2 days | FeeRouter |
+| `swapPoolFee` | n/a | 2 days | FeeRouter |
+| `ProofVerifier` UUPS upgrade | n/a | 7 days | ProofVerifier |
 
-| Type | Description | Quorum | Threshold | Voting Period |
-|------|-------------|--------|-----------|---------------|
-| `ParameterChange` | Modify chain parameters (block reward, challenge window, etc.) | 10% staked supply | 66.7% | 7 days (20,160 epochs) |
-| `TreasurySpend` | Allocate treasury funds to an address | 15% staked supply | 66.7% | 14 days (40,320 epochs) |
-| `ModelPolicy` | Change model registry rules (min stake, allowed architectures) | 5% staked supply | 50.1% | 3 days (8,640 epochs) |
-| `EmergencyAction` | Fast-track critical fixes (e.g., pause disputes) | 33% staked supply | 75% | 1 day (2,880 epochs) |
+Governance MAY NOT:
 
-## 3. Proposal Lifecycle
+- Mint additional PROVA (no mint authority exists)
+- Redirect funds held by `FeeRouter`, `ProverRewards`, or `ProverStaking` outside the protocol's published mechanisms
+- Override the slashing math on a per-prover basis
+- Reduce vested allocations recorded in `ProvaVesting`
 
+## 5.2.2 Voting (proposed)
+
+A future amendment will deploy an OpenZeppelin Governor with these parameters:
+
+```solidity
+// Proposed values, subject to change before mainnet
+votingDelay      = 1 day                  // proposal → voting window
+votingPeriod     = 5 days                 // voting window length
+proposalThreshold = 100_000 ether          // 100,000 PROVA to propose
+quorumNumerator  = 4                      // 4% of total supply
+timelockDelay    = 2 days                 // for parameter changes
+upgradeTimelock  = 7 days                 // for contract upgrades
 ```
-Created → Active → [Passed | Rejected | Expired] → Executed (if passed + timelock)
-```
 
-1. **Created**: Proposer submits proposal with description, type, and payload. Requires deposit of 1,000 PROVA (refunded if quorum met, slashed if <5% participation — anti-spam).
-2. **Active**: Voting opens for the type-specific duration. Votes: `Yes`, `No`, `Abstain`. Abstain counts toward quorum but not threshold.
-3. **Passed**: Quorum met AND yes votes exceed threshold of (yes + no). Enters timelock.
-4. **Rejected**: Threshold not met after voting period.
-5. **Expired**: Quorum not met after voting period. Deposit returned.
-6. **Executed**: After timelock (2,880 epochs = 1 day), anyone can trigger execution.
+One PROVA is one vote. We are evaluating quadratic-voting alternatives if it materially reduces whale capture; the decision will land before TGE.
 
-## 4. Voting Power
+## 5.2.3 Emergency pause
 
-- Voting power = staked amount at proposal creation epoch (snapshot)
-- Delegated stake counts toward delegatee's voting power
-- A staker who votes directly overrides any delegatee vote
-- Vote changes allowed until voting period ends
+A 5-of-9 multisig holds an emergency pause role. Pause halts:
 
-## 5. Delegation
+- `proposeDeal` (no new deals)
+- `dataSetCreated` (no new acceptances)
+- `possessionProven` (proofs are accepted but payment is not released; queue clears on unpause)
+- `faultDeal` (no new slashings)
 
-Stakers may delegate voting power to another address:
-- `delegate(delegatee)` — all voting power to delegatee
-- `undelegate()` — reclaim voting power (effective next epoch)
-- Delegation does NOT transfer stake or rewards
-- Delegatees cannot re-delegate received power
+Pause does NOT halt:
 
-## 6. Parameter Change Payloads
+- Refunds or claims on already-completed deals
+- Token transfers
+- Vesting claims
 
-ParameterChange proposals specify a key-value pair:
+A pause MUST be unpaused within 30 days or it becomes ineffective and a governance vote is required to extend.
 
-| Key | Type | Range | Description |
-|-----|------|-------|-------------|
-| `challenge_window` | u64 | 10..1000 | Epochs for dispute window |
-| `min_provider_stake` | u128 | 100..1M | Minimum stake to serve inference |
-| `block_reward` | u128 | 0..100 | PROVA per epoch |
-| `slash_fraction` | u64 | 1..100 | Slash percentage (basis points × 100) |
-| `proof_reward` | u128 | 0..50 | Challenger bounty per successful dispute |
-| `payment_network_fee_bps` | u64 | 0..500 | Network fee on streaming payments |
+## 5.2.4 Proposal etiquette
 
-## 7. Treasury
+A proposal SHOULD include:
 
-- Treasury accrues from: network fees (0.5% of payments), slashed stakes, unclaimed rewards after 1 year
-- Treasury balance tracked in state trie
-- TreasurySpend proposals specify: recipient address, amount, memo
-- Maximum single spend: 10% of treasury balance
+1. The exact parameter change (function selector + ABI-encoded calldata).
+2. A 1-paragraph rationale.
+3. A link to a forum thread or PR with at least 7 days of discussion.
+4. A risk analysis: what's the worst-case outcome if the change is wrong?
 
-## 8. Security Considerations
+Proposals that change governance parameters themselves (e.g. lowering quorum) MUST go through the 7-day upgrade timelock, not the 2-day parameter timelock.
 
-- **Vote buying**: Mitigated by requiring staked tokens (opportunity cost of staking)
-- **Flash governance**: Snapshot at proposal creation prevents stake-borrow-vote-unstake
-- **Griefing**: Deposit requirement prevents proposal spam
-- **Execution delay**: Timelock gives users time to exit if they disagree with passed proposals
-- **Emergency path**: High quorum + threshold for emergency actions prevents capture
+## 5.2.5 Source of truth
+
+The deployed contracts are authoritative. When this spec and the on-chain values disagree, the on-chain values MUST be treated as correct. We will publish a quarterly governance report in [`prova-network/prova/governance/`](https://github.com/prova-network/prova/tree/main/governance) (when the directory exists) listing every active parameter and its current value.

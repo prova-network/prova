@@ -1,0 +1,2001 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "hp_pdp_protocol",
+        "label": "PDP protocol stack",
+        "nodes": [
+          "concept_pdp",
+          "concept_piece_cid",
+          "concept_challenge",
+          "concept_merkle_inclusion_proof",
+          "concept_proof_verifier_uups"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "spec/pdp-integration.md"
+      },
+      {
+        "id": "hp_deal_lifecycle",
+        "label": "Deal lifecycle on-chain",
+        "nodes": [
+          "concept_deal",
+          "concept_marketplace_contract",
+          "concept_usdc_escrow",
+          "concept_streaming_release",
+          "concept_fault_deal",
+          "concept_deal_state_machine"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "spec/marketplace.md"
+      },
+      {
+        "id": "hp_emission_anti_gaming",
+        "label": "Prover-emission anti-gaming protections",
+        "nodes": [
+          "concept_prover_emission",
+          "concept_anti_self_dealing",
+          "concept_redundancy_cap",
+          "concept_30d_vesting_buffer",
+          "concept_quality_multiplier"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "spec/token-economics.md"
+      },
+      {
+        "id": "hp_fee_burn_loop",
+        "label": "USDC fee \u2192 PROVA burn loop",
+        "nodes": [
+          "concept_protocol_fee",
+          "concept_fee_router",
+          "concept_fee_router_modes",
+          "concept_uniswap_v3_pool",
+          "concept_prova_token"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "spec/token-economics.md"
+      },
+      {
+        "id": "hp_governance_timelock_set",
+        "label": "Governance timelock structure",
+        "nodes": [
+          "concept_governance",
+          "concept_param_timelock",
+          "concept_upgrade_timelock",
+          "concept_emergency_pause"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "spec/governance.md"
+      },
+      {
+        "id": "hp_threat_table",
+        "label": "Adversary attack catalog (A1-A10)",
+        "nodes": [
+          "concept_threat_model",
+          "concept_a1_failure_to_store",
+          "concept_a2_self_dealing",
+          "concept_a3_replication_doubleclaim",
+          "concept_a4_sybil",
+          "concept_a5_wash_uploads",
+          "concept_a6_free_tier_exploit",
+          "concept_a7_fast_churn",
+          "concept_a8_cid_poisoning",
+          "concept_a9_token_secret_theft",
+          "concept_a10_smart_contract_bug"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "spec/security-threat-model.md"
+      },
+      {
+        "id": "hp_provider_tiers",
+        "label": "Identity attestation tier ladder",
+        "nodes": [
+          "concept_identity_attestation",
+          "concept_hobby_tier",
+          "concept_prosumer_tier",
+          "concept_enterprise_tier"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "spec/security-threat-model.md"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "label": "Provable Data Possession (PDP)",
+      "file_type": "document",
+      "source_file": "spec/pdp-integration.md",
+      "id": "concept_pdp",
+      "community": 1,
+      "norm_label": "provable data possession (pdp)"
+    },
+    {
+      "label": "Piece-CID (CommP)",
+      "file_type": "document",
+      "source_file": "spec/pdp-integration.md",
+      "id": "concept_piece_cid",
+      "community": 5,
+      "norm_label": "piece-cid (commp)"
+    },
+    {
+      "label": "Fr32 padding",
+      "file_type": "document",
+      "source_file": "spec/pdp-integration.md",
+      "id": "concept_fr32_padding",
+      "community": 5,
+      "norm_label": "fr32 padding"
+    },
+    {
+      "label": "trunc254 multihash",
+      "file_type": "document",
+      "source_file": "spec/pdp-integration.md",
+      "id": "concept_trunc254",
+      "community": 5,
+      "norm_label": "trunc254 multihash"
+    },
+    {
+      "label": "Merkle inclusion proof",
+      "file_type": "document",
+      "source_file": "spec/pdp-integration.md",
+      "id": "concept_merkle_inclusion_proof",
+      "community": 1,
+      "norm_label": "merkle inclusion proof"
+    },
+    {
+      "label": "PDP challenge",
+      "file_type": "document",
+      "source_file": "spec/pdp-integration.md",
+      "id": "concept_challenge",
+      "community": 1,
+      "norm_label": "pdp challenge"
+    },
+    {
+      "label": "30-second challenge cadence",
+      "file_type": "document",
+      "source_file": "spec/pdp-integration.md",
+      "id": "concept_challenge_cadence",
+      "community": 1,
+      "norm_label": "30-second challenge cadence"
+    },
+    {
+      "label": "Challenge response window",
+      "file_type": "document",
+      "source_file": "spec/pdp-integration.md",
+      "id": "concept_response_window",
+      "community": 1,
+      "norm_label": "challenge response window"
+    },
+    {
+      "label": "ProofVerifier UUPS upgradability",
+      "file_type": "document",
+      "source_file": "spec/pdp-integration.md",
+      "id": "concept_proof_verifier_uups",
+      "community": 3,
+      "norm_label": "proofverifier uups upgradability"
+    },
+    {
+      "label": "Proof checkpoint",
+      "file_type": "document",
+      "source_file": "spec/checkpoint-anchoring.md",
+      "id": "concept_checkpoint",
+      "community": 1,
+      "norm_label": "proof checkpoint"
+    },
+    {
+      "label": "32-epoch anchor cadence (maxAnchorGap)",
+      "file_type": "document",
+      "source_file": "spec/checkpoint-anchoring.md",
+      "id": "concept_anchor_cadence",
+      "community": 1,
+      "norm_label": "32-epoch anchor cadence (maxanchorgap)"
+    },
+    {
+      "label": "Spot-check verification",
+      "file_type": "document",
+      "source_file": "spec/checkpoint-anchoring.md",
+      "id": "concept_spot_check",
+      "community": 1,
+      "norm_label": "spot-check verification"
+    },
+    {
+      "label": "ZK aggregation (future)",
+      "file_type": "document",
+      "source_file": "spec/checkpoint-anchoring.md",
+      "id": "concept_zk_aggregation",
+      "community": 1,
+      "norm_label": "zk aggregation (future)"
+    },
+    {
+      "label": "Retrievability sampling",
+      "file_type": "document",
+      "source_file": "spec/data-availability.md",
+      "id": "concept_da_sampling",
+      "community": 1,
+      "norm_label": "retrievability sampling"
+    },
+    {
+      "label": "Sampler",
+      "file_type": "document",
+      "source_file": "spec/data-availability.md",
+      "id": "concept_sampler",
+      "community": 1,
+      "norm_label": "sampler"
+    },
+    {
+      "label": "retrievabilityThreshold (95% / 30d)",
+      "file_type": "document",
+      "source_file": "spec/data-availability.md",
+      "id": "concept_retrievability_threshold",
+      "community": 1,
+      "norm_label": "retrievabilitythreshold (95% / 30d)"
+    },
+    {
+      "label": "24-hour dispute window",
+      "file_type": "document",
+      "source_file": "spec/data-availability.md",
+      "id": "concept_dispute_window",
+      "community": 1,
+      "norm_label": "24-hour dispute window"
+    },
+    {
+      "label": "Storage deal",
+      "file_type": "document",
+      "source_file": "spec/marketplace.md",
+      "id": "concept_deal",
+      "community": 6,
+      "norm_label": "storage deal"
+    },
+    {
+      "label": "Deal state machine (Proposed\u2192Active\u2192Completed/Cancelled/Slashed)",
+      "file_type": "document",
+      "source_file": "spec/marketplace.md",
+      "id": "concept_deal_state_machine",
+      "community": 6,
+      "norm_label": "deal state machine (proposed\u2192active\u2192completed/cancelled/slashed)"
+    },
+    {
+      "label": "StorageMarketplace contract",
+      "file_type": "document",
+      "source_file": "spec/marketplace.md",
+      "id": "concept_marketplace_contract",
+      "community": 6,
+      "norm_label": "storagemarketplace contract"
+    },
+    {
+      "label": "USDC client escrow",
+      "file_type": "document",
+      "source_file": "spec/marketplace.md",
+      "id": "concept_usdc_escrow",
+      "community": 6,
+      "norm_label": "usdc client escrow"
+    },
+    {
+      "label": "Linear time-streaming USDC payout",
+      "file_type": "document",
+      "source_file": "spec/marketplace.md",
+      "id": "concept_streaming_release",
+      "community": 6,
+      "norm_label": "linear time-streaming usdc payout"
+    },
+    {
+      "label": "MAX_PROOF_GAP (6h)",
+      "file_type": "document",
+      "source_file": "spec/marketplace.md",
+      "id": "concept_max_proof_gap",
+      "community": 4,
+      "norm_label": "max_proof_gap (6h)"
+    },
+    {
+      "label": "faultDeal() permissionless slashing",
+      "file_type": "document",
+      "source_file": "spec/marketplace.md",
+      "id": "concept_fault_deal",
+      "community": 4,
+      "norm_label": "faultdeal() permissionless slashing"
+    },
+    {
+      "label": "1% protocol fee (cap 3%)",
+      "file_type": "document",
+      "source_file": "spec/marketplace.md",
+      "id": "concept_protocol_fee",
+      "community": 3,
+      "norm_label": "1% protocol fee (cap 3%)"
+    },
+    {
+      "label": "Canonical event schema",
+      "file_type": "document",
+      "source_file": "spec/event-schema.md",
+      "id": "concept_event_schema",
+      "community": 6,
+      "norm_label": "canonical event schema"
+    },
+    {
+      "label": "Indexer guidance",
+      "file_type": "document",
+      "source_file": "spec/event-schema.md",
+      "id": "concept_indexer",
+      "community": 6,
+      "norm_label": "indexer guidance"
+    },
+    {
+      "label": "HTTPS-only network transport",
+      "file_type": "document",
+      "source_file": "spec/network-protocol.md",
+      "id": "concept_https_only",
+      "community": 2,
+      "norm_label": "https-only network transport"
+    },
+    {
+      "label": "Registered prover endpoint",
+      "file_type": "document",
+      "source_file": "spec/network-protocol.md",
+      "id": "concept_prover_endpoint",
+      "community": 2,
+      "norm_label": "registered prover endpoint"
+    },
+    {
+      "label": "Retrieval response headers",
+      "file_type": "document",
+      "source_file": "spec/network-protocol.md",
+      "id": "concept_retrieval_headers",
+      "community": 2,
+      "norm_label": "retrieval response headers"
+    },
+    {
+      "label": "HTTP range requests",
+      "file_type": "document",
+      "source_file": "spec/network-protocol.md",
+      "id": "concept_range_requests",
+      "community": 2,
+      "norm_label": "http range requests"
+    },
+    {
+      "label": "Prover-to-prover replicate-for pull",
+      "file_type": "document",
+      "source_file": "spec/network-protocol.md",
+      "id": "concept_replicate_for",
+      "community": 2,
+      "norm_label": "prover-to-prover replicate-for pull"
+    },
+    {
+      "label": "API gateway at prova.network/api",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_api_gateway",
+      "community": 2,
+      "norm_label": "api gateway at prova.network/api"
+    },
+    {
+      "label": "Bearer-only auth (no ?token= query)",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_bearer_only_auth",
+      "community": 2,
+      "norm_label": "bearer-only auth (no ?token= query)"
+    },
+    {
+      "label": "Origin/CSRF guard",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_origin_csrf_guard",
+      "community": 2,
+      "norm_label": "origin/csrf guard"
+    },
+    {
+      "label": "Magic-link sign-in (start + verify)",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_magic_link",
+      "community": 2,
+      "norm_label": "magic-link sign-in (start + verify)"
+    },
+    {
+      "label": "POST /api/upload",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_upload_endpoint",
+      "community": 5,
+      "norm_label": "post /api/upload"
+    },
+    {
+      "label": "GET /p/{cid}",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_retrieval_endpoint",
+      "community": 2,
+      "norm_label": "get /p/{cid}"
+    },
+    {
+      "label": "baga... CID prefix required at upload",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_baga_cid_required",
+      "community": 5,
+      "norm_label": "baga... cid prefix required at upload"
+    },
+    {
+      "label": "CID mismatch check at intake (HTTP 422)",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_cid_mismatch_check",
+      "community": 5,
+      "norm_label": "cid mismatch check at intake (http 422)"
+    },
+    {
+      "label": "Per-IP 60-uploads/min rate limit",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_rate_limit_60_min",
+      "community": 5,
+      "norm_label": "per-ip 60-uploads/min rate limit"
+    },
+    {
+      "label": "POST /api/abuse/report",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_abuse_report",
+      "community": 2,
+      "norm_label": "post /api/abuse/report"
+    },
+    {
+      "label": "Global CSP + security headers",
+      "file_type": "document",
+      "source_file": "spec/api-gateway.md",
+      "id": "concept_csp_global",
+      "community": 2,
+      "norm_label": "global csp + security headers"
+    },
+    {
+      "label": "PROVA token (100M ERC-20 on Base)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_prova_token",
+      "community": 3,
+      "norm_label": "prova token (100m erc-20 on base)"
+    },
+    {
+      "label": "Allocation 45/50/5 split",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_allocation_45_50_5",
+      "community": 3,
+      "norm_label": "allocation 45/50/5 split"
+    },
+    {
+      "label": "50M PROVA prover emission (8y curve)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_prover_emission",
+      "community": 0,
+      "norm_label": "50m prova prover emission (8y curve)"
+    },
+    {
+      "label": "Yearly emission schedule (12.5M\u21921M)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_emission_year_curve",
+      "community": 0,
+      "norm_label": "yearly emission schedule (12.5m\u21921m)"
+    },
+    {
+      "label": "PROVA prover stake",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_prover_stake",
+      "community": 4,
+      "norm_label": "prova prover stake"
+    },
+    {
+      "label": "minStakePerGiB (100 PROVA)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_min_stake_per_gib",
+      "community": 4,
+      "norm_label": "minstakepergib (100 prova)"
+    },
+    {
+      "label": "Chainlink USDC-equivalent stake floor",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_usdc_floor",
+      "community": 4,
+      "norm_label": "chainlink usdc-equivalent stake floor"
+    },
+    {
+      "label": "7-day stake-floor grace window",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_grace_window_7d",
+      "community": 4,
+      "norm_label": "7-day stake-floor grace window"
+    },
+    {
+      "label": "Slashing (PROVA burned)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_slashing",
+      "community": 4,
+      "norm_label": "slashing (prova burned)"
+    },
+    {
+      "label": "FeeRouter (USDC\u2192PROVA\u2192burn)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_fee_router",
+      "community": 3,
+      "norm_label": "feerouter (usdc\u2192prova\u2192burn)"
+    },
+    {
+      "label": "FeeRouter modes (HOLD/BURN/SPLIT)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_fee_router_modes",
+      "community": 3,
+      "norm_label": "feerouter modes (hold/burn/split)"
+    },
+    {
+      "label": "Uniswap V3 PROVA-USDC pool",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_uniswap_v3_pool",
+      "community": 3,
+      "norm_label": "uniswap v3 prova-usdc pool"
+    },
+    {
+      "label": "Prover quality multiplier (50% on >5% miss)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_quality_multiplier",
+      "community": 0,
+      "norm_label": "prover quality multiplier (50% on >5% miss)"
+    },
+    {
+      "label": "Per-piece redundancy cap (default 4)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_redundancy_cap",
+      "community": 0,
+      "norm_label": "per-piece redundancy cap (default 4)"
+    },
+    {
+      "label": "Self-dealing prohibition",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_anti_self_dealing",
+      "community": 0,
+      "norm_label": "self-dealing prohibition"
+    },
+    {
+      "label": "30-day emission vesting buffer",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_30d_vesting_buffer",
+      "community": 0,
+      "norm_label": "30-day emission vesting buffer"
+    },
+    {
+      "label": "SAFT private round (12% / 12M)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_saft_round",
+      "community": 3,
+      "norm_label": "saft private round (12% / 12m)"
+    },
+    {
+      "label": "Public LBP at TGE (6% / 6M)",
+      "file_type": "document",
+      "source_file": "spec/token-economics.md",
+      "id": "concept_lbp_public_sale",
+      "community": 3,
+      "norm_label": "public lbp at tge (6% / 6m)"
+    },
+    {
+      "label": "PROVA governance (1-token-1-vote)",
+      "file_type": "document",
+      "source_file": "spec/governance.md",
+      "id": "concept_governance",
+      "community": 3,
+      "norm_label": "prova governance (1-token-1-vote)"
+    },
+    {
+      "label": "2-day parameter timelock",
+      "file_type": "document",
+      "source_file": "spec/governance.md",
+      "id": "concept_param_timelock",
+      "community": 3,
+      "norm_label": "2-day parameter timelock"
+    },
+    {
+      "label": "7-day contract upgrade timelock",
+      "file_type": "document",
+      "source_file": "spec/governance.md",
+      "id": "concept_upgrade_timelock",
+      "community": 3,
+      "norm_label": "7-day contract upgrade timelock"
+    },
+    {
+      "label": "5-of-9 multisig emergency pause",
+      "file_type": "document",
+      "source_file": "spec/governance.md",
+      "id": "concept_emergency_pause",
+      "community": 0,
+      "norm_label": "5-of-9 multisig emergency pause"
+    },
+    {
+      "label": "Adversary threat model",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_threat_model",
+      "community": 0,
+      "norm_label": "adversary threat model"
+    },
+    {
+      "label": "A1: prover fails to store",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_a1_failure_to_store",
+      "community": 4,
+      "norm_label": "a1: prover fails to store"
+    },
+    {
+      "label": "A2: self-dealing",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_a2_self_dealing",
+      "community": 0,
+      "norm_label": "a2: self-dealing"
+    },
+    {
+      "label": "A3: replication double-claim",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_a3_replication_doubleclaim",
+      "community": 0,
+      "norm_label": "a3: replication double-claim"
+    },
+    {
+      "label": "A4: Sybil identity",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_a4_sybil",
+      "community": 7,
+      "norm_label": "a4: sybil identity"
+    },
+    {
+      "label": "A5: wash uploads",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_a5_wash_uploads",
+      "community": 0,
+      "norm_label": "a5: wash uploads"
+    },
+    {
+      "label": "A6: free-tier exploitation",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_a6_free_tier_exploit",
+      "community": 0,
+      "norm_label": "a6: free-tier exploitation"
+    },
+    {
+      "label": "A7: fast-churn",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_a7_fast_churn",
+      "community": 0,
+      "norm_label": "a7: fast-churn"
+    },
+    {
+      "label": "A8: CID poisoning",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_a8_cid_poisoning",
+      "community": 5,
+      "norm_label": "a8: cid poisoning"
+    },
+    {
+      "label": "A9: token-secret theft",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_a9_token_secret_theft",
+      "community": 2,
+      "norm_label": "a9: token-secret theft"
+    },
+    {
+      "label": "A10: smart-contract bug",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_a10_smart_contract_bug",
+      "community": 0,
+      "norm_label": "a10: smart-contract bug"
+    },
+    {
+      "label": "Pre-deployment audit checklist",
+      "file_type": "document",
+      "source_file": "spec/security-audit-checklist.md",
+      "id": "concept_audit_checklist",
+      "community": 0,
+      "norm_label": "pre-deployment audit checklist"
+    },
+    {
+      "label": "External audit (tier-1 firm)",
+      "file_type": "document",
+      "source_file": "spec/security-audit-checklist.md",
+      "id": "concept_external_audit",
+      "community": 0,
+      "norm_label": "external audit (tier-1 firm)"
+    },
+    {
+      "label": "Tier-gated identity attestation",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_identity_attestation",
+      "community": 7,
+      "norm_label": "tier-gated identity attestation"
+    },
+    {
+      "label": "Hobby tier (\u2264100 TB, pseudonymous)",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_hobby_tier",
+      "community": 7,
+      "norm_label": "hobby tier (\u2264100 tb, pseudonymous)"
+    },
+    {
+      "label": "Prosumer tier (100 TB-5 PB, ENS/EAS)",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_prosumer_tier",
+      "community": 7,
+      "norm_label": "prosumer tier (100 tb-5 pb, ens/eas)"
+    },
+    {
+      "label": "Enterprise tier (>5 PB, KYB)",
+      "file_type": "document",
+      "source_file": "spec/security-threat-model.md",
+      "id": "concept_enterprise_tier",
+      "community": 7,
+      "norm_label": "enterprise tier (>5 pb, kyb)"
+    }
+  ],
+  "links": [
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/pdp-integration.md",
+      "weight": 1.0,
+      "_src": "concept_pdp",
+      "_tgt": "concept_piece_cid",
+      "source": "concept_pdp",
+      "target": "concept_piece_cid"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/pdp-integration.md",
+      "weight": 1.0,
+      "_src": "concept_pdp",
+      "_tgt": "concept_challenge",
+      "source": "concept_pdp",
+      "target": "concept_challenge"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/checkpoint-anchoring.md",
+      "weight": 1.0,
+      "_src": "concept_checkpoint",
+      "_tgt": "concept_pdp",
+      "source": "concept_pdp",
+      "target": "concept_checkpoint"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/data-availability.md",
+      "weight": 1.0,
+      "_src": "concept_da_sampling",
+      "_tgt": "concept_pdp",
+      "source": "concept_pdp",
+      "target": "concept_da_sampling"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a1_failure_to_store",
+      "_tgt": "concept_pdp",
+      "source": "concept_pdp",
+      "target": "concept_a1_failure_to_store"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/pdp-integration.md",
+      "weight": 1.0,
+      "_src": "concept_piece_cid",
+      "_tgt": "concept_fr32_padding",
+      "source": "concept_piece_cid",
+      "target": "concept_fr32_padding"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/pdp-integration.md",
+      "weight": 1.0,
+      "_src": "concept_piece_cid",
+      "_tgt": "concept_trunc254",
+      "source": "concept_piece_cid",
+      "target": "concept_trunc254"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_baga_cid_required",
+      "_tgt": "concept_piece_cid",
+      "source": "concept_piece_cid",
+      "target": "concept_baga_cid_required"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_cid_mismatch_check",
+      "_tgt": "concept_piece_cid",
+      "source": "concept_piece_cid",
+      "target": "concept_cid_mismatch_check"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a8_cid_poisoning",
+      "_tgt": "concept_piece_cid",
+      "source": "concept_piece_cid",
+      "target": "concept_a8_cid_poisoning"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/pdp-integration.md",
+      "weight": 1.0,
+      "_src": "concept_challenge",
+      "_tgt": "concept_merkle_inclusion_proof",
+      "source": "concept_merkle_inclusion_proof",
+      "target": "concept_challenge"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/pdp-integration.md",
+      "weight": 1.0,
+      "_src": "concept_challenge",
+      "_tgt": "concept_challenge_cadence",
+      "source": "concept_challenge",
+      "target": "concept_challenge_cadence"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/pdp-integration.md",
+      "weight": 1.0,
+      "_src": "concept_challenge",
+      "_tgt": "concept_response_window",
+      "source": "concept_challenge",
+      "target": "concept_response_window"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/marketplace.md",
+      "weight": 1.0,
+      "_src": "concept_marketplace_contract",
+      "_tgt": "concept_proof_verifier_uups",
+      "source": "concept_proof_verifier_uups",
+      "target": "concept_marketplace_contract"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/governance.md",
+      "weight": 1.0,
+      "_src": "concept_governance",
+      "_tgt": "concept_proof_verifier_uups",
+      "source": "concept_proof_verifier_uups",
+      "target": "concept_governance"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/governance.md",
+      "weight": 1.0,
+      "_src": "concept_upgrade_timelock",
+      "_tgt": "concept_proof_verifier_uups",
+      "source": "concept_proof_verifier_uups",
+      "target": "concept_upgrade_timelock"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/checkpoint-anchoring.md",
+      "weight": 1.0,
+      "_src": "concept_checkpoint",
+      "_tgt": "concept_anchor_cadence",
+      "source": "concept_checkpoint",
+      "target": "concept_anchor_cadence"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/checkpoint-anchoring.md",
+      "weight": 1.0,
+      "_src": "concept_checkpoint",
+      "_tgt": "concept_spot_check",
+      "source": "concept_checkpoint",
+      "target": "concept_spot_check"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "spec/checkpoint-anchoring.md",
+      "weight": 0.8,
+      "_src": "concept_checkpoint",
+      "_tgt": "concept_zk_aggregation",
+      "source": "concept_checkpoint",
+      "target": "concept_zk_aggregation"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "spec/data-availability.md",
+      "weight": 0.7,
+      "_src": "concept_da_sampling",
+      "_tgt": "concept_zk_aggregation",
+      "source": "concept_zk_aggregation",
+      "target": "concept_da_sampling"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/data-availability.md",
+      "weight": 1.0,
+      "_src": "concept_da_sampling",
+      "_tgt": "concept_sampler",
+      "source": "concept_da_sampling",
+      "target": "concept_sampler"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/data-availability.md",
+      "weight": 1.0,
+      "_src": "concept_da_sampling",
+      "_tgt": "concept_retrievability_threshold",
+      "source": "concept_da_sampling",
+      "target": "concept_retrievability_threshold"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/data-availability.md",
+      "weight": 1.0,
+      "_src": "concept_da_sampling",
+      "_tgt": "concept_dispute_window",
+      "source": "concept_da_sampling",
+      "target": "concept_dispute_window"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/marketplace.md",
+      "weight": 1.0,
+      "_src": "concept_deal",
+      "_tgt": "concept_deal_state_machine",
+      "source": "concept_deal",
+      "target": "concept_deal_state_machine"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/marketplace.md",
+      "weight": 1.0,
+      "_src": "concept_deal",
+      "_tgt": "concept_marketplace_contract",
+      "source": "concept_deal",
+      "target": "concept_marketplace_contract"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/marketplace.md",
+      "weight": 1.0,
+      "_src": "concept_deal",
+      "_tgt": "concept_usdc_escrow",
+      "source": "concept_deal",
+      "target": "concept_usdc_escrow"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/marketplace.md",
+      "weight": 1.0,
+      "_src": "concept_deal",
+      "_tgt": "concept_streaming_release",
+      "source": "concept_deal",
+      "target": "concept_streaming_release"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/marketplace.md",
+      "weight": 1.0,
+      "_src": "concept_deal",
+      "_tgt": "concept_protocol_fee",
+      "source": "concept_deal",
+      "target": "concept_protocol_fee"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/marketplace.md",
+      "weight": 1.0,
+      "_src": "concept_fault_deal",
+      "_tgt": "concept_deal_state_machine",
+      "source": "concept_deal_state_machine",
+      "target": "concept_fault_deal"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/event-schema.md",
+      "weight": 1.0,
+      "_src": "concept_event_schema",
+      "_tgt": "concept_marketplace_contract",
+      "source": "concept_marketplace_contract",
+      "target": "concept_event_schema"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/marketplace.md",
+      "weight": 1.0,
+      "_src": "concept_fault_deal",
+      "_tgt": "concept_max_proof_gap",
+      "source": "concept_max_proof_gap",
+      "target": "concept_fault_deal"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a1_failure_to_store",
+      "_tgt": "concept_max_proof_gap",
+      "source": "concept_max_proof_gap",
+      "target": "concept_a1_failure_to_store"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/marketplace.md",
+      "weight": 1.0,
+      "_src": "concept_fault_deal",
+      "_tgt": "concept_slashing",
+      "source": "concept_fault_deal",
+      "target": "concept_slashing"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_fee_router",
+      "_tgt": "concept_protocol_fee",
+      "source": "concept_protocol_fee",
+      "target": "concept_fee_router"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/governance.md",
+      "weight": 1.0,
+      "_src": "concept_governance",
+      "_tgt": "concept_protocol_fee",
+      "source": "concept_protocol_fee",
+      "target": "concept_governance"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/event-schema.md",
+      "weight": 1.0,
+      "_src": "concept_event_schema",
+      "_tgt": "concept_indexer",
+      "source": "concept_event_schema",
+      "target": "concept_indexer"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/network-protocol.md",
+      "weight": 1.0,
+      "_src": "concept_prover_endpoint",
+      "_tgt": "concept_https_only",
+      "source": "concept_https_only",
+      "target": "concept_prover_endpoint"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/network-protocol.md",
+      "weight": 1.0,
+      "_src": "concept_retrieval_headers",
+      "_tgt": "concept_https_only",
+      "source": "concept_https_only",
+      "target": "concept_retrieval_headers"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/network-protocol.md",
+      "weight": 1.0,
+      "_src": "concept_replicate_for",
+      "_tgt": "concept_prover_endpoint",
+      "source": "concept_prover_endpoint",
+      "target": "concept_replicate_for"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "spec/network-protocol.md",
+      "weight": 0.85,
+      "_src": "concept_retrieval_headers",
+      "_tgt": "concept_csp_global",
+      "source": "concept_retrieval_headers",
+      "target": "concept_csp_global"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/network-protocol.md",
+      "weight": 1.0,
+      "_src": "concept_range_requests",
+      "_tgt": "concept_retrieval_headers",
+      "source": "concept_retrieval_headers",
+      "target": "concept_range_requests"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "spec/api-gateway.md",
+      "weight": 0.9,
+      "_src": "concept_retrieval_endpoint",
+      "_tgt": "concept_retrieval_headers",
+      "source": "concept_retrieval_headers",
+      "target": "concept_retrieval_endpoint"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_api_gateway",
+      "_tgt": "concept_bearer_only_auth",
+      "source": "concept_api_gateway",
+      "target": "concept_bearer_only_auth"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_api_gateway",
+      "_tgt": "concept_origin_csrf_guard",
+      "source": "concept_api_gateway",
+      "target": "concept_origin_csrf_guard"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_api_gateway",
+      "_tgt": "concept_magic_link",
+      "source": "concept_api_gateway",
+      "target": "concept_magic_link"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_api_gateway",
+      "_tgt": "concept_upload_endpoint",
+      "source": "concept_api_gateway",
+      "target": "concept_upload_endpoint"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_api_gateway",
+      "_tgt": "concept_retrieval_endpoint",
+      "source": "concept_api_gateway",
+      "target": "concept_retrieval_endpoint"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_api_gateway",
+      "_tgt": "concept_csp_global",
+      "source": "concept_api_gateway",
+      "target": "concept_csp_global"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_api_gateway",
+      "_tgt": "concept_abuse_report",
+      "source": "concept_api_gateway",
+      "target": "concept_abuse_report"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 0.7,
+      "_src": "concept_a9_token_secret_theft",
+      "_tgt": "concept_bearer_only_auth",
+      "source": "concept_bearer_only_auth",
+      "target": "concept_a9_token_secret_theft"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "spec/api-gateway.md",
+      "weight": 0.7,
+      "_src": "concept_origin_csrf_guard",
+      "_tgt": "concept_a9_token_secret_theft",
+      "source": "concept_origin_csrf_guard",
+      "target": "concept_a9_token_secret_theft"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_upload_endpoint",
+      "_tgt": "concept_baga_cid_required",
+      "source": "concept_upload_endpoint",
+      "target": "concept_baga_cid_required"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_upload_endpoint",
+      "_tgt": "concept_cid_mismatch_check",
+      "source": "concept_upload_endpoint",
+      "target": "concept_cid_mismatch_check"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/api-gateway.md",
+      "weight": 1.0,
+      "_src": "concept_upload_endpoint",
+      "_tgt": "concept_rate_limit_60_min",
+      "source": "concept_upload_endpoint",
+      "target": "concept_rate_limit_60_min"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a8_cid_poisoning",
+      "_tgt": "concept_cid_mismatch_check",
+      "source": "concept_cid_mismatch_check",
+      "target": "concept_a8_cid_poisoning"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_prova_token",
+      "_tgt": "concept_allocation_45_50_5",
+      "source": "concept_prova_token",
+      "target": "concept_allocation_45_50_5"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_fee_router",
+      "_tgt": "concept_prova_token",
+      "source": "concept_prova_token",
+      "target": "concept_fee_router"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/governance.md",
+      "weight": 1.0,
+      "_src": "concept_governance",
+      "_tgt": "concept_prova_token",
+      "source": "concept_prova_token",
+      "target": "concept_governance"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_allocation_45_50_5",
+      "_tgt": "concept_prover_emission",
+      "source": "concept_allocation_45_50_5",
+      "target": "concept_prover_emission"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_allocation_45_50_5",
+      "_tgt": "concept_saft_round",
+      "source": "concept_allocation_45_50_5",
+      "target": "concept_saft_round"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_allocation_45_50_5",
+      "_tgt": "concept_lbp_public_sale",
+      "source": "concept_allocation_45_50_5",
+      "target": "concept_lbp_public_sale"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_prover_emission",
+      "_tgt": "concept_emission_year_curve",
+      "source": "concept_prover_emission",
+      "target": "concept_emission_year_curve"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_prover_emission",
+      "_tgt": "concept_quality_multiplier",
+      "source": "concept_prover_emission",
+      "target": "concept_quality_multiplier"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_prover_emission",
+      "_tgt": "concept_redundancy_cap",
+      "source": "concept_prover_emission",
+      "target": "concept_redundancy_cap"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_prover_emission",
+      "_tgt": "concept_anti_self_dealing",
+      "source": "concept_prover_emission",
+      "target": "concept_anti_self_dealing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_prover_emission",
+      "_tgt": "concept_30d_vesting_buffer",
+      "source": "concept_prover_emission",
+      "target": "concept_30d_vesting_buffer"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_prover_stake",
+      "_tgt": "concept_min_stake_per_gib",
+      "source": "concept_prover_stake",
+      "target": "concept_min_stake_per_gib"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_prover_stake",
+      "_tgt": "concept_usdc_floor",
+      "source": "concept_prover_stake",
+      "target": "concept_usdc_floor"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_prover_stake",
+      "_tgt": "concept_grace_window_7d",
+      "source": "concept_prover_stake",
+      "target": "concept_grace_window_7d"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_prover_stake",
+      "_tgt": "concept_slashing",
+      "source": "concept_prover_stake",
+      "target": "concept_slashing"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a1_failure_to_store",
+      "_tgt": "concept_slashing",
+      "source": "concept_slashing",
+      "target": "concept_a1_failure_to_store"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_fee_router",
+      "_tgt": "concept_fee_router_modes",
+      "source": "concept_fee_router",
+      "target": "concept_fee_router_modes"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md",
+      "weight": 1.0,
+      "_src": "concept_fee_router",
+      "_tgt": "concept_uniswap_v3_pool",
+      "source": "concept_fee_router",
+      "target": "concept_uniswap_v3_pool"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/governance.md",
+      "weight": 1.0,
+      "_src": "concept_governance",
+      "_tgt": "concept_redundancy_cap",
+      "source": "concept_redundancy_cap",
+      "target": "concept_governance"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a2_self_dealing",
+      "_tgt": "concept_redundancy_cap",
+      "source": "concept_redundancy_cap",
+      "target": "concept_a2_self_dealing"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a3_replication_doubleclaim",
+      "_tgt": "concept_redundancy_cap",
+      "source": "concept_redundancy_cap",
+      "target": "concept_a3_replication_doubleclaim"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a5_wash_uploads",
+      "_tgt": "concept_redundancy_cap",
+      "source": "concept_redundancy_cap",
+      "target": "concept_a5_wash_uploads"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a2_self_dealing",
+      "_tgt": "concept_anti_self_dealing",
+      "source": "concept_anti_self_dealing",
+      "target": "concept_a2_self_dealing"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 0.7,
+      "_src": "concept_a6_free_tier_exploit",
+      "_tgt": "concept_anti_self_dealing",
+      "source": "concept_anti_self_dealing",
+      "target": "concept_a6_free_tier_exploit"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a7_fast_churn",
+      "_tgt": "concept_30d_vesting_buffer",
+      "source": "concept_30d_vesting_buffer",
+      "target": "concept_a7_fast_churn"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/governance.md",
+      "weight": 1.0,
+      "_src": "concept_governance",
+      "_tgt": "concept_param_timelock",
+      "source": "concept_governance",
+      "target": "concept_param_timelock"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/governance.md",
+      "weight": 1.0,
+      "_src": "concept_governance",
+      "_tgt": "concept_upgrade_timelock",
+      "source": "concept_governance",
+      "target": "concept_upgrade_timelock"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/governance.md",
+      "weight": 1.0,
+      "_src": "concept_governance",
+      "_tgt": "concept_emergency_pause",
+      "source": "concept_governance",
+      "target": "concept_emergency_pause"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a10_smart_contract_bug",
+      "_tgt": "concept_emergency_pause",
+      "source": "concept_emergency_pause",
+      "target": "concept_a10_smart_contract_bug"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_threat_model",
+      "_tgt": "concept_a1_failure_to_store",
+      "source": "concept_threat_model",
+      "target": "concept_a1_failure_to_store"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_threat_model",
+      "_tgt": "concept_a2_self_dealing",
+      "source": "concept_threat_model",
+      "target": "concept_a2_self_dealing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_threat_model",
+      "_tgt": "concept_a3_replication_doubleclaim",
+      "source": "concept_threat_model",
+      "target": "concept_a3_replication_doubleclaim"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_threat_model",
+      "_tgt": "concept_a4_sybil",
+      "source": "concept_threat_model",
+      "target": "concept_a4_sybil"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_threat_model",
+      "_tgt": "concept_a5_wash_uploads",
+      "source": "concept_threat_model",
+      "target": "concept_a5_wash_uploads"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_threat_model",
+      "_tgt": "concept_a6_free_tier_exploit",
+      "source": "concept_threat_model",
+      "target": "concept_a6_free_tier_exploit"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_threat_model",
+      "_tgt": "concept_a7_fast_churn",
+      "source": "concept_threat_model",
+      "target": "concept_a7_fast_churn"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_threat_model",
+      "_tgt": "concept_a8_cid_poisoning",
+      "source": "concept_threat_model",
+      "target": "concept_a8_cid_poisoning"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_threat_model",
+      "_tgt": "concept_a9_token_secret_theft",
+      "source": "concept_threat_model",
+      "target": "concept_a9_token_secret_theft"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_threat_model",
+      "_tgt": "concept_a10_smart_contract_bug",
+      "source": "concept_threat_model",
+      "target": "concept_a10_smart_contract_bug"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "spec/security-audit-checklist.md",
+      "weight": 0.85,
+      "_src": "concept_audit_checklist",
+      "_tgt": "concept_threat_model",
+      "source": "concept_threat_model",
+      "target": "concept_audit_checklist"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a4_sybil",
+      "_tgt": "concept_identity_attestation",
+      "source": "concept_a4_sybil",
+      "target": "concept_identity_attestation"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_a10_smart_contract_bug",
+      "_tgt": "concept_external_audit",
+      "source": "concept_a10_smart_contract_bug",
+      "target": "concept_external_audit"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-audit-checklist.md",
+      "weight": 1.0,
+      "_src": "concept_audit_checklist",
+      "_tgt": "concept_external_audit",
+      "source": "concept_audit_checklist",
+      "target": "concept_external_audit"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_identity_attestation",
+      "_tgt": "concept_hobby_tier",
+      "source": "concept_identity_attestation",
+      "target": "concept_hobby_tier"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_identity_attestation",
+      "_tgt": "concept_prosumer_tier",
+      "source": "concept_identity_attestation",
+      "target": "concept_prosumer_tier"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md",
+      "weight": 1.0,
+      "_src": "concept_identity_attestation",
+      "_tgt": "concept_enterprise_tier",
+      "source": "concept_identity_attestation",
+      "target": "concept_enterprise_tier"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "hp_pdp_protocol",
+      "label": "PDP protocol stack",
+      "nodes": [
+        "concept_pdp",
+        "concept_piece_cid",
+        "concept_challenge",
+        "concept_merkle_inclusion_proof",
+        "concept_proof_verifier_uups"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/pdp-integration.md"
+    },
+    {
+      "id": "hp_deal_lifecycle",
+      "label": "Deal lifecycle on-chain",
+      "nodes": [
+        "concept_deal",
+        "concept_marketplace_contract",
+        "concept_usdc_escrow",
+        "concept_streaming_release",
+        "concept_fault_deal",
+        "concept_deal_state_machine"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/marketplace.md"
+    },
+    {
+      "id": "hp_emission_anti_gaming",
+      "label": "Prover-emission anti-gaming protections",
+      "nodes": [
+        "concept_prover_emission",
+        "concept_anti_self_dealing",
+        "concept_redundancy_cap",
+        "concept_30d_vesting_buffer",
+        "concept_quality_multiplier"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md"
+    },
+    {
+      "id": "hp_fee_burn_loop",
+      "label": "USDC fee \u2192 PROVA burn loop",
+      "nodes": [
+        "concept_protocol_fee",
+        "concept_fee_router",
+        "concept_fee_router_modes",
+        "concept_uniswap_v3_pool",
+        "concept_prova_token"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/token-economics.md"
+    },
+    {
+      "id": "hp_governance_timelock_set",
+      "label": "Governance timelock structure",
+      "nodes": [
+        "concept_governance",
+        "concept_param_timelock",
+        "concept_upgrade_timelock",
+        "concept_emergency_pause"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/governance.md"
+    },
+    {
+      "id": "hp_threat_table",
+      "label": "Adversary attack catalog (A1-A10)",
+      "nodes": [
+        "concept_threat_model",
+        "concept_a1_failure_to_store",
+        "concept_a2_self_dealing",
+        "concept_a3_replication_doubleclaim",
+        "concept_a4_sybil",
+        "concept_a5_wash_uploads",
+        "concept_a6_free_tier_exploit",
+        "concept_a7_fast_churn",
+        "concept_a8_cid_poisoning",
+        "concept_a9_token_secret_theft",
+        "concept_a10_smart_contract_bug"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md"
+    },
+    {
+      "id": "hp_provider_tiers",
+      "label": "Identity attestation tier ladder",
+      "nodes": [
+        "concept_identity_attestation",
+        "concept_hobby_tier",
+        "concept_prosumer_tier",
+        "concept_enterprise_tier"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "spec/security-threat-model.md"
+    }
+  ]
+}

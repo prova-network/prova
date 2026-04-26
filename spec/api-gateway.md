@@ -1,283 +1,139 @@
-# SPEC-024: API Gateway Specification
+# 4.2 API gateway
 
-**Status:** Final
-**Authors:** Capri (autonomous build)
-**Created:** 2026-03-04
+The public REST surface served at `prova.network/api/*`. The gateway is a Cloudflare Pages Functions deployment that fronts the marketplace, the staging backend, and the user-facing token system.
 
-## 1. Overview
+The full reference (every endpoint with examples) is on the docs site at [docs.prova.network/api](https://docs.prova.network/api). This section is the spec — what each endpoint commits to.
 
-The Prova API Gateway provides an HTTP interface for external clients to submit inference requests, query job status, list available models, manage webhooks, and integrate with the Prova network without running a full node. It serves as the primary entry point for application developers.
-
-## 2. Design Goals
-
-- **Simplicity:** RESTful JSON API with minimal required fields
-- **Security:** API key authentication with per-key permissions and rate limiting
-- **Observability:** Webhook-based async notifications for job lifecycle events
-- **Composability:** Thin translation layer between HTTP and the internal scheduler — no business logic duplication
-
-## 3. Authentication
-
-### 3.1 API Keys
-
-All requests MUST include an API key via the `X-API-Key` header or `api_key` query parameter.
+## 4.2.1 Base URL
 
 ```
-X-API-Key: prova_live_a1b2c3d4e5f6...
+https://prova.network/api
 ```
 
-Keys have the following properties:
+All endpoints accept and return `application/json` unless explicitly noted (uploads accept any `content-type`; piece retrieval through `/p/{cid}` returns the original bytes).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `key` | string | Opaque token, prefix `prova_live_` (production) or `prova_test_` (testnet) |
-| `owner` | string | Account address of the key holder |
-| `permissions` | string[] | Subset of: `submit_inference`, `query_status`, `list_models`, `cancel_job`, `admin` |
-| `rate_limit` | object | `{ max_requests: u64, window_secs: u64 }` |
-| `created_at` | u64 | Unix epoch seconds |
-| `enabled` | bool | Disabled keys receive HTTP 403 |
+## 4.2.2 Authentication
 
-### 3.2 Permission Model
-
-| Permission | Grants |
-|------------|--------|
-| `submit_inference` | POST /v1/inference |
-| `query_status` | GET /v1/inference/{job_id} |
-| `list_models` | GET /v1/models |
-| `cancel_job` | DELETE /v1/inference/{job_id} |
-| `admin` | All endpoints + key management |
-
-Requests to endpoints without the required permission return `403 Forbidden`.
-
-### 3.3 Rate Limiting
-
-Each API key has an independent sliding window rate limiter:
-
-- Window: configurable per key (default 60s)
-- Max requests: configurable per key (default 100)
-- On exceeded: HTTP 429 with `Retry-After` header (seconds until window resets)
-- Window resets when `now - window_start >= window_secs`
-
-Rate limit headers on every response:
+Bearer-token only. The gateway MUST NOT accept `?token=` query-string authentication on any endpoint (closed; F-02 in the security audit).
 
 ```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 73
-X-RateLimit-Reset: 1709553600
+Authorization: Bearer <pk_live_…>
 ```
 
-## 4. Endpoints
+Tokens are JWTs signed with HMAC-SHA-256 over the gateway secret. Token lifetime: 1 year, with a published revocation list. Token issuance is described in §4.2.4.
 
-Base URL: `https://{gateway-host}/v1/`
+## 4.2.3 Origin / CSRF guard
 
-### 4.1 Health Check
+Mutating endpoints (`POST`, `PUT`, `DELETE`) MUST verify the `Origin` or `Referer` header against a same-site allowlist:
 
-```
-GET /v1/health
-```
+- `prova.network`
+- `www.prova.network`
+- `*.prova-network.pages.dev` (preview deploys)
 
-Response `200`:
-```json
-{ "status": "healthy" }
-```
+CLI / SDK callers without an Origin header MAY be allowed only on endpoints that accept Bearer authentication.
 
-No authentication required in permissive mode; requires valid key in strict mode (default).
+## 4.2.4 Magic-link sign-in
 
-### 4.2 List Models
+Two-step flow:
 
 ```
-GET /v1/models
+POST /api/auth/start  { email, label?, returnUrl? }
+  → 200 { sent: true, email, expiresIn: 900, challenge }
+
+POST /api/auth/verify { challenge } | { email, code }
+  → 200 { token, userId, email, scopes, quotaMb, expiresAt, returnUrl }
 ```
 
-Response `200`:
-```json
-{
-  "models": [
-    {
-      "id": "llama-7b",
-      "name": "LLaMA 7B",
-      "providers": 12,
-      "avg_latency_ms": 340,
-      "price_per_token": "0.00001"
-    }
-  ]
-}
-```
+`/start` is rate-limited to 5 per IP and 5 per email in any 15-minute window. The challenge is single-use and burned on verify (regardless of success). The 6-digit code has at most 5 attempts before the challenge is invalidated.
 
-### 4.3 Submit Inference
+## 4.2.5 Upload
 
 ```
-POST /v1/inference
-Content-Type: application/json
+POST /api/upload?cid={piece-cid}
+Authorization: Bearer <pk_live_…>   (optional; without auth, sponsored tier)
+Content-Type: <mime>
+X-Filename: <filename>
+
+<binary body>
 ```
 
-Request body:
-```json
-{
-  "model_id": "llama-7b",
-  "input": "What is the capital of France?",
-  "max_tokens": 256,
-  "callback_url": "https://example.com/webhook"  // optional
-}
-```
+Constraints:
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `model_id` | yes | Must match a registered model |
-| `input` | yes | UTF-8 input text |
-| `max_tokens` | no | Default 256, max 4096 |
-| `callback_url` | no | Per-request webhook URL for completion |
+- The `cid` query parameter MUST be a Filecoin piece-CID (matches `^baga[a-z0-9]{4,76}$`). Older `bafy…` SHA-256 stubs are rejected with 400 `invalid_cid`.
+- File size limits:
+  - Sponsored (no auth): 100 MB / file, 200 MB / IP / 24h
+  - Authenticated: 5 GiB / file, daily quota per token
+- The gateway MUST reject the upload with 422 `cid_mismatch` if the bytes received don't hash to the claimed CID.
+- The gateway MUST consult an IP ban list before processing.
+- Per-IP rate limit: 60 upload calls per minute.
 
-Response `201`:
-```json
-{
-  "job_id": "job-000001",
-  "status": "queued",
-  "model": "llama-7b"
-}
-```
-
-Errors:
-- `400` — missing body, invalid JSON, unknown model, max_tokens out of range
-- `403` — missing `submit_inference` permission
-- `429` — rate limited
-
-### 4.4 Query Job Status
-
-```
-GET /v1/inference/{job_id}
-```
-
-Response `200`:
-```json
-{
-  "job_id": "job-000001",
-  "status": "completed",
-  "output": "The capital of France is Paris.",
-  "model": "llama-7b",
-  "created_at": 1709553000,
-  "completed_at": 1709553002,
-  "tokens_used": 12
-}
-```
-
-Job statuses: `queued` → `running` → `completed` | `failed` | `cancelled`
-
-### 4.5 Cancel Job
-
-```
-DELETE /v1/inference/{job_id}
-```
-
-Response `200`:
-```json
-{ "job_id": "job-000001", "status": "cancelled" }
-```
-
-Errors:
-- `400` — job already in terminal state (`completed`, `failed`, `cancelled`)
-- `404` — job not found
-
-### 4.6 Not Found
-
-All unmatched routes return:
-```json
-{ "error": "not found" }
-```
-
-## 5. Webhooks
-
-### 5.1 Registration
-
-Webhooks are registered via the admin API or node configuration.
+Successful response:
 
 ```json
 {
-  "id": "wh-abc123",
-  "url": "https://example.com/prova-events",
-  "events": ["job.completed", "job.failed"],
-  "secret": "whsec_...",
-  "active": true
+  "cid": "baga6ea4r…",
+  "dealId": "d-0x…",
+  "size": 12345,
+  "retrievalUrl": "https://prova.network/p/baga6ea4r…",
+  "term": "30 days",
+  "sponsored": true,
+  "owner": null
 }
 ```
 
-### 5.2 Delivery
-
-On matching events, the gateway POSTs to the webhook URL:
-
-```json
-{
-  "event": "job.completed",
-  "job_id": "job-000001",
-  "timestamp": 1709553002,
-  "data": {
-    "output": "The capital of France is Paris.",
-    "tokens_used": 12
-  }
-}
-```
-
-Headers:
-```
-Content-Type: application/json
-X-Prova-Signature: sha256=<HMAC-SHA256(secret, body)>
-X-Prova-Event: job.completed
-X-Prova-Delivery: <uuid>
-```
-
-### 5.3 Retry Policy
-
-- 3 attempts with exponential backoff: 1s, 5s, 25s
-- Non-2xx responses trigger retry
-- After 3 failures, webhook is marked `failed` (not disabled)
-- Signature verification: `HMAC-SHA256(webhook.secret, raw_body)`
-
-## 6. Error Format
-
-All errors use a consistent JSON envelope:
-
-```json
-{
-  "error": "description of what went wrong",
-  "code": "RATE_LIMITED",
-  "retry_after": 42
-}
-```
-
-Error codes: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `RATE_LIMITED`, `BAD_REQUEST`, `INTERNAL_ERROR`
-
-## 7. Internal Architecture
+## 4.2.6 Retrieval
 
 ```
-Client → [HTTP] → API Gateway → [internal] → Scheduler → Provider Network
-                       ↓
-                  Rate Limiter
-                       ↓
-                  Auth / Permissions
-                       ↓
-                  Route Dispatch
-                       ↓
-                  Job Store (in-memory, persisted via state trie)
-                       ↓
-                  Webhook Delivery Engine
+GET /p/{cid}
+HEAD /p/{cid}
 ```
 
-The gateway is **stateless** except for:
-1. Rate limit counters (ephemeral, can be lost on restart)
-2. Job store (persisted to chain state for durability)
+Streams the piece bytes from the staging backend. Headers MUST include:
 
-Multiple gateway instances can run behind a load balancer with shared job store.
+- `x-prova-piece-cid: <cid>`
+- `x-prova-verified: 1` if the staging server recomputed the CID at intake
+- `x-prova-source: stage` (or `r2` once R2 is enabled)
+- `content-disposition: attachment; filename=…` for non-media types
+- `content-security-policy: default-src 'none'; sandbox` for served bytes
+- `x-content-type-options: nosniff`
 
-## 8. Security Considerations
+The retrieval is publicly accessible; no authentication required.
 
-- **Key rotation:** Keys should be rotatable without downtime; old keys remain valid for a grace period
-- **TLS required:** Gateway MUST only accept HTTPS in production
-- **Input validation:** `model_id` validated against registry; `input` length bounded; `max_tokens` capped
-- **No credential forwarding:** API keys are gateway-scoped, never forwarded to providers
-- **Webhook HMAC:** Prevents spoofed delivery; clients MUST verify `X-Prova-Signature`
+## 4.2.7 User endpoints
 
-## 9. Future Extensions
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/api/usage` | GET | Quota usage for the bearer token |
+| `/api/files` | GET | List files owned by the bearer token's user |
+| `/api/tokens/list` | GET | List active tokens for the user |
+| `/api/tokens/revoke` | POST | Revoke a token by its `jti` |
 
-- **Streaming responses** via SSE (`GET /v1/inference/{job_id}/stream`)
-- **Batch inference** (`POST /v1/inference/batch`)
-- **API key self-service** via signed on-chain transactions
-- **Usage metering** and billing integration with payment channels
+All require Bearer auth.
+
+## 4.2.8 Abuse reporting
+
+```
+POST /api/abuse/report  { cid?, url?, reason, contact? }
+  → 200 { received: true, reportId, detail }
+```
+
+Public, unauthenticated. Rate-limited to 10 reports per IP per hour. Reason MUST be ≥ 20 characters. Either `cid` or `url` MUST be provided.
+
+The report is logged to KV with a 1-year TTL and forwarded to `hello@prova.network` via Resend if configured.
+
+## 4.2.9 CSP and security headers
+
+Every response from the gateway MUST include the global security headers set by `_middleware.ts`:
+
+- `content-security-policy` (allowlists self + jsdelivr + unpkg for known third-party scripts)
+- `x-content-type-options: nosniff`
+- `x-frame-options: DENY`
+- `referrer-policy: strict-origin-when-cross-origin`
+- `permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()`
+- `strict-transport-security: max-age=63072000; includeSubDomains; preload`
+- `cross-origin-opener-policy: same-origin`
+- `cross-origin-resource-policy: same-site`
+
+## 4.2.10 Source
+
+[`website/functions/api`](https://github.com/prova-network/website/tree/main/functions/api). Every endpoint above maps to a `*.ts` file in that directory.

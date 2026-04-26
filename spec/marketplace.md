@@ -1,154 +1,157 @@
-# Marketplace Specification
+# 3.1 Marketplace
 
-**Status:** Draft
-**Authors:** Capri (autonomous build)
-**Created:** 2026-03-04
+The Prova marketplace is the on-chain registry of storage deals between clients and provers. This section specifies the deal data structure, the state machine, the payment flow, and the integration points with the other contracts.
 
-## 1. Overview
+Source of truth: [`StorageMarketplace.sol`](https://github.com/prova-network/contracts/blob/main/src/StorageMarketplace.sol).
 
-The Prova Model Marketplace enables permissionless discovery of inference providers and price-matched job routing. Providers list models they serve with pricing and SLA guarantees, backed by staked collateral. Clients discover providers through filtered queries, place bids specifying maximum acceptable prices, and the marketplace matches bids to the cheapest qualifying provider.
+## 3.1.1 Deal data structure
 
-## 2. Terminology
-
-| Term | Definition |
-|------|-----------|
-| **Listing** | A provider's offer to serve inference for a specific model at stated prices |
-| **Bid** | A client's request for inference with maximum price constraints |
-| **Match** | Binding assignment of a bid to a listing; reserves one concurrency slot |
-| **Discovery** | Filtered, sorted query over active listings |
-| **Match Fee** | Protocol fee taken from each matched bid (basis points) |
-
-## 3. Listing Lifecycle
-
-### 3.1 Creation
-
-A provider creates a listing by specifying:
-
-- `model_id` — the registered model being served (must exist in Model Registry)
-- `price_per_m_input` — price per 1M input tokens (smallest denomination)
-- `price_per_m_output` — price per 1M output tokens
-- `max_concurrency` — maximum simultaneous inference requests
-- `staked_amount` — collateral posted (must meet `min_listing_stake`)
-- `latency_sla_ms` — declared p95 latency in milliseconds
-- `arch_group` — hardware architecture group (e.g., "sm90", "sm89")
-
-The listing receives a unique `ListingId` and becomes immediately discoverable.
-
-**Stake requirement:** `staked_amount >= min_listing_stake`. Listings with insufficient stake are rejected. Stake is verified against the Stake Ledger (CHAIN-002).
-
-### 3.2 Updates
-
-The listing owner may update pricing (`price_per_m_input`, `price_per_m_output`) on active listings. Only the original provider address may modify or deactivate a listing.
-
-### 3.3 Deactivation
-
-The owner may deactivate a listing at any time. Deactivated listings are excluded from discovery and bid matching but remain in state for historical queries. Active requests against a deactivated listing continue to completion.
-
-## 4. Bid Lifecycle
-
-### 4.1 Placement
-
-A client places a bid specifying:
-
-- `model_id` — requested model
-- `max_price_input` — maximum acceptable input token price
-- `max_price_output` — maximum acceptable output token price
-- `expires_at` — epoch after which the bid expires (0 = no expiry)
-
-Bids are indexed by `model_id` for efficient matching.
-
-### 4.2 Matching
-
-When `match_bid(bid_id)` is called, the marketplace:
-
-1. Validates the bid is not already matched or expired
-2. Finds all active listings for the bid's `model_id`
-3. Filters to listings with available capacity (`active_requests < max_concurrency`)
-4. Filters to listings within the bid's price constraints
-5. Selects the cheapest listing (by `price_per_m_input + price_per_m_output`)
-6. Deducts the match fee: `fee = combined_price * match_fee_bps / 10000`
-7. Increments the listing's `active_requests` count
-8. Marks the bid as matched with the assigned `ListingId`
-
-### 4.3 Completion
-
-After inference completes, `complete_inference(listing_id)` decrements `active_requests` and increments `completed_inferences` on the listing.
-
-### 4.4 Expiry
-
-Bids with `expires_at > 0` become unmatchable once `current_epoch >= expires_at`. The `expire_bids(model_id)` method garbage-collects expired unmatched bids.
-
-## 5. Discovery
-
-Clients discover providers via `DiscoveryFilter`:
-
-| Filter | Type | Description |
-|--------|------|-------------|
-| `model_id` | `ModelId` | Required. Target model. |
-| `max_price_input` | `Option<TokenPrice>` | Maximum input price |
-| `max_price_output` | `Option<TokenPrice>` | Maximum output price |
-| `min_stake` | `Option<StakeAmount>` | Minimum provider stake |
-| `max_latency_ms` | `Option<u64>` | Maximum declared latency SLA |
-| `arch_group` | `Option<String>` | Required hardware architecture |
-| `sort_by` | `SortBy` | Ordering criterion |
-| `limit` | `usize` | Maximum results returned |
-
-**Sort options:** `PriceAsc`, `PriceDesc`, `LatencyAsc`, `StakeDesc`, `CompletedDesc`.
-
-## 6. Client SDK
-
-The SDK (`sdk/src/marketplace.rs`) provides:
-
-### 6.1 Provider Scoring
-
-Each listing is enriched with a composite score computed from configurable weights:
-
-```
-score = w_price × (1M / combined_price)
-      + w_latency × (1000 / latency_ms)
-      + w_reputation × (ln(completed) + 1)
-      + w_stake × ln(staked_amount)
+```solidity
+struct Deal {
+    address client;          // who proposed the deal
+    address prover;          // who accepts and stores
+    bytes32 commpHash;       // 32-byte CommP digest of the piece
+    uint64  pieceSize;       // size in bytes of the piece (Fr32-padded)
+    uint64  startedAt;       // unix when prover accepted
+    uint64  endsAt;          // unix when deal expires
+    uint128 totalPayment;    // total USDC the client deposited (escrow)
+    uint128 paidOut;         // USDC released to prover so far
+    uint64  proofCount;      // number of valid proofs posted
+    uint64  lastProofAt;     // unix of most recent proof
+    uint256 dataSetId;       // ProofVerifier identifier for this deal
+    DealStatus status;       // see §3.1.2
+}
 ```
 
-Default weights: price 0.4, latency 0.3, reputation 0.2, stake 0.1.
+The `commpHash` is the 32-byte CommP digest, not the full CIDv1. Clients MAY pass either; the marketplace stores the digest only. Reverse-encoding to printable `baga…` is a UI concern.
 
-### 6.2 Bid Management
+## 3.1.2 Deal status
 
-- `place_bid()` — place and track client-side
-- `match_bid()` — attempt match, update local tracker
-- `bid_and_match()` — convenience: place + match in one call
-- `cancel_bid()` — client-side cancellation
-- `pending_bids()` / `matched_bids()` — portfolio queries
+```solidity
+enum DealStatus {
+    Proposed,    // client deposited escrow; awaiting prover acceptance
+    Active,      // prover accepted and posted first proof
+    Completed,   // term ended successfully; final payment released
+    Cancelled,   // client cancelled before acceptance; full refund
+    Slashed      // prover failed; client refunded, prover stake slashed
+}
+```
 
-### 6.3 Provider Comparison
+Permitted transitions:
 
-`compare_providers(a, b)` returns a `ProviderComparison` with percentage diffs on price, latency, reputation, stake, and a recommendation.
+```
+Proposed → Active     (prover acceptance triggers ProofVerifier listener)
+Proposed → Cancelled  (client cancellation)
+Active   → Completed  (deal end + completeDeal call)
+Active   → Slashed    (faultDeal triggered after MAX_PROOF_GAP)
+```
 
-## 7. Fee Structure
+No other transitions are valid. Implementations MUST revert on attempted invalid transitions.
 
-- **Match fee:** Configurable in basis points (e.g., 50 bps = 0.5%)
-- **Collected from:** The matched combined price of each bid
-- **Destination:** Protocol treasury (accumulated in `collected_fees`)
+## 3.1.3 Lifecycle
 
-## 8. Indexing
+### Propose
 
-Three indexes maintained for O(1) lookups:
+```solidity
+function proposeDeal(
+    address prover,
+    bytes32 commp,
+    uint64  pieceSize,
+    uint64  duration,
+    uint256 totalPayment
+) external returns (uint256 dealId);
+```
 
-- `model_index: ModelId → Vec<ListingId>` — discovery queries
-- `provider_index: Address → Vec<ListingId>` — provider portfolio
-- `bid_index: ModelId → Vec<BidId>` — bid matching and cleanup
+The client MUST have approved `totalPayment` of the payment token (USDC) to the marketplace. The full payment is moved into escrow at proposal time.
 
-## 9. Security Considerations
+The marketplace MUST emit `DealProposed(dealId, client, prover, commp, pieceSize, duration, totalPayment)`.
 
-- **Stake enforcement:** Prevents Sybil listing spam; minimum stake set by governance
-- **Owner-only mutations:** Only the listing provider can update pricing or deactivate
-- **Double-match prevention:** Bids can only be matched once
-- **Capacity limits:** `active_requests` bounded by `max_concurrency`
-- **Expiry garbage collection:** Prevents unbounded bid accumulation
+### Cancel (client, before acceptance)
 
-## 10. Future Extensions
+```solidity
+function cancelProposedDeal(uint256 dealId) external;
+```
 
-- **Dutch auction:** Premium model slots allocated via descending-price auction (CHAIN-028)
-- **SLA enforcement:** Automated slashing if declared latency SLA violated (integrates with CHAIN-014)
-- **Reputation integration:** Completed inference count feeds into reputation system (CHAIN-015)
-- **Cross-chain listings:** Bridge-aware listings for cross-chain inference routing (CHAIN-017)
+The client MAY cancel a deal at any time before the prover transitions it to Active. The full escrow is refunded.
+
+### Accept
+
+The prover does NOT call the marketplace directly. Acceptance is triggered when the prover calls `ProofVerifier.createDataSet(commp, ...extraData)` — the verifier's `dataSetCreated` listener calls back into `marketplace.dataSetCreated(dataSetId, prover, extraData)`. The `extraData` blob carries the `dealId`.
+
+The marketplace then:
+
+1. Verifies the prover registered in `extraData` matches the `prover` field of the deal.
+2. Checks the prover's stake covers the piece size (`proverStaking.commitBytes(prover, pieceSize)`).
+3. Sets `startedAt = block.timestamp`, `endsAt = startedAt + duration`, `status = Active`.
+4. Records the deal in `ContentRegistry`.
+5. Emits `DealAccepted(dealId, prover, dataSetId, endsAt)`.
+
+### Prove
+
+Each successful PDP proof flows through:
+
+```
+ProofVerifier.verifyProof()
+    → marketplace.possessionProven(dataSetId, ...)
+        → streaming USDC release to prover (99%) + treasury (1%)
+        → optional: ProverRewards.recordProof(prover, client, commp, pieceSize)
+        → emit ProofRecorded(dealId, proofCount, paymentReleased)
+```
+
+The streaming release is **linear in time elapsed** since the deal started, capped at `totalPayment`. A prover that posts every challenge on time receives the full payment over the term; a prover that posts late catches up on the next successful proof.
+
+### Complete
+
+After `endsAt`, anyone MAY call `completeDeal(dealId)`. The marketplace:
+
+1. Releases any remaining unpaid fraction of `totalPayment` to the prover (subject to the same 99/1 protocol fee split).
+2. Releases `pieceSize` from the prover's committed bytes via `proverStaking.releaseBytes`.
+3. Clears the active deal in `ContentRegistry`.
+4. Sets `status = Completed`.
+5. Emits `DealCompleted(dealId, finalPaidOut)`.
+
+### Fault
+
+If `block.timestamp - lastProofAt > MAX_PROOF_GAP` while the deal is Active, anyone MAY call `faultDeal(dealId)`. The marketplace:
+
+1. Sets `status = Slashed`.
+2. Refunds `totalPayment - paidOut` to the client.
+3. Slashes `slashPerFault` PROVA from the prover via `proverStaking.slash`.
+4. Releases `pieceSize` from the prover's committed bytes.
+5. Clears `ContentRegistry`.
+6. Optionally calls `proverRewards.recordMiss(prover)` for the quality multiplier.
+7. Emits `DealSlashed(dealId, prover, slashedAmount, refunded)`.
+
+`MAX_PROOF_GAP` is governance-tunable. Default: 6 hours.
+
+## 3.1.4 Payment token
+
+The marketplace's `paymentToken` is **USDC** at v1. Provers earn USDC. Clients pay USDC. Refunds are USDC.
+
+The marketplace's `treasury` is the **`FeeRouter`** address (§5.1.4). The 1% protocol fee streams there continuously and is later swapped to PROVA and burned.
+
+## 3.1.5 Stake locking
+
+When a deal transitions to Active, the prover's `committedBytes` increase by `pieceSize`. When the deal terminates (Completed or Slashed), `committedBytes` decrease by `pieceSize`.
+
+`maxCommittedBytes(prover) = staked(prover) / minStakePerGiB` — the prover MUST have enough stake to cover all active deals; the marketplace enforces this by reverting on `commitBytes` if it would exceed the cap.
+
+## 3.1.6 Concurrency and reentrancy
+
+- All state-mutating external functions are `nonReentrant`.
+- Cross-contract calls happen in a fixed order: stake → content → payment, never in a loop.
+- The optional `proverRewards.recordProof` call is wrapped in `try/catch` so a misconfigured rewards contract can never block a payment.
+
+## 3.1.7 Admin parameters
+
+| Parameter | Default | Hard cap | Set by | Timelock |
+| --- | --- | --- | --- | --- |
+| `protocolFeeBps` | 100 (1%) | 300 (3%) | governance | 2 days |
+| `slashPerFault` | 50 PROVA | governance-set | governance | 2 days |
+| `treasury` | `FeeRouter` | n/a | owner | none (admin) |
+| `proverRewards` | set at deploy | n/a | owner | none (admin) |
+| `MAX_PROOF_GAP` | 6 hours | governance-set | governance | 2 days |
+
+## 3.1.8 Events
+
+See [§3.2 Event schema](/event-schema).
