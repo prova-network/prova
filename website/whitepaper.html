@@ -1,97 +1,543 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prova Network – Whitepaper</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prova — Whitepaper</title>
+<meta name="description" content="Prova: verifiable storage anchored to Ethereum. v0.9 working draft." />
+<link rel="icon" type="image/svg+xml" href="/brand/prova-mark-small.svg" />
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#08090b;--bg2:#0d0e12;--brass:#c9a84c;--brass-dim:#9a7a30;--text:#d8d4cc;--text2:#9a968e;--text3:#5a5750;--mono:'JetBrains Mono',monospace;--serif:'Source Serif 4',Georgia,serif}
-html{background:var(--bg);color:var(--text);scroll-behavior:smooth}
-body{font-family:var(--serif);line-height:1.8}
+:root {
+  /* Brand */
+  --teal-cyan: #5DC3E5;
+  --teal-mint: #2EC4B6;
+  --teal-deep: #0F4C5C;
+  --teal-shadow: #08222B;
 
-nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,9,11,0.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(201,168,76,0.08)}
-nav .inner{max-width:800px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
-nav .logo{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--brass);letter-spacing:4px;text-decoration:none}
-nav .links{display:flex;gap:24px}
-nav .links a{font-family:var(--mono);font-size:11px;color:var(--text2);text-decoration:none;letter-spacing:2px;text-transform:uppercase;transition:color 0.2s}
-nav .links a:hover{color:var(--brass)}
+  /* Paper */
+  --paper:     #ffffff;
+  --paper-2:   #fbfcfd;
+  --paper-3:   #f4f6f8;
+  --rule:      #e5eaef;
+  --rule-2:    #cdd5dd;
 
-.paper{max-width:800px;margin:0 auto;padding:120px 24px 80px}
-.paper .meta{text-align:center;margin-bottom:60px}
-.paper .meta h1{font-family:var(--mono);font-size:28px;font-weight:800;letter-spacing:4px;margin-bottom:12px}
-.paper .meta h1 span{color:var(--brass)}
-.paper .meta .subtitle{font-size:18px;color:var(--text2);margin-bottom:16px}
-.paper .meta .info{font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:1px}
+  /* Ink */
+  --ink:       #0F1419;
+  --ink-soft:  #2b333c;
+  --ink-mute:  #5b6470;
+  --ink-faint: #8c95a0;
 
-.paper h2{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--brass);margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid rgba(201,168,76,0.1)}
-.paper h3{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--text);margin:32px 0 12px}
-.paper h4{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);margin:24px 0 8px}
-.paper p{color:var(--text2);margin-bottom:16px;font-size:16px}
-.paper strong{color:var(--text)}
-.paper ul,.paper ol{color:var(--text2);margin:0 0 16px 24px;font-size:16px}
-.paper li{margin-bottom:6px}
-.paper code{font-family:var(--mono);font-size:13px;background:var(--bg2);padding:2px 6px;border-radius:2px;color:var(--brass)}
-.paper pre{background:var(--bg2);padding:16px;overflow-x:auto;margin:16px 0;border-left:3px solid var(--brass-dim);font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text2)}
-.paper table{width:100%;border-collapse:collapse;margin:16px 0}
-.paper th{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);text-align:left;padding:8px;border-bottom:1px solid rgba(201,168,76,0.1)}
-.paper td{font-family:var(--mono);font-size:13px;padding:8px;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--text2)}
-.paper td:first-child{color:var(--text)}
-.paper blockquote{border-left:3px solid var(--brass-dim);padding:12px 16px;margin:16px 0;color:var(--text2);font-style:italic;background:var(--bg2)}
+  /* Accents */
+  --accent:    var(--teal-deep);
+  --accent-2:  var(--teal-mint);
+  --link:      #0a6c83;
 
-footer{border-top:1px solid rgba(201,168,76,0.06);padding:32px 0}
-footer .inner{max-width:800px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:center}
-footer .copy{font-family:var(--mono);font-size:11px;color:var(--text3)}
-footer a{font-family:var(--mono);font-size:11px;color:var(--text3);text-decoration:none}
-footer a:hover{color:var(--brass)}
+  /* Type */
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+          "Helvetica Neue", Helvetica, Arial, "Inter", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+  --serif: "New York", "Iowan Old Style", "Charter", "Hoefler Text", Georgia,
+           "Times New Roman", serif;
+
+  --measure: 660px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "kern", "liga", "ss01";
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+}
+body { background: var(--paper); color: var(--ink); }
+
+/* ── Top nav ─────────────────────────────────────────── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.85);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+          backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.nav-brand img { width: 22px; height: 22px; display: block; }
+.nav-brand span { font-size: 15px; }
+.nav-links { display: flex; gap: 24px; align-items: center; }
+.nav-links a {
+  font-size: 13px;
+  color: var(--ink-mute);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+.nav-links a:hover { color: var(--ink); }
+.nav-links a.cta {
+  border: 1px solid var(--rule-2);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--ink);
+}
+.nav-links a.cta:hover { border-color: var(--teal-deep); color: var(--teal-deep); }
+
+/* ── Title block ─────────────────────────────────────── */
+.title {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 64px 24px 28px;
+}
+.title .meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin-bottom: 14px;
+}
+.title h1 {
+  font-family: var(--sans);
+  font-size: clamp(32px, 4.4vw, 48px);
+  line-height: 1.08;
+  letter-spacing: -0.022em;
+  margin: 0 0 18px;
+  font-weight: 500;
+  max-width: 760px;
+}
+.title .lede {
+  font-family: var(--serif);
+  font-size: clamp(18px, 1.8vw, 22px);
+  line-height: 1.5;
+  color: var(--ink-soft);
+  max-width: 720px;
+  margin: 0;
+}
+.title .info {
+  margin-top: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.title .info span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.title .info span strong {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+/* ── Layout: TOC + paper ─────────────────────────────── */
+.layout {
+  max-width: 1100px;
+  margin: 12px auto 0;
+  padding: 0 24px 96px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 56px;
+  align-items: start;
+}
+@media (max-width: 920px) {
+  .layout { grid-template-columns: 1fr; }
+  .toc { display: none; }
+}
+
+/* ── Paper ───────────────────────────────────────────── */
+.paper {
+  font-family: var(--serif);
+  color: var(--ink-soft);
+  font-size: 17.5px;
+  line-height: 1.72;
+  max-width: var(--measure);
+}
+.paper > * + * { margin-top: 14px; }
+
+.paper h2 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  margin: 56px 0 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+}
+.paper h2:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.paper h3 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 19.5px;
+  letter-spacing: -0.008em;
+  color: var(--ink);
+  margin: 40px 0 10px;
+}
+.paper h4 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+  margin: 24px 0 6px;
+}
+.paper p { color: var(--ink-soft); }
+.paper strong { color: var(--ink); font-weight: 600; }
+.paper em { color: var(--ink-soft); }
+.paper a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(10,108,131,0.3); text-underline-offset: 3px; }
+.paper a:hover { text-decoration-color: var(--link); }
+
+.paper ul, .paper ol {
+  padding-left: 22px;
+  margin-block: 14px;
+}
+.paper li { margin-bottom: 6px; color: var(--ink-soft); }
+.paper li::marker { color: var(--ink-faint); }
+
+.paper code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: rgba(46, 196, 182, 0.08);
+  border: 1px solid rgba(15, 76, 92, 0.18);
+  padding: 1px 7px;
+  border-radius: 5px;
+  color: #073640; /* AAA contrast on white ≥ 12:1 */
+  font-weight: 500;
+}
+.paper pre {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--teal-mint);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+  margin: 18px 0;
+}
+.paper pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+.paper blockquote {
+  margin: 18px 0;
+  padding: 10px 18px;
+  border-left: 3px solid var(--teal-mint);
+  background: var(--paper-2);
+  color: var(--ink-soft);
+  font-style: italic;
+  font-family: var(--serif);
+  border-radius: 0 8px 8px 0;
+}
+
+.paper table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 22px 0;
+  font-family: var(--sans);
+  font-size: 14.5px;
+}
+.paper th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--rule-2);
+}
+.paper td {
+  padding: 12px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-soft);
+  vertical-align: top;
+}
+.paper td:first-child { color: var(--ink); font-weight: 500; }
+
+.paper hr {
+  border: 0;
+  height: 1px;
+  background: var(--rule);
+  margin: 40px 0;
+}
+
+/* Section numbers as drop-caps for h2 */
+.paper h2::before {
+  content: attr(data-num);
+  display: inline-block;
+  margin-right: 14px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--teal-deep);
+  vertical-align: 6px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* ── TOC ─────────────────────────────────────────────── */
+.toc {
+  position: sticky;
+  top: 70px;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-mute);
+  padding-left: 24px;
+  border-left: 1px solid var(--rule);
+}
+.toc-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 12px;
+}
+.toc ol { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 0 0 6px; }
+.toc li:not(.h3) { margin-top: 12px; }
+.toc li:not(.h3):first-child { margin-top: 0; }
+.toc li > a { font-weight: 500; color: var(--ink-soft); }
+.toc li.h3 { padding-left: 22px; font-size: 12.5px; margin-top: 0; }
+.toc li.h3 > a { font-weight: 400; color: var(--ink-mute); }
+.toc a.active {
+  color: var(--teal-deep);
+  border-left-color: var(--teal-mint);
+  border-left-width: 3px;
+  font-weight: 600;
+}
+.toc a {
+  color: var(--ink-mute);
+  text-decoration: none;
+  display: block;
+  padding: 2px 0;
+  border-left: 2px solid transparent;
+  padding-left: 8px;
+  margin-left: -10px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.toc a:hover { color: var(--ink); }
+.toc a.active {
+  color: var(--teal-deep);
+  border-left-color: var(--teal-mint);
+}
+
+/* ── Footer ──────────────────────────────────────────── */
+.footer {
+  border-top: 1px solid var(--rule);
+  background: var(--paper-2);
+  padding: 28px 24px;
+}
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-mute);
+}
+.footer a { color: var(--ink-mute); text-decoration: none; }
+.footer a:hover { color: var(--ink); }
+
+/* ── Print ───────────────────────────────────────────── */
+@media print {
+  .nav, .toc, .footer { display: none; }
+  .layout { grid-template-columns: 1fr; padding: 0; }
+  .paper { font-size: 11pt; line-height: 1.5; max-width: none; }
+  .title { padding: 0 0 24px; }
+  body, html { background: white; }
+  a { color: black; text-decoration: none; }
+}
+
+/* Small flourishes on the title */
+.title .stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--rule-2);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.title .stamp::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--teal-mint);
+  box-shadow: 0 0 0 3px rgba(46,196,182,0.16);
+}
 </style>
 </head>
 <body>
 
-<nav>
-  <div class="inner">
-    <a href="index.html" class="logo">PROVA</a>
-    <div class="links">
-      <a href="index.html">Home</a>
-      <a href="index.html#thesis">Thesis</a>
-      <a href="index.html#status">Status</a>
-    </div>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="/">
+      <img src="/brand/prova-mark-light.svg" alt="" />
+      <span>Prova</span>
+    </a>
+    <nav class="nav-links">
+      <a href="/">Home</a>
+      <a href="https://docs.prova.network">Docs</a>
+      <a href="https://github.com/prova-network">GitHub</a>
+      <a class="cta" href="/upload/">Try it →</a>
+    </nav>
   </div>
-</nav>
+</header>
 
-<div class="paper">
-  <div class="meta">
-    <h1>PROVA: <span>NOTES</span></h1>
-    <p class="subtitle">On verifiable, retrievable storage</p>
-    <p class="info">Working draft — 2026</p>
+<section class="title">
+  <p class="meta">Whitepaper · v0.9 · April 2026</p>
+  <h1>Verifiable storage,<br/>anchored to Ethereum.</h1>
+  <p class="lede">A thin storage primitive that puts the smallest useful unit of <em>"I have your bytes, I can prove it"</em> on a general-purpose smart-contract chain. PDP, USDC, no new chain, no new token.</p>
+  <span class="stamp">Working draft</span>
+  <div class="info" aria-label="Document metadata">
+    <span><strong>Authors</strong>Prova contributors</span>
+    <span><strong>Contact</strong>hello@prova.network</span>
+    <span><strong>Settlement</strong>USDC on Base</span>
+    <span><strong>Status</strong>Pre-testnet</span>
   </div>
+</section>
 
-  <div id="content"></div>
+<div class="layout">
+  <main id="paper" class="paper">
+    <p style="color:var(--ink-faint);font-style:italic;">Loading paper…</p>
+  </main>
+  <aside class="toc" id="toc">
+    <div class="toc-title">Contents</div>
+    <ol id="toc-list"></ol>
+  </aside>
 </div>
 
-<footer>
-  <div class="inner">
-    <div class="copy">© 2026 Prova. Research draft.</div>
-    <a href="index.html">← Back</a>
+<footer class="footer">
+  <div class="footer-inner">
+    <div>© 2026 Prova · v0.9 working draft</div>
+    <div>
+      <a href="/whitepaper-source.md">Source (Markdown)</a> ·
+      <a href="https://github.com/prova-network/prova">GitHub</a> ·
+      <a href="mailto:hello@prova.network">hello@prova.network</a>
+    </div>
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
 <script>
-fetch('whitepaper-source.md')
-  .then(r => r.text())
-  .then(md => {
-    // Skip the first few lines (title, author, date) since we have our own header
-    const lines = md.split('\n');
-    const startIdx = lines.findIndex(l => l.startsWith('## Abstract'));
-    const trimmed = startIdx >= 0 ? lines.slice(startIdx).join('\n') : md;
-    document.getElementById('content').innerHTML = marked.parse(trimmed);
-  })
-  .catch(() => {
-    document.getElementById('content').innerHTML = '<p>Failed to load. Please try again later.</p>';
+(async () => {
+  const paperEl = document.getElementById('paper');
+  const tocList = document.getElementById('toc-list');
+  let md;
+  try {
+    const r = await fetch('whitepaper-source.md');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    md = await r.text();
+  } catch (err) {
+    paperEl.innerHTML = '<p>Failed to load whitepaper source. Try refreshing.</p>';
+    return;
+  }
+
+  // Strip the leading title block (everything up to the first H2)
+  const lines = md.split('\n');
+  const startIdx = lines.findIndex(l => l.startsWith('## '));
+  const trimmed = startIdx >= 0 ? lines.slice(startIdx).join('\n') : md;
+
+  // Render
+  marked.setOptions({ headerIds: true, mangle: false, gfm: true, breaks: false });
+  paperEl.innerHTML = marked.parse(trimmed);
+
+  // Number H2s and slug them, then build TOC
+  const headings = paperEl.querySelectorAll('h2, h3');
+  let h2 = 0;
+  let h3 = 0;
+  headings.forEach(h => {
+    const id = h.textContent
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    h.id = id;
+
+    if (h.tagName === 'H2') {
+      h2++; h3 = 0;
+      // Don't number appendices
+      if (!/^Appendix/.test(h.textContent)) {
+        h.setAttribute('data-num', String(h2).padStart(2, '0'));
+      } else {
+        h.setAttribute('data-num', '·');
+      }
+      const li = document.createElement('li');
+      li.innerHTML = `<a href="#${id}">${h.textContent}</a>`;
+      tocList.appendChild(li);
+    } else if (h.tagName === 'H3') {
+      const li = document.createElement('li');
+      li.className = 'h3';
+      li.innerHTML = `<a href="#${id}">${h.textContent}</a>`;
+      tocList.appendChild(li);
+    }
   });
+
+  // Scroll-spy
+  const links = [...tocList.querySelectorAll('a')];
+  const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const a = map.get(e.target.id);
+        if (a) a.classList.add('active');
+      }
+    }
+  }, { rootMargin: '-30% 0px -55% 0px', threshold: 0 });
+  headings.forEach(h => obs.observe(h));
+})();
 </script>
+
 </body>
 </html>
