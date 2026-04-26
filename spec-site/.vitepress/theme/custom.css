@@ -50,6 +50,34 @@
 
 .VPNavBarTitle img.logo { height: 24px; }
 
+/* Hero logo: smaller, more spec-page proportions */
+.VPHomeHero .image-container .image-src {
+  max-width: 100px !important;
+  max-height: 100px !important;
+}
+.VPHomeHero .image-bg {
+  filter: blur(46px) !important;
+  opacity: 0.6;
+}
+
+/* Feature cards: deeper border so they don't disappear on white bg */
+.VPFeature .box {
+  border-radius: 14px;
+  border: 1px solid var(--vp-c-divider) !important;
+}
+.VPFeature:hover .box {
+  border-color: var(--vp-c-brand-1) !important;
+}
+
+/* "Read on GitHub" / alt buttons: teal outline for brand cohesion */
+.VPButton.alt {
+  border-color: rgba(46, 196, 182, 0.4) !important;
+}
+.VPButton.alt:hover {
+  border-color: var(--vp-c-brand-1) !important;
+  color: var(--vp-c-brand-1) !important;
+}
+
 /* ── Spec metadata badges (drawn from filecoin.io style) ─────────────── */
 
 .spec-meta {

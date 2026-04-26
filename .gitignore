@@ -66,3 +66,7 @@ docs-gitbook/.vitepress/cache/
 spec-site/node_modules/
 spec-site/.vitepress/dist/
 spec-site/.vitepress/cache/
+
+# graphify (https://github.com/safishamsi/graphify)
+graphify-out/cache/
+graphify-out/.graphify_*
