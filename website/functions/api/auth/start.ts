@@ -66,9 +66,17 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   const base = env.PROVA_PUBLIC_BASE || originRoot(origin) || 'https://prova.network';
   const link = `${base}/auth/verify?challenge=${challenge}${returnUrl ? `&return=${encodeURIComponent(returnUrl)}` : ''}`;
 
+  // From-address: prefers MAIL_FROM_EMAIL when configured (e.g.
+  // hello@prova.network once Resend verifies the domain). Falls back
+  // to Resend's shared onboarding sender so sign-in keeps working
+  // before domain verification completes.
+  const fromEmail = (env as { MAIL_FROM_EMAIL?: string }).MAIL_FROM_EMAIL || 'onboarding@resend.dev';
+  const replyTo   = (env as { MAIL_REPLY_TO?: string }).MAIL_REPLY_TO || 'hello@prova.network';
+
   const mail = await sendMail({
     to: { email },
-    from: { email: 'hello@prova.network', name: 'Prova' },
+    from: { email: fromEmail, name: 'Prova' },
+    replyTo: { email: replyTo },
     subject: `Your Prova sign-in code: ${code}`,
     content: [
       { type: 'text/plain', value: textBody(code, link) },
