@@ -1,0 +1,11 @@
+# GitBook Git Sync configuration
+# Tells GitBook how to map this repo's filesystem layout to a space.
+# https://docs.gitbook.com/integrations/git-sync
+
+root: ./
+structure:
+  readme: README.md
+  summary: SUMMARY.md
+
+# When GitBook syncs from main, it reads SUMMARY.md as the table of contents.
+# Edits in the GitBook UI are pushed back to main as commits.
