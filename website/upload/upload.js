@@ -1,7 +1,10 @@
 // Prova upload — drag-and-drop client. Talks to /api/upload.
 //
 // Stages (visible in the UI):
-//   1. hash    — compute commP-equivalent in the browser (sha256 v0; commP-real comes later)
+//   1. hash    — compute real piece-CID (CommP, Fr32-padded SHA-256 binary tree)
+//                in the browser via piece-cid.js
+
+import { computePieceCid } from './piece-cid.js';
 //   2. upload  — stream bytes to the worker, which stores to R2 + serves at /p/{cid}
 //   3. propose — sponsor wallet calls proposeDeal on Base (server-side; stubbed pre-deploy)
 //   4. accept  — sponsor prover fetches from R2, recomputes, accepts
@@ -70,7 +73,17 @@ async function handleFile(file) {
 
   try {
     setStage('hash', 'active', 'Hashing in your browser…');
-    const cid = await computeCidStub(file);
+    setStage('hash', 'active', 'Computing piece-CID (Fr32-padded SHA-256 tree)…');
+    const { cid, digestHex, paddedSize } = await computePieceCid(file, (p) => {
+      if (p.phase === 'hash') {
+        const pct = p.total > 0 ? (p.done / p.total) * 50 : 0; // hash phase = first half
+        $('#progress-fill').style.width = pct.toFixed(1) + '%';
+      } else if (p.phase === 'merkle') {
+        const pct = 50 + (p.total > 0 ? (p.done / p.total) * 50 : 0);
+        $('#progress-fill').style.width = pct.toFixed(1) + '%';
+      }
+    });
+    console.debug('piece-cid:', { cid, digestHex, paddedSize, rawSize: file.size });
     setStage('hash', 'done');
 
     setStage('upload', 'active', 'Staging bytes for the prover…');
@@ -106,17 +119,7 @@ async function handleFile(file) {
   }
 }
 
-// ── Hash (stub: sha-256 → encoded as a CIDv1 raw-codec).
-//    Real commP uses bls-signature primitives + Fr32 padding. We swap when
-//    the SDK exposes the function in-browser. The retrieval URL doesn't
-//    care which hash flavor; it just needs to be content-addressed.
-async function computeCidStub(file) {
-  const buf = await file.arrayBuffer();
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  const bytes = new Uint8Array(hash);
-  // Build a fake-but-deterministic "bafy..." string from the hash for UX
-  return 'bafy' + base32(bytes).slice(0, 52);
-}
+// Real piece-CID is provided by piece-cid.js (Fr32 + SHA-256 binary Merkle tree).
 
 // ── Upload to worker ────────────────────────────────────────────────────────
 async function uploadBytes(file, cid) {

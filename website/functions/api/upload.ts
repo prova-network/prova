@@ -36,8 +36,39 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
   const url = new URL(req.url);
   const cid = url.searchParams.get('cid');
-  if (!cid || !/^[a-z0-9]{8,80}$/i.test(cid)) {
-    return j({ error: 'invalid_cid', detail: 'cid query param is required' }, 400);
+  // F-10/F-03 alignment: enforce that the CID is a Filecoin commitment (baga… prefix).
+  // The browser SDK emits these natively; older clients shipping bafy… stubs are
+  // rejected so we don't silently accept un-verifiable uploads.
+  if (!cid || !/^baga[a-z0-9]{4,76}$/i.test(cid)) {
+    return j({
+      error: 'invalid_cid',
+      detail: 'cid query param must be a Filecoin piece-CID (baga… prefix). Older clients minting raw SHA-256 "bafy…" CIDs are no longer accepted.',
+    }, 400);
+  }
+
+  // F-15: ban list. If an IP or token has been flagged for abuse, reject.
+  const ip = req.headers.get('cf-connecting-ip') || 'unknown';
+  if (env.PROVA_RATE) {
+    const banned = await env.PROVA_RATE.get(`ban:ip:${ip}`);
+    if (banned) {
+      return j({
+        error: 'banned',
+        detail: 'This IP has been flagged for abuse. Contact hello@prova.network if you believe this is in error.',
+        reason: banned.slice(0, 200),
+      }, 403);
+    }
+  }
+
+  // F-16: per-IP request rate limit (independent of bytes-per-day).
+  // 60 upload calls per IP per minute is generous for legitimate use and
+  // expensive enough that abuse hits the wall fast.
+  if (env.PROVA_RATE) {
+    const minBucket = `req:${ip}:${Math.floor(Date.now() / 60000)}`;
+    const seen = parseInt((await env.PROVA_RATE.get(minBucket)) || '0', 10);
+    if (seen >= 60) {
+      return j({ error: 'rate_limited', detail: 'Too many upload requests. Try again in a minute.' }, 429);
+    }
+    await env.PROVA_RATE.put(minBucket, String(seen + 1), { expirationTtl: 120 });
   }
 
   // Try bearer auth. If no token, fall back to sponsored mode.
@@ -86,8 +117,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       }
     }
   } else {
-    // Sponsored: per-IP daily cap
-    const ip = req.headers.get('cf-connecting-ip') || 'unknown';
+    // Sponsored: per-IP daily cap (in bytes)
     const rateKey = `r:${ip}:${todayUTC()}`;
     if (env.PROVA_RATE) {
       const used = parseInt((await env.PROVA_RATE.get(rateKey)) || '0', 10);
@@ -130,10 +160,23 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     });
     if (!stageRes.ok) {
       const text = await stageRes.text().catch(() => '');
+      // Try to parse stage server JSON; pass through cid_mismatch verbatim
+      // so the client sees the precise reason and the computed CID.
+      let upstream: { error?: string; detail?: string; computed_cid?: string; claimed_cid?: string } = {};
+      try { upstream = JSON.parse(text); } catch {}
+      if (upstream.error === 'cid_mismatch') {
+        return j({
+          error: 'cid_mismatch',
+          detail: upstream.detail || 'Computed piece-CID does not match the CID you claimed.',
+          claimed_cid:  upstream.claimed_cid  || cid,
+          computed_cid: upstream.computed_cid,
+        }, 422);
+      }
       return j({
         error: 'stage_failed',
-        detail: `stage server rejected upload (${stageRes.status}): ${text || stageRes.statusText}`,
-      }, 502);
+        detail: `stage server rejected upload (${stageRes.status}): ${(upstream.detail || text || stageRes.statusText).slice(0, 400)}`,
+        upstreamError: upstream.error || null,
+      }, stageRes.status >= 400 && stageRes.status < 500 ? stageRes.status : 502);
     }
   } else {
     return j({ error: 'storage_offline', detail: 'No storage backend bound.' }, 503);

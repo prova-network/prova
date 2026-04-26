@@ -1,7 +1,9 @@
-// Prova Pages middleware. Routes by hostname.
+// Prova Pages middleware. Routes by hostname and applies
+// global security headers (F-13).
 //
 // - get.prova.network               -> install.sh (one-liner CLI installer)
-// - everywhere else                  -> falls through to static + functions
+// - everywhere else                  -> falls through to static + functions,
+//                                       with CSP / HSTS / etc. layered on the response
 
 interface Env {}
 
@@ -13,8 +15,51 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     return serveInstaller(ctx.request);
   }
 
-  return ctx.next();
+  // Pass through to static / function handlers, then add headers
+  const res = await ctx.next();
+  return withSecurityHeaders(res, url);
 };
+
+function withSecurityHeaders(res: Response, url: URL): Response {
+  // Don't rewrite responses that already pinned their own CSP
+  // (e.g. /p/{cid} retrievals where we want default-src 'none' sandbox).
+  const r = new Response(res.body, res);
+
+  if (!r.headers.has('content-security-policy')) {
+    // Allowlist:
+    //   - same-origin scripts
+    //   - JSDelivr for marked.js (whitepaper page)
+    //   - inline styles (we use them generously in <style> blocks)
+    //   - blob: for upload progress (canvas/file readers)
+    //   - https: images (for the Earth hero textures + brand assets)
+    //   - api endpoints on same origin
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://prova.network https://p.prova.network",
+      "worker-src 'self' blob:",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "upgrade-insecure-requests",
+    ].join('; ');
+    r.headers.set('content-security-policy', csp);
+  }
+
+  if (!r.headers.has('x-content-type-options')) r.headers.set('x-content-type-options', 'nosniff');
+  if (!r.headers.has('x-frame-options'))         r.headers.set('x-frame-options', 'DENY');
+  if (!r.headers.has('referrer-policy'))         r.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+  if (!r.headers.has('permissions-policy'))      r.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+  if (!r.headers.has('strict-transport-security')) r.headers.set('strict-transport-security', 'max-age=63072000; includeSubDomains; preload');
+  if (!r.headers.has('cross-origin-opener-policy'))   r.headers.set('cross-origin-opener-policy', 'same-origin');
+  if (!r.headers.has('cross-origin-resource-policy')) r.headers.set('cross-origin-resource-policy', 'same-site');
+
+  return r;
+}
 
 function serveInstaller(req: Request): Response {
   const ua = (req.headers.get('user-agent') || '').toLowerCase();

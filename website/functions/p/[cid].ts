@@ -9,6 +9,9 @@ interface Env {
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const { request: req, env, params } = ctx;
   const cid = params.cid as string;
+  // Accept both new (baga…) and legacy (bafy…) CID formats here so old
+  // retrieval URLs in the wild keep working. The /api/upload endpoint
+  // is stricter and only accepts new-format CIDs going forward.
   if (!cid || !/^[a-z0-9]{8,80}$/i.test(cid)) {
     return new Response('Invalid cid', { status: 400 });
   }
@@ -40,7 +43,11 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       });
     }
     const headers = new Headers();
-    for (const k of ['content-type', 'content-length', 'content-disposition', 'cache-control', 'x-prova-piece-cid']) {
+    for (const k of [
+      'content-type', 'content-length', 'content-disposition',
+      'cache-control', 'x-prova-piece-cid', 'x-prova-verified',
+      'x-content-type-options', 'content-security-policy',
+    ]) {
       const v = upstream.headers.get(k);
       if (v) headers.set(k, v);
     }
