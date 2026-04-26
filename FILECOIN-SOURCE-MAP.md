@@ -21,7 +21,7 @@ All 7 source repos are dual-licensed **Apache-2.0 OR MIT** under Protocol Labs' 
 
 ## Source Repos Inventory
 
-All cloned to `/Users/reiers/.openclaw/workspace/prova-sources/`.
+All cloned to `<local>/prova-sources/`.
 
 ### 1. `FilOzone/pdp` — Solidity PDP Contracts (🔥 CROWN JEWEL)
 
@@ -261,7 +261,7 @@ This is the production Filecoin SP software stack.
 
 ### Phase C: Prover Binary (biggest decision)
 **If Go (recommended):**
-1. Create `/Users/reiers/.openclaw/workspace/prova/prover/` as a Go module.
+1. Create `<local>/prova/prover/` as a Go module.
 2. Extract `curio/pdp/` + relevant `curio/market/` + `curio/tasks/pdp/` code.
 3. Strip Lotus / consensus / libp2p / FVM dependencies.
 4. Wire up to our Ethereum contracts via go-ethereum.
