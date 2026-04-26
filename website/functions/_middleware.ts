@@ -35,7 +35,9 @@ function withSecurityHeaders(res: Response, url: URL): Response {
     //   - api endpoints on same origin
     const csp = [
       "default-src 'self'",
-      "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'",
+      // jsdelivr: marked.js for whitepaper.html
+      // unpkg:    three.js for the WebGL Earth hero
+      "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",

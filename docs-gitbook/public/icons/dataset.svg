@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="t2" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5DC3E5"/>
+      <stop offset="55%" stop-color="#2EC4B6"/>
+      <stop offset="100%" stop-color="#0F4C5C"/>
+    </linearGradient>
+  </defs>
+  <!-- Dataset cylinder -->
+  <ellipse cx="24" cy="11" rx="14" ry="4" fill="url(#t2)" fill-opacity="0.15" stroke="url(#t2)" stroke-width="2"/>
+  <path d="M10 11 L10 37 C10 39.2 16.3 41 24 41 C31.7 41 38 39.2 38 37 L38 11" stroke="url(#t2)" stroke-width="2" fill="none"/>
+  <ellipse cx="24" cy="22" rx="14" ry="4" stroke="url(#t2)" stroke-width="1.6" stroke-opacity="0.7" fill="none"/>
+  <ellipse cx="24" cy="33" rx="14" ry="4" stroke="url(#t2)" stroke-width="1.6" stroke-opacity="0.5" fill="none"/>
+</svg>

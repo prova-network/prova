@@ -80,9 +80,12 @@ export default defineConfig({
       {
         text: 'Run a node',
         items: [
-          { text: 'Become a prover', link: '/provers/become-a-prover' },
-          { text: 'Hardware',        link: '/provers/hardware' },
-          { text: 'Earnings',        link: '/provers/earnings' },
+          { text: 'Become a prover',     link: '/provers/become-a-prover' },
+          { text: 'Hardware',            link: '/provers/hardware' },
+          { text: 'Earnings',            link: '/provers/earnings' },
+          { text: 'Hobby (laptop / NAS)', link: '/provers/hobby' },
+          { text: 'Prosumer (home rack)', link: '/provers/prosumer' },
+          { text: 'Enterprise',          link: '/provers/enterprise' },
         ],
       },
       {

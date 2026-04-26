@@ -1,0 +1,89 @@
+/* Prova brand overrides for VitePress.
+   Brand palette:
+     teal-cyan #5DC3E5  (gradient top)
+     teal-mint #2EC4B6  (gradient mid)
+     teal-deep #0F4C5C  (gradient anchor)
+*/
+
+:root {
+  --vp-c-brand-1:        #2EC4B6;  /* primary */
+  --vp-c-brand-2:        #5DC3E5;  /* hover/light */
+  --vp-c-brand-3:        #0F4C5C;  /* deepest */
+  --vp-c-brand-soft:     rgba(46, 196, 182, 0.16);
+
+  /* Map VitePress's named brand variables to Prova teal */
+  --vp-c-brand:          var(--vp-c-brand-1);
+  --vp-c-brand-light:    var(--vp-c-brand-2);
+  --vp-c-brand-lighter:  #7DD0DE;
+  --vp-c-brand-dark:     var(--vp-c-brand-3);
+  --vp-c-brand-darker:   #08222B;
+
+  /* Hero gradient (the "Prova" wordmark) */
+  --vp-home-hero-name-color:           transparent;
+  --vp-home-hero-name-background:      linear-gradient(135deg, #5DC3E5 0%, #2EC4B6 55%, #0F4C5C 100%);
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, rgba(93, 195, 229, 0.20) 30%, rgba(46, 196, 182, 0.20) 70%);
+  --vp-home-hero-image-filter:           blur(56px);
+
+  /* Buttons */
+  --vp-button-brand-bg:           var(--vp-c-brand-1);
+  --vp-button-brand-hover-bg:     var(--vp-c-brand-2);
+  --vp-button-brand-active-bg:    var(--vp-c-brand-3);
+  --vp-button-brand-border:       var(--vp-c-brand-1);
+  --vp-button-brand-hover-border: var(--vp-c-brand-2);
+  --vp-button-brand-active-border:var(--vp-c-brand-3);
+  --vp-button-brand-text:         #ffffff;
+  --vp-button-brand-hover-text:   #ffffff;
+  --vp-button-brand-active-text:  #ffffff;
+
+  /* Code highlight, focus rings */
+  --vp-c-text-code:   var(--vp-c-brand-3);
+}
+
+/* Dark mode tweak: deeper brand for contrast */
+.dark {
+  --vp-home-hero-name-background: linear-gradient(135deg, #7DD0DE 0%, #41D5C7 55%, #5DC3E5 100%);
+  --vp-c-text-code:   #5DC3E5;
+}
+
+/* Feature-card icon containers — give the custom SVGs a soft teal halo */
+.VPFeature .icon img,
+.VPFeature .icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.VPFeature .box {
+  border-radius: 14px;
+}
+
+/* Custom-mark logo size in the nav bar */
+.VPNavBarTitle img.logo {
+  height: 24px;
+}
+
+/* Teal wordmark in the nav bar to match the hero */
+.VPNavBarTitle .title span,
+.VPNavBarTitle .title.has-sidebar span {
+  background: linear-gradient(135deg, #5DC3E5 0%, #2EC4B6 55%, #0F4C5C 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.dark .VPNavBarTitle .title span,
+.dark .VPNavBarTitle .title.has-sidebar span {
+  background: linear-gradient(135deg, #7DD0DE 0%, #41D5C7 55%, #5DC3E5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* Subtle teal border on alt buttons (HTTP API, etc.) */
+.VPButton.alt {
+  border-color: rgba(46, 196, 182, 0.4) !important;
+}
+.VPButton.alt:hover {
+  border-color: var(--vp-c-brand-1) !important;
+  color: var(--vp-c-brand-1) !important;
+}

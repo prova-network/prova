@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="t4" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5DC3E5"/>
+      <stop offset="55%" stop-color="#2EC4B6"/>
+      <stop offset="100%" stop-color="#0F4C5C"/>
+    </linearGradient>
+  </defs>
+  <!-- Pulsing waveform / heartbeat for continuous proof -->
+  <circle cx="24" cy="24" r="20" stroke="url(#t4)" stroke-width="1.5" stroke-opacity="0.25" stroke-dasharray="2 3" fill="none"/>
+  <circle cx="24" cy="24" r="14" stroke="url(#t4)" stroke-width="1.5" stroke-opacity="0.45" fill="none"/>
+  <path d="M6 24 L14 24 L17 16 L21 32 L25 12 L29 36 L33 20 L36 24 L42 24"
+        stroke="url(#t4)" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

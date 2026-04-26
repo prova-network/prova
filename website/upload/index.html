@@ -107,15 +107,14 @@
   <section class="explainer">
     <p class="meta">WHAT JUST HAPPENED</p>
     <ol>
-      <li>Your file's bytes were hashed in your browser to produce a <code>piece-cid</code>. We never saw the bytes unhashed for any longer than the upload took.</li>
-      <li>The bytes were staged for our sponsor prover on Base Sepolia.</li>
-      <li>A storage deal was proposed on-chain. We paid the gas + the storage fee.</li>
-      <li>The prover fetched the bytes, recomputed the <code>piece-cid</code>, confirmed the match, and posted its first proof.</li>
-      <li>The prover will continue posting a proof every 30 seconds. If a proof is missed, the prover is slashed and the file is re-pinned to a healthy prover.</li>
+      <li>Your file's bytes were Fr32-padded and hashed in your browser into a <strong>real piece-cid</strong> (CommP, the same Filecoin commitment). The bytes never left your machine in raw form for longer than the upload took.</li>
+      <li>The stage server recomputed the piece-cid from the received bytes and confirmed it matches what you sent. Mismatched uploads are rejected with HTTP 422.</li>
+      <li>A storage deal was proposed on-chain in <strong>USDC</strong>. On testnet we sponsor it; on mainnet you'd pay it from a connected Base wallet.</li>
+      <li>The prover fetched the bytes, recomputed the <code>piece-cid</code>, confirmed the match, and posted its first Merkle inclusion proof.</li>
+      <li>The prover will continue posting a proof every 30 seconds. If a proof is missed, the prover's <strong>PROVA</strong> stake is slashed (burned) and the file is re-pinned to a healthy prover.</li>
     </ol>
     <p class="explainer-foot">
-      All of this works the same when you bring your own wallet. The CLI is coming. The SDK
-      <a href="https://prova.network/specs.html">already exists</a>.
+      Clients pay USDC, provers stake PROVA, the 1% protocol fee burns PROVA. <a href="https://prova.network/whitepaper">Read the whitepaper</a> &middot; <a href="https://docs.prova.network">browse the docs</a> &middot; <a href="https://prova.network/specs.html">read the specs</a>.
     </p>
   </section>
 </main>
