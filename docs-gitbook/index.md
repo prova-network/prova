@@ -35,5 +35,5 @@ features:
     details: Storage providers stake against the durability of what they hold. They lose money if they lose your data.
   - icon: 🌐
     title: No new chain
-    details: Prova lives on Base. Settlement is Ethereum-grade. No bridges, no token launch, no custody.
+    details: Prova lives on Base. Client payments settle in USDC, prover stake is in PROVA, slashing burns PROVA. Inherits Ethereum security. No bridges, no custody.
 ---

@@ -64,9 +64,10 @@ contract FeeRouterTest is Test {
         usdc  = new MockUSDC();
         prova = new ProvaToken(treasury);
 
-        // Move some PROVA to the "pool LP" account that backs the mock router
+        // Move some PROVA to the "pool LP" account that backs the mock router.
+        // We move 1M PROVA (1% of total supply); plenty for swap simulations.
         vm.prank(treasury);
-        prova.transfer(poolLP, 100_000_000 ether);
+        prova.transfer(poolLP, 1_000_000 ether);
 
         router = new MockSwapRouter(address(usdc), address(prova), poolLP);
 
@@ -101,7 +102,7 @@ contract FeeRouterTest is Test {
         assertEq(burned, 0);
         assertEq(held, 10_000 ether);
         assertEq(usdc.balanceOf(address(fees)), 10_000 ether);
-        assertEq(prova.totalSupply(), 1_000_000_000 ether);
+        assertEq(prova.totalSupply(), 100_000_000 ether);
     }
 
     // ─── Mode: BURN ───────────────────────────────────────────────────

@@ -1,7 +1,6 @@
-# PROVA Tokenomics — v2, April 2026
+# PROVA Tokenomics — v1.0, April 2026
 
-> This document supersedes Section 4.4 of the v0.9 whitepaper.
-> See [the whitepaper amendment](#whitepaper-amendment) at the bottom.
+> Reference document for [`whitepaper.html`](https://prova.network/whitepaper.html) §4 ("Token economics"). The contracts referenced here are the source of truth.
 
 ---
 
@@ -38,7 +37,7 @@ Clients still pay storage fees in **USDC**. Provers still receive 99% of payment
 | Protocol incentives (provers / users) | 15% | 15,000,000 | Released as the protocol uses them — no time vesting |
 | **Total** | **100%** | **100,000,000** | |
 
-Insider allocations (SAFT + team + advisors = 42%) is the upper bound of "still acceptable to credible CEXes." Public-leaning allocations (public + ecosystem + liquidity + protocol incentives = 38%) keep float at TGE healthy without the kind of insider-heavy structure that taints a launch.
+Insider allocations (SAFT + team + advisors = 42%) are at the upper bound of "still acceptable to credible CEXes" without raising governance concerns. Public-leaning allocations (public + ecosystem + liquidity + protocol incentives = 38%) keep float at TGE healthy.
 
 All vesting schedules are enforced on-chain by [`ProvaVesting`](https://github.com/prova-network/contracts/blob/main/src/ProvaVesting.sol). Off-chain memoranda (vesting agreements per individual / SAFT contracts per investor) memorialise the legal grant; the on-chain schedule is the source of truth for what vests when.
 
@@ -48,7 +47,7 @@ All vesting schedules are enforced on-chain by [`ProvaVesting`](https://github.c
 
 A prover registers with [`ProverRegistry.sol`](https://github.com/prova-network/contracts/blob/main/src/ProverRegistry.sol) and posts a stake to [`ProverStaking.sol`](https://github.com/prova-network/contracts/blob/main/src/ProverStaking.sol). The stake denomination is PROVA. Capacity is gated by stake: `minStakePerGiB × committedGiB`.
 
-Stake is slashed (PROVA burned) on three triggers:
+Stake is slashed (PROVA destroyed) on three triggers:
 
 - **Missed challenges**: prover fails to respond to N consecutive on-chain challenges.
 - **Wrong proof**: prover submits a proof that doesn't verify against the committed piece-CID.
@@ -70,13 +69,13 @@ Implemented by [`FeeRouter.sol`](https://github.com/prova-network/contracts/blob
 
 `process(minProvaOut)` is **permissionless** — anyone can call it. Slippage is bounded by the caller-supplied `minProvaOut`. The owner sets a `maxSwapPerCall` cap to bound the per-call market impact.
 
-This means: **PROVA holders get programmatic, transparent buy-pressure proportional to network revenue**. Not magic, not hand-wavy — just a permissionless function that anyone can run when fees pile up. The total burn rate scales with the size of the storage market.
+This means: **PROVA holders get programmatic, transparent buy-pressure proportional to network revenue**. Just a permissionless function that anyone can run when fees pile up. The total burn rate scales with the size of the storage market.
 
 ### 3. Governance
 
 PROVA-weighted vote (one-PROVA-one-vote at v1; we'll evaluate quadratic-voting alternatives if it materially reduces whale capture) over:
 
-- Protocol fee tier (currently 1%, hard-capped at 3% in code)
+- Protocol fee tier (currently 1%, hard-capped at 3%)
 - Slash fraction (currently 10%, hard-capped at 25%)
 - Minimum stake multiplier
 - Prover registry admission rules
@@ -125,11 +124,9 @@ The economic ratchet is: **honest provers earn USDC and reclaim their PROVA; dis
 
 - **Counsel:** retained [TBD].
 - **Jurisdiction-of-record:** Norway (TSE Reiersen, Org. no. 929 074 912).
-- **MiCA white paper:** to be filed before any EU public sale. Pre-MiCA filing, EU-based grants under §4.4 use the standard private-placement carve-out for service providers.
+- **MiCA white paper:** to be filed before any EU public sale. Pre-MiCA filing, EU-based grants under §4 use the standard private-placement carve-out for service providers.
 - **US persons:** the SAFT round will be structured to comply with Reg D 506(c) (accredited investors only), with a backup posture of not targeting US persons.
 - **Securities classification**: PROVA's design (in-protocol stake utility, burn-from-fees deflationary mechanism, no rights to underlying revenue per token) is intended to fall outside both Howey-test US security and MiCA "asset-referenced token" categories. Final classification depends on counsel review.
-
-Detailed compliance, sale mechanics, and investor outreach plan: [`TOKEN-MODEL-V2-2026-04-26.md`](./TOKEN-MODEL-V2-2026-04-26.md) (internal).
 
 ## Implementation status
 
@@ -137,10 +134,14 @@ Detailed compliance, sale mechanics, and investor outreach plan: [`TOKEN-MODEL-V
 
 | Contract | Purpose | Tests |
 | --- | --- | --- |
-| [`ProvaToken.sol`](https://github.com/prova-network/contracts/blob/main/src/ProvaToken.sol) | Fixed-supply ERC-20 with Permit and Burnable | 9/9 passing |
+| [`ProvaToken.sol`](https://github.com/prova-network/contracts/blob/main/src/ProvaToken.sol) | Fixed-supply ERC-20 (100M) with Permit and Burnable | 9/9 passing |
 | [`ProvaVesting.sol`](https://github.com/prova-network/contracts/blob/main/src/ProvaVesting.sol) | Owner-administered vesting with cliff, linear, revocability, acceleration | 24/24 passing |
 | [`FeeRouter.sol`](https://github.com/prova-network/contracts/blob/main/src/FeeRouter.sol) | Routes marketplace fees to PROVA burn / treasury split | 17/17 passing |
-| [`ProverStaking.sol`](https://github.com/prova-network/contracts/blob/main/src/ProverStaking.sol) | PROVA-denominated prover stake with slashing | 6/6 passing |
+| [`StorageMarketplace.sol`](https://github.com/prova-network/contracts/blob/main/src/StorageMarketplace.sol) | Deal lifecycle, USDC escrow, slashing | (covered by Integration suite) |
+| [`ProverStaking.sol`](https://github.com/prova-network/contracts/blob/main/src/ProverStaking.sol) | PROVA-denominated prover stake with slashing | (covered by Integration suite) |
+| [`ProverRegistry.sol`](https://github.com/prova-network/contracts/blob/main/src/ProverRegistry.sol) | Prover identity, capacity advertisement | (covered by Integration suite) |
+| [`ContentRegistry.sol`](https://github.com/prova-network/contracts/blob/main/src/ContentRegistry.sol) | Optional metadata + ENS contenthash binding | (covered by Integration suite) |
+| Integration suite | Full deal lifecycle with separate USDC payment + PROVA stake | 5/5 passing |
 
 55 tests total across the protocol. All pass.
 
@@ -148,7 +149,7 @@ Detailed compliance, sale mechanics, and investor outreach plan: [`TOKEN-MODEL-V
 
 | Phase | Network | What happens |
 | --- | --- | --- |
-| Now | Base Sepolia | Deploy `ProvaToken`, `ProvaVesting`, `FeeRouter`, `StorageMarketplace`, `ProverStaking` for shakedown. Treasury is the founder address; allocations not transferable until TGE. FeeRouter starts in `HOLD` mode. |
+| Now | Base Sepolia | Deploy `ProvaToken`, `ProvaVesting`, `FeeRouter`, `StorageMarketplace`, `ProverStaking` for shakedown. Treasury is a multisig; allocations not transferable until TGE. FeeRouter starts in `HOLD` mode (until a Sepolia PROVA-USDC pool exists). |
 | Pre-TGE | Base Sepolia | SAFT closes. Vesting agreements signed. Schedules created on-chain. |
 | TGE (H2 2026) | Base mainnet | Deploy production contracts. Migrate signed agreements 1:1. Seed DEX liquidity. Public LBP. FeeRouter mode → `BURN`. |
 | Post-TGE | Base mainnet | Standard governance kicks in. Quarterly treasury report. |
@@ -164,17 +165,3 @@ The points formula is published before testnet starts. Categories:
 - **Prover operator**: points per TB-day proved, multiplier for early enrolment + continuous uptime.
 - **Client**: points per GB-month stored, capped to discourage wash-uploads.
 - **Contributor**: discretionary points awarded by maintainers for merged PRs, with a public bonus tier table.
-
-## Whitepaper amendment
-
-The following amends the v0.9 whitepaper. It will appear inline in the next published version (v1.1) of the whitepaper.
-
-> **Amendment 2, 2026-04-26.** Section 4.4 of v0.9 ("Why no token") is replaced with the following:
->
-> *Prova is not a tokenless protocol. PROVA is the protocol's stake and governance token, used for prover bonds, deflationary fee burn, and parameter governance. Clients pay in USDC and provers earn USDC; PROVA's role is constrained to the prover-stake economic loop and the fee-burn mechanism that ties protocol revenue to PROVA supply. Full tokenomics in [TOKENOMICS-2026.md](./TOKENOMICS-2026.md).*
->
-> *The original v0.9 framing argued against a token because the protocol's economic surface (settlement, payment, speculation) doesn't require one. We have changed our position. The protocol still doesn't require PROVA for client-facing settlement (USDC remains the unit of account), but using PROVA as the prover-stake instrument and the fee-burn target means the token has a constant, transparent, programmatic role in the protocol's economic loop. This makes PROVA more than a governance vehicle — it is the alignment instrument between provers, clients, and the operating org.*
->
-> *We acknowledge that this is a meaningful shift from v0.9. The shift is forced by two operating realities: (a) we need runway, and a token sale produces useful runway in a way a small SAFE round does not; (b) without a slashable stake, prover behavior reduces to "honor system + USDC bond," which is weaker than "honor system + slashable PROVA bond + reputational consequence."*
->
-> *We reserve the right to change our minds again. Any change here would land in a further numbered amendment to this document.*

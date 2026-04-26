@@ -14,7 +14,7 @@ contract ProvaVestingTest is Test {
     address alice     = makeAddr("alice");
     address bob       = makeAddr("bob");
 
-    uint128 constant GRANT = 20_000_000 ether; // 20M PROVA = 2% of 1B
+    uint128 constant GRANT = 2_000_000 ether; // 2M PROVA = 2% of 100M total
 
     function setUp() public {
         token   = new ProvaToken(treasury);
@@ -25,8 +25,10 @@ contract ProvaVestingTest is Test {
         // from msg.sender. So owner must hold the tokens when calling
         // createSchedule. We simulate the "treasury hands tokens to
         // owner first" step here:
+        // Treasury (100M total supply) hands the owner enough PROVA to seed
+        // multiple schedules in this test. 50M is overkill but headroom-safe.
         vm.prank(treasury);
-        token.transfer(owner, 200_000_000 ether);
+        token.transfer(owner, 50_000_000 ether);
 
         vm.prank(owner);
         token.approve(address(vesting), type(uint256).max);
@@ -68,7 +70,7 @@ contract ProvaVestingTest is Test {
         assertEq(id, 1);
         assertEq(vesting.nextId(), 2);
         assertEq(token.balanceOf(address(vesting)), GRANT);
-        assertEq(token.balanceOf(owner), 200_000_000 ether - GRANT);
+        assertEq(token.balanceOf(owner), 50_000_000 ether - GRANT);
 
         ProvaVesting.Schedule memory s = vesting.getSchedule(id);
         assertEq(s.beneficiary, alice);

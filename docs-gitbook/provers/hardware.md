@@ -64,14 +64,14 @@ If you're scaling to 5+ nodes, spread across continents. Prova's marketplace pre
 
 ## Stake (the hidden cost)
 
-Your **biggest hardware-equivalent expense** is the USDC stake you must lock to commit capacity. The current ratio is ~$50 stake per TiB committed (configurable per the `ProverStaking.sol` parameters; check before registering).
+Your **biggest hardware-equivalent expense** is the PROVA stake you must lock to commit capacity. The current floor is `minStakePerGiB × committedGiB`, plus a USDC-equivalent floor read from a Chainlink PROVA/USD oracle (whichever is higher). The contract floor at TGE is 100 PROVA per GiB; check `ProverStaking.minStakePerGib()` before registering.
 
-For a 10 TB prover:
+For a 10 TB prover (10,240 GiB):
 
 * Disk: $1,000-2,500 (one-time)
 * Network: $50-100/month
-* Stake: ~$500 USDC locked (refundable when you exit cleanly)
-* Slash exposure: up to your full stake if you fail badly
+* Stake: ~1,024,000 PROVA locked (refundable when you exit cleanly via the unbonding queue)
+* Slash exposure: up to `slashFraction` of your stake per fault event (default 10%)
 
 Plan accordingly.
 

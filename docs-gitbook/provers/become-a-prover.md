@@ -14,7 +14,7 @@ Before you set up a prover, sanity-check the economics:
 
 * **Capacity:** typical solo prover starts at 1–10 TB. You can scale to PB if you want.
 * **Bandwidth:** a real symmetric link. You're fetching client uploads and serving retrievals.
-* **Stake:** you must lock USDC equal to a percentage of the bytes you commit. If you fail proofs, this gets slashed.
+* **Stake:** you must lock PROVA equal to a per-GiB ratio of the bytes you commit. If you fail proofs, the PROVA stake gets slashed (burned).
 * **Net margin:** ~$0.40-0.80 per TiB-month after fees, before electricity. See [Earnings](earnings.md) for the calculator.
 
 It's a real business. Treat it like one.
@@ -73,7 +73,7 @@ provad --config /etc/prova/prover.toml register \
   --regions "EU"
 ```
 
-This submits a `registerProver(...)` transaction and stakes USDC equal to your committed capacity. The amount needed depends on the contract's `STAKE_RATIO` parameter.
+This submits a `registerProver(...)` transaction and stakes PROVA proportional to your committed capacity. The amount needed is `minStakePerGiB × committedGiB`, set in `ProverStaking.sol`. Default at TGE: 100 PROVA per GiB.
 
 ## Start
 
@@ -107,7 +107,8 @@ state      active
 capacity   10.0 TB committed, 4.2 TB stored (42%)
 deals      127 active, 8 settled, 0 slashed
 proofs     last posted 12s ago, 99.94% success (last 7d)
-balance    1,237.40 USDC available, 4,000.00 USDC staked
+earnings   1,237.40 USDC available (deal payments)
+stake      4,000.00 PROVA locked    (slashable bond)
 ```
 
 Or use the local dashboard at `http://localhost:8080`.

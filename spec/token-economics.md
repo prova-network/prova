@@ -1,13 +1,13 @@
 # SPEC-010: Token Economics Specification
 
-**Status:** Draft v2
-**Authors:** Prova Team
+**Status:** v1.0 (specification, pre-TGE)
+**Authors:** Prova contributors
 **Created:** 2026-03-04
-**Updated:** 2026-03-24
+**Updated:** 2026-04-26
 
 ## 1. Overview
 
-The Prova network uses a native token (**PROVA**) for staking, payment, dispute resolution, and governance. This spec defines issuance, distribution, fee structures, and economic security parameters.
+The Prova network uses a native token, **PROVA**, for prover staking, fee burn, and governance. Storage payments between clients and provers settle in **USDC**. This spec defines issuance, distribution, fee structures, and economic security parameters.
 
 ## 2. Token Parameters
 
@@ -15,149 +15,138 @@ The Prova network uses a native token (**PROVA**) for staking, payment, dispute 
 |-----------|-------|
 | Symbol | PROVA |
 | Decimals | 18 |
-| Total supply | 1,000,000,000 (1B) |
-| Minting | Fixed at genesis (no inflation beyond block rewards) |
+| Total supply | 100,000,000 (100M) |
+| Minting | Fixed at genesis. No inflation. No mint authority. |
+| Standard | ERC-20 + ERC-20 Permit + ERC-20 Burnable |
+| Network | Base mainnet (and Base Sepolia for testnet) |
 
 ## 3. Allocation
 
-| Category | % | Tokens | Vesting |
-|---|---|---|---|
-| Network mining | 45% | 450,000,000 | Emitted via block rewards (~14 years) |
-| Public sale | 15% | 150,000,000 | 25% at TGE, 75% over 6 months |
-| Team & founders | 15% | 150,000,000 | 12-month cliff, 36-month linear |
-| Ecosystem & grants | 10% | 100,000,000 | 10% at TGE, quarterly over 48 months |
-| Early backers (seed) | 7% | 70,000,000 | 6-month cliff, 18-month linear |
-| Liquidity | 5% | 50,000,000 | 100% at TGE, LP locked 12 months |
-| Reserve | 3% | 30,000,000 | 6-month cliff, 24-month multisig |
+| Bucket | % | Tokens (PROVA) | Vesting |
+|---|---:|---:|---|
+| Public sale (TGE / LBP) | 8% | 8,000,000 | 100% at TGE, no lock |
+| Private SAFT round | 17% | 17,000,000 | 12-month cliff, 24-month linear thereafter |
+| Team and core engineers | 18% | 18,000,000 | 12-month cliff, 36-month linear |
+| Advisors / BD / sales / design | 7% | 7,000,000 | 12-month cliff, 36-month linear |
+| Ecosystem grants | 10% | 10,000,000 | 5-year drip, multisig-administered |
+| Liquidity (DEX seeding) | 5% | 5,000,000 | LP tokens locked 24 months |
+| Treasury / community | 20% | 20,000,000 | 5-year linear release to multisig |
+| Protocol incentives (provers / users) | 15% | 15,000,000 | Released as the protocol uses them |
+| **Total** | **100%** | **100,000,000** | |
 
-## 4. Block Reward Schedule
+All vesting enforced on-chain by [`ProvaVesting.sol`](https://github.com/prova-network/contracts/blob/main/src/ProvaVesting.sol).
 
-Block rewards follow a halving curve:
+## 4. Economic mechanism
+
+### 4.1 Prover stake (PROVA)
+
+Provers register via `ProverRegistry.sol` and post stake to `ProverStaking.sol`. Capacity is gated by stake:
 
 ```
-reward(epoch) = BASE_REWARD * (0.5 ^ floor(epoch / HALVING_INTERVAL))
+maxCommittedBytes(prover) = staked(prover) / minStakePerGiB
 ```
 
-| Parameter | Value |
-|-----------|-------|
-| BASE_REWARD | 10 PROVA/epoch |
-| HALVING_INTERVAL | 2,102,400 epochs (~2 years at 30s blocks) |
-| Minimum halvings | 7 (reward floor: 0.078125 PROVA/epoch) |
+`minStakePerGiB` is governance-tunable. Initial value at TGE: **100 PROVA per GiB**.
 
-Total mining emission converges to ~450M PROVA over ~14 years.
+### 4.2 Volatility floor (USDC-equivalent)
 
-## 5. Staking Economics
+Effective minimum stake includes a USDC floor read from a Chainlink PROVA/USD oracle:
 
-### 5.1 Provider Stake
-
-| Parameter | Value |
-|-----------|-------|
-| Minimum stake | 10,000 PROVA |
-| Slash fraction (invalid proof) | 50% of stake |
-| Slash fraction (timeout) | 5% of stake |
-| Cooldown period | 7,200 epochs (60 hours) |
-
-### 5.2 Challenger Bonds
-
-| Parameter | Value |
-|-----------|-------|
-| Challenge bond | 1,000 PROVA |
-| Successful challenge reward | bond + 50% of provider slash |
-| Failed challenge penalty | bond forfeited (burnt) |
-
-### 5.3 Staking Rewards
-
-Block producers selected proportional to stake. Validators earn:
-- Block reward (per epoch schedule)
-- 50% of transaction fees in the block
-- 50% of dispute resolution fees
-
-Remaining 50% of fees are burnt (deflationary pressure post-halving).
-
-## 6. Fee Structure
-
-### 6.1 Transaction Fees
-
-EIP-1559 style congestion pricing:
-
-| Parameter | Value |
-|-----------|-------|
-| MIN_FEE | 0.001 PROVA |
-| Target block utilization | 50% |
-| Adjustment factor | ±12.5% per block |
-
-### 6.2 Inference Commit Fee
-
-| Parameter | Value |
-|-----------|-------|
-| BASE_COMMIT_FEE | 0.1 PROVA |
-| STORAGE_RATE | 0.001 PROVA per KB |
-
-### 6.3 Model Registration Fee
-
-| Parameter | Value |
-|-----------|-------|
-| Registration fee | 100 PROVA (burnt) |
-
-## 7. Payment Channels
-
-| Parameter | Value |
-|-----------|-------|
-| Minimum channel deposit | 1 PROVA |
-| Settlement delay | 100 epochs |
-| Network fee | 0.5% of settled amount (burnt) |
-
-## 8. Deflationary Mechanics
-
-Fee burns create deflationary pressure post-halving:
-- 50% of transaction fees burnt
-- 100% of model registration fees burnt
-- 0.5% of payment channel settlements burnt
-- 100% of failed challenge bonds burnt
-
-At sufficient utilization, PROVA becomes net-deflationary after early halving cycles.
-
-## 9. Economic Security Analysis
-
-### Attack Cost
-
-For cheating to be profitable:
 ```
-S > ((1 - r) / r) × s
+minStake_effective(GiB) = max(
+    100 PROVA × GiB,
+    targetUSD(GiB) / oracle_PROVA_USD
+)
 ```
-Where S = stake, r = audit rate (5%), s = single job reward.
 
-With 10,000 PROVA minimum stake and typical 0.1-1 PROVA inference fees, the security margin is 10,000-100,000x.
+If `minStake_effective` rises above current stake (PROVA price drop), provers have a 7-day grace window before they are paused from accepting new deals. Already-active deals are unaffected for the duration of their committed term.
 
-### Detection Probability
+### 4.3 Slashing
 
-| Jobs cheated | P(detection) |
+Slash triggers (per `StorageMarketplace.sol`):
+
+- **Missed challenges**: ≥ N consecutive missed proofs over `MAX_PROOF_GAP` window
+- **Wrong proof**: proof submission that fails `ProofVerifier.verifyProof()`
+- **Withholding**: prover refuses retrieval after deal acceptance (off-chain attestation, on-chain governance vote)
+
+Slash amount per fault: `slashPerFault` PROVA, governance-tunable. Initial value: **50 PROVA per fault**, hard-capped at 25% of locked stake per single event.
+
+Slashed PROVA is **destroyed** (transferred to `address(0)` via `ERC20Burnable.burn`). Net effect: permanent supply reduction.
+
+### 4.4 Fee burn
+
+Marketplace contract takes 1% USDC fee on every deal payment stream and forwards it to `FeeRouter.sol`. Hard-cap on protocol fee: 3% (governance can raise toward this cap with 2-day timelock).
+
+FeeRouter modes:
+
+| Mode | Behavior |
 |---|---|
-| 1 | 5% |
-| 10 | 40% |
-| 50 | 92% |
-| 100 | 99.4% |
+| `HOLD` | USDC accumulates. Default before TGE. |
+| `BURN` | All USDC swaps to PROVA on Uniswap V3 (`0.3%` fee tier by default), PROVA is burned. |
+| `SPLIT` | A `burnShareBps` portion (default 50%) is swapped + burned; the rest is held in the FeeRouter for treasury operations. |
 
-### Sybil Resistance
+`process(minProvaOut)` is **permissionless**. Slippage is bounded by the caller-supplied `minProvaOut`. The owner sets `maxSwapPerCall` to bound per-call market impact.
 
-Stake-weighted selection. Splitting stake across N identities provides no advantage.
+### 4.5 Governance
 
-## 10. Governance
+PROVA-weighted vote (one-PROVA-one-vote at v1) over:
 
-All economic parameters are governable:
+| Parameter | Hard cap | Timelock |
+|---|---|---|
+| `protocolFeeBps` | 300 (3%) | 2 days |
+| `slashFraction` | 2500 (25%) | 2 days |
+| `minStakePerGiB` | governance-set | 2 days |
+| Prover registry admission rules | n/a | 2 days |
+| `ProofVerifier` UUPS upgrade authority | n/a | 7 days |
+| `FeeRouter.mode` and `burnShareBps` | n/a | 2 days |
 
-| Parameter | Governance delay |
-|-----------|-----------------|
-| Block reward | 30-day timelock |
-| Slash fractions | 14-day timelock |
-| Fee parameters | 7-day timelock |
-| Minimum stake | 14-day timelock |
+A 5-of-9 multisig holds emergency pause authority. The pause cannot redirect funds; it only halts new deal acceptances and challenge grading until governance unpauses.
 
-## 11. Implementation Notes
+## 5. Public sale
 
-- All amounts stored as `u128` in smallest denomination (10^-18 PROVA)
-- Halving computed lazily per-block
-- Fee burns reduce `total_supply` in state trie
-- Staking: `chain/src/stake.rs`
-- Payments: `chain/src/payment.rs`
-- Balances: `chain/src/state.rs`
+### 5.1 SAFT round (private, pre-TGE)
+
+- Target raise: $1.5M – $3M USDC
+- Target tokens: 17,000,000 PROVA (17%)
+- Vesting: 12-month cliff, 24-month linear thereafter
+- Compliance: Reg D 506(c) for US accredited investors; Reg S for non-US; private placement carve-out under MiCA
+- Counsel: outside firm engaged for SAFT template, securities-law opinion, MiCA white paper
+
+### 5.2 Public sale at TGE
+
+- Mechanism: Liquidity Bootstrapping Pool (LBP) on a Base launchpad
+- Tokens: 8,000,000 PROVA (8%)
+- Pricing: dynamic, weighted-pool decay over 24-72 hours
+- Listing: Kraken targeted within 3-6 months of TGE; Coinbase / Binance only after demonstrated organic volume
+
+## 6. Treasury operations
+
+The 20% Treasury / Community bucket releases linearly over 5 years to a multisig. Public ledger; quarterly reports. Mandate:
+
+- Audit costs (tier-1 firm pre-mainnet, ongoing audits annually)
+- Engineering hires not covered by SAFT runway
+- Ecosystem grants paid in PROVA
+- Operational costs of the org
+
+If `FeeRouter` runs in `SPLIT` mode (post-TGE governance vote), the held USDC portion supplements the treasury without diluting PROVA.
+
+## 7. Compliance
+
+- Jurisdiction-of-record: Norway (TSE Reiersen, Org. no. 929 074 912)
+- MiCA: white paper to be filed before any EU public sale
+- US: SAFT under Reg D 506(c); no offering or sale to retail US persons before legal review
+- KYC/AML: required for SAFT investors and any allocation > $10K equivalent
+
+## 8. Implementation reference
+
+Source of truth is the deployed contracts. The on-chain values override anything in this spec if they ever diverge.
+
+| Contract | File | Tests |
+|---|---|---|
+| ProvaToken | [`src/ProvaToken.sol`](https://github.com/prova-network/contracts/blob/main/src/ProvaToken.sol) | 9/9 |
+| ProvaVesting | [`src/ProvaVesting.sol`](https://github.com/prova-network/contracts/blob/main/src/ProvaVesting.sol) | 24/24 |
+| FeeRouter | [`src/FeeRouter.sol`](https://github.com/prova-network/contracts/blob/main/src/FeeRouter.sol) | 17/17 |
+| StorageMarketplace | [`src/StorageMarketplace.sol`](https://github.com/prova-network/contracts/blob/main/src/StorageMarketplace.sol) | (Integration) |
+| ProverStaking | [`src/ProverStaking.sol`](https://github.com/prova-network/contracts/blob/main/src/ProverStaking.sol) | (Integration) |
+
+55 tests passing across all suites at the time of this spec.

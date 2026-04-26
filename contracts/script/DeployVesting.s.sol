@@ -37,13 +37,15 @@ contract DeployVesting is Script {
 
         console2.log("--");
         console2.log("Allocation table (allocations are managed off-chain until vesting schedules are created):");
-        console2.log("  Team and core engineers (18%):     180,000,000 PROVA");
-        console2.log("  Advisors / BD / sales / design (12%): 120,000,000 PROVA");
-        console2.log("  Early supporters / FF round (5%):    50,000,000 PROVA");
-        console2.log("  Ecosystem grants (10%):              100,000,000 PROVA");
-        console2.log("  Community / treasury / liquidity (35%): 350,000,000 PROVA");
-        console2.log("  Protocol incentives / staking (20%): 200,000,000 PROVA");
-        console2.log("  Total:                            1,000,000,000 PROVA");
+        console2.log("  Public sale at TGE (8%):              8,000,000 PROVA");
+        console2.log("  Private SAFT round (17%):            17,000,000 PROVA");
+        console2.log("  Team and core engineers (18%):       18,000,000 PROVA");
+        console2.log("  Advisors / BD / sales / design (7%):  7,000,000 PROVA");
+        console2.log("  Ecosystem grants (10%):              10,000,000 PROVA");
+        console2.log("  Liquidity (DEX seeding) (5%):         5,000,000 PROVA");
+        console2.log("  Treasury / community (20%):          20,000,000 PROVA");
+        console2.log("  Protocol incentives (15%):           15,000,000 PROVA");
+        console2.log("  Total:                              100,000,000 PROVA");
 
         vm.stopBroadcast();
     }

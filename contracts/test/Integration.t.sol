@@ -2,6 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ProvaToken} from "../src/ProvaToken.sol";
 import {ProverRegistry} from "../src/ProverRegistry.sol";
@@ -9,61 +11,70 @@ import {ProverStaking} from "../src/ProverStaking.sol";
 import {ContentRegistry} from "../src/ContentRegistry.sol";
 import {StorageMarketplace} from "../src/StorageMarketplace.sol";
 
-/// @notice End-to-end sanity test exercising the 4 Prova-specific contracts.
-///         Deliberately lightweight: full PDP flow needs the ProofVerifier
-///         to be deployed as UUPS + initialized, which is out of scope for
-///         a first smoke test. We instead mock the ProofVerifier caller to
-///         drive the listener hooks directly.
+/// @notice Mock USDC. 6 decimals like real USDC, but for these tests we
+///         use 18 to keep the math identical to the prior fixture; we
+///         only care about the dual-token semantics here.
+contract MockUSDC is ERC20 {
+    constructor() ERC20("USD Coin", "USDC") {
+        _mint(msg.sender, 100_000_000 ether);
+    }
+}
+
+/// @notice End-to-end sanity test for the v2 (dual-token) economic model:
+///         - Clients pay USDC. Provers earn USDC.
+///         - Provers stake PROVA. Slashing burns PROVA stake.
+///
+///         The ProofVerifier is mocked via FAKE_VERIFIER; we drive the
+///         listener hooks directly. Full UUPS-proxied PDPVerifier flow is
+///         covered by separate Foundry fork tests against Base Sepolia.
 contract IntegrationTest is Test {
-    ProvaToken token;
-    ProverRegistry registry;
-    ProverStaking staking;
-    ContentRegistry content;
-    StorageMarketplace market;
+    ProvaToken          prova;
+    MockUSDC            usdc;
+    ProverRegistry      registry;
+    ProverStaking       staking;
+    ContentRegistry     content;
+    StorageMarketplace  market;
 
     address constant TREASURY = address(0xBEEF);
     address constant CLIENT   = address(0xC1);
     address constant PROVER   = address(0x51);
 
-    // We stand in as the ProofVerifier so we can call the listener hooks.
     address constant FAKE_VERIFIER = address(0xFFFF);
 
     uint256 constant ONE_TOKEN     = 1e18;
-    uint256 constant CLIENT_FUND   = 10_000 * 1e18;
-    uint256 constant PROVER_FUND   = 1_000_000 * 1e18;
-    uint256 constant MIN_STAKE_GIB = 100 * 1e18; // 100 PROVA per GiB
+    uint256 constant CLIENT_USDC   = 100_000 * 1e18;
+    uint256 constant PROVER_PROVA  = 1_000_000 * 1e18; // 1M PROVA = 1% of supply
+    uint256 constant MIN_STAKE_GIB = 100 * 1e18;       // 100 PROVA per GiB
 
     function setUp() public {
-        token = new ProvaToken(address(this));
+        prova = new ProvaToken(address(this));
+        usdc  = new MockUSDC();
 
         registry = new ProverRegistry();
-        staking  = new ProverStaking(token, MIN_STAKE_GIB);
+        staking  = new ProverStaking(IERC20(address(prova)), MIN_STAKE_GIB);
         content  = new ContentRegistry();
 
         market = new StorageMarketplace(
             FAKE_VERIFIER,
-            token,
+            IERC20(address(usdc)),
             registry,
             staking,
             content,
             TREASURY,
-            50 * 1e18 // slash per fault
+            50 * 1e18 // slash per fault, in PROVA
         );
 
-        // Wire up: marketplace is authorized to control staking + content
         staking.setAuthorizedController(address(market), true);
         content.setMarketplace(address(market));
 
-        // Fund client + prover
-        token.transfer(CLIENT, CLIENT_FUND);
-        token.transfer(PROVER, PROVER_FUND);
+        // Fund client (USDC) and prover (PROVA stake + a little USDC for gas)
+        usdc.transfer(CLIENT, CLIENT_USDC);
+        prova.transfer(PROVER, PROVER_PROVA);
     }
 
     function test_ProverRegistration() public {
-        // Cache feature constants first so the vm.prank isn't consumed by getters
         uint64 FEATURE_PDP = registry.FEATURE_PDP();
         uint64 FEATURE_HTTPS = registry.FEATURE_HTTPS_SERVING();
-        // Unsupported feature bit (anything outside PDP + HTTPS_SERVING)
         uint64 UNKNOWN_FEATURE = 1 << 10;
 
         vm.prank(PROVER);
@@ -82,18 +93,17 @@ contract IntegrationTest is Test {
     }
 
     function test_Staking_CommitAndRelease() public {
-        uint256 stakeAmount = 200 * 1e18;
+        uint256 stakeAmount = 200 * 1e18; // 200 PROVA
 
         vm.startPrank(PROVER);
-        token.approve(address(staking), stakeAmount);
+        prova.approve(address(staking), stakeAmount);
         staking.stake(stakeAmount);
         vm.stopPrank();
 
         assertEq(staking.getStake(PROVER).staked, stakeAmount);
 
-        // Simulate marketplace committing 1 GiB (requires 100 PROVA)
         vm.prank(address(market));
-        staking.commitBytes(PROVER, 1 gwei); // just use some bytes
+        staking.commitBytes(PROVER, 1 gwei);
         assertTrue(staking.getStake(PROVER).committedBytes > 0);
 
         vm.prank(address(market));
@@ -104,81 +114,66 @@ contract IntegrationTest is Test {
     function test_FullDealFlow_ProposeAcceptPayFaultCompletes() public {
         uint64 FEATURE_PDP = registry.FEATURE_PDP();
 
-        // 1. Prover registers + stakes
+        // 1. Prover registers + stakes 500 PROVA
         vm.startPrank(PROVER);
-        registry.register(
-            "https://prover.example/pdp",
-            FEATURE_PDP,
-            1_000,
-            10,
-            ""
-        );
-        token.approve(address(staking), 500 * 1e18);
+        registry.register("https://prover.example/pdp", FEATURE_PDP, 1_000, 10, "");
+        prova.approve(address(staking), 500 * 1e18);
         staking.stake(500 * 1e18);
         vm.stopPrank();
 
-        // 2. Client proposes a deal
+        // 2. Client proposes a deal, paying 1000 USDC
         bytes32 commp = keccak256("test-content-commp");
-        uint64 pieceSize = uint64(1024 * 1024); // 1 MiB
-        uint64 duration = 30 days;
+        uint64 pieceSize = uint64(1024 * 1024);
+        uint64 duration  = 30 days;
         uint256 totalPayment = 1_000 * 1e18;
 
         vm.startPrank(CLIENT);
-        token.approve(address(market), totalPayment);
+        usdc.approve(address(market), totalPayment);
         uint256 dealId = market.proposeDeal(PROVER, commp, pieceSize, duration, totalPayment);
         vm.stopPrank();
 
-        // Deal should be Proposed
         assertEq(uint256(market.getDeal(dealId).status), uint256(StorageMarketplace.DealStatus.Proposed));
 
-        // 3. ProofVerifier (mocked) calls dataSetCreated to activate
+        // 3. ProofVerifier (mocked) activates the deal
         uint256 fakeDataSetId = 42;
         bytes memory extraData = abi.encode(dealId);
         vm.prank(FAKE_VERIFIER);
         market.dataSetCreated(fakeDataSetId, PROVER, extraData);
 
-        // Deal should be Active
         StorageMarketplace.Deal memory d = market.getDeal(dealId);
         assertEq(uint256(d.status), uint256(StorageMarketplace.DealStatus.Active));
         assertEq(d.dataSetId, fakeDataSetId);
         assertGt(d.endsAt, d.startedAt);
 
-        // Content registry should know about the content
         assertTrue(content.hasActiveDeal(commp));
         assertEq(content.getContent(commp).activeDealId, dealId);
-
-        // Prover's committedBytes reflects the deal
         assertEq(staking.getStake(PROVER).committedBytes, pieceSize);
 
-        // 4. Skip forward 10 days and record a proof
+        // 4. Skip 10 days, record a proof. USDC streams to prover + treasury.
         vm.warp(block.timestamp + 10 days);
-        uint256 proverBalanceBefore = token.balanceOf(PROVER);
-        uint256 treasuryBalanceBefore = token.balanceOf(TREASURY);
+        uint256 proverUsdcBefore   = usdc.balanceOf(PROVER);
+        uint256 treasuryUsdcBefore = usdc.balanceOf(TREASURY);
 
         vm.prank(FAKE_VERIFIER);
         market.possessionProven(fakeDataSetId, 1, 123, 1);
 
-        // Prover and treasury should have been paid some fraction
-        uint256 proverPaid = token.balanceOf(PROVER) - proverBalanceBefore;
-        uint256 treasuryPaid = token.balanceOf(TREASURY) - treasuryBalanceBefore;
+        uint256 proverPaid   = usdc.balanceOf(PROVER) - proverUsdcBefore;
+        uint256 treasuryPaid = usdc.balanceOf(TREASURY) - treasuryUsdcBefore;
         assertGt(proverPaid, 0);
         assertGt(treasuryPaid, 0);
-        // 10/30 days elapsed → ~333 PROVA released. Protocol fee 1% → treasury ~3.33.
-        // Check rough magnitude
+        // 10/30 days released → ~333 USDC. 1% protocol fee on that.
         assertApproxEqRel(proverPaid + treasuryPaid, (totalPayment * 10) / 30, 0.01e18);
 
-        // 5. Skip to end of deal + a day, then complete
+        // 5. Skip to deal end and complete
         vm.warp(d.endsAt + 1);
-        uint256 clientBalanceBefore = token.balanceOf(CLIENT);
+        uint256 clientUsdcBefore = usdc.balanceOf(CLIENT);
 
         market.completeDeal(dealId);
 
         assertEq(uint256(market.getDeal(dealId).status), uint256(StorageMarketplace.DealStatus.Completed));
-        // Prover received the rest, client got no refund (successful deal)
-        assertEq(token.balanceOf(CLIENT), clientBalanceBefore);
-        // Content registry cleared
+        // Successful deal → no client refund
+        assertEq(usdc.balanceOf(CLIENT), clientUsdcBefore);
         assertFalse(content.hasActiveDeal(commp));
-        // Bytes freed from prover
         assertEq(staking.getStake(PROVER).committedBytes, 0);
     }
 
@@ -187,20 +182,20 @@ contract IntegrationTest is Test {
 
         vm.startPrank(PROVER);
         registry.register("https://p.example", FEATURE_PDP, 0, 0, "");
-        token.approve(address(staking), 500 * 1e18);
+        prova.approve(address(staking), 500 * 1e18);
         staking.stake(500 * 1e18);
         vm.stopPrank();
 
         vm.startPrank(CLIENT);
-        token.approve(address(market), 100 * 1e18);
+        usdc.approve(address(market), 100 * 1e18);
         uint256 dealId = market.proposeDeal(PROVER, keccak256("c"), 1024, 7 days, 100 * 1e18);
 
-        uint256 balBefore = token.balanceOf(CLIENT);
+        uint256 usdcBefore = usdc.balanceOf(CLIENT);
         market.cancelProposedDeal(dealId);
-        uint256 balAfter = token.balanceOf(CLIENT);
+        uint256 usdcAfter = usdc.balanceOf(CLIENT);
         vm.stopPrank();
 
-        assertEq(balAfter - balBefore, 100 * 1e18);
+        assertEq(usdcAfter - usdcBefore, 100 * 1e18);
         assertEq(uint256(market.getDeal(dealId).status), uint256(StorageMarketplace.DealStatus.Cancelled));
     }
 
@@ -209,12 +204,12 @@ contract IntegrationTest is Test {
 
         vm.startPrank(PROVER);
         registry.register("https://p.example", FEATURE_PDP, 0, 0, "");
-        token.approve(address(staking), 500 * 1e18);
+        prova.approve(address(staking), 500 * 1e18);
         staking.stake(500 * 1e18);
         vm.stopPrank();
 
         vm.startPrank(CLIENT);
-        token.approve(address(market), 1000 * 1e18);
+        usdc.approve(address(market), 1000 * 1e18);
         uint256 dealId = market.proposeDeal(PROVER, keccak256("d"), 1024, 30 days, 1000 * 1e18);
         vm.stopPrank();
 
@@ -224,50 +219,46 @@ contract IntegrationTest is Test {
         // Never record any proofs; warp past MAX_PROOF_GAP
         vm.warp(block.timestamp + market.MAX_PROOF_GAP() + 1);
 
-        uint256 clientBalBefore = token.balanceOf(CLIENT);
+        uint256 clientUsdcBefore   = usdc.balanceOf(CLIENT);
         uint256 proverStakedBefore = staking.getStake(PROVER).staked;
 
-        // Anyone can fault
         market.faultDeal(dealId);
 
         assertEq(uint256(market.getDeal(dealId).status), uint256(StorageMarketplace.DealStatus.Slashed));
 
-        // Client got full refund (no proofs were recorded yet)
-        assertEq(token.balanceOf(CLIENT) - clientBalBefore, 1000 * 1e18);
+        // Client got the full USDC payment refunded (no proofs were recorded)
+        assertEq(usdc.balanceOf(CLIENT) - clientUsdcBefore, 1000 * 1e18);
 
-        // Prover was slashed
+        // Prover was slashed in PROVA
         uint256 proverStakedAfter = staking.getStake(PROVER).staked;
         assertEq(proverStakedBefore - proverStakedAfter, market.slashPerFault());
 
-        // Content cleared
         assertFalse(content.hasActiveDeal(keccak256("d")));
     }
 
     function test_ContentRegistryENSBinding() public {
         uint64 FEATURE_PDP = registry.FEATURE_PDP();
 
-        // Trigger content registration by setting up a deal and activating
         vm.startPrank(PROVER);
         registry.register("https://p.example", FEATURE_PDP, 0, 0, "");
-        token.approve(address(staking), 500 * 1e18);
+        prova.approve(address(staking), 500 * 1e18);
         staking.stake(500 * 1e18);
         vm.stopPrank();
 
         bytes32 commp = keccak256("ens-test");
         vm.startPrank(CLIENT);
-        token.approve(address(market), 100 * 1e18);
+        usdc.approve(address(market), 100 * 1e18);
         uint256 dealId = market.proposeDeal(PROVER, commp, 1024, 7 days, 100 * 1e18);
         vm.stopPrank();
 
         vm.prank(FAKE_VERIFIER);
         market.dataSetCreated(1, PROVER, abi.encode(dealId));
 
-        // Now client binds ENS
-        bytes32 ensNode = keccak256("nicklas.eth");
+        // Client binds ENS to their deal's content
+        bytes32 ensNode = keccak256("example.eth");
         vm.prank(CLIENT);
         content.bindENS(commp, ensNode);
 
-        // Reverse lookup works
         assertEq(content.resolveENS(ensNode).activeDealId, dealId);
         assertEq(content.getContent(commp).ensNode, ensNode);
     }

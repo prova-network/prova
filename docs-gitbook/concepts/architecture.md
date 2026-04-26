@@ -28,7 +28,7 @@ A client:
 A node operator with disk and bandwidth. Provers earn USDC by storing client files and proving they still hold them.
 
 A prover:
-* Stakes USDC against the durability of what they hold
+* Stakes PROVA against the durability of what they hold (slashing burns PROVA)
 * Stores files addressed by `piece-cid`
 * Posts a cryptographic proof every 30 seconds (continuous PDP)
 * Gets slashed if they miss a proof
@@ -53,10 +53,10 @@ You can read more in [Deal lifecycle](deal-lifecycle.md).
 ## What's intentionally not in Prova
 
 * **No new chain.** Prova lives on Base. Settlement is Ethereum-grade.
-* **No bridges.** Payments are native USDC. No wrapped anything.
+* **No bridges.** Client payments are native USDC. No wrapped anything.
 * **No sealed PoRep.** No TEEs. No fancy crypto theater. Just PDP — a 25-year-old, well-understood proof scheme.
 * **No custody.** Provers can't see your data unless you give them retrieval rights. They prove they're storing the bytes; they don't necessarily know what the bytes mean.
-* **No token launch.** No ICO, no airdrop, no governance theater. The unit of payment is USDC.
+* **No PROVA in the client UX.** Clients pay USDC. PROVA only matters to provers (stake) and PROVA holders (governance + fee burn).
 
 ## Why this works
 

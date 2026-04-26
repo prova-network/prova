@@ -21,11 +21,11 @@ contract ProvaTokenTest is Test {
     }
 
     function test_totalSupply() public view {
-        assertEq(token.totalSupply(), 1_000_000_000 ether);
+        assertEq(token.totalSupply(), 100_000_000 ether);
     }
 
     function test_treasuryBalance() public view {
-        assertEq(token.balanceOf(treasury), 1_000_000_000 ether);
+        assertEq(token.balanceOf(treasury), 100_000_000 ether);
     }
 
     function test_decimals() public view {
@@ -35,7 +35,7 @@ contract ProvaTokenTest is Test {
     function test_burn() public {
         vm.prank(treasury);
         token.burn(1000 ether);
-        assertEq(token.totalSupply(), 1_000_000_000 ether - 1000 ether);
+        assertEq(token.totalSupply(), 100_000_000 ether - 1000 ether);
     }
 
     function test_transfer() public {

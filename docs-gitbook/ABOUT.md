@@ -29,10 +29,10 @@ For programmatic / on-chain workflows, the [TypeScript SDK](sdk/) gives you a ty
 Prova is intentionally minimal. We are **not** building:
 
 * a new chain
-* a token launch (no ICO, no airdrop)
 * sealed PoRep / TEE / fancy crypto theater
 * a custodial backup service
+* a payment-token UX (clients pay USDC, not PROVA)
 
-Prova is **PDP on Base**, plus an ETH/USDC payment rail. Clients store. Provers stake. Ethereum settles. That's it.
+Prova is **PDP on Base**. Clients pay in USDC. Provers stake PROVA and earn USDC. Slashing burns PROVA. The 1% protocol fee on USDC auto-buys and burns PROVA from market revenue. That's the whole loop.
 
 If you want the full architecture, start at [How Prova works](concepts/architecture.md). If you want to use it, [start storing](getting-started/web-upload.md).
