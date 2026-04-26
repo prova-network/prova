@@ -3,6 +3,7 @@
 pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -51,7 +52,9 @@ contract ProverStaking is Ownable, ReentrancyGuard {
     /// @notice Total staked across all provers (accounting).
     uint256 public totalStaked;
 
-    /// @notice Total slashed tokens held by this contract pending treasury claim.
+    /// @notice [REMOVED] Slashed PROVA is burned at slash time. This
+    ///         storage slot is preserved for upgrade-safe layout but is
+    ///         never written to. Always reads as 0.
     uint256 public slashedPool;
 
     // ───── Events ────────────────────────────────────────────────────────
@@ -95,12 +98,11 @@ contract ProverStaking is Ownable, ReentrancyGuard {
         minStakePerGib = newValue;
     }
 
-    /// @notice Withdraw accumulated slashed tokens to the treasury.
-    function withdrawSlashed(address to, uint256 amount) external onlyOwner {
-        require(amount <= slashedPool, "exceeds slashed pool");
-        slashedPool -= amount;
-        token.safeTransfer(to, amount);
-        emit SlashedPoolWithdrawn(to, amount);
+    /// @notice [REMOVED in v2] Slashed PROVA is now burned at slash time;
+    ///         there is no pool to withdraw from. Kept as an explicit revert
+    ///         so old call sites fail loudly instead of silently succeeding.
+    function withdrawSlashed(address /*to*/, uint256 /*amount*/) external view onlyOwner {
+        revert("withdrawSlashed: slashing now burns; nothing to withdraw");
     }
 
     // ───── Staking ───────────────────────────────────────────────────────
@@ -178,8 +180,12 @@ contract ProverStaking is Ownable, ReentrancyGuard {
         emit CommittedBytesChanged(prover, s.committedBytes);
     }
 
-    /// @notice Slash `amount` from prover's bonded stake. Also slashes from unbonding
-    ///         if bonded is insufficient (prevents instant-exit after misbehavior).
+    /// @notice Slash `amount` from prover's bonded stake. Slashed PROVA is
+    ///         BURNED on-chain — it is permanently removed from supply.
+    ///         This is the protocol's deflationary force funded by misbehavior.
+    /// @dev    If the prover's bonded stake is insufficient, the difference is
+    ///         taken from their unbonding queue (prevents instant-exit after
+    ///         misbehavior).
     function slash(address prover, uint256 amount, bytes32 reason) external {
         if (!authorizedControllers[msg.sender]) revert NotAuthorized();
         if (amount == 0) revert ZeroAmount();
@@ -199,7 +205,12 @@ contract ProverStaking is Ownable, ReentrancyGuard {
             s.unbonding -= fromUnbonding;
         }
 
-        slashedPool += amount;
+        // Burn the slashed tokens. PROVA implements ERC20Burnable; if the
+        // configured token does not, this call reverts and the slash transaction
+        // unwinds — which is the right behavior (slashing requires a burnable
+        // token to satisfy the spec).
+        ERC20Burnable(address(token)).burn(amount);
+
         emit Slashed(prover, amount, msg.sender, reason);
     }
 

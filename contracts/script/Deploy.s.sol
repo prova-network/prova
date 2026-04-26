@@ -137,6 +137,16 @@ contract DeployScript is Script {
             console2.log("NOTE: ProverRewards.setMarketplace must be called by the treasury multisig");
         }
 
+        // 12. Fund the ProverRewards contract with the 50M PROVA emission
+        //     bucket. Source: the treasury (which holds the full 100M genesis
+        //     supply at construction). Without this transfer, claim() reverts.
+        if (treasury == deployer) {
+            token.transfer(address(proverRewards), 50_000_000 ether);
+            console2.log("Funded ProverRewards with:    50,000,000 PROVA");
+        } else {
+            console2.log("NOTE: treasury multisig must transfer 50,000,000 PROVA to ProverRewards before TGE");
+        }
+
         vm.stopBroadcast();
 
         out = Addresses({

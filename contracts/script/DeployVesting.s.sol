@@ -36,7 +36,7 @@ contract DeployVesting is Script {
         console2.log("ProvaVesting deployed at:", address(vesting));
 
         console2.log("--");
-        console2.log("Allocation table (v2 — supply-side heavy):");
+        console2.log("Allocation table (v2, supply-side heavy):");
         console2.log("  GENESIS DISTRIBUTION (45M, 45%, vested):");
         console2.log("    Public sale at TGE / LBP (6%):          6,000,000 PROVA");
         console2.log("    Private SAFT round (12%):              12,000,000 PROVA");
