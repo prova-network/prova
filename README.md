@@ -186,9 +186,10 @@ The [`spec/`](./spec/) directory has the authoritative v2 protocol specification
 
 Higher-level project docs at the repo root:
 
-- [`PROVA-V2-ARCHITECTURE.md`](./PROVA-V2-ARCHITECTURE.md), the architecture spec
-- [`TOKENOMICS-v2.md`](./TOKENOMICS-v2.md), the token model (points first, usage-triggered TGE)
-- [`PIVOT.md`](./PIVOT.md), the confidentiality constraint and v1 to v2 pivot summary
+- [`TOKENOMICS-2026.md`](./TOKENOMICS-2026.md), the canonical token model (100M PROVA, 45/50/5 split, prover emission, fee burn)
+- [`SECURITY-AUDIT-2026-04-25.md`](./SECURITY-AUDIT-2026-04-25.md), the internal audit log
+- [`FILECOIN-SOURCE-MAP.md`](./FILECOIN-SOURCE-MAP.md), upstream attribution
+- [`STATUS.md`](./STATUS.md), current state + scope-of-work for collaborators (read this if you're an AI agent or new contributor before touching anything)
 
 ---
 
