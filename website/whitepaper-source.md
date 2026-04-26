@@ -148,15 +148,35 @@ Pricing is set by the prover and discoverable on-chain. The marketplace does not
 
 The marketplace contract takes a 1% fee on every payment stream and routes it to a treasury multisig. The treasury subsidizes the free tier and pays for development. There are no investor allocations, no presale, and no airdrop.
 
-### 4.4 Why no token
+### 4.4 Token role (Amendment 1, 2026-04-26)
 
-A protocol token would add three things: a governance unit, a payment unit, and a speculation surface. The design does not need any of them.
+*The original v0.9 of this section argued that there should be no token at all. The position has been amended below; the original text is preserved at the end of this section for the historical record.*
 
-- **Governance.** Decisions about protocol parameters are constrained enough (fee, slash fraction, minimum stake multiplier) that a small multisig with public process is sufficient. A token does not improve the quality of those decisions; it just changes who is consulted.
-- **Payment.** USDC is already the unit of account on Base. Pricing storage in a volatile token would force every client to also operate a treasury policy.
-- **Speculation.** Speculation is fine, but a project does not have to mint it. If a future need arises, `ProvaToken` is reserved for that case.
+Prova does not have a **protocol** token. Storage deals settle in USDC, provers stake in USDC, and slashing burns USDC. The protocol does not need a token in any of those roles, and a token would only add learning cost and speculation surface to a primitive that benefits from being boring.
 
-We reserve the right to change our minds. We do not reserve the right to be quiet about it: any change here would land in a numbered amendment to this document.
+The **org** that builds and operates Prova does have an equity-style token, **PROVA**, deployed as a standard ERC-20 on Base. PROVA does three things and no more:
+
+- **Captures fee flow.** The marketplace contract takes a 1% fee on every USDC payment stream. The fee accrues to a public treasury, which uses it for buy-back-and-burn against PROVA on a published schedule, ecosystem grants paid in PROVA, and operational expenses of the org.
+- **Governs a bounded set of protocol parameters.** Token-weighted vote on the fee tier (currently 1%, hard-capped at 3%), slash fraction (currently 10%, hard-capped at 25%), minimum stake multiplier, prover-registry admission rules, and upgrade authority for the `ProofVerifier` UUPS proxy.
+- **Earns an optional fee discount.** Holders who lock PROVA into a fee-discount pool get a proportional reduction on their protocol fee. This is a routing-layer benefit; it is not required to use the protocol.
+
+PROVA is **not** used as gas, **not** used as payment, and **not** required to participate in the protocol as a client or as a prover. The protocol would function identically if PROVA did not exist.
+
+Full allocation, vesting, and compliance posture in [`TOKENOMICS-2026.md`](https://github.com/prova-network/prova/blob/main/TOKENOMICS-2026.md).
+
+We acknowledge the tension between the v0.9 framing and this amendment. The v0.9 arguments were aimed at the protocol's economic surface, and they remain true: the protocol does not need a token. What v0.9 did not say but should have, was that the org needs a way to pay the people who build the protocol. PROVA is that way. The line between "protocol token" and "org token" is real, and we draw it deliberately.
+
+We reserve the right to change our minds again. We do not reserve the right to be quiet about it: any change here would land in a further numbered amendment to this document.
+
+---
+
+*Original v0.9 §4.4, preserved for the historical record:*
+
+> A protocol token would add three things: a governance unit, a payment unit, and a speculation surface. The design does not need any of them.
+>
+> - **Governance.** Decisions about protocol parameters are constrained enough (fee, slash fraction, minimum stake multiplier) that a small multisig with public process is sufficient. A token does not improve the quality of those decisions; it just changes who is consulted.
+> - **Payment.** USDC is already the unit of account on Base. Pricing storage in a volatile token would force every client to also operate a treasury policy.
+> - **Speculation.** Speculation is fine, but a project does not have to mint it. If a future need arises, `ProvaToken` is reserved for that case.
 
 ---
 
