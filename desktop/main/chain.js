@@ -45,9 +45,12 @@ const PROVER_STAKING_ABI = [
   'event Withdrawn(address indexed prover, uint256 amount)'
 ]
 
+// Mirrors the Prover struct in src/ProverRegistry.sol exactly.
 const PROVER_REGISTRY_ABI = [
-  'function getProver(address prover) view returns (tuple(address account, string endpoint, uint64 features, uint64 maxBytes, uint8 priceTier, bytes32 ensNode))',
-  'function register(string endpoint, uint64 features, uint64 maxBytes, uint8 priceTier, bytes32 ensNode) external'
+  'function getProver(address prover) view returns (tuple(address owner, string endpoint, uint64 features, uint128 pricePerGibDay, uint128 pricePerByteServed, uint64 registeredAt, uint64 updatedAt, bool active, bytes32 ensNode, string metadata))',
+  'function register(string endpoint, uint64 features, uint128 pricePerGibDay, uint128 pricePerByteServed, string metadata) external',
+  'function FEATURE_PDP() view returns (uint64)',
+  'function FEATURE_HTTPS_SERVING() view returns (uint64)'
 ]
 
 // ─── Lazy-built provider / signer ───────────────────────────────────
@@ -139,7 +142,9 @@ async function getStakeSnapshot () {
     committedBytes: stakeInfo.committedBytes.toString(),
     minStakePerTiBWei: minPerTiB.toString(),
     unbondingPeriodSeconds: Number(unbondingPeriod),
-    isRegistered: !!(prov && prov.account && prov.account !== ethers.ZeroAddress),
+    // Registry uses a soft-delete `active` flag; treat that as the
+    // ground truth for whether this prover has registered.
+    isRegistered: !!(prov && prov.active),
     registeredEndpoint: prov ? prov.endpoint : ''
   }
 }
@@ -214,19 +219,41 @@ async function withdrawUnbonded () {
 
 /**
  * Register this prover in the registry. Required before the marketplace
- * will route deals to this address. The desktop ships sensible defaults
- * for endpoint / features / maxBytes so first-time provers don't have
- * to think about it.
+ * will route deals to this address.
+ *
+ * The on-chain ProverRegistry.register signature is
+ *   register(string endpoint, uint64 features, uint128 pricePerGibDay,
+ *            uint128 pricePerByteServed, string metadata)
+ * `features` must include `FEATURE_PDP = 1`. The desktop ships
+ * sensible defaults for endpoint and pricing so first-time provers
+ * don't have to think about it; they can update via setPrice / update*
+ * later.
+ *
+ * @param {{ endpoint?: string, pricePerGibDayWei?: string, pricePerByteServedWei?: string, metadata?: string }} opts
  */
-async function registerProver ({ endpoint = 'https://localhost', maxBytes = 1_000_000_000_000n } = {}) {
+async function registerProver (opts = {}) {
   const network = provaConfig.getNetworkConfig()
   const c = network.contracts
   if (!c.proverRegistry) throw new Error('chain: prover registry not configured')
   const { signer } = await getProviderAndSigner()
   const reg = new ethers.Contract(c.proverRegistry, PROVER_REGISTRY_ABI, signer)
-  // features: PDP (1) | HTTPS_SERVING (2) -> 3
+  const endpoint = opts.endpoint || 'https://localhost'
+  // FEATURE_PDP (1) | FEATURE_HTTPS_SERVING (2) = 3
   const features = 3n
-  const tx = await reg.register(endpoint, features, BigInt(maxBytes), 0, '0x' + '0'.repeat(64))
+  // Pricing defaults are intentionally conservative; user can update
+  // via setPrice once they know what they want to charge.
+  //   1e15 wei/GiB-day  ~ 0.001 token/GiB-day
+  //   1e9  wei/byte     ~ negligible default for retrieval
+  const pricePerGibDay = opts.pricePerGibDayWei ? BigInt(opts.pricePerGibDayWei) : 10n ** 15n
+  const pricePerByteServed = opts.pricePerByteServedWei ? BigInt(opts.pricePerByteServedWei) : 10n ** 9n
+  const metadata = opts.metadata ?? '{}'
+  const tx = await reg.register(
+    endpoint,
+    features,
+    pricePerGibDay,
+    pricePerByteServed,
+    metadata
+  )
   await tx.wait()
   return { txHash: tx.hash }
 }

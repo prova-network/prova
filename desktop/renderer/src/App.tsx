@@ -219,11 +219,11 @@ function Sidebar({
   stake: StakeSnapshot | null
   provaDecimals: number
 }) {
-  const items: Array<{ key: View; label: string; icon: string }> = [
-    { key: 'dashboard', label: 'Dashboard', icon: '◎' },
-    { key: 'stake',     label: 'Stake',     icon: '◇' },
-    { key: 'deals',     label: 'Deals',     icon: '☰' },
-    { key: 'settings',  label: 'Settings',  icon: '⚙' },
+  const items: Array<{ key: View; label: string; icon: React.ReactNode }> = [
+    { key: 'dashboard', label: 'Dashboard', icon: <NavIconDashboard /> },
+    { key: 'stake',     label: 'Stake',     icon: <NavIconStake /> },
+    { key: 'deals',     label: 'Deals',     icon: <NavIconDeals /> },
+    { key: 'settings',  label: 'Settings',  icon: <NavIconSettings /> },
   ]
   const provaBalance = useMemo(
     () => stake ? formatTokenAmount(stake.provaWei, provaDecimals, 2) : '—',
@@ -235,12 +235,12 @@ function Sidebar({
   )
 
   return (
-    <aside className="w-60 shrink-0 border-r border-ink/10 dark:border-cream/10 px-3 py-4 flex flex-col gap-1">
+    <aside className="w-60 shrink-0 border-r border-ink/10 dark:border-cream/10 px-3 py-4 flex flex-col gap-0.5 bg-cream/40 dark:bg-ink/40">
       <div className="px-3 pb-4 flex items-center gap-2.5">
         <span className="text-teal-deep dark:text-teal-cyan">
           <Logo size={26} />
         </span>
-        <span className="font-display font-semibold text-[15px] tracking-tighter">Prova</span>
+        <span className="font-display font-semibold text-[15px] tracking-tighter text-ink dark:text-cream">Prova</span>
       </div>
       {items.map(it => (
         <button
@@ -249,30 +249,77 @@ function Sidebar({
           className={
             'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ' +
             (view === it.key
-              ? 'bg-teal-cyan/15 text-teal-deep dark:text-teal-cyan'
-              : 'text-ink/70 dark:text-cream/70 hover:bg-ink/5 dark:hover:bg-cream/5')
+              ? 'bg-teal-cyan/20 text-teal-deep dark:text-teal-cyan font-semibold'
+              : 'text-ink/85 dark:text-cream/85 hover:bg-ink/5 dark:hover:bg-cream/5')
           }
         >
-          <span className="w-5 text-center text-base opacity-70" aria-hidden>{it.icon}</span>
-          <span className="font-medium">{it.label}</span>
+          <span
+            className={
+              'w-4 h-4 shrink-0 ' +
+              (view === it.key
+                ? 'text-teal-deep dark:text-teal-cyan'
+                : 'text-ink/65 dark:text-cream/70')
+            }
+            aria-hidden
+          >
+            {it.icon}
+          </span>
+          <span>{it.label}</span>
         </button>
       ))}
 
       <div className="mt-auto px-3 pt-4 border-t border-ink/10 dark:border-cream/10 text-[11px]">
-        <div className="text-ink/50 dark:text-cream/50">Prover wallet</div>
-        <div className="mono text-[12px] truncate" title={walletAddress}>
+        <div className="text-ink/65 dark:text-cream/65">Prover wallet</div>
+        <div className="mono text-[12px] truncate text-ink dark:text-cream" title={walletAddress}>
           {shortAddr(walletAddress) || '…'}
         </div>
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-ink/50 dark:text-cream/50">PROVA</span>
-          <span className="mono">{provaBalance}</span>
+          <span className="text-ink/65 dark:text-cream/65">PROVA</span>
+          <span className="mono text-ink dark:text-cream">{provaBalance}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-ink/50 dark:text-cream/50">Staked</span>
-          <span className="mono">{stakedAmount}</span>
+          <span className="text-ink/65 dark:text-cream/65">Staked</span>
+          <span className="mono text-ink dark:text-cream">{stakedAmount}</span>
         </div>
       </div>
     </aside>
+  )
+}
+
+// ─── Sidebar nav icons (inline SVG, picks up currentColor) ──────────────────────────────
+function NavIconDashboard() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+      <rect x="2" y="2" width="5" height="5" rx="1" />
+      <rect x="9" y="2" width="5" height="3" rx="1" />
+      <rect x="2" y="9" width="5" height="5" rx="1" />
+      <rect x="9" y="7" width="5" height="7" rx="1" />
+    </svg>
+  )
+}
+function NavIconStake() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+      <ellipse cx="8" cy="4" rx="5" ry="2" />
+      <path d="M3 4v8c0 1.1 2.24 2 5 2s5-.9 5-2V4" />
+      <path d="M3 8c0 1.1 2.24 2 5 2s5-.9 5-2" />
+    </svg>
+  )
+}
+function NavIconDeals() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+      <rect x="2" y="3" width="12" height="10" rx="1.5" />
+      <path d="M5 7h6M5 10h4" />
+    </svg>
+  )
+}
+function NavIconSettings() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+      <circle cx="8" cy="8" r="2.4" />
+      <path d="M8 1.5v1.6M8 12.9v1.6M14.5 8h-1.6M3.1 8H1.5M12.6 3.4l-1.1 1.1M4.5 11.5l-1.1 1.1M12.6 12.6l-1.1-1.1M4.5 4.5L3.4 3.4" />
+    </svg>
   )
 }
 
@@ -444,10 +491,10 @@ function StakeView({
         )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <Stat label="Staked"    value={`${staked} PROVA`}   sub="locked, slashable on fault" tone="ok" />
-          <Stat label="Unbonding" value={`${unbonding} PROVA`} sub={unbondingCountdown ? `ready in ${unbondingCountdown}` : 'no pending unstakes'} />
-          <Stat label="Wallet"    value={`${provaBal} PROVA`} sub="available to stake" />
-          <Stat label="Gas"       value={`${ethBal} ETH`}    sub="pays for transactions" />
+          <Stat label="Staked"          value={`${staked} PROVA`}   sub="locked, slashable on fault" tone={BigInt(snapshot?.stakedWei || '0') > 0n ? 'ok' : 'default'} />
+          <Stat label="Unbonding"       value={`${unbonding} PROVA`} sub={unbondingCountdown ? `ready in ${unbondingCountdown}` : 'no pending unstakes'} />
+          <Stat label="Wallet balance"  value={`${provaBal} PROVA`} sub="available to stake" />
+          <Stat label="ETH for gas"     value={`${ethBal} ETH`}    sub="pays for tx fees on-chain" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
