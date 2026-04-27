@@ -15,7 +15,12 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 // Helper: wrap a main-process event broadcast into a subscribe-with-unsubscribe
 // pattern that's easier to use from React useEffect.
+/**
+ * @param {string} channel
+ * @param {(...args: unknown[]) => void} handler
+ */
 function subscribe (channel, handler) {
+  /** @type {(event: Electron.IpcRendererEvent, ...args: unknown[]) => void} */
   const listener = (_event, ...args) => handler(...args)
   ipcRenderer.on(channel, listener)
   return () => ipcRenderer.removeListener(channel, listener)
@@ -27,9 +32,10 @@ contextBridge.exposeInMainWorld('electron', {
 
   // ─── Wallet ─────────────────────────────────────────────────────────
   getWalletAddress: () => ipcRenderer.invoke('prova:getWalletAddress'),
-  signMessage: (msg) => ipcRenderer.invoke('prova:signMessage', msg),
+  /** @param {string} msg */
+  signMessage: (/** @type {string} */ msg) => ipcRenderer.invoke('prova:signMessage', msg),
   exportSeedPhrase: () => ipcRenderer.invoke('prova:exportSeedPhrase'),
-  importSeedPhrase: (phrase) =>
+  importSeedPhrase: (/** @type {string} */ phrase) =>
     ipcRenderer.invoke('prova:importSeedPhrase', phrase),
 
   // ─── Prover stats ──────────────────────────────────────────────────
@@ -49,21 +55,30 @@ contextBridge.exposeInMainWorld('electron', {
 
   // ─── Logs & external URLs ──────────────────────────────────────────
   saveLogsAs: () => ipcRenderer.invoke('prova:saveLogsAs'),
-  openExternalURL: (url) => ipcRenderer.invoke('prova:openExternalURL', url),
+  openExternalURL: (/** @type {string} */ url) => ipcRenderer.invoke('prova:openExternalURL', url),
 
   // ─── Subscriptions ─────────────────────────────────────────────────
   // Each returns an unsubscribe function for useEffect cleanup.
-  onActivityLogged: (cb) => subscribe('prova:activity-logged', cb),
-  onProofStatsUpdated: (cb) => subscribe('prova:proof-stats-updated', cb),
-  onDealsActiveUpdated: (cb) => subscribe('prova:deals-active-updated', cb),
-  onWalletAddressUpdated: (cb) => subscribe('prova:wallet-address-updated', cb),
+  /** @param {(activity: import('../shared/typings').Activity) => void} cb */
+  onActivityLogged: (/** @type {(...args: unknown[]) => void} */ cb) =>
+    subscribe('prova:activity-logged', cb),
+  /** @param {(count: number) => void} cb */
+  onProofStatsUpdated: (/** @type {(...args: unknown[]) => void} */ cb) =>
+    subscribe('prova:proof-stats-updated', cb),
+  /** @param {(count: number) => void} cb */
+  onDealsActiveUpdated: (/** @type {(...args: unknown[]) => void} */ cb) =>
+    subscribe('prova:deals-active-updated', cb),
+  /** @param {(addr: string) => void} cb */
+  onWalletAddressUpdated: (/** @type {(...args: unknown[]) => void} */ cb) =>
+    subscribe('prova:wallet-address-updated', cb),
   // Updater state is carried by three distinct events in main/updater.js:
   //   UPDATE_CHECK_STARTED   -> 'checking'
   //   UPDATE_CHECK_FINISHED  -> 'idle'  (no update available)
   //   READY_TO_UPDATE        -> 'ready'
   // We normalize them into a single callback surface here so the renderer
   // has one subscription to manage.
-  onUpdaterStatusChanged: (cb) => {
+  /** @param {(status: 'checking' | 'idle' | 'ready') => void} cb */
+  onUpdaterStatusChanged: (/** @type {(s: 'checking' | 'idle' | 'ready') => void} */ cb) => {
     const checkingHandler = () => cb('checking')
     const finishedHandler = () => cb('idle')
     const readyHandler = () => cb('ready')

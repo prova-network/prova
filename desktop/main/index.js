@@ -114,7 +114,10 @@ const ctx = {
   saveModuleLogsAs: () => { throw new Error('not-wired') },
   toggleOpenAtLogin: () => { throw new Error('not-wired') },
   isOpenAtLogin: () => { throw new Error('not-wired') },
-  exportSeedPhrase: () => wallet.exportMnemonic(),
+  // settings.js will replace this with the dialog-gated copy-to-clipboard
+  // version during boot. The placeholder discards the mnemonic so the
+  // signature matches Context.exportSeedPhrase: () => void | Promise<void>.
+  exportSeedPhrase: async () => { await wallet.exportMnemonic() },
   showUI: () => { throw new Error('not-wired') },
   isShowingUI: false,
   loadWebUIFromDist: serve({

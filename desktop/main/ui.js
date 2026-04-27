@@ -118,48 +118,23 @@ module.exports = async function (ctx) {
  * @param {BrowserWindow} ui
  */
 function setupIpcEventForwarding (ui) {
-  const onNewActivity = (/** @type {unknown[]} */ ...args) => {
-    ui.webContents.send(ipcMainEvents.ACTIVITY_LOGGED, ...args)
+  // Forward every main->renderer event listed in ipcMainEvents. The list
+  // is the source of truth; if a name is added to ipc.js it gets piped
+  // through here automatically without code changes.
+  /** @type {Array<[string, (...args: unknown[]) => void]>} */
+  const wired = []
+  for (const channel of Object.values(ipcMainEvents)) {
+    /** @type {(...args: unknown[]) => void} */
+    const handler = (...args) => {
+      ui.webContents.send(channel, ...args)
+    }
+    ipcMain.on(channel, handler)
+    wired.push([channel, handler])
   }
-  ipcMain.on(ipcMainEvents.ACTIVITY_LOGGED, onNewActivity)
-
-  const onJobStatsUpdated = (/** @type {unknown[]} */ ...args) => {
-    ui.webContents.send(ipcMainEvents.JOB_STATS_UPDATED, ...args)
-  }
-  ipcMain.on(ipcMainEvents.JOB_STATS_UPDATED, onJobStatsUpdated)
-
-  const onReadyToUpdate = (/** @type {unknown[]} */ ...args) => {
-    ui.webContents.send(ipcMainEvents.READY_TO_UPDATE, ...args)
-  }
-  ipcMain.on(ipcMainEvents.READY_TO_UPDATE, onReadyToUpdate)
-
-  const onTransactionUpdate = (/** @type {unknown[]} */ ...args) => {
-    ui.webContents.send(ipcMainEvents.TRANSACTION_UPDATE, ...args)
-  }
-  ipcMain.on(ipcMainEvents.TRANSACTION_UPDATE, onTransactionUpdate)
-
-  const onBalanceUpdate = (/** @type {unknown[]} */ ...args) => {
-    ui.webContents.send(ipcMainEvents.BALANCE_UPDATE, ...args)
-  }
-  ipcMain.on(ipcMainEvents.BALANCE_UPDATE, onBalanceUpdate)
-
-  const onScheduledRewardsUpdate = (/** @type {unknown[]} */ ...args) => {
-    ui.webContents.send(ipcMainEvents.SCHEDULED_REWARDS_UPDATE, ...args)
-  }
-  ipcMain.on(ipcMainEvents.SCHEDULED_REWARDS_UPDATE, onScheduledRewardsUpdate)
 
   return function stopIpcEventForwarding () {
-    ipcMain.removeListener(ipcMainEvents.ACTIVITY_LOGGED, onNewActivity)
-    ipcMain.removeListener(ipcMainEvents.JOB_STATS_UPDATED, onJobStatsUpdated)
-    ipcMain.removeListener(ipcMainEvents.READY_TO_UPDATE, onReadyToUpdate)
-    ipcMain.removeListener(
-      ipcMainEvents.TRANSACTION_UPDATE,
-      onTransactionUpdate
-    )
-    ipcMain.removeListener(ipcMainEvents.BALANCE_UPDATE, onBalanceUpdate)
-    ipcMain.removeListener(
-      ipcMainEvents.SCHEDULED_REWARDS_UPDATE,
-      onScheduledRewardsUpdate
-    )
+    for (const [channel, handler] of wired) {
+      ipcMain.removeListener(channel, handler)
+    }
   }
 }

@@ -28,7 +28,7 @@ async function setup (ctx) {
       buttons: ['Cancel', 'Copy to Clipboard']
     })
     if (button === 1) {
-      clipboard.writeText(await wallet.getSeedPhrase())
+      clipboard.writeText(await wallet.exportMnemonic())
     }
   }
 }

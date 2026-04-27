@@ -68,6 +68,7 @@ let ctx = null
 async function setup (_ctx) {
   ctx = _ctx
 
+  /** @type {string | null} */
   let mnemonic = await loadMnemonic()
   let isNew = false
 
@@ -117,8 +118,7 @@ async function importMnemonic (phrase) {
  * @returns {Promise<string>}
  */
 async function getAddress () {
-  assertReady()
-  return walletInstance.address
+  return getWallet().address
 }
 
 /**
@@ -130,8 +130,7 @@ async function getAddress () {
  * @returns {Promise<string>} 0x-prefixed signature
  */
 async function signMessage (message) {
-  assertReady()
-  return walletInstance.signMessage(message)
+  return getWallet().signMessage(message)
 }
 
 /**
@@ -145,7 +144,7 @@ async function signMessage (message) {
  * @returns {Promise<string>} 64-char hex string
  */
 async function getKeystorePassphrase () {
-  assertReady()
+  getWallet() // ensure wallet is initialized before reading the keystore
   const mnemonic = await loadMnemonic()
   if (!mnemonic) throw new Error('wallet: no mnemonic available for passphrase derivation')
   return createHash('sha256')
@@ -160,8 +159,7 @@ async function getKeystorePassphrase () {
  * @returns {Promise<string>} 0x-prefixed 32-byte hex
  */
 async function exportPrivateKey () {
-  assertReady()
-  return walletInstance.privateKey
+  return getWallet().privateKey
 }
 
 /**
@@ -177,30 +175,53 @@ async function exportMnemonic () {
 
 // ─── internals ───────────────────────────────────────────────────────
 
+/**
+ * Returns the initialized wallet instance, throwing if `setup()` has not
+ * yet completed. Used in place of an `assertReady()` predicate so the
+ * caller gets a non-null value back through the type system.
+ *
+ * @returns {ethers.HDNodeWallet}
+ */
+function getWallet () {
+  if (!walletInstance) {
+    throw new Error('wallet: not initialized; call setup() first')
+  }
+  return walletInstance
+}
+
 function assertReady () {
   if (!walletInstance) {
     throw new Error('wallet: setup() not called')
   }
 }
 
+/**
+ * @returns {Promise<string | null>}
+ */
 async function loadMnemonic () {
   try {
     const m = await keytar.getPassword(SERVICE, ACCOUNT_MNEMONIC)
     if (m) return m
-  } catch (err) {
-    log.warn('keytar load failed, trying fallback store:', err.message)
+  } catch (/** @type {unknown} */ err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    log.warn('keytar load failed, trying fallback store:', msg)
   }
-  return fallbackStore.get('mnemonic') || null
+  const stored = fallbackStore.get('mnemonic')
+  return typeof stored === 'string' && stored.length > 0 ? stored : null
 }
 
+/**
+ * @param {string} mnemonic
+ */
 async function saveMnemonic (mnemonic) {
   try {
     await keytar.setPassword(SERVICE, ACCOUNT_MNEMONIC, mnemonic)
     // Clear fallback copy if it was ever written
     fallbackStore.delete('mnemonic')
     return
-  } catch (err) {
-    log.warn('keytar save failed, using fallback store:', err.message)
+  } catch (/** @type {unknown} */ err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    log.warn('keytar save failed, using fallback store:', msg)
     fallbackStore.set('mnemonic', mnemonic)
   }
 }

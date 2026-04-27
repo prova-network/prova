@@ -108,13 +108,18 @@ test.describe.serial('Application launch', () => {
   test('IPC bridge is exposed and usable', async () => {
     // From the renderer context we should be able to invoke IPC handlers.
     const hasBridge = await mainWindow.evaluate(() => {
-      return typeof window.electron === 'object' &&
-        typeof window.electron.getWalletAddress === 'function'
+      // `window.electron` is exposed by main/preload.js via
+      // contextBridge. The renderer-side TS declarations live in
+      // renderer/src/api.ts; the test file uses a string-keyed access
+      // to dodge needing those types in the test tsconfig.
+      const w = /** @type {any} */ (window)
+      return typeof w.electron === 'object' &&
+        typeof w.electron.getWalletAddress === 'function'
     })
     expect(hasBridge).toBe(true)
 
     const addr = await mainWindow.evaluate(() =>
-      window.electron.getWalletAddress()
+      /** @type {any} */ (window).electron.getWalletAddress()
     )
     expect(addr).toMatch(/^0x[a-fA-F0-9]{40}$/)
   })

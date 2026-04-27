@@ -1,62 +1,60 @@
-import { Activity, FILTransaction, FILTransactionProcessing } from '../shared/typings'
-export type { FILTransactionStatus } from '../shared/typings'
-export type { Activity, FILTransaction, FILTransactionProcessing }
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) Protocol Labs (original), Prova Network contributors (modifications).
+// Forked from CheckerNetwork/desktop main/typings.ts.
+//
+// Strongly-typed surface for the Electron main process. Re-exported from
+// JSDoc `@typedef`s on the JS files so we get cross-file type inference
+// without converting the whole main/ to TypeScript.
 
-export interface BeryxTransaction {
-  height: number;
-  canonical: boolean;
-  tx_timestamp: string;
-  tipset_cid: string;
-  block_cid: string;
-  level: number;
-  gas_used: string;
-  tx_cid: string;
-  id: string;
-  parent_id: string;
-  search_id: string;
-  tx_from: string;
-  tx_to: string;
-  amount: number;
-  status: 'Ok' | 'Fail';
-  tx_type: string;
+import { Activity, WalletSeed } from '../shared/typings'
+
+export type { Activity, WalletSeed }
+
+/// Updater-status snapshot exposed to the renderer. The shape mirrors
+/// the events emitted from `main/updater.js`.
+export interface UpdaterStatus {
+  readyToUpdate: boolean
 }
 
-export interface BeryxTransactionsResponse {
-  transactions: BeryxTransaction[];
-  next_cursor: string;
-}
-
+/// Shared state plumbing object passed to every main-process module.
+/// Modules attach their handles to it during `setup()` and read what
+/// other modules attached when they need to call across boundaries.
+///
+/// Modules MUST treat unattached fields as "not yet wired" and throw
+/// rather than silently no-op. The boot sequence in `main/index.js`
+/// initializes every field with a `not-wired` thrower so the failure
+/// shows up loud.
 export interface Context {
-  recordActivity(activity: Activity): void;
-  getActivities(): Activity[];
-  setTotalJobsCompleted(count: number): void;
-  getTotalJobsCompleted(): number;
-  setScheduledRewardsForAddress(balance: string): void;
-  getScheduledRewardsForAddress(): string;
+  // ── Activity feed ──────────────────────────────────────────────────
+  recordActivity(activity: Activity): void
+  getActivities(): Activity[]
 
-  getScheduledRewards(): string;
-  getWalletBalance(): string;
+  // ── Prover stats (incremented by provad supervisor) ────────────────
+  getTotalProofsSubmitted(): number
+  setTotalProofsSubmitted(count: number): void
+  getTotalDealsActive(): number
+  setTotalDealsActive(count: number): void
 
-  showUI: () => void;
-  isShowingUI: boolean;
-  loadWebUIFromDist: import('electron-serve').loadURL;
-  manualCheckForUpdates: () => void;
-  saveModuleLogsAs: () => Promise<void>;
+  // ── Wallet ─────────────────────────────────────────────────────────
+  setWalletAddress(addr: string): void
+  exportSeedPhrase: () => void | Promise<void>
 
-  openReleaseNotes: () => void;
-  restartToUpdate: () => void;
-  getUpdaterStatus: () => {readyToUpdate: boolean};
-  openExternalURL: (url: string) => void;
+  // ── UI lifecycle ───────────────────────────────────────────────────
+  showUI: () => void
+  isShowingUI: boolean
+  loadWebUIFromDist: import('electron-serve').loadURL
 
-  transactionUpdate: (transactions: (FILTransaction|FILTransactionProcessing)[]) => void;
-  balanceUpdate: (balance:string) => void;
+  // ── Updater (electron-updater) ─────────────────────────────────────
+  manualCheckForUpdates: () => void
+  saveModuleLogsAs: () => Promise<void>
+  openReleaseNotes: () => void
+  restartToUpdate: () => void
+  getUpdaterStatus: () => UpdaterStatus
 
-  toggleOpenAtLogin: () => void;
-  isOpenAtLogin: () => boolean;
-  exportSeedPhrase: () => void;
-}
+  // ── External URL handling (whitelist gate) ─────────────────────────
+  openExternalURL: (url: string) => void
 
-export interface WalletSeed {
-  seed: string;
-  isNew: boolean;
+  // ── OS integration ─────────────────────────────────────────────────
+  toggleOpenAtLogin: () => void
+  isOpenAtLogin: () => boolean
 }

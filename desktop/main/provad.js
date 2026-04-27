@@ -91,9 +91,10 @@ async function run (ctx) {
     try {
       await start(ctx)
       backoffMs = 1000 // reset on clean exit
-    } catch (err) {
+    } catch (/** @type {unknown} */ err) {
       log.error(format('provad start failed:', err))
-      logs.pushLine(`[supervisor] ${err.message || String(err)}`)
+      const msg = err instanceof Error ? err.message : String(err)
+      logs.pushLine(`[supervisor] ${msg}`)
     }
     // Small delay before restart so we don't hammer on repeated config errors
     await new Promise(r => setTimeout(r, backoffMs))
@@ -272,6 +273,7 @@ function parseStdoutLine (ctx, line) {
   }
 }
 
+/** @param {number} n */
 function formatBytes (n) {
   if (!Number.isFinite(n) || n <= 0) return '0 B'
   const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
