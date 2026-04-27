@@ -88,7 +88,9 @@ jobs:
 
       - name: Check install/uninstall
         run: |
-          shellcheck install.sh uninstall.sh
+          # SC2059 is intentional in install.sh: colored output is assembled
+          # from ANSI variables in a trusted local installer script.
+          shellcheck -e SC2059 install.sh uninstall.sh
           shellcheck prover/internal/soaktest/run.sh
           shellcheck prover/scripts/gen-bindings.sh
 
