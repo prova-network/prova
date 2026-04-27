@@ -128,9 +128,88 @@ let totalProofsSubmitted = 0
 let totalDealsActive = 0
 
 /**
+ * Seed fake activity / counters / stats so the dashboard tells a
+ * realistic story for screenshots and demos. Triggered by setting
+ * `PROVA_DEMO=1` in the environment before launching the app. Off by
+ * default; never runs in packaged builds.
+ *
+ * @param {Context} ctx
+ */
+function seedDemoData (ctx) {
+  if (process.env.PROVA_DEMO !== '1') return
+  log.info('PROVA_DEMO=1 — seeding fake activity + stats for demo')
+
+  // Counters that the dashboard reads through ctx.
+  totalDealsActive = 12
+  totalProofsSubmitted = 143
+  if (typeof ctx.setTotalDealsActive === 'function') ctx.setTotalDealsActive(totalDealsActive)
+  if (typeof ctx.setTotalProofsSubmitted === 'function') ctx.setTotalProofsSubmitted(totalProofsSubmitted)
+
+  // Stats override (storage used + earnings + staked) for demo only.
+  // Wired through getProverStats() via the demo flag below.
+  /** @type {{bytesStored:number, piecesStored:number, earnedUsdc:number|null, stakedProva:number|null}} */
+  demoStats = {
+    bytesStored: 12 * 1024 ** 3 + 412 * 1024 ** 2, // ~12.4 GiB
+    piecesStored: 84,
+    earnedUsdc: 1238.45,
+    stakedProva: 8500
+  }
+
+  // Replay-ish activity feed: 30 recent events spread across deal/proof/http.
+  /** @type {Array<{type:'started'|'info'|'error', source:string, message:string, ageSeconds:number}>} */
+  const events = [
+    { type: 'started', source: 'provad',     message: 'provad started (anvil)',                          ageSeconds: 4_320 },
+    { type: 'started', source: 'daemon',     message: 'daemon starting',                                  ageSeconds: 4_318 },
+    { type: 'info',    source: 'daemon',     message: 'on-chain accepter wired (StorageMarketplace)',     ageSeconds: 4_316 },
+    { type: 'started', source: 'httpserver', message: 'HTTP retrieval server listening on 0.0.0.0:18080', ageSeconds: 4_315 },
+    { type: 'info',    source: 'engine',     message: 'Deal #128 ingested (256 MiB)',                     ageSeconds: 3_900 },
+    { type: 'info',    source: 'engine',     message: 'Deal #129 ingested (1.5 GiB)',                     ageSeconds: 3_840 },
+    { type: 'info',    source: 'engine',     message: 'Deal #130 ingested (768 MiB)',                     ageSeconds: 3_780 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #122 (epoch 4128)',       ageSeconds: 3_300 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #123 (epoch 4128)',       ageSeconds: 3_240 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #124 (epoch 4128)',       ageSeconds: 3_180 },
+    { type: 'info',    source: 'daemon',     message: 'poll complete @ 8412',                             ageSeconds: 2_880 },
+    { type: 'info',    source: 'engine',     message: 'Deal #131 ingested (4.0 GiB)',                     ageSeconds: 2_760 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #125 (epoch 4140)',       ageSeconds: 2_700 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #126 (epoch 4140)',       ageSeconds: 2_640 },
+    { type: 'info',    source: 'engine',     message: 'Deal #132 ingested (512 MiB)',                     ageSeconds: 2_220 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #127 (epoch 4156)',       ageSeconds: 1_860 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #128 (epoch 4156)',       ageSeconds: 1_800 },
+    { type: 'info',    source: 'engine',     message: 'Deal #133 ingested (2.1 GiB)',                     ageSeconds: 1_500 },
+    { type: 'error',   source: 'engine',     message: 'source url resolution failed: connection reset by peer', ageSeconds: 1_440 },
+    { type: 'info',    source: 'engine',     message: 'Deal #133 retry succeeded',                        ageSeconds: 1_380 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #129 (epoch 4172)',       ageSeconds: 1_080 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #130 (epoch 4172)',       ageSeconds: 1_020 },
+    { type: 'info',    source: 'daemon',     message: '3 new deals ingested at block 8488',               ageSeconds: 720 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #131 (epoch 4188)',       ageSeconds: 540 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #132 (epoch 4188)',       ageSeconds: 480 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #133 (epoch 4188)',       ageSeconds: 420 },
+    { type: 'info',    source: 'engine',     message: 'Deal #134 ingested (320 MiB)',                     ageSeconds: 240 },
+    { type: 'info',    source: 'engine',     message: 'Deal #135 ingested (1.0 GiB)',                     ageSeconds: 180 },
+    { type: 'info',    source: 'pdp',        message: 'Proof submitted for deal #134 (epoch 4204)',       ageSeconds: 60  },
+    { type: 'info',    source: 'daemon',     message: 'poll complete @ 8492',                             ageSeconds: 12  }
+  ]
+  const now = Date.now()
+  for (const e of events) {
+    activities.push(ctx, {
+      id: randomUUID(),
+      type: e.type,
+      source: e.source,
+      message: e.message,
+      timestamp: new Date(now - e.ageSeconds * 1000)
+    })
+  }
+}
+
+/** @type {{bytesStored:number, piecesStored:number, earnedUsdc:number|null, stakedProva:number|null} | null} */
+let demoStats = null
+
+/**
  * @param {Context} ctx
  */
 async function setup (ctx) {
+  seedDemoData(ctx)
+
   ctx.saveModuleLogsAs = async () => {
     const opts = {
       defaultPath: `prova-logs-${(new Date()).getTime()}.log`
@@ -730,8 +809,22 @@ async function getProverStats () {
   const bytesStored = fresh ? lastScrape.bytesStored || diskBytes : diskBytes
   const piecesStored = fresh ? lastScrape.piecesStored || diskFiles : diskFiles
 
-  // Earnings + staked are not yet wired; the marketplace contract reads
-  // are tracked separately in prova-network/contracts#3 follow-up.
+  // Earnings + staked are not yet wired against real contract reads;
+  // tracked separately in prova-network/contracts#3 follow-up. In demo
+  // mode (PROVA_DEMO=1), we surface plausible figures so the dashboard
+  // can be screenshotted with realistic copy.
+  if (demoStats) {
+    return {
+      bytesStored: demoStats.bytesStored,
+      piecesStored: demoStats.piecesStored,
+      dealsActive: totalDealsActive,
+      proofsSubmitted: totalProofsSubmitted,
+      earnedUsdc: demoStats.earnedUsdc,
+      stakedProva: demoStats.stakedProva,
+      daemonUptimeSeconds: 4_320
+    }
+  }
+
   return {
     bytesStored,
     piecesStored,

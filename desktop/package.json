@@ -1,9 +1,9 @@
 {
-  "name": "prova-desktop",
-  "productName": "Prova",
+  "name": "prova-helm",
+  "productName": "Prova Helm",
   "private": true,
   "version": "0.1.0-pre",
-  "description": "Desktop app for running a Prova prover. Wraps the provad daemon with a local wallet, auto-update, and a dashboard UI. Forked from CheckerNetwork/desktop (Apache-2.0 OR MIT).",
+  "description": "Prova Helm \u2014 the operator console for running a Prova prover. Local wallet, on-chain stake/withdraw, auto-update, daemon supervisor. MIT.",
   "main": "main/index.js",
   "scripts": {
     "start": "cross-env NODE_ENV=development electron .",

@@ -170,6 +170,7 @@ declare global {
       onProofStatsUpdated: (cb: (total: number) => void) => () => void
       onDealsActiveUpdated: (cb: (total: number) => void) => () => void
       onWalletAddressUpdated: (cb: (addr: string) => void) => () => void
+      onSetView: (cb: (view: string) => void) => () => void
       onStorageDirChanged: (cb: (dir: string) => void) => () => void
       onNetworkChanged: (cb: (cfg: NetworkConfig) => void) => () => void
       onDaemonStatusChanged: (cb: (status: DaemonStatus) => void) => () => void
@@ -259,6 +260,7 @@ const stub = {
   onProofStatsUpdated(_cb: (n: number) => void) { return () => {} },
   onDealsActiveUpdated(_cb: (n: number) => void) { return () => {} },
   onWalletAddressUpdated(_cb: (addr: string) => void) { return () => {} },
+  onSetView(_cb: (view: string) => void) { return () => {} },
   onStorageDirChanged(_cb: (dir: string) => void) { return () => {} },
   onNetworkChanged(_cb: (cfg: NetworkConfig) => void) { return () => {} },
   onDaemonStatusChanged(_cb: (s: DaemonStatus) => void) { return () => {} },
@@ -319,6 +321,8 @@ export const electron = {
     bridgeAvailable() ? window.electron.onDealsActiveUpdated(cb) : stub.onDealsActiveUpdated(cb),
   onWalletAddressUpdated: (cb: (addr: string) => void) =>
     bridgeAvailable() ? window.electron.onWalletAddressUpdated(cb) : stub.onWalletAddressUpdated(cb),
+  onSetView: (cb: (view: string) => void) =>
+    bridgeAvailable() ? window.electron.onSetView(cb) : stub.onSetView(cb),
   onStorageDirChanged: (cb: (dir: string) => void) =>
     bridgeAvailable() ? window.electron.onStorageDirChanged(cb) : stub.onStorageDirChanged(cb),
   onNetworkChanged: (cb: (cfg: NetworkConfig) => void) =>

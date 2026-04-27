@@ -124,6 +124,12 @@ contextBridge.exposeInMainWorld('electron', {
   //   READY_TO_UPDATE        -> 'ready'
   // We normalize them into a single callback surface here so the renderer
   // has one subscription to manage.
+  // Internal: dev/demo capture script flips the active tab via this
+  // event before snapshotting. Renderer subscribes through onSetView.
+  /** @param {(view: string) => void} cb */
+  onSetView: (/** @type {(...args: unknown[]) => void} */ cb) =>
+    subscribe('prova:setView', cb),
+
   /** @param {(status: 'checking' | 'idle' | 'ready') => void} cb */
   onUpdaterStatusChanged: (/** @type {(s: 'checking' | 'idle' | 'ready') => void} */ cb) => {
     const checkingHandler = () => cb('checking')

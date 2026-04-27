@@ -105,6 +105,11 @@ export default function App() {
         electron.listNetworks().then(setNetworkPresets).catch(() => {})
       }),
       electron.onDaemonStatusChanged(s => setDaemonStatus(s)),
+      electron.onSetView(v => {
+        if (v === 'dashboard' || v === 'stake' || v === 'deals' || v === 'settings') {
+          setView(v)
+        }
+      }),
     ]
     return () => unsubs.forEach(u => u())
   }, [])

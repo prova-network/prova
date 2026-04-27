@@ -70,6 +70,34 @@ function handleError (/** @type {any} */ err) {
 process.on('uncaughtException', handleError)
 process.on('unhandledRejection', handleError)
 
+/**
+ * Cycle through every tab in the renderer and snapshot the window
+ * to disk as a PNG. Triggered via PROVA_CAPTURE_SCREENSHOTS=1.
+ *
+ * @param {string} captureDir absolute path to write PNGs into
+ */
+async function runScreenshotCapture (captureDir) {
+  const { BrowserWindow } = require('electron')
+  const fs = require('node:fs/promises')
+  await fs.mkdir(captureDir, { recursive: true })
+  const wins = BrowserWindow.getAllWindows()
+  if (wins.length === 0) {
+    log.warn('capture: no BrowserWindow available')
+    return
+  }
+  const win = wins[0]
+  const tabs = ['dashboard', 'stake', 'deals', 'settings']
+  for (const tab of tabs) {
+    win.webContents.send('prova:setView', tab)
+    // Give React a beat to render the new view + any data fetch.
+    await new Promise(r => setTimeout(r, 800))
+    const img = await win.webContents.capturePage()
+    const out = path.join(captureDir, `${tab}.png`)
+    await fs.writeFile(out, img.toPNG())
+    log.info(`captured ${out} (${img.getSize().width}x${img.getSize().height})`)
+  }
+}
+
 // Windows notification APIs require this AppUserModelID to be set.
 if (process.platform === 'win32') {
   app.setAppUserModelId('network.prova.desktop')
@@ -161,6 +189,21 @@ async function run () {
     }
     await provad.setup(ctx)
     await settings.setup(ctx)
+
+    // One-shot screenshot capture mode (env var). Used to refresh
+    // the marketing screenshots in desktop/screenshots/. Cycles
+    // through every tab, snapshots the window via
+    // webContents.capturePage(), and quits when done.
+    if (process.env.PROVA_CAPTURE_SCREENSHOTS === '1') {
+      const captureDir = process.env.PROVA_CAPTURE_DIR
+        || path.join(__dirname, '..', 'screenshots')
+      // Wait for renderer to settle, then drive the capture loop.
+      setTimeout(() => {
+        runScreenshotCapture(captureDir)
+          .catch(handleError)
+          .finally(() => app.quit())
+      }, 1500)
+    }
 
     // Blocks here until app quit.
     await provad.run(ctx)
