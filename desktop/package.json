@@ -23,8 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/prova-network/prova.git",
-    "directory": "desktop"
+    "url": "git+https://github.com/prova-network/prova-helm-app.git"
   },
   "keywords": [
     "prova",
@@ -36,7 +35,7 @@
   "author": "Prova Network contributors",
   "license": "(Apache-2.0 AND MIT)",
   "bugs": {
-    "url": "https://github.com/prova-network/prova/issues"
+    "url": "https://github.com/prova-network/prova-helm-app/issues"
   },
   "homepage": "https://prova.network",
   "dependencies": {

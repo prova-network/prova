@@ -256,9 +256,12 @@ function Sidebar({
     <aside className="w-60 shrink-0 border-r border-ink/10 dark:border-cream/10 px-3 py-4 flex flex-col gap-0.5 bg-white/60 dark:bg-ink/60">
       <div className="px-3 pb-4 flex items-center gap-2.5">
         <span className="text-teal-deep dark:text-teal-cyan">
-          <Logo size={26} />
+          <Logo size={32} />
         </span>
-        <span className="font-display font-semibold text-[15px] tracking-tighter text-ink dark:text-cream">Prova</span>
+        <div className="flex flex-col leading-none">
+          <span className="font-display font-semibold text-[15px] tracking-tighter text-ink dark:text-cream">Prova</span>
+          <span className="font-display font-medium text-[12px] tracking-tight text-teal-deep dark:text-teal-cyan mt-0.5">Helm</span>
+        </div>
       </div>
       {items.map(it => (
         <button

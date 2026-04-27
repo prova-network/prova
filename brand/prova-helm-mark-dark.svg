@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prova Helm app mark for DARK backgrounds. Same geometry as the
+     light variant; brighter teal palette holds its weight on dark UI. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="provaHelmDark" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%"  stop-color="#7FE8D8"/>
+      <stop offset="55%" stop-color="#2EC4B6"/>
+      <stop offset="100%" stop-color="#5DC3E5"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M100 16 L173 58 L173 142 L100 184 L27 142 L27 58 Z"
+        fill="none" stroke="url(#provaHelmDark)" stroke-width="9"
+        stroke-linejoin="round" stroke-linecap="round"/>
+
+  <circle cx="100" cy="100" r="42"
+          fill="none" stroke="url(#provaHelmDark)" stroke-width="8"/>
+
+  <g stroke="url(#provaHelmDark)" stroke-width="6" stroke-linecap="round">
+    <line x1="100"    y1="48"  x2="100"    y2="152"/>
+    <line x1="145.03" y1="74"  x2="54.97"  y2="126"/>
+    <line x1="145.03" y1="126" x2="54.97"  y2="74"/>
+  </g>
+
+  <g fill="url(#provaHelmDark)">
+    <circle cx="100"    cy="48"  r="5.5"/>
+    <circle cx="145.03" cy="74"  r="5.5"/>
+    <circle cx="145.03" cy="126" r="5.5"/>
+    <circle cx="100"    cy="152" r="5.5"/>
+    <circle cx="54.97"  cy="126" r="5.5"/>
+    <circle cx="54.97"  cy="74"  r="5.5"/>
+  </g>
+
+  <circle cx="100" cy="100" r="9" fill="url(#provaHelmDark)"/>
+</svg>

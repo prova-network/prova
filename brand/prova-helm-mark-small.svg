@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prova Helm small mark — used at <=32px (favicon, tray, small
+     UI badge). Drops the handle bulges, bolds the strokes, and
+     simplifies the spokes so the wheel concept survives at
+     icon scale. Single solid color via currentColor so the
+     consumer can pick teal or any contrasting fill via CSS. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Filled hex backing, matches the canonical small-mark style -->
+  <path d="M100 16 L173 58 L173 142 L100 184 L27 142 L27 58 Z"
+        fill="currentColor"/>
+
+  <!-- Wheel rim -->
+  <circle cx="100" cy="100" r="42"
+          fill="none" stroke="#FAF7F1" stroke-width="10"/>
+
+  <!-- Three diameter spokes -->
+  <g stroke="#FAF7F1" stroke-width="9" stroke-linecap="round">
+    <line x1="100"    y1="58"  x2="100"    y2="142"/>
+    <line x1="136.37" y1="79"  x2="63.63"  y2="121"/>
+    <line x1="136.37" y1="121" x2="63.63"  y2="79"/>
+  </g>
+
+  <!-- Hub -->
+  <circle cx="100" cy="100" r="13" fill="#FAF7F1"/>
+</svg>

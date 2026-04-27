@@ -1,7 +1,7 @@
 <div align="center">
 
-<img src="../brand/prova-mark-light.svg#gh-light-mode-only" alt="Prova" width="64" />
-<img src="../brand/prova-mark-dark.svg#gh-dark-mode-only" alt="Prova" width="64" />
+<img src="https://raw.githubusercontent.com/prova-network/brand/main/prova-helm-mark-light.svg#gh-light-mode-only" alt="Prova Helm" width="96" />
+<img src="https://raw.githubusercontent.com/prova-network/brand/main/prova-helm-mark-dark.svg#gh-dark-mode-only" alt="Prova Helm" width="96" />
 
 # Prova Helm
 
@@ -61,7 +61,7 @@ Pre-built signed releases ship through GitHub:
 curl -sSL https://prova.network/get | sh
 ```
 
-Or download a `.dmg` / `.exe` / `.AppImage` from the [releases page](https://github.com/prova-network/desktop/releases).
+Or download a `.dmg` / `.exe` / `.AppImage` from the [releases page](https://github.com/prova-network/prova-helm-app/releases).
 
 ---
 

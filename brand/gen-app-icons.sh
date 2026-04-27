@@ -16,8 +16,12 @@ set -euo pipefail
 BRAND_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$(cd "$BRAND_DIR/../desktop/build" && pwd)"
 
-BIG_SVG="$BRAND_DIR/prova-app-icon.svg"
-SMALL_SVG="$BRAND_DIR/prova-app-icon-small.svg"
+# Prova Helm app icon. The 'big' SVG is used >=64px (Dock, Finder),
+# the 'small' SVG is the simplified mark that survives <=48px
+# (menu-bar, sidebar). The Prova-only family icons were retired
+# when the desktop app rebranded to Prova Helm.
+BIG_SVG="$BRAND_DIR/prova-helm-app-icon.svg"
+SMALL_SVG="$BRAND_DIR/prova-helm-mark-small.svg"
 
 [[ -f "$BIG_SVG" ]] || { echo "missing $BIG_SVG" >&2; exit 1; }
 [[ -f "$SMALL_SVG" ]] || { echo "missing $SMALL_SVG" >&2; exit 1; }

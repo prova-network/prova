@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prova Helm app mark for LIGHT backgrounds.
+     Pulls from the canonical Prova hexagonal seal and replaces the P
+     glyph with a six-spoke ship's wheel. Anchors this app to the
+     parent brand while making the sub-brand legible on its own.
+
+     Geometry:
+       - Hex outer (stroke 9) is the Prova family marker.
+       - Rim (stroke 8) is the heaviest inner element so the eye
+         reads "wheel" first.
+       - 3 diameter spokes (stroke 6) cross through the hub and
+         terminate at the handle positions, so the spokes and
+         handles read as one continuous form (real ship-wheel
+         detail) instead of detached rivet dots.
+       - Hub (radius 9, solid fill) caps the spoke crossing in
+         the center as a single focal point.
+       - Handle bulges (radius 5.5, filled) sit ON each spoke tip,
+         visually joined to the spoke line.
+
+     For very small sizes (<=32px), use prova-helm-mark-small.svg
+     which drops the handle bulges and bolds the geometry. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="provaHelmLight" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%"  stop-color="#1F8FA3"/>
+      <stop offset="55%" stop-color="#0F6E7E"/>
+      <stop offset="100%" stop-color="#0A3F4D"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer hexagonal seal -->
+  <path d="M100 16 L173 58 L173 142 L100 184 L27 142 L27 58 Z"
+        fill="none" stroke="url(#provaHelmLight)" stroke-width="9"
+        stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- Wheel rim -->
+  <circle cx="100" cy="100" r="42"
+          fill="none" stroke="url(#provaHelmLight)" stroke-width="8"/>
+
+  <!-- Three diameter spokes (six visual spokes after crossing the hub).
+       Each spoke runs from one handle position to the opposite handle
+       position so the spoke and handle bulge are visually joined. -->
+  <g stroke="url(#provaHelmLight)" stroke-width="6" stroke-linecap="round">
+    <!-- vertical: top (100,48) <-> bottom (100,152) -->
+    <line x1="100"    y1="48"  x2="100"    y2="152"/>
+    <!-- 60° / 240°: (145.03, 74) <-> (54.97, 126) -->
+    <line x1="145.03" y1="74"  x2="54.97"  y2="126"/>
+    <!-- 120° / 300°: (145.03, 126) <-> (54.97, 74) -->
+    <line x1="145.03" y1="126" x2="54.97"  y2="74"/>
+  </g>
+
+  <!-- Six handle bulges centered on each spoke tip -->
+  <g fill="url(#provaHelmLight)">
+    <circle cx="100"    cy="48"  r="5.5"/>
+    <circle cx="145.03" cy="74"  r="5.5"/>
+    <circle cx="145.03" cy="126" r="5.5"/>
+    <circle cx="100"    cy="152" r="5.5"/>
+    <circle cx="54.97"  cy="126" r="5.5"/>
+    <circle cx="54.97"  cy="74"  r="5.5"/>
+  </g>
+
+  <!-- Hub: solid filled disc, caps the spoke crossing -->
+  <circle cx="100" cy="100" r="9" fill="url(#provaHelmLight)"/>
+</svg>

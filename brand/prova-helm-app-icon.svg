@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prova Helm macOS-style app icon. 1024x1024 base.
+     The OS auto-masks app icons to a squircle, so the squircle here
+     is the "container" and the helm wheel sits centered without the
+     hexagonal seal (the seal would compete with the rounded mask).
+     Strokes are tuned for Dock size (64-128px) legibility. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Deep teal backing, slight top-light so the icon picks up
+         dimension on macOS where neighbors have subtle bevels. -->
+    <radialGradient id="helmBg" cx="50%" cy="28%" r="80%">
+      <stop offset="0%"   stop-color="#1F8FA3"/>
+      <stop offset="55%"  stop-color="#0F4C5C"/>
+      <stop offset="100%" stop-color="#08222B"/>
+    </radialGradient>
+    <!-- Subtle inner glow behind the mark to pull the eye to center -->
+    <radialGradient id="helmGlow" cx="50%" cy="50%" r="42%">
+      <stop offset="0%"   stop-color="#7FE8D8" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#2EC4B6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="helmSoft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <!-- Top-edge sheen for that Tahoe glassy quality -->
+    <linearGradient id="helmTopSheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="30%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle background (electron-builder applies the macOS mask
+       separately; this rect mainly matters for Windows .ico and
+       Linux .png where we ship a flat shape). -->
+  <rect width="1024" height="1024" rx="224" ry="224" fill="url(#helmBg)"/>
+
+  <!-- Top-edge highlight sheen -->
+  <rect width="1024" height="1024" rx="224" ry="224" fill="url(#helmTopSheen)"/>
+
+  <!-- Ambient cyan glow behind the mark -->
+  <circle cx="512" cy="512" r="380" fill="url(#helmGlow)" filter="url(#helmSoft)"/>
+
+  <!-- ─── Helm wheel ──────────────────────────────────────────────
+       Stroke weights are roughly 3x the 200-viewport mark to compensate
+       for the larger canvas (1024 vs 200). At Dock 128px this renders
+       at the right optical density.
+
+       Geometry:
+         hub at (512, 512)
+         rim radius 282
+         spoke endpoints / handles at radius 348 (66 past the rim) -->
+
+  <!-- Wheel rim -->
+  <circle cx="512" cy="512" r="282"
+          fill="none" stroke="#FAF7F1" stroke-width="36"/>
+
+  <!-- Three diameter spokes (six visual spokes after crossing the hub).
+       Endpoints sit at the handle positions so each spoke and handle
+       reads as a single continuous element. -->
+  <g stroke="#FAF7F1" stroke-width="28" stroke-linecap="round">
+    <!-- vertical -->
+    <line x1="512"     y1="164" x2="512"    y2="860"/>
+    <!-- 60° / 240° -->
+    <line x1="813.46"  y1="338" x2="210.54" y2="686"/>
+    <!-- 120° / 300° -->
+    <line x1="813.46"  y1="686" x2="210.54" y2="338"/>
+  </g>
+
+  <!-- Six handle bulges centered on the spoke tips -->
+  <g fill="#FAF7F1">
+    <circle cx="512"    cy="164" r="34"/>
+    <circle cx="813.46" cy="338" r="34"/>
+    <circle cx="813.46" cy="686" r="34"/>
+    <circle cx="512"    cy="860" r="34"/>
+    <circle cx="210.54" cy="686" r="34"/>
+    <circle cx="210.54" cy="338" r="34"/>
+  </g>
+
+  <!-- Central hub: solid filled disc, caps the spoke crossing -->
+  <circle cx="512" cy="512" r="56" fill="#FAF7F1"/>
+  <!-- Inner accent ring on the hub for a touch of dimension -->
+  <circle cx="512" cy="512" r="20" fill="#0F4C5C"/>
+</svg>

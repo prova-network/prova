@@ -17,7 +17,7 @@ SPLITS=(
   "contracts|contracts"
   "prover|prover"
   "website|website"
-  "desktop|desktop"
+  "desktop|prova-helm-app"
   "brand|brand"
   "docs-gitbook|docs"
 )
