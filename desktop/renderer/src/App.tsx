@@ -32,6 +32,8 @@ export default function App() {
   const [network, setNetwork] = useState<NetworkConfig | null>(null)
   const [networkPresets, setNetworkPresets] = useState<NetworkPresetInfo[]>([])
   const [networkBusy, setNetworkBusy] = useState(false)
+  const [onboardingNeeded, setOnboardingNeeded] = useState(false)
+  const [firstRunAddress, setFirstRunAddress] = useState<string>('')
 
   // ─── Initial state fetch ──────────────────────────────────────────
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function App() {
 
     async function loadInitial() {
       try {
-        const [addr, deals, proofs, acts, upd, storageInfo, netCfg, presets] = await Promise.all([
+        const [addr, deals, proofs, acts, upd, storageInfo, netCfg, presets, onboard] = await Promise.all([
           electron.getWalletAddress().catch(() => ''),
           electron.getTotalDealsActive().catch(() => 0),
           electron.getTotalProofsSubmitted().catch(() => 0),
@@ -48,6 +50,7 @@ export default function App() {
           electron.getStorageDir().catch(() => null),
           electron.getNetwork().catch(() => null),
           electron.listNetworks().catch(() => [] as NetworkPresetInfo[]),
+          electron.getOnboardingState().catch(() => ({ completed: true, firstRunWalletAddress: '' })),
         ])
         if (cancelled) return
         setWalletAddress(addr)
@@ -58,6 +61,13 @@ export default function App() {
         setStorage(storageInfo)
         setNetwork(netCfg)
         setNetworkPresets(presets)
+        // Show the 'back up your seed' banner when (a) we just generated
+        // a new wallet on this launch AND (b) the user hasn't already
+        // completed onboarding on a previous launch.
+        if (onboard && !onboard.completed && onboard.firstRunWalletAddress) {
+          setOnboardingNeeded(true)
+          setFirstRunAddress(onboard.firstRunWalletAddress)
+        }
       } catch {
         // main process not ready yet; subscriptions will fill in
       }
@@ -122,6 +132,15 @@ export default function App() {
       <Header walletAddress={walletAddress} />
       {!bridgeAvailable() && <DisconnectedBanner />}
       {updaterStatus === 'ready' && <UpdateBanner />}
+      {onboardingNeeded && (
+        <OnboardingBanner
+          address={firstRunAddress}
+          onDismiss={() => {
+            void electron.completeOnboarding()
+            setOnboardingNeeded(false)
+          }}
+        />
+      )}
 
       <main className="max-w-4xl w-full mx-auto px-4 py-6 space-y-8 flex-1">
         <section>
@@ -160,7 +179,7 @@ export default function App() {
             sub="A local BIP-39 wallet was created on first launch. The seed is stored in your OS keychain."
             right={
               <button
-                className="text-xs font-mono px-3 py-1.5 border border-ink/20 rounded-full hover:border-gold hover:text-gold transition-colors"
+                className="pill-button"
                 onClick={() => void handleExportSeed()}
               >
                 export seed
@@ -178,7 +197,7 @@ export default function App() {
             </div>
             {walletAddress && (
               <button
-                className="text-xs font-mono px-3 py-1.5 border border-ink/20 rounded-full hover:border-gold hover:text-gold transition-colors flex-shrink-0"
+                className="pill-button flex-shrink-0"
                 onClick={() => navigator.clipboard?.writeText(walletAddress)}
               >
                 copy
@@ -249,7 +268,7 @@ export default function App() {
             right={
               storage?.isCustom ? (
                 <button
-                  className="text-xs font-mono px-3 py-1.5 border border-ink/20 rounded-full hover:border-gold hover:text-gold transition-colors"
+                  className="pill-button"
                   disabled={storageBusy}
                   onClick={() => {
                     setStorageBusy(true)
@@ -280,7 +299,7 @@ export default function App() {
               )}
             </div>
             <button
-              className="text-xs font-mono px-3 py-1.5 border border-ink/20 rounded-full hover:border-gold hover:text-gold transition-colors flex-shrink-0"
+              className="pill-button flex-shrink-0"
               disabled={storageBusy}
               onClick={() => {
                 setStorageBusy(true)
@@ -310,7 +329,7 @@ export default function App() {
             sub="Events from the prover daemon as they happen."
             right={
               <button
-                className="text-xs font-mono px-3 py-1.5 border border-ink/20 rounded-full hover:border-gold hover:text-gold transition-colors"
+                className="pill-button"
                 onClick={() => void electron.saveLogsAs()}
               >
                 save full log
@@ -372,15 +391,15 @@ function Footer() {
       <div className="max-w-4xl mx-auto px-4 py-4 text-xs text-ink/50 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <button
-            className="hover:text-gold transition-colors"
+            className="hover:text-teal-deep dark:hover:text-teal-cyan transition-colors"
             onClick={() => void electron.openExternalURL('https://prova.network')}
           >
             prova.network
           </button>
           {' · '}
           <button
-            className="hover:text-gold transition-colors"
-            onClick={() => void electron.openExternalURL('https://github.com/Reiers/prova')}
+            className="hover:text-teal-deep dark:hover:text-teal-cyan transition-colors"
+            onClick={() => void electron.openExternalURL('https://github.com/prova-network/prova')}
           >
             github
           </button>
@@ -401,7 +420,7 @@ function SectionHeading({
   return (
     <div className="flex items-end justify-between mb-3 gap-3">
       <div className="flex items-stretch gap-2.5">
-        <span aria-hidden className="w-[3px] bg-gold rounded-full" />
+        <span aria-hidden className="w-[3px] rounded-full bg-gradient-to-b from-teal-cyan to-teal-deep" />
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wider text-ink/70">
             {title}
@@ -419,8 +438,8 @@ function ActivityRow({ activity }: { activity: Activity }) {
     activity.type === 'error'
       ? 'text-red-700 border-l-red-300'
       : activity.type === 'started'
-        ? 'text-amber-700 border-l-amber-300'
-        : 'text-ink border-l-gold/30'
+        ? 'text-emerald-700 border-l-emerald-300'
+        : 'text-ink border-l-teal-cyan/40 dark:text-cream dark:border-l-teal-cyan/40'
 
   return (
     <div className={`px-4 py-3 border-l-2 ${toneClass} flex items-start gap-4`}>
@@ -455,13 +474,43 @@ function DisconnectedBanner() {
 
 function UpdateBanner() {
   return (
-    <div className="bg-gold text-ink px-4 py-3 flex items-center justify-center gap-4 text-sm">
+    <div className="px-4 py-3 flex items-center justify-center gap-4 text-sm border-b border-teal-cyan/30 bg-teal-cyan/15 text-teal-deep dark:text-teal-cyan">
       <span>A new version of Prova Desktop is ready to install.</span>
       <button
-        className="font-mono text-xs px-3 py-1 rounded-full bg-ink text-gold hover:bg-ink/90 transition-colors"
+        className="font-mono text-xs px-3 py-1 rounded-full bg-teal-deep text-cream hover:bg-teal-deep/90 transition-colors"
         onClick={() => void electron.restartToUpdate()}
       >
         restart &amp; update
+      </button>
+    </div>
+  )
+}
+
+function OnboardingBanner({
+  address,
+  onDismiss,
+}: {
+  address: string
+  onDismiss: () => void
+}) {
+  return (
+    <div className="px-4 py-3 flex items-center justify-center gap-4 text-sm border-b border-amber-300/60 bg-amber-100/70 text-amber-900">
+      <span>
+        New wallet generated at <span className="font-mono">{shortAddr(address)}</span>. Back up your seed phrase before storing anything important.
+      </span>
+      <button
+        className="pill-button"
+        onClick={() => {
+          void handleExportSeed().finally(onDismiss)
+        }}
+      >
+        back up now
+      </button>
+      <button
+        className="text-xs text-amber-900/70 hover:text-amber-900"
+        onClick={onDismiss}
+      >
+        later
       </button>
     </div>
   )

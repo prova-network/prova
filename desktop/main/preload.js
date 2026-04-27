@@ -65,6 +65,12 @@ contextBridge.exposeInMainWorld('electron', {
   /** @returns {Promise<string>} */
   resetStorageDir: () => ipcRenderer.invoke('prova:resetStorageDir'),
 
+  // ─── First-run onboarding ───────────────────────────────────────────────────
+  /** @returns {Promise<{completed:boolean, firstRunWalletAddress:string}>} */
+  getOnboardingState: () => ipcRenderer.invoke('prova:getOnboardingState'),
+  /** @returns {Promise<boolean>} */
+  completeOnboarding: () => ipcRenderer.invoke('prova:completeOnboarding'),
+
   // ─── Network preset selection ───────────────────────────────────────
   listNetworks: () => ipcRenderer.invoke('prova:listNetworks'),
   getNetwork: () => ipcRenderer.invoke('prova:getNetwork'),

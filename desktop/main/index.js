@@ -151,7 +151,14 @@ async function run () {
     await setupUpdater(ctx)
     await setupIpcMain(ctx)
 
-    await wallet.setup(ctx)
+    const walletSeed = await wallet.setup(ctx)
+    if (walletSeed && walletSeed.isNew) {
+      // Surface a one-time "new wallet generated, please back up" banner
+      // through the renderer. The flag is consumed by
+      // ipcMain.handle('prova:getOnboardingState') below.
+      ctx.firstRunWalletAddress = walletSeed.address
+      log.info(format('first-run: new wallet %s; onboarding required', walletSeed.address))
+    }
     await provad.setup(ctx)
     await settings.setup(ctx)
 

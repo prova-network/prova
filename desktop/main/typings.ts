@@ -38,6 +38,10 @@ export interface Context {
   // ── Wallet ─────────────────────────────────────────────────────────
   setWalletAddress(addr: string): void
   exportSeedPhrase: () => void | Promise<void>
+  /// Set by main/index.js when wallet.setup() reports a brand-new wallet
+  /// was created on this launch. The renderer reads this via
+  /// `prova:getOnboardingState` to surface a 'back up your seed' banner.
+  firstRunWalletAddress?: string
 
   // ── UI lifecycle ───────────────────────────────────────────────────
   showUI: () => void

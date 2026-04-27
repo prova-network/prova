@@ -100,6 +100,10 @@ declare global {
       /** Resets to the platform default; returns the now-effective path. */
       resetStorageDir: () => Promise<string>
 
+      // First-run onboarding
+      getOnboardingState: () => Promise<{ completed: boolean; firstRunWalletAddress: string }>
+      completeOnboarding: () => Promise<boolean>
+
       // Network preset selection
       listNetworks: () => Promise<NetworkPresetInfo[]>
       getNetwork: () => Promise<NetworkConfig>
@@ -154,6 +158,8 @@ const stub = {
   },
   async selectStorageDir(): Promise<string | null> { return null },
   async resetStorageDir(): Promise<string> { return '' },
+  async getOnboardingState() { return { completed: true, firstRunWalletAddress: '' } },
+  async completeOnboarding() { return true },
   async listNetworks(): Promise<NetworkPresetInfo[]> { return [] },
   async getNetwork(): Promise<NetworkConfig> {
     return {
@@ -210,6 +216,9 @@ export const electron = {
   getStorageDir: () => bridgeAvailable() ? window.electron.getStorageDir() : stub.getStorageDir(),
   selectStorageDir: () => bridgeAvailable() ? window.electron.selectStorageDir() : stub.selectStorageDir(),
   resetStorageDir: () => bridgeAvailable() ? window.electron.resetStorageDir() : stub.resetStorageDir(),
+
+  getOnboardingState: () => bridgeAvailable() ? window.electron.getOnboardingState() : stub.getOnboardingState(),
+  completeOnboarding: () => bridgeAvailable() ? window.electron.completeOnboarding() : stub.completeOnboarding(),
 
   listNetworks: () => bridgeAvailable() ? window.electron.listNetworks() : stub.listNetworks(),
   getNetwork: () => bridgeAvailable() ? window.electron.getNetwork() : stub.getNetwork(),

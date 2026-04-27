@@ -104,6 +104,20 @@ function setupIpcMain (/** @type {Context} */ ctx) {
     return reset
   })
 
+  // ── First-run onboarding ──────────────────────────────────────────────────────────────
+  // The renderer asks for this on boot. If `firstRunWalletAddress` is
+  // set on the context (assigned by main/index.js when wallet.setup()
+  // reported a new wallet), and the user hasn't completed onboarding
+  // yet, the renderer surfaces a 'back up your seed' banner.
+  ipcMain.handle('prova:getOnboardingState', () => ({
+    completed: provaConfig.getOnboardingCompleted(),
+    firstRunWalletAddress: ctx.firstRunWalletAddress || ''
+  }))
+  ipcMain.handle('prova:completeOnboarding', () => {
+    provaConfig.setOnboardingCompleted()
+    return true
+  })
+
   // ── Network preset selection (anvil / base-sepolia / base-mainnet) ────────
   ipcMain.handle('prova:listNetworks', () => provaConfig.listNetworkPresets())
   ipcMain.handle('prova:getNetwork', () => provaConfig.getNetworkConfig())

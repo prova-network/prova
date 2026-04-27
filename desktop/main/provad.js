@@ -295,18 +295,149 @@ function parseStdoutLine (ctx, line) {
 
   const msg = ev.msg || ''
 
+  // Provad emits its slog messages from a handful of subsystems. We map
+  // the message strings we actually want surfaced into typed activity
+  // rows, and mirror provad's subsystem name as the activity `source`
+  // so activities.js's ONLINE_SOURCES check sees a hit and the tray
+  // icon flips to the on state.
+  //
+  // The full list of msgs provad emits is grep-able in:
+  //   prover/cmd/provad/main.go      ('provad start', 'on-chain accepter wired')
+  //   prover/pkg/daemon/daemon.go    ('daemon starting', 'new deals ingested',
+  //                                   'poll complete', 'shutdown signal received',
+  //                                   'fatal error from loop', 'tick failed', ...)
+  //   prover/pkg/deal/engine.go      ('deal ingested', 'deal step failed')
+  //   prover/pkg/deal/events.go      ('source url resolution failed',
+  //                                   'ingest deal failed', 'mark active failed')
+  //   prover/pkg/httpserver/server.go ('http server starting',
+  //                                   'http server shutting down', 'http')
+  //
+  // If you add a new high-signal msg in the prover, mirror it here.
   switch (msg) {
-    case 'deal accepted':
-    case 'deal active':
+    // ── lifecycle (boot/shutdown) ────────────────────────────────────────────────────
+    case 'provad start':
+      activities.push(ctx, {
+        type: 'started',
+        source: 'provad',
+        message: `provad started${ev.network ? ` (${ev.network})` : ''}`,
+        timestamp: new Date(),
+        id: randomUUID()
+      })
+      break
+    case 'daemon starting':
+      activities.push(ctx, {
+        type: 'started',
+        source: 'daemon',
+        message: 'daemon starting',
+        timestamp: new Date(),
+        id: randomUUID()
+      })
+      break
+    case 'on-chain accepter wired':
       activities.push(ctx, {
         type: 'info',
-        source: 'deal-engine',
-        message: `Deal #${ev.dealID} active (${formatBytes(ev.size)})`,
+        source: 'daemon',
+        message: `on-chain accepter wired (${ev.proofVerifier || 'verifier'})`,
+        timestamp: new Date(),
+        id: randomUUID()
+      })
+      break
+    case 'shutdown signal received':
+    case 'daemon stopped cleanly':
+      activities.push(ctx, {
+        type: 'info',
+        source: 'daemon',
+        message: msg,
+        timestamp: new Date(),
+        id: randomUUID()
+      })
+      break
+    case 'fatal error from loop':
+    case 'shutdown timeout exceeded, exiting with outstanding goroutines':
+      activities.push(ctx, {
+        type: 'error',
+        source: 'daemon',
+        message: `${msg}${ev.err ? `: ${ev.err}` : ''}`,
         timestamp: new Date(),
         id: randomUUID()
       })
       break
 
+    // ── deal pipeline ─────────────────────────────────────────────────────────────────
+    case 'deal ingested': {
+      // Each new deal increments the active counter. The counter is
+      // best-effort; the daemon doesn't currently emit decrements when
+      // deals complete or fault, so it converges to ground truth on
+      // every restart rather than every event.
+      totalDealsActive += 1
+      if (typeof ctx.setTotalDealsActive === 'function') {
+        ctx.setTotalDealsActive(totalDealsActive)
+      }
+      activities.push(ctx, {
+        type: 'info',
+        source: 'engine',
+        message: `Deal #${ev.dealID || ev.deal_id || '?'} ingested${
+          ev.size ? ` (${formatBytes(Number(ev.size))})` : ''
+        }`,
+        timestamp: new Date(),
+        id: randomUUID()
+      })
+      break
+    }
+    case 'new deals ingested':
+      activities.push(ctx, {
+        type: 'info',
+        source: 'daemon',
+        message: `${ev.count || 0} new deal${ev.count === 1 ? '' : 's'} ingested at block ${ev.currentBlock || '?'}`,
+        timestamp: new Date(),
+        id: randomUUID()
+      })
+      break
+    case 'deal step failed':
+    case 'ingest deal failed':
+    case 'mark active failed':
+    case 'source url resolution failed':
+      activities.push(ctx, {
+        type: 'error',
+        source: 'engine',
+        message: `${msg}${ev.err ? `: ${ev.err}` : ''}`,
+        timestamp: new Date(),
+        id: randomUUID()
+      })
+      break
+    case 'poll complete':
+      // Heartbeat; intentionally not surfaced as activity. We use it as
+      // a side-effect signal that the prover is still polling.
+      activities.push(ctx, {
+        type: 'info',
+        source: 'daemon',
+        message: `poll complete${ev.height ? ` @ ${ev.height}` : ''}`,
+        timestamp: new Date(),
+        id: randomUUID()
+      })
+      break
+
+    // ── HTTP retrieval ───────────────────────────────────────────────────────────────
+    case 'http server starting':
+      activities.push(ctx, {
+        type: 'started',
+        source: 'httpserver',
+        message: `HTTP retrieval server listening on ${ev.addr || '?'}`,
+        timestamp: new Date(),
+        id: randomUUID()
+      })
+      break
+    case 'http server shutting down':
+      activities.push(ctx, {
+        type: 'info',
+        source: 'httpserver',
+        message: 'HTTP retrieval server shutting down',
+        timestamp: new Date(),
+        id: randomUUID()
+      })
+      break
+
+    // ── PDP proof events (forward-compatible ─ daemon doesn't emit these yet) ────────
     case 'proof submitted':
       totalProofsSubmitted += 1
       if (typeof ctx.setTotalProofsSubmitted === 'function') {
@@ -320,36 +451,23 @@ function parseStdoutLine (ctx, line) {
         id: randomUUID()
       })
       break
-
     case 'proof failed':
       activities.push(ctx, {
         type: 'error',
         source: 'pdp',
-        message: `Proof failed for deal #${ev.dealID}: ${ev.error || 'unknown'}`,
+        message: `Proof failed for deal #${ev.dealID}: ${ev.err || ev.error || 'unknown'}`,
         timestamp: new Date(),
         id: randomUUID()
       })
       break
 
-    case 'deals active gauge': {
-      const n = Number(ev.count ?? ev.value ?? 0)
-      if (Number.isFinite(n)) {
-        totalDealsActive = n
-        if (typeof ctx.setTotalDealsActive === 'function') {
-          ctx.setTotalDealsActive(n)
-        }
-      }
-      break
-    }
-
-    // Levels ERROR/WARN go up as activity:error regardless of msg so the
-    // user sees anything alarming in the activity feed.
+    // ── catch-all for ERROR-level lines we didn't explicitly model ───────────────
     default:
       if (ev.level === 'ERROR') {
         activities.push(ctx, {
           type: 'error',
           source: 'provad',
-          message: msg,
+          message: msg + (ev.err ? `: ${ev.err}` : ''),
           timestamp: new Date(),
           id: randomUUID()
         })
