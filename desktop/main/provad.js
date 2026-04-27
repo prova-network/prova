@@ -163,6 +163,8 @@ async function run (ctx) {
   const backoffMax = 30_000
   let consecutiveFailures = 0
 
+  startMetricsPolling()
+
   while (true) {
     /** @type {{ ok: boolean, exitCode: number | null, message: string, attempt: number, backoffMs: number }} */
     let report = { ok: true, exitCode: 0, message: '', attempt: consecutiveFailures, backoffMs }
@@ -304,11 +306,26 @@ async function start (ctx) {
       parseStdoutLine(ctx, line)
     })
 
+  // Capture provad's stderr for the supervisor error banner. The full
+  // stream still flows into the log buffer; lastStderr keeps the most
+  // recent N lines so a non-zero exit can attach the actual diagnostic
+  // (e.g. 'provad: storage_marketplace: not configured') instead of just
+  // the wrapped 'exited with code 1'.
+  /** @type {string[]} */
+  const stderrTail = []
+  const STDERR_TAIL_MAX = 8
   assert(childProcess.stderr)
   childProcess.stderr.setEncoding('utf8')
   childProcess.stderr
     .pipe(split2())
-    .on('data', line => logs.pushLine(`[stderr] ${line}`))
+    .on('data', line => {
+      const trimmed = String(line).trim()
+      if (trimmed) {
+        stderrTail.push(trimmed)
+        if (stderrTail.length > STDERR_TAIL_MAX) stderrTail.shift()
+      }
+      logs.pushLine(`[stderr] ${line}`)
+    })
 
   // Ensure we kill the child if the app quits.
   const onBeforeQuit = () => {
@@ -334,13 +351,25 @@ async function start (ctx) {
   //   0 = clean shutdown (SIGTERM, graceful drain)
   //   1 = generic error (bad config, RPC unreachable at start)
   //   2 = wallet authentication failed (bad passphrase / missing keystore)
+  // Pull the most recent stderr line as the human-readable diagnostic.
+  // provad's flag.Parse + main()-level errors land here as a single
+  // 'provad: <reason>' line.
+  const diagnostic = stderrTail.length > 0
+    ? stderrTail[stderrTail.length - 1]
+    : ''
+
   if (closeCode === 2) {
     throw new Error(
-      'provad: wallet authentication failed (exit code 2). Check the passphrase stored in the OS keychain.'
+      diagnostic ||
+        'provad: wallet authentication failed (exit code 2). Check the passphrase stored in the OS keychain.'
     )
   }
   if (typeof closeCode === 'number' && closeCode !== 0) {
-    throw new Error(`provad: exited with non-zero exit code ${closeCode}`)
+    throw new Error(
+      diagnostic
+        ? `${diagnostic} (exit code ${closeCode})`
+        : `provad: exited with non-zero exit code ${closeCode}`
+    )
   }
 }
 
@@ -560,6 +589,160 @@ function formatBytes (n) {
   return `${x.toFixed(x >= 100 ? 0 : 1)} ${units[i]}`
 }
 
+/**
+ * Aggregated prover stats for the dashboard. Pulled from a few sources:
+ *   - storage bytes / pieces: scraped from the daemon's Prometheus
+ *     metrics endpoint when the daemon is running, with a disk-walk
+ *     fallback so the number is non-zero even when the daemon is down
+ *   - active deals / proofs: in-process counters maintained by
+ *     parseStdoutLine
+ *   - earnings / staked: not yet wired (returns null until the prover
+ *     can read its accumulated USDC payouts and PROVA stake from the
+ *     marketplace + staking contracts)
+ *
+ * @typedef {{
+ *   bytesStored: number,
+ *   piecesStored: number,
+ *   dealsActive: number,
+ *   proofsSubmitted: number,
+ *   earnedUsdc: number | null,
+ *   stakedProva: number | null,
+ *   daemonUptimeSeconds: number | null
+ * }} ProverStats
+ */
+
+/** @type {{ bytesStored: number, piecesStored: number, scrapedAt: number }} */
+let lastScrape = { bytesStored: 0, piecesStored: 0, scrapedAt: 0 }
+
+/** @type {NodeJS.Timeout | null} */
+let metricsPollHandle = null
+
+async function pollProvadMetrics () {
+  const url = 'http://127.0.0.1:9095/metrics'
+  try {
+    const ctrl = new AbortController()
+    const t = setTimeout(() => ctrl.abort(), 1500)
+    const res = await fetch(url, { signal: ctrl.signal })
+    clearTimeout(t)
+    if (!res.ok) return
+    const body = await res.text()
+    const bytes = parsePromMetric(body, 'prova_bytes_stored_total')
+    const pieces = parsePromMetric(body, 'prova_pieces_stored')
+    if (bytes != null) lastScrape.bytesStored = bytes
+    if (pieces != null) lastScrape.piecesStored = pieces
+    lastScrape.scrapedAt = Date.now()
+  } catch (/** @type {unknown} */ _err) {
+    // Daemon not up yet, or metrics endpoint not bound. Silently fall
+    // back to disk walk + the cached last scrape.
+  }
+}
+
+/**
+ * Parse a single sample from a Prometheus text-format response. Returns
+ * the first non-comment, non-empty line that starts with `name `. Works
+ * for plain counters and gauges; ignores `# HELP` / `# TYPE`.
+ *
+ * @param {string} body
+ * @param {string} name
+ * @returns {number | null}
+ */
+function parsePromMetric (body, name) {
+  for (const line of body.split('\n')) {
+    if (!line || line.startsWith('#')) continue
+    if (line.startsWith(name + ' ') || line.startsWith(name + '{')) {
+      const parts = line.split(/\s+/)
+      const v = Number(parts[parts.length - 1])
+      if (Number.isFinite(v)) return v
+    }
+  }
+  return null
+}
+
+function startMetricsPolling () {
+  if (metricsPollHandle) return
+  // Initial probe immediately so the dashboard isn't stuck on 0 for 5s.
+  void pollProvadMetrics()
+  metricsPollHandle = setInterval(pollProvadMetrics, 5_000)
+}
+
+function stopMetricsPolling () {
+  if (metricsPollHandle) {
+    clearInterval(metricsPollHandle)
+    metricsPollHandle = null
+  }
+}
+
+/**
+ * Recursive disk walk of the configured storage directory. Used as the
+ * source-of-truth for 'storage used' when the daemon is offline (the
+ * Prometheus counter is in-memory and resets on every restart, but the
+ * pieces are still on disk).
+ *
+ * @param {string} dir
+ * @returns {Promise<{ bytes: number, files: number }>}
+ */
+async function walkDirSize (dir) {
+  let bytes = 0
+  let files = 0
+  /** @param {string} d */
+  async function walk (d) {
+    let entries
+    try {
+      entries = await fs.readdir(d, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const ent of entries) {
+      const full = join(d, ent.name)
+      if (ent.isDirectory()) {
+        await walk(full)
+      } else if (ent.isFile()) {
+        try {
+          const st = await fs.stat(full)
+          bytes += st.size
+          files += 1
+        } catch {
+          // skip unreadable entries
+        }
+      }
+    }
+  }
+  await walk(dir)
+  return { bytes, files }
+}
+
+async function getProverStats () {
+  // Live disk walk for the configured storage dir. Always runs; cheap
+  // for empty dirs, bounded by the user's piece count for non-empty.
+  const dir = provaConfig.getStorageDir()
+  let diskBytes = 0
+  let diskFiles = 0
+  try {
+    const w = await walkDirSize(dir)
+    diskBytes = w.bytes
+    diskFiles = w.files
+  } catch {
+    // ignore
+  }
+  // Prefer the daemon's metrics when fresh (last scrape <30s ago);
+  // otherwise the disk-walk reading is authoritative.
+  const fresh = Date.now() - lastScrape.scrapedAt < 30_000
+  const bytesStored = fresh ? lastScrape.bytesStored || diskBytes : diskBytes
+  const piecesStored = fresh ? lastScrape.piecesStored || diskFiles : diskFiles
+
+  // Earnings + staked are not yet wired; the marketplace contract reads
+  // are tracked separately in prova-network/contracts#3 follow-up.
+  return {
+    bytesStored,
+    piecesStored,
+    dealsActive: totalDealsActive,
+    proofsSubmitted: totalProofsSubmitted,
+    earnedUsdc: null,
+    stakedProva: null,
+    daemonUptimeSeconds: null
+  }
+}
+
 module.exports = {
   setup,
   run,
@@ -567,5 +750,8 @@ module.exports = {
   getActivities: () => activities.get(),
   getTotalProofsSubmitted: () => totalProofsSubmitted,
   getTotalDealsActive: () => totalDealsActive,
-  getDaemonStatus
+  getDaemonStatus,
+  getProverStats,
+  startMetricsPolling,
+  stopMetricsPolling
 }

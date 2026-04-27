@@ -3,54 +3,77 @@
 @tailwind utilities;
 
 /* ─── Body / window chrome ──────────────────────────────────────────────
- * In production, the Electron BrowserWindow is mounted with macOS
- * `vibrancy: 'sidebar'` and `transparent: true`, so the system Tahoe
- * material shows through. Don't paint a solid fill on <body>; let the
- * vibrancy do the work. On non-mac platforms we fall back to cream.
+ * The BrowserWindow ships with a solid cream backgroundColor; we paint
+ * that on body so the renderer's surfaces read consistently regardless
+ * of the desktop wallpaper underneath. Dark mode flips to a deep ink.
  */
 :root {
   color-scheme: light dark;
 }
 html,
 body {
-  background: transparent;
+  background: theme('colors.cream');
+  color: theme('colors.ink.DEFAULT');
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
-body {
-  /* Slight backdrop tint helps text contrast over the vibrancy. */
-  background-color: color-mix(in srgb, theme('colors.cream') 86%, transparent);
-}
 @media (prefers-color-scheme: dark) {
+  html,
   body {
-    background-color: color-mix(in srgb, theme('colors.ink.DEFAULT') 78%, transparent);
+    background: theme('colors.ink.DEFAULT');
     color: theme('colors.cream');
   }
 }
 
 /* ─── Custom utilities ──────────────────────────────────────────────── */
 @layer utilities {
-  /* Tahoe-style glass card: translucent fill, soft inner highlight,
-     diffuse shadow. Sits on top of the BrowserWindow vibrancy. */
+  /* Liquid-Glass-inspired card. Tahoe references three lighting cues
+     on this kind of surface:
+       - top inner highlight (~1px white at 60% opacity)
+       - thin specular edge gradient on the border
+       - soft outer shadow that pools toward the bottom
+     We get all three with a layered background + box-shadow, no SVG
+     filters or third-party lib needed. Falls back gracefully on
+     browsers without backdrop-filter (Electron always has it). */
   .surface-card {
-    @apply rounded-2xl shadow-glass;
-    background-color: color-mix(in srgb, white 78%, transparent);
-    backdrop-filter: saturate(140%) blur(16px);
-    -webkit-backdrop-filter: saturate(140%) blur(16px);
+    background:
+      /* faint top sheen */
+      linear-gradient(180deg, rgb(255 255 255 / 0.85) 0%, rgb(255 255 255 / 0.65) 65%, rgb(255 255 255 / 0.6) 100%),
+      #ffffff;
     border: 1px solid color-mix(in srgb, theme('colors.ink.DEFAULT') 8%, transparent);
+    border-radius: 1rem;
+    box-shadow:
+      /* inner highlight on top edge */
+      0 1px 0 0 rgb(255 255 255 / 0.95) inset,
+      /* hairline rim across the bottom (specular) */
+      0 -1px 0 0 rgb(0 0 0 / 0.04) inset,
+      /* near shadow for elevation */
+      0 1px 2px rgb(0 0 0 / 0.05),
+      /* far shadow for depth */
+      0 12px 32px -16px rgb(0 0 0 / 0.18);
+    backdrop-filter: saturate(160%);
+    -webkit-backdrop-filter: saturate(160%);
   }
   @media (prefers-color-scheme: dark) {
     .surface-card {
-      background-color: color-mix(in srgb, theme('colors.ink.DEFAULT') 62%, transparent);
+      background:
+        linear-gradient(180deg, rgb(255 255 255 / 0.06) 0%, rgb(255 255 255 / 0.02) 65%, rgb(0 0 0 / 0.0) 100%),
+        color-mix(in srgb, theme('colors.ink.DEFAULT') 92%, white);
       border-color: color-mix(in srgb, theme('colors.teal.cyan') 22%, transparent);
+      box-shadow:
+        0 1px 0 0 rgb(255 255 255 / 0.06) inset,
+        0 -1px 0 0 rgb(0 0 0 / 0.4) inset,
+        0 1px 2px rgb(0 0 0 / 0.4),
+        0 12px 32px -16px rgb(0 0 0 / 0.6);
     }
   }
 
   .surface-dark {
-    @apply rounded-2xl border border-teal-cyan/30 shadow-glass;
-    background-color: color-mix(in srgb, theme('colors.ink.DEFAULT') 88%, transparent);
+    @apply rounded-2xl border border-teal-cyan/30;
+    background-color: theme('colors.ink.DEFAULT');
     color: theme('colors.cream');
+    box-shadow: 0 8px 24px -16px rgb(0 0 0 / 0.4);
   }
 
   .status-dot {
@@ -77,19 +100,42 @@ body {
     padding-left: 78px;
   }
 
-  /* Pill-shaped action button matching Tahoe's bordered chiclets. */
+  /* Quiet pill — secondary actions (copy, change…, change network). */
   .pill-button {
     @apply text-xs font-mono px-3 py-1.5 rounded-full transition-colors;
+    background-color: #ffffff;
+    color: theme('colors.ink.DEFAULT');
     border: 1px solid color-mix(in srgb, theme('colors.ink.DEFAULT') 18%, transparent);
   }
-  .pill-button:hover {
+  .pill-button:hover:not(:disabled) {
     border-color: theme('colors.teal.cyan');
     color: theme('colors.teal.deep');
   }
+  .pill-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
   @media (prefers-color-scheme: dark) {
-    .pill-button:hover {
+    .pill-button {
+      background-color: color-mix(in srgb, theme('colors.ink.DEFAULT') 80%, white);
+      color: theme('colors.cream');
+      border-color: color-mix(in srgb, theme('colors.cream') 25%, transparent);
+    }
+    .pill-button:hover:not(:disabled) {
       color: theme('colors.teal.cyan');
     }
+  }
+
+  /* Loud pill — primary action in a banner ("save logs", "restart & update"). */
+  .pill-button-primary {
+    @apply text-xs font-mono px-3 py-1.5 rounded-full transition-colors;
+    background-color: theme('colors.ink.DEFAULT');
+    color: theme('colors.cream');
+    border: 1px solid theme('colors.ink.DEFAULT');
+  }
+  .pill-button-primary:hover:not(:disabled) {
+    background-color: theme('colors.teal.deep');
+    border-color: theme('colors.teal.deep');
   }
 }
 

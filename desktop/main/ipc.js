@@ -132,6 +132,9 @@ function setupIpcMain (/** @type {Context} */ ctx) {
 
   // ── Daemon status (running / starting / failing) ───────────────────────────────
   ipcMain.handle('prova:getDaemonStatus', () => provad.getDaemonStatus())
+
+  // ── Aggregated prover stats (storage / earnings / staked / deals / proofs) ───────
+  ipcMain.handle('prova:getProverStats', () => provad.getProverStats())
 }
 
 module.exports = {

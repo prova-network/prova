@@ -68,6 +68,23 @@ export type DaemonStatus = {
   consecutiveFailures: number
 }
 
+export type ProverStats = {
+  /// Bytes currently stored on disk in the configured storage dir.
+  bytesStored: number
+  /// Number of distinct piece files in the local store.
+  piecesStored: number
+  /// Active (in-progress) deals as tracked by the supervisor.
+  dealsActive: number
+  /// Total proofs successfully submitted on-chain since boot.
+  proofsSubmitted: number
+  /// USDC earned (lifetime). Null = not yet wired (needs marketplace read).
+  earnedUsdc: number | null
+  /// PROVA staked. Null = not yet wired (needs ProverStaking read).
+  stakedProva: number | null
+  /// Seconds since the daemon last emitted 'provad start'. Null when offline.
+  daemonUptimeSeconds: number | null
+}
+
 // ─── Preload surface ──────────────────────────────────────────────────
 
 // This mirrors the `contextBridge.exposeInMainWorld('electron', ...)`
@@ -113,6 +130,9 @@ declare global {
 
       // Daemon status
       getDaemonStatus: () => Promise<DaemonStatus>
+
+      // Prover stats (storage, earnings, staked, deals, proofs)
+      getProverStats: () => Promise<ProverStats>
 
       // Network preset selection
       listNetworks: () => Promise<NetworkPresetInfo[]>
@@ -173,6 +193,17 @@ const stub = {
   async completeOnboarding() { return true },
   async getDaemonStatus(): Promise<DaemonStatus> {
     return { state: 'idle', lastError: '', lastExitCode: null, consecutiveFailures: 0 }
+  },
+  async getProverStats(): Promise<ProverStats> {
+    return {
+      bytesStored: 0,
+      piecesStored: 0,
+      dealsActive: 0,
+      proofsSubmitted: 0,
+      earnedUsdc: null,
+      stakedProva: null,
+      daemonUptimeSeconds: null,
+    }
   },
   async listNetworks(): Promise<NetworkPresetInfo[]> { return [] },
   async getNetwork(): Promise<NetworkConfig> {
@@ -236,6 +267,7 @@ export const electron = {
   completeOnboarding: () => bridgeAvailable() ? window.electron.completeOnboarding() : stub.completeOnboarding(),
 
   getDaemonStatus: () => bridgeAvailable() ? window.electron.getDaemonStatus() : stub.getDaemonStatus(),
+  getProverStats: () => bridgeAvailable() ? window.electron.getProverStats() : stub.getProverStats(),
 
   listNetworks: () => bridgeAvailable() ? window.electron.listNetworks() : stub.listNetworks(),
   getNetwork: () => bridgeAvailable() ? window.electron.getNetwork() : stub.getNetwork(),

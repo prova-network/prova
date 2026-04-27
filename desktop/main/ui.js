@@ -35,13 +35,13 @@ module.exports = async function (ctx) {
     // standard Tahoe position; non-mac platforms get default chrome.
     titleBarStyle: isMac ? 'hiddenInset' : 'default',
     trafficLightPosition: isMac ? { x: 18, y: 18 } : undefined,
-    // Liquid-Glass-adjacent translucency on macOS. The renderer sets
-    // its background-color to transparent over the vibrancy layer
-    // so the Tahoe sidebar/window material reads through.
-    vibrancy: isMac ? 'sidebar' : undefined,
-    visualEffectState: isMac ? 'active' : undefined,
-    backgroundColor: isMac ? '#00000000' : '#FAF7F1',
-    transparent: isMac,
+    // Solid cream-paper background. Tahoe vibrancy / transparent windows
+    // are great for ephemeral surfaces (control center, popovers) but
+    // produce a muddy result on an always-open dashboard, because the
+    // desktop wallpaper bleeds through and the 'cards' end up flat gray.
+    // Apple's own productivity apps (Mail, Settings) use solid window
+    // backgrounds for the same reason.
+    backgroundColor: '#FAF7F1',
     roundedCorners: true,
     webPreferences: {
       nodeIntegration: false,
@@ -104,8 +104,8 @@ module.exports = async function (ctx) {
     event.preventDefault()
     if (!getTrayOperationExplained()) {
       showDialogSync({
-        title: 'Closing Filecoin Station',
-        message: 'Station will continue running in the background.'
+        title: 'Closing Prova',
+        message: 'Prova will keep the prover daemon running in the background. The window can be reopened from the tray icon.'
       })
       setTrayOperationExplained()
     }

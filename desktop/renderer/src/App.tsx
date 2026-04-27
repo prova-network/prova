@@ -7,12 +7,13 @@ import {
   type NetworkConfig,
   type NetworkKey,
   type NetworkPresetInfo,
+  type ProverStats,
   type StorageDirInfo,
   type UpdaterStatus,
 } from './api'
 import { Logo } from './components/Logo'
 import { Stat } from './components/Stat'
-import { formatDuration, relativeTime, shortAddr } from './util'
+import { formatBytes, formatDuration, relativeTime, shortAddr } from './util'
 
 // Poll interval for refreshing pull-based values (wallet balance, etc).
 // Push-based values (activity feed, deals active, proofs submitted) update
@@ -37,6 +38,7 @@ export default function App() {
   const [firstRunAddress, setFirstRunAddress] = useState<string>('')
   const [seedModalOpen, setSeedModalOpen] = useState(false)
   const [daemonStatus, setDaemonStatus] = useState<DaemonStatus | null>(null)
+  const [proverStats, setProverStats] = useState<ProverStats | null>(null)
 
   // ─── Initial state fetch ──────────────────────────────────────────
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function App() {
 
     async function loadInitial() {
       try {
-        const [addr, deals, proofs, acts, upd, storageInfo, netCfg, presets, onboard, dStatus] = await Promise.all([
+        const [addr, deals, proofs, acts, upd, storageInfo, netCfg, presets, onboard, dStatus, stats] = await Promise.all([
           electron.getWalletAddress().catch(() => ''),
           electron.getTotalDealsActive().catch(() => 0),
           electron.getTotalProofsSubmitted().catch(() => 0),
@@ -55,6 +57,7 @@ export default function App() {
           electron.listNetworks().catch(() => [] as NetworkPresetInfo[]),
           electron.getOnboardingState().catch(() => ({ completed: true, firstRunWalletAddress: '' })),
           electron.getDaemonStatus().catch(() => null as DaemonStatus | null),
+          electron.getProverStats().catch(() => null as ProverStats | null),
         ])
         if (cancelled) return
         setWalletAddress(addr)
@@ -66,6 +69,7 @@ export default function App() {
         setNetwork(netCfg)
         setNetworkPresets(presets)
         setDaemonStatus(dStatus)
+        setProverStats(stats)
         // Show the multi-step first-run setup modal when (a) we just
         // generated a new wallet on this launch AND (b) the user hasn't
         // already completed onboarding on a previous launch.
@@ -116,6 +120,14 @@ export default function App() {
     return () => clearInterval(h)
   }, [bootedAt])
 
+  // ─── Stats poller: prover stats refresh every POLL_MS ─────────────
+  useEffect(() => {
+    const h = setInterval(() => {
+      electron.getProverStats().then(setProverStats).catch(() => {})
+    }, POLL_MS)
+    return () => clearInterval(h)
+  }, [])
+
   // ─── Safety-net polling for anything that might have desynced ────
   useEffect(() => {
     const h = setInterval(async () => {
@@ -165,9 +177,53 @@ export default function App() {
         <section>
           <SectionHeading
             title="Status"
-            sub="Your prover is running in the background. These numbers update live."
+            sub={
+              daemonStatus?.state === 'running'
+                ? 'Your prover is running in the background. These numbers update live.'
+                : daemonStatus?.state === 'failing'
+                  ? `Daemon is failing to start. ${daemonStatus.consecutiveFailures} retries; supervisor will keep retrying.`
+                  : daemonStatus?.state === 'starting'
+                    ? 'Daemon is starting up...'
+                    : 'Waiting on the prover daemon to come up.'
+            }
           />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <Stat
+              label="Storage used"
+              value={formatBytes(proverStats?.bytesStored ?? 0)}
+              sub={
+                proverStats && proverStats.piecesStored > 0
+                  ? `${proverStats.piecesStored.toLocaleString()} piece${proverStats.piecesStored === 1 ? '' : 's'}`
+                  : 'no pieces stored yet'
+              }
+              tone={proverStats && proverStats.bytesStored > 0 ? 'ok' : 'default'}
+            />
+            <Stat
+              label="Earnings"
+              value={
+                proverStats?.earnedUsdc == null
+                  ? '—'
+                  : `$${proverStats.earnedUsdc.toFixed(2)}`
+              }
+              sub={
+                proverStats?.earnedUsdc == null
+                  ? 'available once on-chain reads are wired'
+                  : 'lifetime USDC paid'
+              }
+            />
+            <Stat
+              label="Staked"
+              value={
+                proverStats?.stakedProva == null
+                  ? '—'
+                  : `${proverStats.stakedProva.toLocaleString()} PROVA`
+              }
+              sub={
+                proverStats?.stakedProva == null
+                  ? 'available once on-chain reads are wired'
+                  : 'committed for this prover'
+              }
+            />
             <Stat
               label="Active deals"
               value={dealsActive}
@@ -180,14 +236,9 @@ export default function App() {
               sub="cumulative, since boot"
             />
             <Stat
-              label="Uptime"
+              label="Session uptime"
               value={formatDuration(uptime)}
-              sub="current session"
-            />
-            <Stat
-              label="Build"
-              value={electron.buildVersion()}
-              sub="Prova Desktop"
+              sub={`build ${electron.buildVersion()}`}
             />
           </div>
         </section>
@@ -207,8 +258,8 @@ export default function App() {
           />
           <div className="surface-card p-4 flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1 min-w-0">
-              <span className="text-xs uppercase tracking-wider text-ink/60">
-                Address
+              <span className="text-[11px] uppercase tracking-wider text-ink/55 dark:text-cream/55">
+                Wallet address
               </span>
               <span className="mono text-sm truncate" title={walletAddress}>
                 {walletAddress || '…'}
@@ -232,9 +283,6 @@ export default function App() {
           />
           <div className="surface-card p-4 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex flex-col gap-1 min-w-0">
-              <span className="text-xs uppercase tracking-wider text-ink/60">
-                Active network
-              </span>
               <span className="font-display text-sm" title={network?.rpcUrl}>
                 {network?.label ?? '…'}
                 <span className="ml-2 text-ink/40 font-mono">
@@ -307,8 +355,8 @@ export default function App() {
           />
           <div className="surface-card p-4 flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1 min-w-0">
-              <span className="text-xs uppercase tracking-wider text-ink/60">
-                {storage?.isCustom ? 'Custom location' : 'Default location'}
+              <span className="text-[11px] uppercase tracking-wider text-ink/55 dark:text-cream/55">
+                {storage?.isCustom ? 'Custom path' : 'Default path'}
               </span>
               <span className="mono text-sm truncate" title={storage?.current ?? ''}>
                 {storage?.current ?? '…'}
@@ -671,7 +719,7 @@ function DaemonFailingBanner({
           Retried {status.consecutiveFailures} time{status.consecutiveFailures === 1 ? '' : 's'}; supervisor will keep retrying with backoff.
         </div>
       </div>
-      <button className="pill-button shrink-0" onClick={onSaveLogs}>
+      <button className="pill-button-primary shrink-0" onClick={onSaveLogs}>
         save logs
       </button>
     </div>

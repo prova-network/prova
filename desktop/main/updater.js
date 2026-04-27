@@ -170,7 +170,7 @@ function onUpdateNotAvailable ({ version }) {
 
   showDialogSync({
     title: 'Update not available',
-    message: `You are on the latest version of Filecoin Station (${version}).`,
+    message: `You are on the latest version of Prova (${version}).`,
     type: 'info',
     buttons: ['Close']
   })
@@ -186,8 +186,8 @@ function onUpdateDownloaded (ctx, { version /*, releaseNotes */ }) {
 
   const showUpdateDialog = () => {
     const buttonIx = showDialogSync({
-      title: 'Update Filecoin Station',
-      message: `An update to Filecoin Station ${version} is available. ` +
+      title: 'Update Prova',
+      message: `An update to Prova ${version} is available. ` +
         'Would you like to install it now?',
       type: 'info',
       buttons: ['Later', 'Show Release Notes', 'Install now']
@@ -208,8 +208,8 @@ function onUpdateDownloaded (ctx, { version /*, releaseNotes */ }) {
     // show unobtrusive notification + dialog on click
     ipcMain.emit(ipcMainEvents.READY_TO_UPDATE)
     updateNotification = new Notification({
-      title: 'Filecoin Station Update',
-      body: `An update to Filecoin Station ${version} is available.`
+      title: 'Prova Update',
+      body: `An update to Prova ${version} is available.`
     })
     updateNotification.on('click', showUpdateDialog)
     updateNotification.show()
@@ -218,7 +218,7 @@ function onUpdateDownloaded (ctx, { version /*, releaseNotes */ }) {
     // We have a new version that we did not tried to install previously
     // Let's go ahead and restart the app to update
     updateNotification = new Notification({
-      title: 'Restarting Filecoin Station',
+      title: 'Restarting Prova',
       body: `Updating to version ${version}.`
     })
     updateNotification.show()

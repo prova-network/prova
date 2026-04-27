@@ -75,6 +75,10 @@ contextBridge.exposeInMainWorld('electron', {
   /** @returns {Promise<{state:string,lastError:string,lastExitCode:number|null,consecutiveFailures:number}>} */
   getDaemonStatus: () => ipcRenderer.invoke('prova:getDaemonStatus'),
 
+  // ─── Prover stats (storage, earnings, staked, deals, proofs) ───────────────────────────
+  /** @returns {Promise<{bytesStored:number,piecesStored:number,dealsActive:number,proofsSubmitted:number,earnedUsdc:number|null,stakedProva:number|null,daemonUptimeSeconds:number|null}>} */
+  getProverStats: () => ipcRenderer.invoke('prova:getProverStats'),
+
   // ─── Network preset selection ───────────────────────────────────────
   listNetworks: () => ipcRenderer.invoke('prova:listNetworks'),
   getNetwork: () => ipcRenderer.invoke('prova:getNetwork'),
