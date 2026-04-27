@@ -40,6 +40,7 @@ if [[ ! -d "$CONTRACTS_OUT" ]]; then
 fi
 
 mkdir -p "$BINDINGS_OUT"
+: "${BINDINGS_OUT:?}"
 
 # <Foundry artifact basename>:<sub-package name>:<Go type name>
 CONTRACTS=(
@@ -56,7 +57,7 @@ CONTRACTS=(
 for entry in "${CONTRACTS[@]}"; do
   IFS=':' read -r _ PKG _ <<< "$entry"
   if [[ -d "$BINDINGS_OUT/$PKG" ]]; then
-    rm -rf "$BINDINGS_OUT/$PKG"
+    rm -rf "${BINDINGS_OUT:?}/$PKG"
   fi
 done
 
