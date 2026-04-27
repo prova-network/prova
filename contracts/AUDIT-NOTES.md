@@ -7,7 +7,7 @@ disposition of each. Read this before opening or reviewing a security PR.
 
 ### Currently zero open findings
 
-`slither . --config-file slither.config.json` returns clean (analyzed 67
+`slither . --config-file slither.config.json` returns clean (analyzed 70
 contracts with 54 detectors, 0 result(s) found).
 
 ### Disposition log
@@ -35,9 +35,16 @@ We will tighten this over time. The current shape is "production code, our addit
 | Check | Status |
 | --- | --- |
 | `forge build --sizes` | clean |
-| `forge test` | 106/106 passing across 7 suites |
+| `forge test` | 126/126 passing across 9 suites |
 | `forge fmt --check` | advisory (some files prefer different paragraphing); enforce later |
 | `forge snapshot` | baseline committed at `.gas-snapshot` |
+
+## Third-party code (provenance + license)
+
+| File | Source | License | Notes |
+| --- | --- | --- | --- |
+| `src/oracles/TickMath.sol` | Adapted from `Uniswap/v3-core` `TickMath.sol` | **GPL-2.0-or-later** | License contamination is isolated to this single file; it does not affect the rest of the suite (MIT). Only `getSqrtRatioAtTick` is retained; `getTickAtSqrtRatio` is removed (unused by the Prova oracle path). |
+| `src/Proofs.sol`, `src/ProofVerifier.sol`, `src/Cids.sol`, `src/Fees.sol`, `src/BitOps.sol`, `src/interfaces/IPDPTypes.sol` | `FilOzone/pdp` (with adaptations for Base + Prova economics) | Apache-2.0 OR MIT | Attribution preserved per upstream license. |
 
 ## Manual review history
 
