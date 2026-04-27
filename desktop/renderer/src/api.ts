@@ -61,6 +61,13 @@ export type NetworkConfig = NetworkPresetInfo & {
   }
 }
 
+export type DaemonStatus = {
+  state: 'idle' | 'starting' | 'running' | 'failing'
+  lastError: string
+  lastExitCode: number | null
+  consecutiveFailures: number
+}
+
 // ─── Preload surface ──────────────────────────────────────────────────
 
 // This mirrors the `contextBridge.exposeInMainWorld('electron', ...)`
@@ -104,6 +111,9 @@ declare global {
       getOnboardingState: () => Promise<{ completed: boolean; firstRunWalletAddress: string }>
       completeOnboarding: () => Promise<boolean>
 
+      // Daemon status
+      getDaemonStatus: () => Promise<DaemonStatus>
+
       // Network preset selection
       listNetworks: () => Promise<NetworkPresetInfo[]>
       getNetwork: () => Promise<NetworkConfig>
@@ -116,6 +126,7 @@ declare global {
       onWalletAddressUpdated: (cb: (addr: string) => void) => () => void
       onStorageDirChanged: (cb: (dir: string) => void) => () => void
       onNetworkChanged: (cb: (cfg: NetworkConfig) => void) => () => void
+      onDaemonStatusChanged: (cb: (status: DaemonStatus) => void) => () => void
       onUpdaterStatusChanged: (cb: (status: UpdaterStatus) => void) => () => void
     }
   }
@@ -160,6 +171,9 @@ const stub = {
   async resetStorageDir(): Promise<string> { return '' },
   async getOnboardingState() { return { completed: true, firstRunWalletAddress: '' } },
   async completeOnboarding() { return true },
+  async getDaemonStatus(): Promise<DaemonStatus> {
+    return { state: 'idle', lastError: '', lastExitCode: null, consecutiveFailures: 0 }
+  },
   async listNetworks(): Promise<NetworkPresetInfo[]> { return [] },
   async getNetwork(): Promise<NetworkConfig> {
     return {
@@ -185,6 +199,7 @@ const stub = {
   onWalletAddressUpdated(_cb: (addr: string) => void) { return () => {} },
   onStorageDirChanged(_cb: (dir: string) => void) { return () => {} },
   onNetworkChanged(_cb: (cfg: NetworkConfig) => void) { return () => {} },
+  onDaemonStatusChanged(_cb: (s: DaemonStatus) => void) { return () => {} },
   onUpdaterStatusChanged(_cb: (s: UpdaterStatus) => void) { return () => {} }
 }
 
@@ -220,6 +235,8 @@ export const electron = {
   getOnboardingState: () => bridgeAvailable() ? window.electron.getOnboardingState() : stub.getOnboardingState(),
   completeOnboarding: () => bridgeAvailable() ? window.electron.completeOnboarding() : stub.completeOnboarding(),
 
+  getDaemonStatus: () => bridgeAvailable() ? window.electron.getDaemonStatus() : stub.getDaemonStatus(),
+
   listNetworks: () => bridgeAvailable() ? window.electron.listNetworks() : stub.listNetworks(),
   getNetwork: () => bridgeAvailable() ? window.electron.getNetwork() : stub.getNetwork(),
   setNetwork: (key: NetworkKey) => bridgeAvailable() ? window.electron.setNetwork(key) : stub.setNetwork(key),
@@ -236,6 +253,8 @@ export const electron = {
     bridgeAvailable() ? window.electron.onStorageDirChanged(cb) : stub.onStorageDirChanged(cb),
   onNetworkChanged: (cb: (cfg: NetworkConfig) => void) =>
     bridgeAvailable() ? window.electron.onNetworkChanged(cb) : stub.onNetworkChanged(cb),
+  onDaemonStatusChanged: (cb: (s: DaemonStatus) => void) =>
+    bridgeAvailable() ? window.electron.onDaemonStatusChanged(cb) : stub.onDaemonStatusChanged(cb),
   onUpdaterStatusChanged: (cb: (s: UpdaterStatus) => void) =>
     bridgeAvailable() ? window.electron.onUpdaterStatusChanged(cb) : stub.onUpdaterStatusChanged(cb),
 

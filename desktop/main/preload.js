@@ -71,6 +71,10 @@ contextBridge.exposeInMainWorld('electron', {
   /** @returns {Promise<boolean>} */
   completeOnboarding: () => ipcRenderer.invoke('prova:completeOnboarding'),
 
+  // ─── Daemon status ──────────────────────────────────────────────────────
+  /** @returns {Promise<{state:string,lastError:string,lastExitCode:number|null,consecutiveFailures:number}>} */
+  getDaemonStatus: () => ipcRenderer.invoke('prova:getDaemonStatus'),
+
   // ─── Network preset selection ───────────────────────────────────────
   listNetworks: () => ipcRenderer.invoke('prova:listNetworks'),
   getNetwork: () => ipcRenderer.invoke('prova:getNetwork'),
@@ -96,6 +100,9 @@ contextBridge.exposeInMainWorld('electron', {
   /** @param {(cfg: unknown) => void} cb */
   onNetworkChanged: (/** @type {(...args: unknown[]) => void} */ cb) =>
     subscribe('prova:network-changed', cb),
+  /** @param {(status: unknown) => void} cb */
+  onDaemonStatusChanged: (/** @type {(...args: unknown[]) => void} */ cb) =>
+    subscribe('prova:daemon-status-changed', cb),
   // Updater state is carried by three distinct events in main/updater.js:
   //   UPDATE_CHECK_STARTED   -> 'checking'
   //   UPDATE_CHECK_FINISHED  -> 'idle'  (no update available)

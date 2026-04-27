@@ -161,19 +161,81 @@ async function run (ctx) {
 
   let backoffMs = 1000
   const backoffMax = 30_000
+  let consecutiveFailures = 0
 
   while (true) {
+    /** @type {{ ok: boolean, exitCode: number | null, message: string, attempt: number, backoffMs: number }} */
+    let report = { ok: true, exitCode: 0, message: '', attempt: consecutiveFailures, backoffMs }
     try {
       await start(ctx)
       backoffMs = 1000 // reset on clean exit
+      consecutiveFailures = 0
+      report = { ok: true, exitCode: 0, message: 'provad exited cleanly', attempt: 0, backoffMs }
+      daemonStatus = { state: 'running', lastError: '', lastExitCode: 0, consecutiveFailures: 0 }
     } catch (/** @type {unknown} */ err) {
-      log.error(format('provad start failed:', err))
+      consecutiveFailures += 1
       const msg = err instanceof Error ? err.message : String(err)
+      log.error(format('provad start failed:', err))
       logs.pushLine(`[supervisor] ${msg}`)
+      // Heuristic: pluck the trailing exit code from start()'s thrown
+      // 'wallet authentication failed' (exit 2) and similar diagnostic
+      // messages. -1 means we never got an exit code (e.g., binary
+      // missing).
+      const exitMatch = /exit code (\d+)/i.exec(msg)
+      const exitCode = exitMatch ? Number(exitMatch[1]) : null
+      report = { ok: false, exitCode, message: msg, attempt: consecutiveFailures, backoffMs }
+      daemonStatus = {
+        state: 'failing',
+        lastError: msg,
+        lastExitCode: exitCode,
+        consecutiveFailures
+      }
     }
+    notifyDaemonStatusChanged()
     // Small delay before restart so we don't hammer on repeated config errors
     await new Promise(r => setTimeout(r, backoffMs))
     backoffMs = Math.min(backoffMax, backoffMs * 2)
+  }
+}
+
+// ── daemon status surface for the renderer ────────────────────────────────────────────
+//
+// We surface a coarse-grained status snapshot so the UI can show a
+// banner like 'Prover daemon failed to start (exit 2 — wallet auth)'
+// instead of failing silently. The supervisor mutates `daemonStatus`
+// on every state transition; the IPC handler in main/ipc.js reads
+// it on demand, and the supervisor fires `prova:daemon-status-changed`
+// after each transition for push-based subscribers.
+
+/**
+ * @typedef {{
+ *   state: 'idle' | 'starting' | 'running' | 'failing',
+ *   lastError: string,
+ *   lastExitCode: number | null,
+ *   consecutiveFailures: number
+ * }} DaemonStatus
+ */
+
+/** @type {DaemonStatus} */
+let daemonStatus = {
+  state: 'idle',
+  lastError: '',
+  lastExitCode: null,
+  consecutiveFailures: 0
+}
+
+function getDaemonStatus () {
+  return { ...daemonStatus }
+}
+
+function notifyDaemonStatusChanged () {
+  // Lazy require to avoid a circular dependency between provad.js and ipc.js.
+  try {
+    const { ipcMain } = require('electron')
+    const { ipcMainEvents } = require('./ipc')
+    ipcMain.emit(ipcMainEvents.DAEMON_STATUS_CHANGED, getDaemonStatus())
+  } catch (/** @type {unknown} */ err) {
+    // ipcMain is unavailable during very early boot; ignore.
   }
 }
 
@@ -182,6 +244,13 @@ async function run (ctx) {
  */
 async function start (ctx) {
   log.info('Starting provad...')
+  daemonStatus = {
+    state: 'starting',
+    lastError: daemonStatus.lastError,
+    lastExitCode: daemonStatus.lastExitCode,
+    consecutiveFailures: daemonStatus.consecutiveFailures
+  }
+  notifyDaemonStatusChanged()
 
   // Verify binary exists before attempting spawn. Gives a clearer error
   // than the generic ENOENT from child_process.
@@ -267,8 +336,11 @@ async function start (ctx) {
   //   2 = wallet authentication failed (bad passphrase / missing keystore)
   if (closeCode === 2) {
     throw new Error(
-      'provad: wallet authentication failed. Check the passphrase stored in the OS keychain.'
+      'provad: wallet authentication failed (exit code 2). Check the passphrase stored in the OS keychain.'
     )
+  }
+  if (typeof closeCode === 'number' && closeCode !== 0) {
+    throw new Error(`provad: exited with non-zero exit code ${closeCode}`)
   }
 }
 
@@ -494,5 +566,6 @@ module.exports = {
   isOnline: () => activities.isOnline(),
   getActivities: () => activities.get(),
   getTotalProofsSubmitted: () => totalProofsSubmitted,
-  getTotalDealsActive: () => totalDealsActive
+  getTotalDealsActive: () => totalDealsActive,
+  getDaemonStatus
 }

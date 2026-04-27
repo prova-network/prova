@@ -3,6 +3,7 @@ import {
   electron,
   bridgeAvailable,
   type Activity,
+  type DaemonStatus,
   type NetworkConfig,
   type NetworkKey,
   type NetworkPresetInfo,
@@ -34,6 +35,8 @@ export default function App() {
   const [networkBusy, setNetworkBusy] = useState(false)
   const [onboardingNeeded, setOnboardingNeeded] = useState(false)
   const [firstRunAddress, setFirstRunAddress] = useState<string>('')
+  const [seedModalOpen, setSeedModalOpen] = useState(false)
+  const [daemonStatus, setDaemonStatus] = useState<DaemonStatus | null>(null)
 
   // ─── Initial state fetch ──────────────────────────────────────────
   useEffect(() => {
@@ -41,7 +44,7 @@ export default function App() {
 
     async function loadInitial() {
       try {
-        const [addr, deals, proofs, acts, upd, storageInfo, netCfg, presets, onboard] = await Promise.all([
+        const [addr, deals, proofs, acts, upd, storageInfo, netCfg, presets, onboard, dStatus] = await Promise.all([
           electron.getWalletAddress().catch(() => ''),
           electron.getTotalDealsActive().catch(() => 0),
           electron.getTotalProofsSubmitted().catch(() => 0),
@@ -51,6 +54,7 @@ export default function App() {
           electron.getNetwork().catch(() => null),
           electron.listNetworks().catch(() => [] as NetworkPresetInfo[]),
           electron.getOnboardingState().catch(() => ({ completed: true, firstRunWalletAddress: '' })),
+          electron.getDaemonStatus().catch(() => null as DaemonStatus | null),
         ])
         if (cancelled) return
         setWalletAddress(addr)
@@ -61,9 +65,10 @@ export default function App() {
         setStorage(storageInfo)
         setNetwork(netCfg)
         setNetworkPresets(presets)
-        // Show the 'back up your seed' banner when (a) we just generated
-        // a new wallet on this launch AND (b) the user hasn't already
-        // completed onboarding on a previous launch.
+        setDaemonStatus(dStatus)
+        // Show the multi-step first-run setup modal when (a) we just
+        // generated a new wallet on this launch AND (b) the user hasn't
+        // already completed onboarding on a previous launch.
         if (onboard && !onboard.completed && onboard.firstRunWalletAddress) {
           setOnboardingNeeded(true)
           setFirstRunAddress(onboard.firstRunWalletAddress)
@@ -98,6 +103,7 @@ export default function App() {
         setNetwork(cfg)
         electron.listNetworks().then(setNetworkPresets).catch(() => {})
       }),
+      electron.onDaemonStatusChanged(s => setDaemonStatus(s)),
     ]
     return () => unsubs.forEach(u => u())
   }, [])
@@ -132,14 +138,27 @@ export default function App() {
       <Header walletAddress={walletAddress} />
       {!bridgeAvailable() && <DisconnectedBanner />}
       {updaterStatus === 'ready' && <UpdateBanner />}
+      {daemonStatus && daemonStatus.state === 'failing' && daemonStatus.consecutiveFailures >= 2 && (
+        <DaemonFailingBanner
+          status={daemonStatus}
+          onSaveLogs={() => void electron.saveLogsAs()}
+        />
+      )}
       {onboardingNeeded && (
-        <OnboardingBanner
+        <FirstRunModal
           address={firstRunAddress}
-          onDismiss={() => {
+          presets={networkPresets}
+          activeNetworkKey={network?.key ?? 'anvil'}
+          onPickNetwork={key => electron.setNetwork(key).then(setNetwork)}
+          onShowSeed={() => setSeedModalOpen(true)}
+          onDone={() => {
             void electron.completeOnboarding()
             setOnboardingNeeded(false)
           }}
         />
+      )}
+      {seedModalOpen && (
+        <SeedExportModal onClose={() => setSeedModalOpen(false)} />
       )}
 
       <main className="max-w-4xl w-full mx-auto px-4 py-6 space-y-8 flex-1">
@@ -180,7 +199,7 @@ export default function App() {
             right={
               <button
                 className="pill-button"
-                onClick={() => void handleExportSeed()}
+                onClick={() => setSeedModalOpen(true)}
               >
                 export seed
               </button>
@@ -486,48 +505,277 @@ function UpdateBanner() {
   )
 }
 
-function OnboardingBanner({
+// ── First-run setup: pick chain, back up seed, finish ───────────────────────────────
+function FirstRunModal({
   address,
-  onDismiss,
+  presets,
+  activeNetworkKey,
+  onPickNetwork,
+  onShowSeed,
+  onDone,
 }: {
   address: string
-  onDismiss: () => void
+  presets: NetworkPresetInfo[]
+  activeNetworkKey: NetworkKey
+  onPickNetwork: (key: NetworkKey) => Promise<unknown>
+  onShowSeed: () => void
+  onDone: () => void
 }) {
+  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [pickedNetwork, setPickedNetwork] = useState<NetworkKey>(activeNetworkKey)
+  const [seedShown, setSeedShown] = useState(false)
+
   return (
-    <div className="px-4 py-3 flex items-center justify-center gap-4 text-sm border-b border-amber-300/60 bg-amber-100/70 text-amber-900">
-      <span>
-        New wallet generated at <span className="font-mono">{shortAddr(address)}</span>. Back up your seed phrase before storing anything important.
-      </span>
-      <button
-        className="pill-button"
-        onClick={() => {
-          void handleExportSeed().finally(onDismiss)
-        }}
-      >
-        back up now
-      </button>
-      <button
-        className="text-xs text-amber-900/70 hover:text-amber-900"
-        onClick={onDismiss}
-      >
-        later
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8 bg-black/40 backdrop-blur-sm">
+      <div className="surface-card max-w-xl w-full p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-semibold tracking-tight">
+            Welcome to Prova
+          </h2>
+          <span className="text-xs font-mono text-ink/40">
+            step {step} of 3
+          </span>
+        </div>
+
+        {step === 1 && (
+          <div className="space-y-4">
+            <p className="text-sm text-ink/70 dark:text-cream/70">
+              We just created a fresh wallet for this prover. The mnemonic
+              is stored in your OS keychain so this app can sign on its
+              behalf. <span className="font-semibold">Back it up before storing anything important.</span>
+            </p>
+            <div className="surface-card p-3 font-mono text-xs break-all">
+              {address}
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                className="pill-button"
+                onClick={() => {
+                  setSeedShown(true)
+                  onShowSeed()
+                }}
+              >
+                show seed phrase
+              </button>
+              <button
+                className="pill-button border-teal-cyan/60 text-teal-deep dark:text-teal-cyan"
+                disabled={!seedShown}
+                title={seedShown ? '' : 'Reveal the seed first so you can back it up'}
+                onClick={() => setStep(2)}
+              >
+                next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-4">
+            <p className="text-sm text-ink/70 dark:text-cream/70">
+              Pick the chain this prover will run on. You can change this
+              later in the Network section.
+            </p>
+            <div className="flex flex-col gap-2">
+              {presets.map(p => (
+                <button
+                  key={p.key}
+                  className={
+                    'text-left surface-card p-3 transition-colors ' +
+                    (pickedNetwork === p.key
+                      ? 'border-teal-cyan/70 ring-1 ring-teal-cyan/40'
+                      : '')
+                  }
+                  onClick={() => setPickedNetwork(p.key)}
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-display text-sm font-semibold">
+                      {p.label}
+                    </span>
+                    <span className="font-mono text-[11px] text-ink/40">
+                      chain {p.chainId}
+                    </span>
+                  </div>
+                  <div className="font-mono text-[11px] text-ink/50 mt-1 truncate">
+                    {p.rpcUrl}
+                  </div>
+                  {!p.isConfigured && (
+                    <div className="text-[11px] text-amber-700 mt-1">
+                      Contracts not deployed yet on this chain.
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-between gap-2">
+              <button className="pill-button" onClick={() => setStep(1)}>back</button>
+              <button
+                className="pill-button border-teal-cyan/60 text-teal-deep dark:text-teal-cyan"
+                onClick={() => {
+                  void onPickNetwork(pickedNetwork)
+                  setStep(3)
+                }}
+              >
+                use {presets.find(p => p.key === pickedNetwork)?.label.replace(/ \(.+\)$/, '')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4">
+            <p className="text-sm text-ink/70 dark:text-cream/70">
+              You're set up. Storage location, network, and updates can be
+              changed any time from the dashboard.
+            </p>
+            <div className="surface-card p-3 text-xs space-y-1">
+              <div><span className="text-ink/50">Wallet:</span> <span className="font-mono">{address}</span></div>
+              <div><span className="text-ink/50">Network:</span> {presets.find(p => p.key === pickedNetwork)?.label}</div>
+            </div>
+            <div className="flex justify-end">
+              <button
+                className="pill-button border-teal-cyan/60 text-teal-deep dark:text-teal-cyan"
+                onClick={onDone}
+              >
+                let's go
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Daemon-failing banner: shown after >=2 consecutive supervisor failures ─────
+function DaemonFailingBanner({
+  status,
+  onSaveLogs,
+}: {
+  status: DaemonStatus
+  onSaveLogs: () => void
+}) {
+  const exitCodeNote =
+    status.lastExitCode === null
+      ? '(no exit code)'
+      : `(exit code ${status.lastExitCode})`
+  return (
+    <div className="px-4 py-3 flex items-start justify-center gap-4 text-sm border-b border-red-300/70 bg-red-100/80 text-red-900">
+      <div className="max-w-2xl">
+        <div className="font-semibold">
+          Prover daemon is failing to start {exitCodeNote}.
+        </div>
+        <div className="text-xs mt-0.5 break-words">
+          {status.lastError || 'No diagnostic message captured.'}
+        </div>
+        <div className="text-xs text-red-900/60 mt-0.5">
+          Retried {status.consecutiveFailures} time{status.consecutiveFailures === 1 ? '' : 's'}; supervisor will keep retrying with backoff.
+        </div>
+      </div>
+      <button className="pill-button shrink-0" onClick={onSaveLogs}>
+        save logs
       </button>
     </div>
   )
 }
 
-async function handleExportSeed() {
-  const confirmed = window.confirm(
-    'Exporting your seed phrase reveals the key that controls this wallet. ' +
-    'Anyone who sees it can take funds. Are you sure?'
+// ── Seed export modal: masked by default, reveal toggle, copy button ───────────────
+function SeedExportModal({ onClose }: { onClose: () => void }) {
+  const [confirmed, setConfirmed] = useState(false)
+  const [phrase, setPhrase] = useState<string | null>(null)
+  const [revealed, setRevealed] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Once the user accepts the warning, fetch the mnemonic from main.
+  useEffect(() => {
+    if (!confirmed) return
+    let cancelled = false
+    electron
+      .exportSeedPhrase()
+      .then(p => { if (!cancelled) setPhrase(p) })
+      .catch(err => { if (!cancelled) setError(String(err?.message ?? err)) })
+    return () => { cancelled = true }
+  }, [confirmed])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8 bg-black/40 backdrop-blur-sm">
+      <div className="surface-card max-w-xl w-full p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-semibold tracking-tight">
+            Seed phrase
+          </h2>
+          <button className="pill-button" onClick={onClose}>close</button>
+        </div>
+
+        {!confirmed && (
+          <div className="space-y-4">
+            <p className="text-sm text-ink/70 dark:text-cream/70">
+              Anyone who sees this 12-word phrase can take any funds in this
+              wallet. Make sure no screen recording, screenshare, or other
+              process is observing this window before you continue.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button className="pill-button" onClick={onClose}>
+                cancel
+              </button>
+              <button
+                className="pill-button border-amber-400/70 text-amber-700"
+                onClick={() => setConfirmed(true)}
+              >
+                I understand, show it
+              </button>
+            </div>
+          </div>
+        )}
+
+        {confirmed && error && (
+          <div className="text-sm text-red-700">
+            Could not export seed: {error}
+          </div>
+        )}
+
+        {confirmed && !error && phrase === null && (
+          <div className="text-sm text-ink/60">decrypting…</div>
+        )}
+
+        {confirmed && phrase !== null && (
+          <div className="space-y-4">
+            <div className="surface-card p-4 font-mono text-sm leading-relaxed select-all">
+              {revealed
+                ? phrase
+                : phrase
+                    .split(' ')
+                    .map(w => '•'.repeat(Math.max(4, w.length)))
+                    .join(' ')}
+            </div>
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                className="pill-button"
+                onClick={() => setRevealed(r => !r)}
+              >
+                {revealed ? 'hide' : 'reveal'}
+              </button>
+              <button
+                className="pill-button"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(phrase)
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1500)
+                }}
+              >
+                {copied ? 'copied' : 'copy'}
+              </button>
+              <button className="pill-button border-teal-cyan/60 text-teal-deep dark:text-teal-cyan" onClick={onClose}>
+                done
+              </button>
+            </div>
+            <p className="text-xs text-ink/50">
+              Tip: write it on paper. Clipboard contents are accessible to
+              every app on your machine — don't leave it sitting there.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   )
-  if (!confirmed) return
-  try {
-    const phrase = await electron.exportSeedPhrase()
-    // Show it in a dialog. In a future iteration this should be a modal with
-    // a masked/unmasked toggle and a copy button.
-    window.prompt('Your 12-word seed phrase (copy, then clear clipboard):', phrase)
-  } catch (err) {
-    window.alert(`Could not export seed: ${(err as Error).message}`)
-  }
 }

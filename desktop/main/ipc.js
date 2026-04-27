@@ -13,6 +13,7 @@ const fs = require('node:fs/promises')
 
 const wallet = require('./wallet')
 const provaConfig = require('./prova-config')
+const provad = require('./provad')
 
 /** @typedef {import('./typings').Context} Context */
 
@@ -25,6 +26,7 @@ const ipcMainEvents = Object.freeze({
   WALLET_ADDRESS_UPDATED: 'prova:wallet-address-updated',
   STORAGE_DIR_CHANGED: 'prova:storage-dir-changed',
   NETWORK_CHANGED: 'prova:network-changed',
+  DAEMON_STATUS_CHANGED: 'prova:daemon-status-changed',
 
   UPDATE_CHECK_STARTED: 'prova:update-check:started',
   UPDATE_CHECK_FINISHED: 'prova:update-check:finished',
@@ -127,6 +129,9 @@ function setupIpcMain (/** @type {Context} */ ctx) {
     ipcMain.emit(ipcMainEvents.NETWORK_CHANGED, cfg)
     return cfg
   })
+
+  // ── Daemon status (running / starting / failing) ───────────────────────────────
+  ipcMain.handle('prova:getDaemonStatus', () => provad.getDaemonStatus())
 }
 
 module.exports = {
