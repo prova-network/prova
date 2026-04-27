@@ -44,13 +44,21 @@ const NetworkPresets = Object.freeze({
     label: 'Local anvil (dev)',
     rpcUrl: 'http://127.0.0.1:8545',
     chainId: 31337,
+    // These are the deterministic addresses produced by
+    // contracts/script/Deploy.s.sol when run against a fresh anvil
+    // instance with the standard pre-funded account 0 as deployer
+    // (anvil account 0 = 0xf39Fd6e51aad88F6F4ce6aB8827279cfFFb92266,
+    // private key ac0974...). Re-running the deploy script on the
+    // same anvil run produces the same addresses; restarting anvil
+    // resets nonces, in which case re-running the script reproduces
+    // them again.
     contracts: {
-      provaToken: '',
-      proofVerifier: '',
-      proverRegistry: '',
-      proverStaking: '',
-      contentRegistry: '',
-      storageMarketplace: ''
+      provaToken:         '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+      proofVerifier:      '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
+      proverRegistry:     '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+      proverStaking:      '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+      contentRegistry:    '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+      storageMarketplace: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853'
     }
   },
   'base-sepolia': {

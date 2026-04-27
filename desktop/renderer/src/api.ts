@@ -68,6 +68,25 @@ export type DaemonStatus = {
   consecutiveFailures: number
 }
 
+export type StakeSnapshot = {
+  address: string
+  /// All amounts as decimal strings of base units (wei). Render-side
+  /// formats them via formatUnits to avoid BigInt churn over IPC.
+  ethWei: string
+  provaWei: string
+  provaDecimals: number
+  stakedWei: string
+  unbondingWei: string
+  /// Unix-seconds timestamp when the unbonding queue becomes
+  /// withdrawable. 0 if no unbonding in progress.
+  unbondingEndsAt: number
+  committedBytes: string
+  minStakePerTiBWei: string
+  unbondingPeriodSeconds: number
+  isRegistered: boolean
+  registeredEndpoint: string
+}
+
 export type ProverStats = {
   /// Bytes currently stored on disk in the configured storage dir.
   bytesStored: number
@@ -133,6 +152,13 @@ declare global {
 
       // Prover stats (storage, earnings, staked, deals, proofs)
       getProverStats: () => Promise<ProverStats>
+
+      // On-chain reads + actions
+      getStakeSnapshot: () => Promise<StakeSnapshot | null>
+      stake: (amountWei: string) => Promise<{ txHash: string; approveTxHash?: string }>
+      requestUnstake: (amountWei: string) => Promise<{ txHash: string }>
+      withdrawUnbonded: () => Promise<{ txHash: string }>
+      registerProver: (opts?: { endpoint?: string; maxBytes?: string }) => Promise<{ txHash: string }>
 
       // Network preset selection
       listNetworks: () => Promise<NetworkPresetInfo[]>
@@ -205,6 +231,11 @@ const stub = {
       daemonUptimeSeconds: null,
     }
   },
+  async getStakeSnapshot(): Promise<StakeSnapshot | null> { return null },
+  async stake(_amountWei: string) { return { txHash: '' } },
+  async requestUnstake(_amountWei: string) { return { txHash: '' } },
+  async withdrawUnbonded() { return { txHash: '' } },
+  async registerProver(_opts?: { endpoint?: string; maxBytes?: string }) { return { txHash: '' } },
   async listNetworks(): Promise<NetworkPresetInfo[]> { return [] },
   async getNetwork(): Promise<NetworkConfig> {
     return {
@@ -268,6 +299,13 @@ export const electron = {
 
   getDaemonStatus: () => bridgeAvailable() ? window.electron.getDaemonStatus() : stub.getDaemonStatus(),
   getProverStats: () => bridgeAvailable() ? window.electron.getProverStats() : stub.getProverStats(),
+
+  getStakeSnapshot: () => bridgeAvailable() ? window.electron.getStakeSnapshot() : stub.getStakeSnapshot(),
+  stake: (amountWei: string) => bridgeAvailable() ? window.electron.stake(amountWei) : stub.stake(amountWei),
+  requestUnstake: (amountWei: string) => bridgeAvailable() ? window.electron.requestUnstake(amountWei) : stub.requestUnstake(amountWei),
+  withdrawUnbonded: () => bridgeAvailable() ? window.electron.withdrawUnbonded() : stub.withdrawUnbonded(),
+  registerProver: (opts?: { endpoint?: string; maxBytes?: string }) =>
+    bridgeAvailable() ? window.electron.registerProver(opts) : stub.registerProver(opts),
 
   listNetworks: () => bridgeAvailable() ? window.electron.listNetworks() : stub.listNetworks(),
   getNetwork: () => bridgeAvailable() ? window.electron.getNetwork() : stub.getNetwork(),

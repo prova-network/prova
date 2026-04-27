@@ -14,6 +14,7 @@ const fs = require('node:fs/promises')
 const wallet = require('./wallet')
 const provaConfig = require('./prova-config')
 const provad = require('./provad')
+const chain = require('./chain')
 
 /** @typedef {import('./typings').Context} Context */
 
@@ -125,6 +126,7 @@ function setupIpcMain (/** @type {Context} */ ctx) {
   ipcMain.handle('prova:getNetwork', () => provaConfig.getNetworkConfig())
   ipcMain.handle('prova:setNetwork', (_e, key) => {
     provaConfig.setNetwork(typeof key === 'string' ? key : 'anvil')
+    chain.resetProvider() // force a fresh JsonRpcProvider on next read/write
     const cfg = provaConfig.getNetworkConfig()
     ipcMain.emit(ipcMainEvents.NETWORK_CHANGED, cfg)
     return cfg
@@ -135,6 +137,15 @@ function setupIpcMain (/** @type {Context} */ ctx) {
 
   // ── Aggregated prover stats (storage / earnings / staked / deals / proofs) ───────
   ipcMain.handle('prova:getProverStats', () => provad.getProverStats())
+
+  // ── On-chain reads + actions (stake / unstake / withdraw / register) ───────────
+  ipcMain.handle('prova:getStakeSnapshot', () => chain.getStakeSnapshot())
+  ipcMain.handle('prova:stake', (_e, amountWei) => chain.stake(String(amountWei)))
+  ipcMain.handle('prova:requestUnstake', (_e, amountWei) =>
+    chain.requestUnstake(String(amountWei))
+  )
+  ipcMain.handle('prova:withdrawUnbonded', () => chain.withdrawUnbonded())
+  ipcMain.handle('prova:registerProver', (_e, opts) => chain.registerProver(opts || {}))
 }
 
 module.exports = {

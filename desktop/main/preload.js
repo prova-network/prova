@@ -79,6 +79,17 @@ contextBridge.exposeInMainWorld('electron', {
   /** @returns {Promise<{bytesStored:number,piecesStored:number,dealsActive:number,proofsSubmitted:number,earnedUsdc:number|null,stakedProva:number|null,daemonUptimeSeconds:number|null}>} */
   getProverStats: () => ipcRenderer.invoke('prova:getProverStats'),
 
+  // ─── On-chain reads + actions ────────────────────────────────────────────────────
+  /** @returns {Promise<null | object>} */
+  getStakeSnapshot: () => ipcRenderer.invoke('prova:getStakeSnapshot'),
+  /** @param {string} amountWei */
+  stake: (/** @type {string} */ amountWei) => ipcRenderer.invoke('prova:stake', amountWei),
+  /** @param {string} amountWei */
+  requestUnstake: (/** @type {string} */ amountWei) => ipcRenderer.invoke('prova:requestUnstake', amountWei),
+  withdrawUnbonded: () => ipcRenderer.invoke('prova:withdrawUnbonded'),
+  registerProver: (/** @type {{endpoint?: string, maxBytes?: string|number}} */ opts) =>
+    ipcRenderer.invoke('prova:registerProver', opts),
+
   // ─── Network preset selection ───────────────────────────────────────
   listNetworks: () => ipcRenderer.invoke('prova:listNetworks'),
   getNetwork: () => ipcRenderer.invoke('prova:getNetwork'),
