@@ -136,16 +136,29 @@ export default function App() {
       )}
 
       {/* Drag-handle bar with the macOS traffic-light reservation */}
-      <div className="draggable h-11 tahoe-titlebar-pad flex items-center px-4 text-[11px] text-ink/45 dark:text-cream/45">
-        <span className="font-mono">{network?.label ?? '…'}</span>
+      <div className="draggable h-11 tahoe-titlebar-pad flex items-center px-4 text-[11px] text-ink/65 dark:text-cream/65 border-b border-ink/10 dark:border-cream/10 bg-white/50 dark:bg-ink/50">
+        <span
+          className={
+            'inline-block h-2 w-2 rounded-full mr-2 ' +
+            (daemonStatus?.state === 'running'
+              ? 'bg-emerald-500'
+              : daemonStatus?.state === 'failing'
+                ? 'bg-red-500'
+                : daemonStatus?.state === 'starting'
+                  ? 'bg-amber-500 animate-pulse'
+                  : 'bg-ink/30 dark:bg-cream/30')
+          }
+          aria-hidden
+        />
+        <span className="font-mono text-ink dark:text-cream">{network?.label ?? '…'}</span>
         <span className="mx-2 opacity-40">·</span>
         <span className={
           'font-mono ' +
           (daemonStatus?.state === 'running'
-            ? 'text-emerald-700 dark:text-emerald-300'
+            ? 'text-emerald-700 dark:text-emerald-400'
             : daemonStatus?.state === 'failing'
-              ? 'text-red-700 dark:text-red-300'
-              : 'text-ink/45 dark:text-cream/45')
+              ? 'text-red-700 dark:text-red-400'
+              : 'text-ink/65 dark:text-cream/65')
         }>
           daemon {daemonStatus?.state ?? 'idle'}
         </span>
@@ -235,7 +248,7 @@ function Sidebar({
   )
 
   return (
-    <aside className="w-60 shrink-0 border-r border-ink/10 dark:border-cream/10 px-3 py-4 flex flex-col gap-0.5 bg-cream/40 dark:bg-ink/40">
+    <aside className="w-60 shrink-0 border-r border-ink/10 dark:border-cream/10 px-3 py-4 flex flex-col gap-0.5 bg-white/60 dark:bg-ink/60">
       <div className="px-3 pb-4 flex items-center gap-2.5">
         <span className="text-teal-deep dark:text-teal-cyan">
           <Logo size={26} />
@@ -400,7 +413,7 @@ function DashboardView({
           }
         />
         {activities.length === 0 ? (
-          <div className="surface-card p-8 text-center text-ink/50 text-sm">
+          <div className="surface-card p-8 text-center text-ink/50 dark:text-cream/50 text-sm">
             No activity yet. The prover is starting up; events will appear here as they happen.
           </div>
         ) : (
@@ -595,7 +608,7 @@ function AmountInput({
           placeholder="0.00"
           value={value}
           onChange={e => onChange(e.target.value.replace(/[^\d.]/g, ''))}
-          className="flex-1 bg-transparent outline-none text-base font-mono"
+          className="flex-1 bg-transparent outline-none text-base font-mono text-ink dark:text-cream placeholder:text-ink/40 dark:placeholder:text-cream/40"
         />
         <span className="text-xs text-ink/55 dark:text-cream/55">{suffix}</span>
       </div>
@@ -679,7 +692,7 @@ function SettingsView({
           <div className="flex flex-col gap-1 min-w-0">
             <span className="font-display text-sm" title={network?.rpcUrl}>
               {network?.label ?? '…'}
-              <span className="ml-2 text-ink/40 font-mono">chain {network?.chainId ?? '?'}</span>
+              <span className="ml-2 text-ink/40 dark:text-cream/40 font-mono">chain {network?.chainId ?? '?'}</span>
             </span>
             {network && !network.isConfigured && (
               <span className="text-[11px] text-amber-700">
@@ -788,9 +801,9 @@ function ActivityRow({ activity }: { activity: Activity }) {
     <div className={`px-4 py-3 border-l-2 ${toneClass} flex items-start gap-4`}>
       <div className="flex-1 min-w-0">
         <div className="text-sm">{activity.message}</div>
-        <div className="text-xs text-ink/50 mt-0.5 font-mono">{activity.source}</div>
+        <div className="text-xs text-ink/50 dark:text-cream/50 mt-0.5 font-mono">{activity.source}</div>
       </div>
-      <div className="text-xs text-ink/50 font-mono whitespace-nowrap" title={String(activity.timestamp)}>
+      <div className="text-xs text-ink/50 dark:text-cream/50 font-mono whitespace-nowrap" title={String(activity.timestamp)}>
         {relativeTime(activity.timestamp instanceof Date ? activity.timestamp.toISOString() : activity.timestamp)}
       </div>
     </div>
@@ -854,7 +867,7 @@ function FirstRunModal({
       <div className="surface-card max-w-xl w-full p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold tracking-tight">Welcome to Prova</h2>
-          <span className="text-xs font-mono text-ink/40">step {step} of 3</span>
+          <span className="text-xs font-mono text-ink/40 dark:text-cream/40">step {step} of 3</span>
         </div>
         {step === 1 && (
           <div className="space-y-4">
@@ -891,9 +904,9 @@ function FirstRunModal({
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="font-display text-sm font-semibold">{p.label}</span>
-                    <span className="font-mono text-[11px] text-ink/40">chain {p.chainId}</span>
+                    <span className="font-mono text-[11px] text-ink/40 dark:text-cream/40">chain {p.chainId}</span>
                   </div>
-                  <div className="font-mono text-[11px] text-ink/50 mt-1 truncate">{p.rpcUrl}</div>
+                  <div className="font-mono text-[11px] text-ink/50 dark:text-cream/50 mt-1 truncate">{p.rpcUrl}</div>
                   {!p.isConfigured && <div className="text-[11px] text-amber-700 mt-1">Contracts not deployed yet on this chain.</div>}
                 </button>
               ))}
@@ -915,8 +928,8 @@ function FirstRunModal({
               You're set up. Storage location, network, and updates can be changed any time from Settings.
             </p>
             <div className="surface-card p-3 text-xs space-y-1">
-              <div><span className="text-ink/50">Wallet:</span> <span className="font-mono">{address}</span></div>
-              <div><span className="text-ink/50">Network:</span> {presets.find(p => p.key === pickedNetwork)?.label}</div>
+              <div><span className="text-ink/50 dark:text-cream/50">Wallet:</span> <span className="font-mono">{address}</span></div>
+              <div><span className="text-ink/50 dark:text-cream/50">Network:</span> {presets.find(p => p.key === pickedNetwork)?.label}</div>
             </div>
             <div className="flex justify-end">
               <button className="pill-button-primary" onClick={onDone}>let's go</button>
@@ -963,7 +976,7 @@ function SeedExportModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
         {confirmed && error && <div className="text-sm text-red-700">Could not export seed: {error}</div>}
-        {confirmed && !error && phrase === null && <div className="text-sm text-ink/60">decrypting…</div>}
+        {confirmed && !error && phrase === null && <div className="text-sm text-ink/60 dark:text-cream/60">decrypting…</div>}
         {confirmed && phrase !== null && (
           <div className="space-y-4">
             <div className="surface-card p-4 font-mono text-sm leading-relaxed select-all">
@@ -984,7 +997,7 @@ function SeedExportModal({ onClose }: { onClose: () => void }) {
               </button>
               <button className="pill-button-primary" onClick={onClose}>done</button>
             </div>
-            <p className="text-xs text-ink/50">
+            <p className="text-xs text-ink/50 dark:text-cream/50">
               Tip: write it on paper. Clipboard contents are accessible to every app on your machine — don't leave it sitting there.
             </p>
           </div>

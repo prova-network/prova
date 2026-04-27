@@ -126,16 +126,33 @@ body {
     }
   }
 
-  /* Loud pill — primary action in a banner ("save logs", "restart & update"). */
+  /* Loud pill — primary action ("stake", "register prover", "save logs").
+     Brand-teal in both light and dark modes so it always reads against
+     a surface-card without depending on the theme. */
   .pill-button-primary {
-    @apply text-xs font-mono px-3 py-1.5 rounded-full transition-colors;
-    background-color: theme('colors.ink.DEFAULT');
+    @apply text-xs font-mono px-3 py-1.5 rounded-full transition-colors font-semibold;
+    background-color: theme('colors.teal.deep');
     color: theme('colors.cream');
-    border: 1px solid theme('colors.ink.DEFAULT');
+    border: 1px solid theme('colors.teal.deep');
   }
   .pill-button-primary:hover:not(:disabled) {
-    background-color: theme('colors.teal.deep');
-    border-color: theme('colors.teal.deep');
+    background-color: #0c3e4d;
+    border-color: #0c3e4d;
+  }
+  .pill-button-primary:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  @media (prefers-color-scheme: dark) {
+    .pill-button-primary {
+      background-color: theme('colors.teal.cyan');
+      color: theme('colors.ink.DEFAULT');
+      border-color: theme('colors.teal.cyan');
+    }
+    .pill-button-primary:hover:not(:disabled) {
+      background-color: #7fd6f1;
+      border-color: #7fd6f1;
+    }
   }
 }
 
