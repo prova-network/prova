@@ -65,6 +65,11 @@ contextBridge.exposeInMainWorld('electron', {
   /** @returns {Promise<string>} */
   resetStorageDir: () => ipcRenderer.invoke('prova:resetStorageDir'),
 
+  // ─── Network preset selection ───────────────────────────────────────
+  listNetworks: () => ipcRenderer.invoke('prova:listNetworks'),
+  getNetwork: () => ipcRenderer.invoke('prova:getNetwork'),
+  setNetwork: (/** @type {string} */ key) => ipcRenderer.invoke('prova:setNetwork', key),
+
   // ─── Subscriptions ─────────────────────────────────────────────────
   // Each returns an unsubscribe function for useEffect cleanup.
   /** @param {(activity: import('../shared/typings').Activity) => void} cb */
@@ -82,6 +87,9 @@ contextBridge.exposeInMainWorld('electron', {
   /** @param {(dir: string) => void} cb */
   onStorageDirChanged: (/** @type {(...args: unknown[]) => void} */ cb) =>
     subscribe('prova:storage-dir-changed', cb),
+  /** @param {(cfg: unknown) => void} cb */
+  onNetworkChanged: (/** @type {(...args: unknown[]) => void} */ cb) =>
+    subscribe('prova:network-changed', cb),
   // Updater state is carried by three distinct events in main/updater.js:
   //   UPDATE_CHECK_STARTED   -> 'checking'
   //   UPDATE_CHECK_FINISHED  -> 'idle'  (no update available)

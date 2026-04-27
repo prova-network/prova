@@ -3,6 +3,9 @@ import {
   electron,
   bridgeAvailable,
   type Activity,
+  type NetworkConfig,
+  type NetworkKey,
+  type NetworkPresetInfo,
   type StorageDirInfo,
   type UpdaterStatus,
 } from './api'
@@ -26,6 +29,9 @@ export default function App() {
   const [storage, setStorage] = useState<StorageDirInfo | null>(null)
   const [storageBusy, setStorageBusy] = useState(false)
   const [storageError, setStorageError] = useState<string | null>(null)
+  const [network, setNetwork] = useState<NetworkConfig | null>(null)
+  const [networkPresets, setNetworkPresets] = useState<NetworkPresetInfo[]>([])
+  const [networkBusy, setNetworkBusy] = useState(false)
 
   // ─── Initial state fetch ──────────────────────────────────────────
   useEffect(() => {
@@ -33,13 +39,15 @@ export default function App() {
 
     async function loadInitial() {
       try {
-        const [addr, deals, proofs, acts, upd, storageInfo] = await Promise.all([
+        const [addr, deals, proofs, acts, upd, storageInfo, netCfg, presets] = await Promise.all([
           electron.getWalletAddress().catch(() => ''),
           electron.getTotalDealsActive().catch(() => 0),
           electron.getTotalProofsSubmitted().catch(() => 0),
           electron.getActivities().catch(() => []),
           electron.getUpdaterStatus().catch(() => 'idle' as UpdaterStatus),
           electron.getStorageDir().catch(() => null),
+          electron.getNetwork().catch(() => null),
+          electron.listNetworks().catch(() => [] as NetworkPresetInfo[]),
         ])
         if (cancelled) return
         setWalletAddress(addr)
@@ -48,6 +56,8 @@ export default function App() {
         setActivities(acts)
         setUpdaterStatus(upd)
         setStorage(storageInfo)
+        setNetwork(netCfg)
+        setNetworkPresets(presets)
       } catch {
         // main process not ready yet; subscriptions will fill in
       }
@@ -73,6 +83,10 @@ export default function App() {
       }),
       electron.onStorageDirChanged(() => {
         electron.getStorageDir().then(setStorage).catch(() => {})
+      }),
+      electron.onNetworkChanged(cfg => {
+        setNetwork(cfg)
+        electron.listNetworks().then(setNetworkPresets).catch(() => {})
       }),
     ]
     return () => unsubs.forEach(u => u())
@@ -171,6 +185,61 @@ export default function App() {
               </button>
             )}
           </div>
+        </section>
+
+        <section>
+          <SectionHeading
+            title="Network"
+            sub="Pick which chain the prover talks to. Pieces and stake are chain-specific."
+          />
+          <div className="surface-card p-4 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-xs uppercase tracking-wider text-ink/60">
+                Active network
+              </span>
+              <span className="font-display text-sm" title={network?.rpcUrl}>
+                {network?.label ?? '…'}
+                <span className="ml-2 text-ink/40 font-mono">
+                  chain {network?.chainId ?? '?'}
+                </span>
+              </span>
+              {network && !network.isConfigured && (
+                <span className="text-[11px] text-amber-700">
+                  No deployed contracts on this chain yet — the prover will start, but on-chain
+                  events won’t flow until contract addresses are configured.
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {networkPresets.map(p => (
+                <button
+                  key={p.key}
+                  className={
+                    'pill-button ' +
+                    (network?.key === p.key
+                      ? 'border-teal-cyan/70 text-teal-deep dark:text-teal-cyan bg-white/40 dark:bg-ink/30'
+                      : '')
+                  }
+                  disabled={networkBusy || network?.key === p.key}
+                  onClick={() => {
+                    setNetworkBusy(true)
+                    electron
+                      .setNetwork(p.key)
+                      .then(setNetwork)
+                      .finally(() => setNetworkBusy(false))
+                  }}
+                  title={`${p.label} — ${p.rpcUrl}`}
+                >
+                  {p.label.replace(/ \(.+\)$/, '')}
+                </button>
+              ))}
+            </div>
+          </div>
+          {network && (
+            <p className="text-xs text-ink/50 mt-2">
+              Restart the app for the network change to take effect.
+            </p>
+          )}
         </section>
 
         <section>

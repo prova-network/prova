@@ -24,6 +24,7 @@ const ipcMainEvents = Object.freeze({
   DEALS_ACTIVE_UPDATED: 'prova:deals-active-updated',
   WALLET_ADDRESS_UPDATED: 'prova:wallet-address-updated',
   STORAGE_DIR_CHANGED: 'prova:storage-dir-changed',
+  NETWORK_CHANGED: 'prova:network-changed',
 
   UPDATE_CHECK_STARTED: 'prova:update-check:started',
   UPDATE_CHECK_FINISHED: 'prova:update-check:finished',
@@ -101,6 +102,16 @@ function setupIpcMain (/** @type {Context} */ ctx) {
     const reset = provaConfig.getStorageDir()
     ipcMain.emit(ipcMainEvents.STORAGE_DIR_CHANGED, reset)
     return reset
+  })
+
+  // ── Network preset selection (anvil / base-sepolia / base-mainnet) ────────
+  ipcMain.handle('prova:listNetworks', () => provaConfig.listNetworkPresets())
+  ipcMain.handle('prova:getNetwork', () => provaConfig.getNetworkConfig())
+  ipcMain.handle('prova:setNetwork', (_e, key) => {
+    provaConfig.setNetwork(typeof key === 'string' ? key : 'anvil')
+    const cfg = provaConfig.getNetworkConfig()
+    ipcMain.emit(ipcMainEvents.NETWORK_CHANGED, cfg)
+    return cfg
   })
 }
 

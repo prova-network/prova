@@ -37,6 +37,30 @@ export type StorageDirInfo = {
   isCustom: boolean
 }
 
+export type NetworkKey = 'anvil' | 'base-sepolia' | 'base-mainnet'
+
+export type NetworkPresetInfo = {
+  key: NetworkKey
+  label: string
+  rpcUrl: string
+  chainId: number
+  /// True if every contract address in the preset is set; false means
+  /// the desktop is shipping with placeholders and the user (or a future
+  /// app update) needs to drop in real addresses.
+  isConfigured: boolean
+}
+
+export type NetworkConfig = NetworkPresetInfo & {
+  contracts: {
+    provaToken: string
+    proofVerifier: string
+    proverRegistry: string
+    proverStaking: string
+    contentRegistry: string
+    storageMarketplace: string
+  }
+}
+
 // ─── Preload surface ──────────────────────────────────────────────────
 
 // This mirrors the `contextBridge.exposeInMainWorld('electron', ...)`
@@ -76,12 +100,18 @@ declare global {
       /** Resets to the platform default; returns the now-effective path. */
       resetStorageDir: () => Promise<string>
 
+      // Network preset selection
+      listNetworks: () => Promise<NetworkPresetInfo[]>
+      getNetwork: () => Promise<NetworkConfig>
+      setNetwork: (key: NetworkKey) => Promise<NetworkConfig>
+
       // Subscriptions (event-driven updates from main -> renderer)
       onActivityLogged: (cb: (a: Activity) => void) => () => void
       onProofStatsUpdated: (cb: (total: number) => void) => () => void
       onDealsActiveUpdated: (cb: (total: number) => void) => () => void
       onWalletAddressUpdated: (cb: (addr: string) => void) => () => void
       onStorageDirChanged: (cb: (dir: string) => void) => () => void
+      onNetworkChanged: (cb: (cfg: NetworkConfig) => void) => () => void
       onUpdaterStatusChanged: (cb: (status: UpdaterStatus) => void) => () => void
     }
   }
@@ -124,11 +154,31 @@ const stub = {
   },
   async selectStorageDir(): Promise<string | null> { return null },
   async resetStorageDir(): Promise<string> { return '' },
+  async listNetworks(): Promise<NetworkPresetInfo[]> { return [] },
+  async getNetwork(): Promise<NetworkConfig> {
+    return {
+      key: 'anvil',
+      label: 'Local anvil (dev)',
+      rpcUrl: '',
+      chainId: 0,
+      isConfigured: false,
+      contracts: {
+        provaToken: '',
+        proofVerifier: '',
+        proverRegistry: '',
+        proverStaking: '',
+        contentRegistry: '',
+        storageMarketplace: ''
+      }
+    }
+  },
+  async setNetwork(_key: NetworkKey): Promise<NetworkConfig> { return this.getNetwork() },
   onActivityLogged(_cb: (a: Activity) => void) { return () => {} },
   onProofStatsUpdated(_cb: (n: number) => void) { return () => {} },
   onDealsActiveUpdated(_cb: (n: number) => void) { return () => {} },
   onWalletAddressUpdated(_cb: (addr: string) => void) { return () => {} },
   onStorageDirChanged(_cb: (dir: string) => void) { return () => {} },
+  onNetworkChanged(_cb: (cfg: NetworkConfig) => void) { return () => {} },
   onUpdaterStatusChanged(_cb: (s: UpdaterStatus) => void) { return () => {} }
 }
 
@@ -161,6 +211,10 @@ export const electron = {
   selectStorageDir: () => bridgeAvailable() ? window.electron.selectStorageDir() : stub.selectStorageDir(),
   resetStorageDir: () => bridgeAvailable() ? window.electron.resetStorageDir() : stub.resetStorageDir(),
 
+  listNetworks: () => bridgeAvailable() ? window.electron.listNetworks() : stub.listNetworks(),
+  getNetwork: () => bridgeAvailable() ? window.electron.getNetwork() : stub.getNetwork(),
+  setNetwork: (key: NetworkKey) => bridgeAvailable() ? window.electron.setNetwork(key) : stub.setNetwork(key),
+
   onActivityLogged: (cb: (a: Activity) => void) =>
     bridgeAvailable() ? window.electron.onActivityLogged(cb) : stub.onActivityLogged(cb),
   onProofStatsUpdated: (cb: (total: number) => void) =>
@@ -171,6 +225,8 @@ export const electron = {
     bridgeAvailable() ? window.electron.onWalletAddressUpdated(cb) : stub.onWalletAddressUpdated(cb),
   onStorageDirChanged: (cb: (dir: string) => void) =>
     bridgeAvailable() ? window.electron.onStorageDirChanged(cb) : stub.onStorageDirChanged(cb),
+  onNetworkChanged: (cb: (cfg: NetworkConfig) => void) =>
+    bridgeAvailable() ? window.electron.onNetworkChanged(cb) : stub.onNetworkChanged(cb),
   onUpdaterStatusChanged: (cb: (s: UpdaterStatus) => void) =>
     bridgeAvailable() ? window.electron.onUpdaterStatusChanged(cb) : stub.onUpdaterStatusChanged(cb),
 

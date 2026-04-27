@@ -173,6 +173,42 @@ async function exportMnemonic () {
   return m
 }
 
+/**
+ * Materialize a go-ethereum-compatible JSON keystore at `keystorePath`,
+ * encrypting the wallet's private key with the deterministic passphrase
+ * derived from the mnemonic. provad reads this file at boot to recover
+ * the signing key without ever holding the mnemonic itself.
+ *
+ * The encryption uses scrypt with light parameters (N=2 in ethers' light
+ * preset) so first-run cost is bounded; the keystore re-encrypts only if
+ * the file is missing.
+ *
+ * @param {string} keystorePath  Absolute filesystem path for keystore.json.
+ * @returns {Promise<{path: string, created: boolean}>}
+ */
+async function ensureKeystoreFile (keystorePath) {
+  const fs = require('node:fs/promises')
+  try {
+    await fs.access(keystorePath, fs.constants.R_OK)
+    return { path: keystorePath, created: false }
+  } catch {
+    // not present; fall through to create
+  }
+  const w = getWallet()
+  const passphrase = await getKeystorePassphrase()
+  // ethers v6 HDNodeWallet exposes both encrypt() (async, scrypt N=2^17)
+  // and encryptSync() (blocks the event loop, also scrypt). We use the
+  // async one so the renderer doesn't pause for the ~1-2s scrypt cost
+  // on first launch. Output is a JSON string with the standard Web3 /
+  // go-ethereum keystore schema (version 3).
+  const json = await w.encrypt(passphrase)
+  const path = require('node:path')
+  await fs.mkdir(path.dirname(keystorePath), { recursive: true })
+  await fs.writeFile(keystorePath, json, { mode: 0o600 })
+  log.info(`wrote keystore to ${keystorePath}`)
+  return { path: keystorePath, created: true }
+}
+
 // ─── internals ───────────────────────────────────────────────────────
 
 /**
@@ -234,6 +270,7 @@ module.exports = {
   getKeystorePassphrase,
   exportPrivateKey,
   exportMnemonic,
+  ensureKeystoreFile,
   // Back-compat shims for anything in the codebase still calling the old API.
   getDestinationWalletAddress: getAddress
 }

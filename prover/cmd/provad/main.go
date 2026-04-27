@@ -51,7 +51,9 @@ func main() {
 
 func run() error {
 	var configPath string
+	var logFormat string
 	flag.StringVar(&configPath, "config", "", "path to prover TOML config (required for start/register/status)")
+	flag.StringVar(&logFormat, "log-format", "text", "log output format: text (human-readable, default) or json (slog JSON, for machine consumers)")
 	flag.Usage = usage
 	flag.Parse()
 
@@ -69,7 +71,7 @@ func run() error {
 	case "version":
 		return cmdVersion()
 	case "start":
-		return cmdStart(ctx, configPath)
+		return cmdStart(ctx, configPath, logFormat)
 	case "register":
 		return cmdRegister(ctx, configPath)
 	case "status":
@@ -97,7 +99,8 @@ Subcommands:
   help      Print this help
 
 Flags:
-  --config  Path to prover TOML config file
+  --config      Path to prover TOML config file
+  --log-format  Log output format: text (default) or json
 
 Environment:
   PROVA_KEYSTORE_PASSPHRASE  Decrypt keystore file (preferred over config value)
@@ -113,6 +116,21 @@ func cmdVersion() error {
 	fmt.Printf("provad %s (commit %s, %s/%s, %s)\n",
 		version, commit, runtime.GOOS, runtime.GOARCH, runtime.Version())
 	return nil
+}
+
+// newRootLogger builds the root slog logger for the daemon. Format is
+// chosen by --log-format. Level is INFO; structured details are emitted
+// as slog attributes so the desktop app's JSON parser can decode them.
+func newRootLogger(format string) (*slog.Logger, error) {
+	opts := &slog.HandlerOptions{Level: slog.LevelInfo}
+	switch strings.ToLower(strings.TrimSpace(format)) {
+	case "", "text":
+		return slog.New(slog.NewTextHandler(os.Stdout, opts)), nil
+	case "json":
+		return slog.New(slog.NewJSONHandler(os.Stdout, opts)), nil
+	default:
+		return nil, fmt.Errorf("--log-format: unknown value %q (want text or json)", format)
+	}
 }
 
 // loadEnvironment brings up (config, wallet, ethclient) — the common setup
@@ -156,14 +174,17 @@ func loadWallet(cfg *config.Config) (*wallet.Wallet, error) {
 	return nil, fmt.Errorf("no identity source configured")
 }
 
-func cmdStart(ctx context.Context, configPath string) error {
+func cmdStart(ctx context.Context, configPath, logFormat string) error {
 	cfg, w, cl, err := loadEnvironment(ctx, configPath)
 	if err != nil {
 		return err
 	}
 	defer cl.Close()
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	logger, err := newRootLogger(logFormat)
+	if err != nil {
+		return err
+	}
 
 	// Metrics collector (always built; enabling the HTTP metrics endpoint
 	// is opt-in via config).

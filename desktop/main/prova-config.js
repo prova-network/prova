@@ -28,7 +28,57 @@ const ConfigKeys = Object.freeze({
   // Where the local piece store writes data. Empty string means "use
   // the default under the app's userData directory". Users can point
   // this at any folder, including an external drive, via the UI.
-  StorageDir: 'prova.StorageDir'
+  StorageDir: 'prova.StorageDir',
+  // Which chain the prover talks to. One of: 'anvil' | 'base-sepolia'
+  // | 'base-mainnet'. Default is 'anvil' so a freshly-installed copy
+  // boots toward a local devnet instead of trying (and failing) to
+  // hit a real chain unconfigured.
+  Network: 'prova.Network'
+})
+
+// Chain presets the desktop ships with. Contract addresses are blank
+// until each chain has its Prova v2 contract suite deployed; the
+// desktop surfaces "Configure contracts" guidance in that case.
+const NetworkPresets = Object.freeze({
+  anvil: {
+    label: 'Local anvil (dev)',
+    rpcUrl: 'http://127.0.0.1:8545',
+    chainId: 31337,
+    contracts: {
+      provaToken: '',
+      proofVerifier: '',
+      proverRegistry: '',
+      proverStaking: '',
+      contentRegistry: '',
+      storageMarketplace: ''
+    }
+  },
+  'base-sepolia': {
+    label: 'Base Sepolia (testnet)',
+    rpcUrl: 'https://sepolia.base.org',
+    chainId: 84532,
+    contracts: {
+      provaToken: '',
+      proofVerifier: '',
+      proverRegistry: '',
+      proverStaking: '',
+      contentRegistry: '',
+      storageMarketplace: ''
+    }
+  },
+  'base-mainnet': {
+    label: 'Base mainnet',
+    rpcUrl: 'https://mainnet.base.org',
+    chainId: 8453,
+    contracts: {
+      provaToken: '',
+      proofVerifier: '',
+      proverRegistry: '',
+      proverStaking: '',
+      contentRegistry: '',
+      storageMarketplace: ''
+    }
+  }
 })
 
 const configStore = new Store({
@@ -67,6 +117,8 @@ let AutoUpdateEnabled =
   /** @type {boolean} */ (configStore.get(ConfigKeys.AutoUpdateEnabled, true))
 let StorageDir =
   /** @type {string} */ (configStore.get(ConfigKeys.StorageDir, ''))
+let Network =
+  /** @type {string} */ (configStore.get(ConfigKeys.Network, 'anvil'))
 
 /** @returns {boolean} */
 function getOnboardingCompleted () { return !!OnboardingCompleted }
@@ -136,6 +188,55 @@ function setStorageDir (dir) {
   configStore.set(ConfigKeys.StorageDir, StorageDir)
 }
 
+/**
+ * Currently selected network preset key.
+ * @returns {'anvil' | 'base-sepolia' | 'base-mainnet'}
+ */
+function getNetwork () {
+  const presets = /** @type {Record<string, unknown>} */ (NetworkPresets)
+  if (Network && presets[Network]) {
+    return /** @type {'anvil' | 'base-sepolia' | 'base-mainnet'} */ (Network)
+  }
+  return 'anvil'
+}
+
+/**
+ * Set the active chain preset. Unknown values fall back to 'anvil'.
+ *
+ * @param {string} v
+ */
+function setNetwork (v) {
+  const presets = /** @type {Record<string, unknown>} */ (NetworkPresets)
+  if (!presets[v]) v = 'anvil'
+  Network = v
+  configStore.set(ConfigKeys.Network, Network)
+}
+
+/**
+ * Resolved chain configuration for the active network: rpcUrl, chainId,
+ * contract addresses, and a friendly label for the UI.
+ */
+function getNetworkConfig () {
+  const key = getNetwork()
+  const presets = /** @type {Record<string, typeof NetworkPresets['anvil']>} */ (NetworkPresets)
+  const preset = presets[key]
+  return { key, ...preset }
+}
+
+/**
+ * List every chain preset the desktop knows about, for UI selectors.
+ */
+function listNetworkPresets () {
+  return Object.entries(NetworkPresets).map(([key, preset]) => ({
+    key,
+    label: preset.label,
+    rpcUrl: preset.rpcUrl,
+    chainId: preset.chainId,
+    /** True if the preset has all six contract addresses set. */
+    isConfigured: Object.values(preset.contracts).every(addr => addr && addr.length > 0)
+  }))
+}
+
 module.exports = {
   getOnboardingCompleted,
   setOnboardingCompleted,
@@ -147,5 +248,9 @@ module.exports = {
   setAutoUpdateEnabled,
   getStorageDir,
   setStorageDir,
-  getDefaultStorageDir
+  getDefaultStorageDir,
+  getNetwork,
+  setNetwork,
+  getNetworkConfig,
+  listNetworkPresets
 }
