@@ -25,9 +25,15 @@ HTTP_PID=""
 PROVAD_PID=""
 
 cleanup() {
-  [[ -n "${PROVAD_PID:-}" ]] && kill -TERM "$PROVAD_PID" 2>/dev/null || true
-  [[ -n "${HTTP_PID:-}" ]] && kill -TERM "$HTTP_PID" 2>/dev/null || true
-  [[ -n "${ANVIL_PID:-}" ]] && kill -TERM "$ANVIL_PID" 2>/dev/null || true
+  if [[ -n "${PROVAD_PID:-}" ]]; then
+    kill -TERM "$PROVAD_PID" 2>/dev/null || true
+  fi
+  if [[ -n "${HTTP_PID:-}" ]]; then
+    kill -TERM "$HTTP_PID" 2>/dev/null || true
+  fi
+  if [[ -n "${ANVIL_PID:-}" ]]; then
+    kill -TERM "$ANVIL_PID" 2>/dev/null || true
+  fi
   sleep 1
   pkill -f "anvil --port 8545" 2>/dev/null || true
   pkill -f "http.server 8900" 2>/dev/null || true
@@ -248,16 +254,10 @@ while true; do
 done
 ok "all 3 deals Active"
 
-# ── 10. Verify retrieval endpoint ──────────────────────────────────────
-log "Retrieving pieces via HTTP"
-RETRIEVED=0
-for commp in "$COMMP_0" "$COMMP_1" "$COMMP_2"; do
-  # CID = baga6ea4seaq... prefix + 0x01 0xf1 0x01 + 0x92 0x20 0x20 + <commp>
-  # Easier: pull it by computing the CID in Go. Skip the retrieval check
-  # if we don't have an easy way.
-  :
-done
-# Fallback: check the on-disk store has 3 pieces
+# ── 10. Verify stored pieces ───────────────────────────────────────────
+log "Verifying stored pieces"
+# Check the on-disk store has 3 pieces. A later soak-test revision can add
+# full retrieval-by-CID once the test computes piece CIDs in one place.
 PIECE_COUNT=$(find "$DATA_DIR" -type f ! -name '.*' 2>/dev/null | wc -l | tr -d ' ')
 if [[ "$PIECE_COUNT" != "3" ]]; then
   err "expected 3 pieces on disk, got $PIECE_COUNT"
