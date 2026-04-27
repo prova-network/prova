@@ -21,15 +21,28 @@ module.exports = async function (ctx) {
   if (app.dock) app.dock.hide()
 
   const dimensions = screen.getPrimaryDisplay().size
+  const isMac = process.platform === 'darwin'
   const ui = new BrowserWindow({
-    title: 'Filecoin Station',
+    title: 'Prova',
     show: false, // we show it via ready-to-show
     width: Math.min(dimensions.width, 1440),
     height: Math.min(dimensions.height, 900),
     minWidth: 1080,
     minHeight: 740,
     autoHideMenuBar: true,
-    titleBarStyle: 'hiddenInset',
+    // macOS Tahoe (26+) emphasizes hidden-inset traffic lights with the
+    // chrome blending into the content. Inset offset places them in the
+    // standard Tahoe position; non-mac platforms get default chrome.
+    titleBarStyle: isMac ? 'hiddenInset' : 'default',
+    trafficLightPosition: isMac ? { x: 18, y: 18 } : undefined,
+    // Liquid-Glass-adjacent translucency on macOS. The renderer sets
+    // its background-color to transparent over the vibrancy layer
+    // so the Tahoe sidebar/window material reads through.
+    vibrancy: isMac ? 'sidebar' : undefined,
+    visualEffectState: isMac ? 'active' : undefined,
+    backgroundColor: isMac ? '#00000000' : '#FAF7F1',
+    transparent: isMac,
+    roundedCorners: true,
     webPreferences: {
       nodeIntegration: false,
       preload: path.join(__dirname, 'preload.js')

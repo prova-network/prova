@@ -13,7 +13,9 @@
 
 'use strict'
 
+const path = require('node:path')
 const Store = require('electron-store')
+const { app } = require('electron')
 
 const log = require('electron-log').scope('config')
 
@@ -22,7 +24,11 @@ const ConfigKeys = Object.freeze({
   TrayOperationExplained: 'prova.TrayOperationExplained',
   // Prover-side: feature opt-ins that persist across launches
   ProverModeEnabled: 'prova.ProverModeEnabled',
-  AutoUpdateEnabled: 'prova.AutoUpdateEnabled'
+  AutoUpdateEnabled: 'prova.AutoUpdateEnabled',
+  // Where the local piece store writes data. Empty string means "use
+  // the default under the app's userData directory". Users can point
+  // this at any folder, including an external drive, via the UI.
+  StorageDir: 'prova.StorageDir'
 })
 
 const configStore = new Store({
@@ -59,6 +65,8 @@ let ProverModeEnabled =
   /** @type {boolean} */ (configStore.get(ConfigKeys.ProverModeEnabled, false))
 let AutoUpdateEnabled =
   /** @type {boolean} */ (configStore.get(ConfigKeys.AutoUpdateEnabled, true))
+let StorageDir =
+  /** @type {string} */ (configStore.get(ConfigKeys.StorageDir, ''))
 
 /** @returns {boolean} */
 function getOnboardingCompleted () { return !!OnboardingCompleted }
@@ -90,6 +98,44 @@ function setAutoUpdateEnabled (v) {
   configStore.set(ConfigKeys.AutoUpdateEnabled, AutoUpdateEnabled)
 }
 
+/**
+ * Default piece-store directory. Users see this on first launch; they
+ * can change it via the Storage panel and the change persists across
+ * restarts. We pick a directory inside `userData` so the OS file system
+ * inherits the app's normal lifecycle (Time Machine excluded under
+ * `Library/Application Support` per Apple's recommendation).
+ *
+ * @returns {string}
+ */
+function getDefaultStorageDir () {
+  // app may be undefined during early Electron module load; guard for it.
+  if (!app || typeof app.getPath !== 'function') {
+    return path.join(process.cwd(), 'pieces')
+  }
+  return path.join(app.getPath('userData'), 'pieces')
+}
+
+/**
+ * Effective storage directory: user-selected if non-empty, otherwise
+ * the per-platform default.
+ *
+ * @returns {string}
+ */
+function getStorageDir () {
+  if (StorageDir && StorageDir.length > 0) return StorageDir
+  return getDefaultStorageDir()
+}
+
+/**
+ * Set a user-selected storage directory. Empty string resets to default.
+ *
+ * @param {string} dir
+ */
+function setStorageDir (dir) {
+  StorageDir = (dir || '').trim()
+  configStore.set(ConfigKeys.StorageDir, StorageDir)
+}
+
 module.exports = {
   getOnboardingCompleted,
   setOnboardingCompleted,
@@ -98,5 +144,8 @@ module.exports = {
   getProverModeEnabled,
   setProverModeEnabled,
   getAutoUpdateEnabled,
-  setAutoUpdateEnabled
+  setAutoUpdateEnabled,
+  getStorageDir,
+  setStorageDir,
+  getDefaultStorageDir
 }

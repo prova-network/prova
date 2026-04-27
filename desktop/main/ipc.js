@@ -8,9 +8,11 @@
 
 'use strict'
 
-const { ipcMain } = require('electron')
+const { ipcMain, dialog } = require('electron')
+const fs = require('node:fs/promises')
 
 const wallet = require('./wallet')
+const provaConfig = require('./prova-config')
 
 /** @typedef {import('./typings').Context} Context */
 
@@ -21,6 +23,7 @@ const ipcMainEvents = Object.freeze({
   PROOF_STATS_UPDATED: 'prova:proof-stats-updated',
   DEALS_ACTIVE_UPDATED: 'prova:deals-active-updated',
   WALLET_ADDRESS_UPDATED: 'prova:wallet-address-updated',
+  STORAGE_DIR_CHANGED: 'prova:storage-dir-changed',
 
   UPDATE_CHECK_STARTED: 'prova:update-check:started',
   UPDATE_CHECK_FINISHED: 'prova:update-check:finished',
@@ -59,6 +62,46 @@ function setupIpcMain (/** @type {Context} */ ctx) {
   // Logs & external URLs
   ipcMain.handle('prova:saveLogsAs', () => ctx.saveModuleLogsAs())
   ipcMain.handle('prova:openExternalURL', (_e, url) => ctx.openExternalURL(url))
+
+  // ── Storage location (folder/drive picker) ─────────────────────────
+  ipcMain.handle('prova:getStorageDir', () => ({
+    current: provaConfig.getStorageDir(),
+    default: provaConfig.getDefaultStorageDir(),
+    isCustom: !!provaConfig.getStorageDir() && provaConfig.getStorageDir() !== provaConfig.getDefaultStorageDir()
+  }))
+  ipcMain.handle('prova:selectStorageDir', async () => {
+    // Open a native folder picker. The current value is the starting
+    // point so the dialog opens where the user expects.
+    const current = provaConfig.getStorageDir()
+    const res = await dialog.showOpenDialog({
+      title: 'Choose Prova storage location',
+      defaultPath: current,
+      buttonLabel: 'Use this folder',
+      message: 'Pieces will be stored here. An external drive works fine.',
+      properties: ['openDirectory', 'createDirectory', 'dontAddToRecent']
+    })
+    if (res.canceled || res.filePaths.length === 0) return null
+    const chosen = res.filePaths[0]
+    // Make sure the directory is writable before persisting.
+    try {
+      await fs.mkdir(chosen, { recursive: true })
+      const probe = require('node:path').join(chosen, '.prova-write-probe')
+      await fs.writeFile(probe, '')
+      await fs.unlink(probe)
+    } catch (/** @type {unknown} */ err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      throw new Error(`Selected folder is not writable: ${msg}`)
+    }
+    provaConfig.setStorageDir(chosen)
+    ipcMain.emit(ipcMainEvents.STORAGE_DIR_CHANGED, chosen)
+    return chosen
+  })
+  ipcMain.handle('prova:resetStorageDir', () => {
+    provaConfig.setStorageDir('')
+    const reset = provaConfig.getStorageDir()
+    ipcMain.emit(ipcMainEvents.STORAGE_DIR_CHANGED, reset)
+    return reset
+  })
 }
 
 module.exports = {

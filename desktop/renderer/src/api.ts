@@ -28,6 +28,15 @@ export type WalletInfo = {
   address: string
 }
 
+export type StorageDirInfo = {
+  /// Currently configured directory (custom user choice or default).
+  current: string
+  /// The default directory for this platform.
+  default: string
+  /// True if the user has chosen something other than the default.
+  isCustom: boolean
+}
+
 // ─── Preload surface ──────────────────────────────────────────────────
 
 // This mirrors the `contextBridge.exposeInMainWorld('electron', ...)`
@@ -60,11 +69,19 @@ declare global {
       saveLogsAs: () => Promise<void>
       openExternalURL: (url: string) => Promise<void>
 
+      // Storage location
+      getStorageDir: () => Promise<StorageDirInfo>
+      /** Returns the chosen path, or null if the user canceled the dialog. */
+      selectStorageDir: () => Promise<string | null>
+      /** Resets to the platform default; returns the now-effective path. */
+      resetStorageDir: () => Promise<string>
+
       // Subscriptions (event-driven updates from main -> renderer)
       onActivityLogged: (cb: (a: Activity) => void) => () => void
       onProofStatsUpdated: (cb: (total: number) => void) => () => void
       onDealsActiveUpdated: (cb: (total: number) => void) => () => void
       onWalletAddressUpdated: (cb: (addr: string) => void) => () => void
+      onStorageDirChanged: (cb: (dir: string) => void) => () => void
       onUpdaterStatusChanged: (cb: (status: UpdaterStatus) => void) => () => void
     }
   }
@@ -102,10 +119,16 @@ const stub = {
   async isOpenAtLogin() { return false },
   async saveLogsAs() {},
   async openExternalURL(_u: string) {},
+  async getStorageDir(): Promise<StorageDirInfo> {
+    return { current: '', default: '', isCustom: false }
+  },
+  async selectStorageDir(): Promise<string | null> { return null },
+  async resetStorageDir(): Promise<string> { return '' },
   onActivityLogged(_cb: (a: Activity) => void) { return () => {} },
   onProofStatsUpdated(_cb: (n: number) => void) { return () => {} },
   onDealsActiveUpdated(_cb: (n: number) => void) { return () => {} },
   onWalletAddressUpdated(_cb: (addr: string) => void) { return () => {} },
+  onStorageDirChanged(_cb: (dir: string) => void) { return () => {} },
   onUpdaterStatusChanged(_cb: (s: UpdaterStatus) => void) { return () => {} }
 }
 
@@ -134,6 +157,10 @@ export const electron = {
   saveLogsAs: () => bridgeAvailable() ? window.electron.saveLogsAs() : stub.saveLogsAs(),
   openExternalURL: (url: string) => bridgeAvailable() ? window.electron.openExternalURL(url) : stub.openExternalURL(url),
 
+  getStorageDir: () => bridgeAvailable() ? window.electron.getStorageDir() : stub.getStorageDir(),
+  selectStorageDir: () => bridgeAvailable() ? window.electron.selectStorageDir() : stub.selectStorageDir(),
+  resetStorageDir: () => bridgeAvailable() ? window.electron.resetStorageDir() : stub.resetStorageDir(),
+
   onActivityLogged: (cb: (a: Activity) => void) =>
     bridgeAvailable() ? window.electron.onActivityLogged(cb) : stub.onActivityLogged(cb),
   onProofStatsUpdated: (cb: (total: number) => void) =>
@@ -142,6 +169,8 @@ export const electron = {
     bridgeAvailable() ? window.electron.onDealsActiveUpdated(cb) : stub.onDealsActiveUpdated(cb),
   onWalletAddressUpdated: (cb: (addr: string) => void) =>
     bridgeAvailable() ? window.electron.onWalletAddressUpdated(cb) : stub.onWalletAddressUpdated(cb),
+  onStorageDirChanged: (cb: (dir: string) => void) =>
+    bridgeAvailable() ? window.electron.onStorageDirChanged(cb) : stub.onStorageDirChanged(cb),
   onUpdaterStatusChanged: (cb: (s: UpdaterStatus) => void) =>
     bridgeAvailable() ? window.electron.onUpdaterStatusChanged(cb) : stub.onUpdaterStatusChanged(cb),
 

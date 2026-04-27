@@ -57,6 +57,14 @@ contextBridge.exposeInMainWorld('electron', {
   saveLogsAs: () => ipcRenderer.invoke('prova:saveLogsAs'),
   openExternalURL: (/** @type {string} */ url) => ipcRenderer.invoke('prova:openExternalURL', url),
 
+  // ─── Storage location (folder picker) ──────────────────────────────
+  /** @returns {Promise<{current:string,default:string,isCustom:boolean}>} */
+  getStorageDir: () => ipcRenderer.invoke('prova:getStorageDir'),
+  /** @returns {Promise<string|null>} */
+  selectStorageDir: () => ipcRenderer.invoke('prova:selectStorageDir'),
+  /** @returns {Promise<string>} */
+  resetStorageDir: () => ipcRenderer.invoke('prova:resetStorageDir'),
+
   // ─── Subscriptions ─────────────────────────────────────────────────
   // Each returns an unsubscribe function for useEffect cleanup.
   /** @param {(activity: import('../shared/typings').Activity) => void} cb */
@@ -71,6 +79,9 @@ contextBridge.exposeInMainWorld('electron', {
   /** @param {(addr: string) => void} cb */
   onWalletAddressUpdated: (/** @type {(...args: unknown[]) => void} */ cb) =>
     subscribe('prova:wallet-address-updated', cb),
+  /** @param {(dir: string) => void} cb */
+  onStorageDirChanged: (/** @type {(...args: unknown[]) => void} */ cb) =>
+    subscribe('prova:storage-dir-changed', cb),
   // Updater state is carried by three distinct events in main/updater.js:
   //   UPDATE_CHECK_STARTED   -> 'checking'
   //   UPDATE_CHECK_FINISHED  -> 'idle'  (no update available)

@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { electron, bridgeAvailable, type Activity, type UpdaterStatus } from './api'
+import {
+  electron,
+  bridgeAvailable,
+  type Activity,
+  type StorageDirInfo,
+  type UpdaterStatus,
+} from './api'
 import { Logo } from './components/Logo'
 import { Stat } from './components/Stat'
 import { formatDuration, relativeTime, shortAddr } from './util'
@@ -17,6 +23,9 @@ export default function App() {
   const [updaterStatus, setUpdaterStatus] = useState<UpdaterStatus>('idle')
   const [uptime, setUptime] = useState<number>(0)
   const [bootedAt] = useState(() => Date.now())
+  const [storage, setStorage] = useState<StorageDirInfo | null>(null)
+  const [storageBusy, setStorageBusy] = useState(false)
+  const [storageError, setStorageError] = useState<string | null>(null)
 
   // ─── Initial state fetch ──────────────────────────────────────────
   useEffect(() => {
@@ -24,12 +33,13 @@ export default function App() {
 
     async function loadInitial() {
       try {
-        const [addr, deals, proofs, acts, upd] = await Promise.all([
+        const [addr, deals, proofs, acts, upd, storageInfo] = await Promise.all([
           electron.getWalletAddress().catch(() => ''),
           electron.getTotalDealsActive().catch(() => 0),
           electron.getTotalProofsSubmitted().catch(() => 0),
           electron.getActivities().catch(() => []),
           electron.getUpdaterStatus().catch(() => 'idle' as UpdaterStatus),
+          electron.getStorageDir().catch(() => null),
         ])
         if (cancelled) return
         setWalletAddress(addr)
@@ -37,6 +47,7 @@ export default function App() {
         setProofsSubmitted(proofs)
         setActivities(acts)
         setUpdaterStatus(upd)
+        setStorage(storageInfo)
       } catch {
         // main process not ready yet; subscriptions will fill in
       }
@@ -59,6 +70,9 @@ export default function App() {
           const next = [a, ...prev]
           return next.slice(0, 200)
         })
+      }),
+      electron.onStorageDirChanged(() => {
+        electron.getStorageDir().then(setStorage).catch(() => {})
       }),
     ]
     return () => unsubs.forEach(u => u())
@@ -90,7 +104,7 @@ export default function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-cream flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Header walletAddress={walletAddress} />
       {!bridgeAvailable() && <DisconnectedBanner />}
       {updaterStatus === 'ready' && <UpdateBanner />}
@@ -161,6 +175,68 @@ export default function App() {
 
         <section>
           <SectionHeading
+            title="Storage"
+            sub="Pieces are written here. Pick a folder on a fast internal drive, or an external drive you'll keep plugged in."
+            right={
+              storage?.isCustom ? (
+                <button
+                  className="text-xs font-mono px-3 py-1.5 border border-ink/20 rounded-full hover:border-gold hover:text-gold transition-colors"
+                  disabled={storageBusy}
+                  onClick={() => {
+                    setStorageBusy(true)
+                    setStorageError(null)
+                    electron
+                      .resetStorageDir()
+                      .then(() => electron.getStorageDir())
+                      .then(setStorage)
+                      .catch(err => setStorageError(String(err?.message ?? err)))
+                      .finally(() => setStorageBusy(false))
+                  }}
+                >
+                  reset to default
+                </button>
+              ) : null
+            }
+          />
+          <div className="surface-card p-4 flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-xs uppercase tracking-wider text-ink/60">
+                {storage?.isCustom ? 'Custom location' : 'Default location'}
+              </span>
+              <span className="mono text-sm truncate" title={storage?.current ?? ''}>
+                {storage?.current ?? '…'}
+              </span>
+              {storageError && (
+                <span className="text-xs text-red-600">{storageError}</span>
+              )}
+            </div>
+            <button
+              className="text-xs font-mono px-3 py-1.5 border border-ink/20 rounded-full hover:border-gold hover:text-gold transition-colors flex-shrink-0"
+              disabled={storageBusy}
+              onClick={() => {
+                setStorageBusy(true)
+                setStorageError(null)
+                electron
+                  .selectStorageDir()
+                  .then(chosen => {
+                    if (chosen) return electron.getStorageDir().then(setStorage)
+                  })
+                  .catch(err => setStorageError(String(err?.message ?? err)))
+                  .finally(() => setStorageBusy(false))
+              }}
+            >
+              {storageBusy ? 'choosing…' : 'change…'}
+            </button>
+          </div>
+          {storage?.isCustom && (
+            <p className="text-xs text-ink/50 mt-2">
+              Restart the app for the new location to take effect.
+            </p>
+          )}
+        </section>
+
+        <section>
+          <SectionHeading
             title="Activity"
             sub="Events from the prover daemon as they happen."
             right={
@@ -196,27 +272,27 @@ export default function App() {
 
 function Header({ walletAddress }: { walletAddress: string }) {
   return (
-    <header className="bg-ink text-cream">
-      <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3 draggable">
-        <div className="text-gold">
-          <Logo size={36} />
-        </div>
+    <header className="draggable">
+      <div className="max-w-4xl mx-auto px-4 pt-3 pb-2 tahoe-titlebar-pad flex items-center gap-3">
+        <Logo size={28} />
         <div className="flex-1">
-          <h1 className="font-semibold text-lg leading-none tracking-tight">
-            Prova <span className="text-gold">Desktop</span>
+          <h1 className="font-display font-semibold text-[15px] leading-none tracking-tighter">
+            Prova
           </h1>
-          <div className="text-xs text-cream/60 mt-1">
-            verifiable storage on Base, running locally
+          <div className="text-[11px] text-ink/55 mt-0.5 dark:text-cream/55">
+            verifiable storage on Base
           </div>
         </div>
         {walletAddress && (
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 border border-cream/15 rounded-full bg-white/5 text-xs">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden />
-            <span className="text-cream/80 font-mono">{shortAddr(walletAddress)}</span>
+          <div
+            className="hidden sm:flex items-center gap-2 pill-button bg-white/40 dark:bg-ink/30"
+            title={walletAddress}
+          >
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden />
+            <span className="font-mono">{shortAddr(walletAddress)}</span>
           </div>
         )}
       </div>
-      <div className="h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent" />
     </header>
   )
 }

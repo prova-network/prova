@@ -2,42 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom utilities for subtle brand surfaces. */
+/* ─── Body / window chrome ──────────────────────────────────────────────
+ * In production, the Electron BrowserWindow is mounted with macOS
+ * `vibrancy: 'sidebar'` and `transparent: true`, so the system Tahoe
+ * material shows through. Don't paint a solid fill on <body>; let the
+ * vibrancy do the work. On non-mac platforms we fall back to cream.
+ */
+:root {
+  color-scheme: light dark;
+}
+html,
+body {
+  background: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+body {
+  /* Slight backdrop tint helps text contrast over the vibrancy. */
+  background-color: color-mix(in srgb, theme('colors.cream') 86%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: color-mix(in srgb, theme('colors.ink.DEFAULT') 78%, transparent);
+    color: theme('colors.cream');
+  }
+}
+
+/* ─── Custom utilities ──────────────────────────────────────────────── */
 @layer utilities {
+  /* Tahoe-style glass card: translucent fill, soft inner highlight,
+     diffuse shadow. Sits on top of the BrowserWindow vibrancy. */
   .surface-card {
-    @apply rounded-xl border border-ink/10 bg-white shadow-sm;
+    @apply rounded-2xl shadow-glass;
+    background-color: color-mix(in srgb, white 78%, transparent);
+    backdrop-filter: saturate(140%) blur(16px);
+    -webkit-backdrop-filter: saturate(140%) blur(16px);
+    border: 1px solid color-mix(in srgb, theme('colors.ink.DEFAULT') 8%, transparent);
   }
+  @media (prefers-color-scheme: dark) {
+    .surface-card {
+      background-color: color-mix(in srgb, theme('colors.ink.DEFAULT') 62%, transparent);
+      border-color: color-mix(in srgb, theme('colors.teal.cyan') 22%, transparent);
+    }
+  }
+
   .surface-dark {
-    @apply rounded-xl border border-gold/40 bg-ink text-cream;
+    @apply rounded-2xl border border-teal-cyan/30 shadow-glass;
+    background-color: color-mix(in srgb, theme('colors.ink.DEFAULT') 88%, transparent);
+    color: theme('colors.cream');
   }
+
   .status-dot {
     @apply inline-block h-2 w-2 rounded-full mr-2 align-middle;
   }
 
-  /* Electron-specific: make the header draggable (so users can move the
-     window by clicking the dark top band). Buttons inside reset to
-     no-drag so clicks register normally. */
+  /* Electron-specific: header is the OS-window drag handle. Buttons
+     and links inside reset to no-drag so clicks register. */
   .draggable {
     -webkit-app-region: drag;
     user-select: none;
   }
   .draggable button,
   .draggable a,
-  .draggable input {
+  .draggable input,
+  .draggable [role='button'] {
     -webkit-app-region: no-drag;
+  }
+
+  /* Tahoe traffic-light reservation: leave room on the left of any
+     drag-handle row so the macOS close/min/max buttons can sit there
+     without overlapping content. */
+  .tahoe-titlebar-pad {
+    padding-left: 78px;
+  }
+
+  /* Pill-shaped action button matching Tahoe's bordered chiclets. */
+  .pill-button {
+    @apply text-xs font-mono px-3 py-1.5 rounded-full transition-colors;
+    border: 1px solid color-mix(in srgb, theme('colors.ink.DEFAULT') 18%, transparent);
+  }
+  .pill-button:hover {
+    border-color: theme('colors.teal.cyan');
+    color: theme('colors.teal.deep');
+  }
+  @media (prefers-color-scheme: dark) {
+    .pill-button:hover {
+      color: theme('colors.teal.cyan');
+    }
   }
 }
 
 /* Lightweight monospace styling for hex/address/CID values. */
 .mono {
-  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
   font-size: 0.85rem;
   color: theme('colors.ink.soft');
   word-break: break-all;
 }
+@media (prefers-color-scheme: dark) {
+  .mono {
+    color: color-mix(in srgb, theme('colors.cream') 80%, transparent);
+  }
+}
 
 /* Prevent text selection on non-interactive UI chrome. */
-button, .nav-link {
+button,
+.nav-link {
   -webkit-user-select: none;
   user-select: none;
 }
