@@ -34,6 +34,13 @@ contract ProverRegistry is Ownable {
     uint64 public constant FEATURE_PDP           = 1 << 0;
     uint64 public constant FEATURE_HTTPS_SERVING = 1 << 1;
 
+    /// @notice Reserved for verifiable-compute capability (GPU-backed
+    ///         SNARK proving over WASM jobs). Allocated by RFC
+    ///         prova-network/prova#7. Currently informational only;
+    ///         a future ComputeMarketplace contract will gate eligibility
+    ///         on this bit. Existing v2 contracts do not consume it.
+    uint64 public constant FEATURE_COMPUTE_GPU   = 1 << 2;
+
     uint256 public constant MAX_ENDPOINT_LENGTH = 512;
     uint256 public constant MAX_METADATA_LENGTH = 2048;
 
